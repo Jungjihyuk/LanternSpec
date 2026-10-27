@@ -87,6 +87,7 @@ lantern scaffold init --plan        # 만들 폴더 · 문서 목록 (아직 아
 
 ## 3. 구조 만들기
 - `local`을 골랐으면 **먼저** `lantern docs-mode local` (빈 문서 브랜치 · `.gitignore` · `.ignore` · push 막는 hook을 한 번에)
+  실행 전에 한 줄로 알린다: "문서를 원격에 안 올리는 설정으로 바꾸면서, main에 설정 파일 3개(`.gitignore` · `.ignore` · `lantern.yaml`)를 커밋해요."
 - 🏠 brownfield이고 `docs/`가 이미 있으면 **먼저** `lantern legacy adopt` (기존 문서를 `docs/5. 기존 문서/`로 `git mv` — 기록이 이어진다)
 - 그다음 `lantern scaffold init`
 
