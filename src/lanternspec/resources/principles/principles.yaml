@@ -1,0 +1,189 @@
+# ============================================================================
+# principles.yaml — 프로젝트의 종류와 규모를 보고 AGENTS.md에 넣을 설계 원칙을 고르는 기준표
+# ============================================================================
+#
+# ■ 상세 설명
+#
+#   /l-init(그리고 lantern upgrade)이 이 표를 읽어, 프로젝트에 맞는 설계 원칙만 AGENTS.md에 넣는다.
+#   AI가 그때그때 판단하지 않고 표대로 고르므로, 같은 답이면 늘 같은 원칙이 나온다.
+#   언어에 따라 달라지는 것(포맷 · 린트 · 타입 검사 · 문서 주석)은 conventions/<언어>.yaml에 따로 있다.
+#
+#   고르는 데 쓰는 입력 세 가지:
+#     · 종류        kinds 중 하나 — /l-init이 묻는다 (lantern.yaml project.kind)
+#     · 바깥 연결   바깥 도구 · 서비스에 붙나 — /l-init이 묻는다 (lantern.yaml project.external)
+#     · 규모        코드 크기(줄 수, 재서 정함)와 사람 수(lantern.yaml의 1인/팀) — 묻지 않는다
+#
+# ■ 적는 법
+#
+#   levels:                                ← 종류마다 이 원칙을 얼마나 지키나
+#     cli: must                            ← must 지킴 · should 권장 · skip 넣지 않음 (off는 YAML에서 false로 읽혀 쓰지 않는다)
+#     service: {external: should, else: skip}   ← 바깥 연결이면 should, 아니면 skip
+#   grows_with: code                       ← 규모가 커질 때 한 단계 올리는 신호: code · people · none
+#
+#   규모 보정 (sizes의 규칙):
+#     · grows_with의 신호가 "중간" 이상이면 should → must 로 올린다.
+#     · min_when_large가 있으면 코드가 "큼"일 때 적어도 그 단계로 올린다 (observability: skip → should).
+#     · simplicity는 어떤 규모에서도 1순위다.
+#   kinds의 docs: large — 그 종류는 코드 크기와 상관없이 컨벤션의 "큼" 문서 규칙을 쓴다 (남이 읽고 쓰는 코드).
+#
+# ■ 사용법
+#
+#   1) 기준 바꾸기 — 이 파일의 levels · 경계값을 고치고 lantern upgrade (프로젝트 AGENTS.md에 반영)
+#   2) 원칙 더하기 — principles 아래에 항목 하나를 더한다 (모든 kinds에 levels를 적는다)
+# ============================================================================
+
+version: 1
+
+levels:                    # 단계 이름 — AGENTS.md · 개발 원칙 문서에 이 이름으로 나온다
+  must: 지킴
+  should: 권장
+  skip: 넣지 않음
+
+priority: 원칙끼리 부딪히면 단순함이 먼저다. 끼워 넣는 자리는 확장 지점에만 만든다.
+
+kinds:
+  script:
+    label: 스크립트 · 실험
+    examples: 개인 자동화, 한 번 쓰고 버리는 코드, 프로토타입
+  cli:
+    label: CLI 도구
+    examples: 명령어로 쓰는 도구
+  library:
+    label: 라이브러리 · 플러그인
+    examples: 다른 사람이 import하거나 끼워 쓰는 코드, SDK
+    docs: large
+  service:
+    label: 서비스 (웹 · 앱)
+    examples: 백엔드 · 프론트엔드 · 모바일 앱
+  data:
+    label: 데이터 · ML
+    examples: 분석, 데이터 파이프라인, 학습 · 실험 코드
+
+external:
+  question: 바깥 도구 · 서비스에 붙나요? (예 AI 도구, 결제, 외부 API, 플러그인을 받는 구조)
+
+sizes:
+  code:                    # 줄 수 — 테스트 · 생성된 파일 · 문서는 빼고 센다
+    small: {label: 작음, below: 10000}
+    medium: {label: 중간, below: 50000}
+    large: {label: 큼}
+  people:                  # lantern.yaml의 인원
+    small: {label: 1인, max: 1}
+    medium: {label: 2~5인, max: 5}
+    large: {label: 6인 이상}
+
+principles:
+  simplicity:
+    name: 단순함 (KISS · YAGNI)
+    explain: 요청한 만큼만, 지금 필요한 만큼만 만든다. 쓰이지 않을 추상화 · 옵션 · 일반화는 미리 넣지 않는다.
+    rules:
+      - 지금 쓰이지 않는 옵션 · 추상화 · 일반화는 넣지 않는다.
+      - 한 번만 쓰이는 코드에 계층을 만들지 않는다. 더 짧게 쓸 수 있으면 다시 쓴다.
+    grows_with: none
+    levels: {script: must, cli: must, library: must, service: must, data: must}
+
+  single_responsibility:
+    name: 단일 책임 (SRP)
+    explain: 모듈 · 클래스 · 함수는 바뀌는 이유가 하나여야 한다. 고칠 일이 생겼을 때 고칠 곳이 한눈에 보이게 한다.
+    rules:
+      - 폴더 · 파일은 "바뀌는 이유"로 나눈다.
+      - 점검 질문 "이 변경 이유 하나 때문에 고쳐야 하는 파일이 몇 개인가?" — 둘 이상이면 책임이 흩어졌다.
+      - 모듈 문서 주석에 이 파일이 하지 않는 일을 적고 지킨다.
+    data_note: 데이터 · ML에서는 "파이프라인 단계 하나 = 파일 하나"로 적용한다.
+    grows_with: code
+    levels: {script: skip, cli: must, library: must, service: must, data: should}
+
+  single_source:
+    name: 단일 출처 (DRY · SSOT)
+    explain: 같은 사실은 한 곳에만 둔다. 두 곳에 있으면 언젠가 달라지고, 바꿀 때 여러 파일을 찾아 고쳐야 한다.
+    rules:
+      - 이름 · 경로 · 설정값처럼 여러 곳에서 쓰는 사실은 출처를 하나로 정하고 거기서 가져온다.
+      - 만들어진 파일은 손으로 고치지 않는다. 출처를 고치고 다시 만든다.
+    data_note: 데이터 · ML에서는 설정 · 하이퍼파라미터를 한 곳에 둔다.
+    grows_with: code
+    levels: {script: should, cli: must, library: must, service: must, data: must}
+
+  dependency_direction:
+    name: 의존 방향 (DIP · 순수한 핵심)
+    explain: 안쪽은 바깥을 모른다. 판단은 순수 함수로, 파일 · 네트워크 · 시각 같은 바깥 일은 가장자리로 뺀다.
+    rules:
+      - 의존은 한 방향으로만 흐른다. 아래 층은 위 층을 import하지 않는다.
+      - 공유 코드는 계약(인터페이스)에만 기대고, 구체적인 바깥 도구는 모른다.
+      - 판단하는 코드와 바깥 일을 하는 코드를 나눠, 판단하는 쪽을 테스트하기 쉽게 한다.
+    grows_with: code
+    levels: {script: skip, cli: should, library: must, service: must, data: should}
+
+  extension_points:
+    name: 확장 지점 (OCP · LSP · ISP)
+    explain: 구현이 여럿이거나 자주 바뀌는 곳에서만, 기존 코드를 고치지 않고 새 구현을 끼워 넣게 만든다.
+    rules:
+      - 확장 지점을 목록으로 정해 두고 그곳에서만 쓴다. 구현이 하나뿐인 곳에 인터페이스를 미리 만들지 않는다.
+      - 같은 계약의 구현은 어디에 끼워도 같은 약속을 지킨다.
+      - 계약은 작게 두고, 모든 구현이 쓰지 않는 기능은 기본 구현으로 둔다.
+      - 새 확장 지점은 두 번째 구현이 실제로 생길 때 만든다.
+    grows_with: none
+    levels:
+      script: skip
+      cli: {external: must, else: skip}
+      library: must
+      service: {external: should, else: skip}
+      data: skip
+
+  public_interface:
+    name: 공개 인터페이스 지키기 (semver · 폐기 예고)
+    explain: 남이 쓰는 명령 · 함수 · API는 함부로 바꾸지 않는다. 바꿀 때는 버전을 올리고 먼저 예고한다.
+    rules:
+      - 공개된 명령 · 옵션 · 함수 · API를 바꾸면 버전 규칙(semver)에 따라 버전을 올린다.
+      - 없애기 전에 한 버전 이상 "곧 없어짐"을 알린다.
+    grows_with: people
+    levels: {script: skip, cli: should, library: must, service: should, data: skip}
+
+  input_validation:
+    name: 경계에서 입력 검증
+    explain: 바깥에서 들어오는 값(사용자 입력 · 파일 · 요청)은 들어오는 곳에서 한 번 검사하고, 안쪽은 검사된 값을 믿는다.
+    rules:
+      - 바깥 입력은 경계에서 검사하고, 틀리면 무엇이 틀렸는지 알려 주는 오류를 낸다.
+      - 안쪽 코드에 같은 검사를 여기저기 반복하지 않는다.
+    grows_with: code
+    levels: {script: skip, cli: should, library: must, service: must, data: should}
+
+  reproducibility:
+    name: 재현성
+    explain: 누가 언제 실행해도 같은 결과가 나오게 한다. 의존성 버전 · 환경 · 무작위 seed를 고정한다.
+    rules:
+      - 의존성은 lock 파일로 버전을 고정하고 함께 커밋한다.
+      - 실행에 필요한 환경(언어 버전 · 설정)을 파일로 남긴다.
+    data_note: 데이터 · ML에서는 무작위 seed · 데이터 버전 · 실험 설정도 고정해 기록한다.
+    grows_with: people
+    levels: {script: should, cli: should, library: should, service: must, data: must}
+
+  observability:
+    name: 관찰 가능성 (로그 · 지표)
+    explain: 돌아가는 동안 무슨 일이 일어났는지 나중에 알 수 있게 남긴다.
+    rules:
+      - 실패와 중요한 동작은 원인을 찾을 수 있는 로그를 남긴다.
+      - 비밀 값(토큰 · 비밀번호)은 로그에 남기지 않는다.
+    grows_with: code
+    min_when_large: should
+    levels: {script: skip, cli: skip, library: skip, service: must, data: should}
+
+# 종류 · 규모와 상관없이 늘 넣는다 — AI와 함께 코드를 고칠 때 흔히 생기는 실수를 막는 작업 방식
+always:
+  think_first:
+    name: 코딩 전에 생각한다
+    rules:
+      - 가정과 모르는 것을 먼저 말한다. 해석이 여럿이면 하나를 몰래 고르지 말고 묻는다.
+      - 더 단순한 방법이 있으면 말한다.
+      - 외부 도구의 형식은 기억에 기대지 말고 설치된 도구나 공식 문서에서 확인한다.
+  surgical_changes:
+    name: 필요한 곳만 고친다
+    rules:
+      - 요청과 관련된 줄만 고치고 주변 코드의 이름 · 주석 · 모양을 따른다.
+      - 관련 없는 정리 · 이름 바꾸기 · 리팩터링을 끼워 넣지 않는다. 보이면 따로 말한다.
+      - 내 변경 때문에 쓸모없어진 코드는 지우고, 원래 있던 죽은 코드는 말만 한다.
+  verify_by_goal:
+    name: 목표로 검증한다
+    rules:
+      - 시작 전에 "무엇이 되면 끝인가"를 정한다. 가능하면 실패하는 테스트를 먼저 쓴다.
+      - 끝났다는 말 대신 결과를 보인다 — 언어별 확인 명령이 모두 통과해야 끝이다.
+      - 확인하지 못한 것은 숨기지 않고 그렇다고 말한다.

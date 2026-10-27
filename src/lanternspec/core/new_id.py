@@ -1,0 +1,74 @@
+"""Issue IDs: IDEA-001 · W-012 · W-012-T03 · ADR-004 · D-007 · MTG-001.
+
+The next number is always max(existing)+1, found by scanning file names, frontmatter
+and task lines — so the same project state always yields the same ID (P1).
+"""
+
+from __future__ import annotations
+
+import re
+from collections.abc import Iterable
+from pathlib import Path
+
+from . import frontmatter
+from .project import Project, nfc, read
+
+KINDS: dict[str, dict[str, object]] = {
+    "idea": {"prefix": "IDEA", "width": 3, "folder": "ideas"},
+    "work": {"prefix": "W", "width": 3, "folder": "works"},
+    "adr": {"prefix": "ADR", "width": 3, "folder": "rules"},
+    "debt": {"prefix": "D", "width": 3, "folder": "debt_cards"},
+    "meeting": {"prefix": "MTG", "width": 3, "folder": "meetings"},
+}
+ALIASES = {"ideas": "idea", "w": "work", "task": "task", "decision": "adr", "d": "debt", "mtg": "meeting"}
+TASK_RE = re.compile(r"\b(W-\d{3,})-T(\d{2,})\b")
+ID_RE = re.compile(r"\b(IDEA|W|ADR|D|MTG)-(\d{3,})\b")
+
+
+def _numbers(prefix: str, texts: Iterable[str]) -> Iterable[int]:
+    pat = re.compile(rf"(?<![A-Z0-9-]){re.escape(prefix)}-(\d{{3,}})(?!-T|\d)")
+    for t in texts:
+        for m in pat.finditer(t):
+            yield int(m.group(1))
+
+
+def next_id(project: Project, kind: str) -> str:
+    kind = ALIASES.get(kind, kind)
+    if kind not in KINDS:
+        raise ValueError(f"알 수 없는 ID 종류: {kind} (가능: {', '.join(KINDS)} · task W-012)")
+    spec = KINDS[kind]
+    prefix = str(spec["prefix"])
+    width = int(spec["width"])  # type: ignore[arg-type]
+    texts = []
+    if project.docs.exists():
+        for p in project.docs.rglob("*"):
+            texts.append(nfc(p.name))
+            if p.is_file() and p.suffix == ".md":
+                try:
+                    meta = frontmatter.parse(read(p)).meta
+                except (OSError, UnicodeDecodeError):
+                    continue
+                if meta.get("id"):
+                    texts.append(str(meta["id"]))
+    # worktree branches (work/W-012) also reserve work numbers
+    if kind == "work":
+        from .project import git_out
+
+        texts += git_out(["branch", "--list", "work/*", "--format=%(refname:short)"], project.root).splitlines()
+    n = max(_numbers(prefix, texts), default=0) + 1
+    return f"{prefix}-{n:0{width}d}"
+
+
+def next_task_id(project: Project, work_id: str, tasks_file: Path | None = None) -> str:
+    work_id = work_id.upper()
+    if tasks_file is None:
+        work = project.find_work(work_id)
+        if work is None:
+            raise ValueError(f"작업 {work_id} 폴더를 찾지 못했습니다")
+        tasks_file = work / "할 일.md"
+    n = 0
+    if tasks_file.exists():
+        for m in TASK_RE.finditer(read(tasks_file)):
+            if m.group(1) == work_id:
+                n = max(n, int(m.group(2)))
+    return f"{work_id}-T{n + 1:02d}"

@@ -1,0 +1,68 @@
+[build-system]
+requires = ["setuptools>=77"]  # license = "MIT" (SPDX 표기)는 77부터
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lanternspec"
+version = "0.1.0"
+description = "Spec-driven development for agentic software engineering."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Jihyeok Jeong" }]
+dependencies = ["PyYAML>=6.0"]
+keywords = ["spec-driven-development", "claude-code", "codex", "antigravity-cli", "agent-skills"]
+
+[dependency-groups]
+# 개발 도구 — `uv run`이 자동으로 설치한다
+dev = ["pytest>=7", "ruff>=0.17", "pyright>=1.1.400"]
+
+[project.urls]
+Repository = "https://github.com/Jungjihyuk/LanternSpec"
+Issues = "https://github.com/Jungjihyuk/LanternSpec/issues"
+
+[project.scripts]
+lantern = "lanternspec.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+lanternspec = ["resources/**/*", "resources/**/.*"]
+
+[tool.setuptools.exclude-package-data]
+lanternspec = ["**/__pycache__/*", "**/*.pyc"]  # 위 resources/**/* 에 캐시가 섞이지 않게
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "src/lanternspec"]
+addopts = "--doctest-modules"  # docstring Example도 테스트로 돌린다
+
+[tool.ruff]
+target-version = "py312"
+line-length = 140
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+# F pyflakes · E/W pycodestyle · I import 정렬(isort) · B 흔한 버그(bugbear) · UP 최신 문법(pyupgrade)
+# ANN 타입 힌트 · D docstring
+select = ["F", "E", "W", "I", "B", "UP", "ANN", "D"]
+ignore = [
+    "E741",    # 줄을 도는 변수 l — 코드 전반에 쓰여 있어 따로 정리할 때까지 둔다
+    "ANN401",  # Any — YAML · JSON처럼 모양이 정해지지 않은 데이터에는 Any가 맞다
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+# docstring 규칙(AGENTS.md 2장)은 적용을 마친 파일에만 검사한다 — 그룹을 적용할 때마다 여기서 뺀다
+"!src/lanternspec/{core/enums.py,core/principles.py,report/principles_doc.py,work/progress.py}" = ["D"]
+"tests/**" = ["ANN"]  # 테스트 함수는 pytest가 부르므로 타입 힌트를 요구하지 않는다
+
+[tool.pyright]
+include = ["src"]
+pythonVersion = "3.12"
+typeCheckingMode = "standard"
+venvPath = "."
+venv = ".venv"

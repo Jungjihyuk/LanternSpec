@@ -1,0 +1,59 @@
+# Swift 코드 컨벤션 — 코드 크기(작음 · 중간 · 큼)에 따라 강도를 고른다. 문서 주석의 언어는 lantern.yaml의 project.language를 따른다.
+
+language: swift
+label: Swift
+detect: [Package.swift, "*.xcodeproj", "*.xcworkspace"]
+
+tools:
+  package: {name: SwiftPM · Xcode, note: 패키지는 Package.swift, 앱은 Xcode 프로젝트로 관리하고 Package.resolved를 커밋한다.}
+  format: {name: swift-format, command: swift format --in-place --recursive .}
+  lint: {name: SwiftLint, command: swiftlint}
+  typecheck: {name: Swift 컴파일러, command: swift build, note: 앱은 xcodebuild build}
+  test: {name: Swift Testing, command: swift test, note: 앱은 xcodebuild test}
+
+runners:                   # 명령 앞에 붙이는 실행기 — 기존 프로젝트는 lock 파일로 알아본다 (맞는 것이 없으면 처음 것)
+                           # ci: GitHub Actions에서 확인 명령을 돌리기 전에 도구 · 의존성을 준비하는 단계 (lantern install --ci)
+  - name: swift
+    prefix: ""
+    ci: []                 # ubuntu 러너에 Swift가 들어 있다. Xcode 앱 · SwiftLint는 macOS 러너가 필요해 직접 고친다
+
+existing:                  # 기존 프로젝트에 이미 있는 설정 — 찾으면 이 명령을 기록만 하고 설정은 바꾸지 않는다
+  format:
+    - {name: swift-format, find: [.swift-format], command: swift format --in-place --recursive .}
+    - {name: SwiftFormat, find: [.swiftformat], command: swiftformat .}
+  lint:
+    - {name: SwiftLint, find: [.swiftlint.yml, .swiftlint.yaml], command: swiftlint}
+  typecheck: []
+
+docs:
+  style: 문서 주석 /// (Swift Markup · DocC)
+  example: |
+    /// enums.yaml 글에서 값 하나의 이름을 바꾼다.
+    ///
+    /// - Parameters:
+    ///   - text: enums.yaml 전체 글.
+    ///   - old: 지금 이름.
+    ///   - new: 새 이름.
+    /// - Returns: 이름을 바꾼 enums.yaml 글.
+    /// - Throws: 목록이나 값이 없으면 `EnumsError.notFound`.
+    func renameInText(_ text: String, old: String, new: String) throws -> String {
+
+levels:
+  small:
+    lint: SwiftLint 기본 규칙
+    typecheck: 컴파일러 기본
+    type_hints: 공개(public · internal API) 함수의 반환 타입을 생략하지 않는다
+    docs: 공개 타입 · 함수에 무엇을 하는지 한 줄
+    tests: Swift Testing — 핵심 동작부터
+  medium:
+    lint: 기본 규칙 + 강제 언래핑 금지(force_unwrapping) · 강제 캐스팅 금지
+    typecheck: 동시성 검사 complete (Swift 6 언어 모드 권장)
+    type_hints: 작음과 같음
+    docs: 공개 타입 · 함수에 문서 주석 (Parameters · Returns · Throws)
+    tests: Swift Testing
+  large:
+    lint: 중간 + missing_docs(공개 API) · 경고를 오류로
+    typecheck: Swift 6 언어 모드
+    type_hints: 작음과 같음
+    docs: 중간 + DocC 문서 빌드
+    tests: Swift Testing + UI 테스트(앱)

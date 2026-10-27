@@ -1,0 +1,184 @@
+"""검사 · 양식 명령: check · lint(코드) · template · legacy · hooks(git) · doctor."""
+
+from __future__ import annotations
+
+import argparse
+from pathlib import Path
+
+from .common import Add, CliError, _p, _print
+
+
+def cmd_check(a: argparse.Namespace) -> int:
+    from ..check import check_docs
+    from ..work import epic_rules
+
+    project = _p()
+    if a.epic is not None:
+        findings = epic_rules.run(project, a.epic or None)
+        rep = check_docs.Report(findings, files=len({f.path for f in findings}) or 1)
+    else:
+        paths = None
+        if a.changed:
+            paths = check_docs.changed_docs(project)
+        elif a.paths:
+            paths = []
+            for raw in a.paths:
+                p = Path(raw)
+                cands = [p, project.root / raw, project.docs / raw]
+                found = next((c for c in cands if c.exists()), None)
+                if found is None:
+                    raise CliError(f"없습니다: {raw}")
+                paths += sorted(found.rglob("*.md")) if found.is_dir() else [found]
+        rep = check_docs.run(project, paths)
+    if a.json:
+        print(rep.to_json())
+    else:
+        print(rep.format(show_info=not a.quiet))
+    if rep.errors or (a.strict and rep.warnings):
+        return 1
+    return 0
+
+
+def cmd_template(a: argparse.Namespace) -> int:
+    from ..check import templates as tc
+
+    project = _p()
+    if a.level_auto:
+        a.level = "auto"
+    if a.action == "list":
+        _print(tc.list_rows(project) or ["양식이 없습니다 — lantern scaffold init"])
+    elif a.action == "lint":
+        from ..check.check_docs import Report
+
+        targets = [a.name] if a.name else tc.names(project)
+        findings = [f for n in targets for f in tc.lint(project, n)]
+        print(Report(findings, len(targets)).format())
+        return 1 if any(f.level == "error" for f in findings) else 0
+    elif a.action == "level":
+        lvl, source = tc.level(project, a.name)
+        print(f"{a.name}: {lvl or '바뀐 것 없음'} (비교: {source})")
+    elif a.action == "bump":
+        print("✔ " + tc.bump(project, a.name, a.level or "auto", a.note or "다듬음"))
+    elif a.action == "outdated":
+        rows = tc.outdated(project, a.name, include_inactive=a.all)
+        if not rows:
+            print("옛 양식 버전으로 쓴 문서가 없습니다")
+        for o in rows:
+            hint = "→ migrate 제안" if o.gap == "major" else ("ℹ 새 칸" if o.gap == "minor" else "그대로")
+            print(f"{project.rel(o.path)}  {o.template} {o.have} → {o.current} ({o.gap}) {hint}{'' if o.active else ' · 끝난 문서'}")
+    elif a.action == "diff":
+        print(tc.diff_base(project, a.name))
+    elif a.action == "usage":
+        _print(tc.usage(project, a.name))
+    elif a.action == "new":
+        if not a.source:
+            raise CliError("lantern template new <이름> --from <시안 파일>")
+        text = tc.skeleton_from(project, a.name, Path(a.source))
+        if a.apply:
+            from ..core.project import write
+
+            dest = project.templates_dir / f"{a.name}.md"
+            if dest.exists():
+                raise CliError(f"이미 있습니다: {project.rel(dest)}")
+            write(dest, text)
+            print(f'✔ {project.rel(dest)} — lantern template lint "{a.name}"')
+        else:
+            print(text)
+            print("\n(미리보기 — 승인되면 --apply)")
+    elif a.action == "migrate":
+        maps = {}
+        for m in a.map or []:
+            if "=" not in m:
+                raise CliError('--map "옛 칸=새 칸"')
+            k, v = m.split("=", 1)
+            maps[k.strip()] = v.strip()
+        _print(tc.migrate(project, a.name, maps, a.apply, to=a.to, dest=a.dest))
+    return 0
+
+
+def cmd_legacy(a: argparse.Namespace) -> int:
+    from ..check import legacy
+
+    project = _p()
+    if a.action == "adopt":
+        moved = legacy.adopt(project, Path(a.source) if a.source else None)
+        _print([f"✔ {m}" for m in moved] or ["옮길 기존 문서가 없습니다"])
+    else:
+        rows = legacy.todos(project)
+        if not rows:
+            print("기존 문서에 TODO · 나중에 할 것이 없습니다")
+        for r in rows:
+            print(f"- {r['text'].lstrip('-*+ ').strip()}  ({r['file']}:{r['line']})")
+    return 0
+
+
+def cmd_hooks(a: argparse.Namespace) -> int:
+    from ..check import githooks
+
+    project = _p()
+    if a.action == "install":
+        _print(githooks.install(project))
+    elif a.action == "uninstall":
+        _print(githooks.uninstall(project))
+    else:
+        for name, ok in githooks.status(project):
+            print(f"{'✔' if ok else '·'} {name}")
+    return 0
+
+
+def cmd_doctor(a: argparse.Namespace) -> int:
+    from ..check import doctor
+
+    rows = doctor.run(_p())
+    print(doctor.format_result(rows))
+    return 1 if any(r[0] == doctor.BAD for r in rows) else 0
+
+
+def cmd_lint(a: argparse.Namespace) -> int:
+    """`lantern lint` — lantern.yaml의 build.lint · build.typecheck를 돌린다 (/l-build · CI)."""
+    from ..report.scan import run_tests
+
+    project = _p()
+    cmds = [(role, project.profile.get(f"build.{role}")) for role in ("lint", "typecheck")]
+    if not any(cmd for _, cmd in cmds):
+        print("ℹ build.lint · build.typecheck가 없어 건너뜀 (lantern principles detect --write)")
+        return 0
+    failed = 0
+    for role, cmd in cmds:
+        if not cmd:
+            continue
+        res = run_tests(project, str(cmd))
+        print(f"{'✔' if res['ok'] else '✖'} {role}: `{cmd}`")
+        if not res["ok"]:
+            failed += 1
+            print(res["tail"])
+    return 1 if failed else 0
+
+
+def register(add: Add) -> None:
+    p = add("check", cmd_check, "양식 검사")
+    p.add_argument("paths", nargs="*")
+    p.add_argument("--changed", action="store_true")
+    p.add_argument("--epic", nargs="?", const="", help="수락 기준 규칙 검사 [W-012]")
+    p.add_argument("--json", action="store_true")
+    p.add_argument("--quiet", action="store_true", help="참고(ℹ) 숨김")
+    p.add_argument("--strict", action="store_true", help="경고도 실패로")
+    add("lint", cmd_lint, "코드 린트 · 타입 검사 (lantern.yaml build.lint · build.typecheck)")
+    p = add("template", cmd_template, "양식: list · lint · level · bump · outdated · diff · usage · new · migrate")
+    p.add_argument("action", choices=["list", "lint", "level", "bump", "outdated", "diff", "usage", "new", "migrate"])
+    p.add_argument("name", nargs="?")
+    p.add_argument("level", nargs="?", help="bump: patch|minor|major|auto")
+    p.add_argument("--auto", dest="level_auto", action="store_true")
+    p.add_argument("--note")
+    p.add_argument("--from", dest="source")
+    p.add_argument("--apply", action="store_true")
+    p.add_argument("--all", action="store_true", help="outdated: 끝난 문서도")
+    p.add_argument("--map", action="append")
+    p.add_argument("--to")
+    p.add_argument("--dest")
+    p = add("legacy", cmd_legacy, "브라운필드 기존 문서: adopt · todos")
+    p.add_argument("action", choices=["adopt", "todos"])
+    p.add_argument("--from", dest="source")
+    p = add("hooks", cmd_hooks, "git hook 설치 · 제거 · 상태")
+    p.add_argument("action", choices=["install", "uninstall", "status"])
+    add("doctor", cmd_doctor, "구조가 lantern.yaml과 맞는지 점검")

@@ -1,0 +1,60 @@
+# Rust 코드 컨벤션 — 코드 크기(작음 · 중간 · 큼)에 따라 강도를 고른다. 문서 주석의 언어는 lantern.yaml의 project.language를 따른다.
+
+language: rust
+label: Rust
+detect: [Cargo.toml]
+
+tools:
+  package: {name: cargo, note: 의존성은 Cargo.toml로 관리하고, 실행 파일이면 Cargo.lock을 커밋한다.}
+  format: {name: rustfmt, command: cargo fmt}
+  lint: {name: clippy, command: cargo clippy --all-targets -- -D warnings}
+  typecheck: {name: Rust 컴파일러, command: cargo check}
+  test: {name: cargo test, command: cargo test}
+
+runners:                   # 명령 앞에 붙이는 실행기 — 기존 프로젝트는 lock 파일로 알아본다 (맞는 것이 없으면 처음 것)
+                           # ci: GitHub Actions에서 확인 명령을 돌리기 전에 도구 · 의존성을 준비하는 단계 (lantern install --ci)
+  - name: cargo
+    prefix: ""
+    ci:
+      - {uses: dtolnay/rust-toolchain@stable, with: {components: "clippy, rustfmt"}}
+
+existing:                  # Rust는 기본 도구가 곧 표준이라 따로 알아볼 설정이 없다 (rustfmt.toml · clippy.toml은 기본 명령이 읽는다)
+  format: []
+  lint: []
+  typecheck: []
+
+docs:
+  style: 문서 주석 /// (rustdoc)
+  example: |
+    /// enums.yaml 글에서 값 하나의 이름을 바꾼다.
+    ///
+    /// # Errors
+    ///
+    /// 목록이나 값이 없으면 `EnumsError::NotFound`를 돌려준다.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let out = rename_in_text(text, "debt_status", "되물음", "다시 물음")?;
+    /// ```
+    pub fn rename_in_text(text: &str, list: &str, old: &str, new: &str) -> Result<String, EnumsError> {
+
+levels:
+  small:
+    lint: clippy 기본 규칙
+    typecheck: 컴파일러 기본
+    type_hints: 공개 함수 시그니처는 늘 명시 (언어가 요구)
+    docs: 공개 항목에 무엇을 하는지 한 줄
+    tests: cargo test — 핵심 동작부터
+  medium:
+    lint: 기본 + 경고를 오류로(-D warnings) · clippy::pedantic 경고
+    typecheck: 컴파일러 기본
+    type_hints: 작음과 같음
+    docs: '공개 항목에 문서 주석 (# Errors · # Panics), 라이브러리는 #![warn(missing_docs)]'
+    tests: cargo test
+  large:
+    lint: 중간 + 고른 pedantic 규칙을 오류로
+    typecheck: 컴파일러 기본
+    type_hints: 작음과 같음
+    docs: '중간 + #![deny(missing_docs)] · 공개 함수마다 # Examples (cargo test가 돌린다)'
+    tests: cargo test + 문서 예시 테스트
