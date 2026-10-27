@@ -1,10 +1,11 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/Jungjihyuk/LanternSpec/main/assets/Banner_3-1.png" alt="LanternSpec — 모르는 것은 밝히고, 걸어온 길은 보여 준다. AI 에이전트 협업을 위한 명세 주도 개발 프레임워크" width="100%">
+<img src="https://raw.githubusercontent.com/Jungjihyuk/LanternSpec/main/assets/Banner.png" alt="LanternSpec — 모르는 것은 밝히고, 걸어온 길은 보여 준다. AI 에이전트 협업을 위한 명세 주도 개발 프레임워크" width="100%">
 
-<a href="https://pypi.org/project/lanternspec/"><img src="https://img.shields.io/pypi/v/lanternspec?style=for-the-badge&color=f7a145&labelColor=2a1f1a" alt="PyPI 버전"></a>
-<img src="https://img.shields.io/badge/python-3.12%2B-a8875f?style=for-the-badge&labelColor=2a1f1a" alt="Python 3.12 이상">
-<a href="https://github.com/Jungjihyuk/LanternSpec/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-a8875f?style=for-the-badge&labelColor=2a1f1a" alt="MIT 라이선스"></a>
+<a href="https://github.com/Jungjihyuk/LanternSpec/blob/main/CHANGELOG.md"><img src="https://img.shields.io/badge/release-v0.1.0-007ec6" alt="release v0.1.0"></a>
+<a href="https://github.com/Jungjihyuk/LanternSpec"><img src="https://img.shields.io/github/stars/Jungjihyuk/LanternSpec?style=social" alt="GitHub Stars"></a>
+<a href="https://github.com/Jungjihyuk/LanternSpec/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-97ca00" alt="license MIT"></a>
+<img src="https://img.shields.io/badge/python-3.12%2B-007ec6" alt="python 3.12+">
 
 [설치](#설치) · [빠른 시작](#빠른-시작) · [다른 SDD 도구와 비교](#다른-sdd-도구와-비교) · [스킬](#흐름과-스킬) · [CLI](#cli-한눈에)
 
