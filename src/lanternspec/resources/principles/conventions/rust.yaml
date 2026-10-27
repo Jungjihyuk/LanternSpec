@@ -1,4 +1,4 @@
-# Rust 코드 컨벤션 — 코드 크기(작음 · 중간 · 큼)에 따라 강도를 고른다. 문서 주석의 언어는 lantern.yaml의 project.language를 따른다.
+# Rust 코드 컨벤션 — 코드 크기(작음 · 중간 · 큼)에 따라 강도를 고른다. 문서 주석의 언어는 lantern.yaml의 project.comment_language(없으면 language)를 따른다.
 
 language: rust
 label: Rust

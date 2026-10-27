@@ -29,6 +29,7 @@ DEFAULTS: dict[str, Any] = {
         "clients": [],
         "server": "none",
         "language": "ko",
+        "comment_language": None,
         "kind": None,
         "external": False,
         "languages": [],
@@ -53,6 +54,7 @@ CHOICES: dict[str, tuple[str, ...]] = {
     "project.team": ("solo", "team"),
     "project.server": ("none", "external", "custom"),
     "project.kind": principles.kind_names(),
+    "project.comment_language": tuple(principles.DOC_LANGUAGE),
     "project.code_size": principles.SIZES,
     "docs.remote": ("shared", "local"),
     "knowledge.type": ("obsidian", "folder", "notion"),
@@ -154,6 +156,11 @@ class Profile:
         if not k:
             return None
         return _deep_merge(KNOWLEDGE_DEFAULTS, k)
+
+    @property
+    def comment_language(self) -> str:
+        """Language of code comments and docstrings — project.comment_language, else project.language."""
+        return str(self.get("project.comment_language") or self.get("project.language") or "ko")
 
     @property
     def brownfield(self) -> bool:
@@ -264,7 +271,8 @@ def render(data: dict[str, Any]) -> str:
         f"  clients: {s(p.get('clients') or [])}          # web | desktop | mobile — 여러 개 가능",
         f"  server: {s(p['server'])}            # none(서버 없음) | external(Supabase · Firebase 같은 백엔드 서비스)"
         " | custom(서버 코드를 직접 작성 — 어디에 띄우든)",
-        f"  language: {s(p.get('language', 'ko'))}",
+        f"  language: {s(p.get('language', 'ko'))}              # 문서 · 안내의 언어",
+        f"  comment_language: {s(p.get('comment_language'))}    # 코드 주석(docstring · 주석)의 언어 — ko | en, 비우면 language를 따름",
         f"  kind: {s(p.get('kind'))}              # {' | '.join(principles.kind_names())} — 설계 원칙을 고르는 기준",
         f"  external: {s(bool(p.get('external')))}         # 바깥 도구 · 서비스(AI 도구 · 결제 · 외부 API 등)에 붙나",
         f"  languages: {s(p.get('languages') or [])}        # 코드 컨벤션을 고를 언어 ({', '.join(principles.language_names())})",

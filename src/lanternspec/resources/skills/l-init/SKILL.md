@@ -52,6 +52,7 @@ argument-hint: "[바뀐 점 (다시 실행할 때)]"
 - 프로젝트 이름 — 폴더 이름을 추천값으로
 - "문서도 GitHub에 함께 올릴까요?" — 예(shared, 기본) / 아니요(local: 문서는 같은 저장소의 `docs-local` 브랜치에만, 원격에 안 올림. 혼자 보는 메모 · 공개 저장소에 어울림)
 - 작업 브랜치를 머지할 기준 브랜치 — `git branch`로 보이는 main · dev를 선택지로
+- 코드 주석(docstring · 주석)은 어떤 언어로 쓸까요? 한국어 / 영어 — 문서는 한국어로 만들고, 코드 안의 설명만 따로 정한다. 혼자 · 한국어 팀이면 한국어, 공개 오픈소스로 낼 거면 영어를 추천
 - (2번이 team이면) 팀원 이름 — 후보를 만들 수 없으니 평범한 메시지로: "함께하는 사람 이름을 쉼표로 적어 주세요"
 - (4번이 external이면) "API 명세 문서도 만들까요?" — 예면 `--extra api`
 
@@ -68,7 +69,7 @@ lantern profile write --name "<이름>" --origin greenfield|brownfield --team so
   --clients web,mobile --server none|external|custom [--extra api] \
   [--knowledge "<지식 저장소 경로>" --knowledge-type obsidian|folder --knowledge-write direct|propose_only [--areas-from "2. Study"]] \
   --design claude-design|figma|canva|none --remote shared|local --base main \
-  --kind script|cli|library|service|data --external yes|no [--languages python,typescript]
+  --kind script|cli|library|service|data --external yes|no [--languages python,typescript] --comment-language ko|en
 lantern principles detect --write   # 코드 규모 · 언어 · 확인 명령(build.format · lint · typecheck)을 기록
 lantern principles show             # 고른 설계 원칙 · 코드 컨벤션
 lantern scaffold init --plan        # 만들 폴더 · 문서 목록 (아직 아무것도 안 만듦)

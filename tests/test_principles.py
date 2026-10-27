@@ -111,3 +111,20 @@ def test_without_kind_nothing_changes(repo):
     assert not (repo.root / "docs/3. 현재 상태/규칙 · 결정 기록/개발 원칙.md").exists()
     code, out = repo("principles", "show", ok=False)
     assert code == 1 and "project.kind가 없습니다" in out
+
+
+def test_comment_language_is_separate_from_document_language(repo):
+    init_project(repo)
+    repo("profile", "set", "project.kind=cli", "project.languages=[python]")
+    repo("scaffold", "init")
+    repo("install")
+    agents = (repo.root / "AGENTS.md").read_text(encoding="utf-8")
+    assert "문서 주석 (Google 스타일 docstring · 한국어)" in agents  # 비워 두면 문서 언어(ko)를 따른다
+    repo("profile", "set", "project.comment_language=en")
+    repo("upgrade")
+    agents = (repo.root / "AGENTS.md").read_text(encoding="utf-8")
+    assert "문서 주석 (Google 스타일 docstring · 영어)" in agents and "### 개발 원칙" in agents  # 안내는 한국어 그대로
+    doc = (repo.root / "docs/3. 현재 상태/규칙 · 결정 기록/개발 원칙.md").read_text(encoding="utf-8")
+    assert "문서 주석: Google 스타일 docstring · 영어" in doc
+    code, out = repo("profile", "set", "project.comment_language=jp", ok=False)
+    assert code == 1 and "comment_language" in out

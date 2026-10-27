@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 SIZES = ("small", "medium", "large")
 COMMAND_ROLES = ("format", "lint", "typecheck")  # lantern.yaml build.<역할>에 기록하는 명령
 ROLE_LABEL = {"format": "포맷", "lint": "린트", "typecheck": "타입 검사", "test": "테스트"}
-DOC_LANGUAGE = {"ko": "한국어", "en": "영어"}  # lantern.yaml project.language → 문서 주석에 쓸 말
+DOC_LANGUAGE = {"ko": "한국어", "en": "영어"}  # lantern.yaml project.comment_language → 문서 주석에 쓸 말
 RULE_LABEL = {"lint": "린트", "typecheck": "타입 검사", "type_hints": "타입 힌트", "docs": "문서 주석", "tests": "테스트"}
 
 

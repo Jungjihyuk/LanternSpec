@@ -56,8 +56,7 @@ def principles_section(profile: Profile) -> str:
         cmds = [f"{label} `{cmd}`" for label, cmd in cmds if cmd]
         if cmds:
             lines.append("- 고친 뒤 돌리고 모두 통과해야 끝: " + " · ".join(cmds) + " — 린트 · 타입 검사는 `lantern lint`로 한 번에")
-        code = str(profile.get("project.language"))
-        language = principles.DOC_LANGUAGE.get(code, code)
+        language = principles.DOC_LANGUAGE.get(profile.comment_language, profile.comment_language)
         for c in sel.conventions:
             prefix = f"{c.label} " if len(sel.conventions) > 1 else ""
             lines.append(f"- {prefix}타입 힌트: {c.rules['type_hints']}")

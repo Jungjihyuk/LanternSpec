@@ -31,7 +31,7 @@ def cmd_profile(a: argparse.Namespace) -> int:
         proj = data.setdefault("project", {})
         if a.name is not None:
             proj["name"] = a.name
-        for key in ("origin", "team", "server", "language"):
+        for key in ("origin", "team", "server", "language", "comment_language"):
             if getattr(a, key) is not None:
                 proj[key] = getattr(a, key)
         if a.members is not None:
@@ -224,6 +224,7 @@ def register(add: Add) -> None:
         "clients",
         "server",
         "language",
+        "comment-language",
         "kind",
         "languages",
         "extra",

@@ -39,7 +39,7 @@ def render(sel: principles.Selection, profile_language: str = "ko") -> str:
 
     Args:
         sel: 고른 원칙 · 작업 방식 · 컨벤션.
-        profile_language: 문서 주석에 쓸 말 (lantern.yaml project.language).
+        profile_language: 문서 주석에 쓸 말 (lantern.yaml project.comment_language, 없으면 language).
 
     Returns:
         Markdown 본문.
@@ -127,7 +127,7 @@ def write_doc(project: Project) -> Path | None:
         "code_size": sel.code,
     }
     path = doc_path(project)
-    body = render(sel, str(project.profile.get("project.language") or "ko"))
+    body = render(sel, project.profile.comment_language)
     if path.exists() and frontmatter.parse(read(path)).body.strip() == body.strip():
         return None
     write(path, frontmatter.render(meta, body))
