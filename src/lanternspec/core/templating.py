@@ -3,11 +3,11 @@
 Three kinds of marks live in a template:
 
 * ``${name}``  — filled by the script (id, today, work link …). Never by the AI.
-* ``{{칸 이름}}`` / ``{{칸 이름 (필수)}}`` — blanks the AI (or a person) fills.
+* ``{{name}}`` / ``{{name (필수)}}`` — blanks the AI (or a person) fills; ``(필수)`` marks a required one.
 * ``<!-- lantern:if key=a,b -->`` … ``<!-- lantern:endif -->`` — kept only when the
   profile matches (I-04 client sections, AC format, team-only lines).
 
-Everything after ``<!-- lantern:template-only -->`` (the 변경 기록) stays in the template.
+Everything after ``<!-- lantern:template-only -->`` (the change log) stays in the template.
 """
 
 from __future__ import annotations

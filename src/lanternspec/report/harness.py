@@ -1,10 +1,10 @@
-"""프로젝트 크기에 맞춰 AI 작업 방식을 고른다 — 하네스 · 루프 · 그래프 (08 · BU-04 · BU-05).
+"""Pick the AI work mode for the project size — harness · loop · graph (08 · BU-04 · BU-05).
 
-| 방식 | 언제 | lantern.yaml |
+| mode | when | lantern.yaml |
 |---|---|---|
-| 하네스 (작은 반복) | 작은 프로젝트 · 수락 기준 테스트가 아직 없음 | build.loop: off |
-| 루프 (큰 반복)     | 수락 기준 → 자동 테스트가 자리 잡음 (build.test), 성공률이 보임 | build.loop: on · build.loop_limit |
-| 그래프 (병렬)      | 서로 독립인 작업이 여럿 · 병렬 표시 [P] 할 일이 많음 | (lantern work start · 서브 에이전트) |
+| harness (small loops) | small project · no acceptance tests yet | build.loop: off |
+| loop (big loop)       | automated acceptance tests exist (build.test), success rate visible | build.loop: on · build.loop_limit |
+| graph (parallel)      | several independent work items · many [P] tasks | (lantern work start · sub-agents) |
 
 The suggestion is computed from facts (code size, works, tasks, run history); applying it is the
 person's choice (`--apply`). `code_lines` is also the code size that picks the design principles (I-05).
@@ -35,21 +35,21 @@ TEST_NAMES = ("test_*", "*_test.*", "*.test.*", "*.spec.*", "*Tests.swift", "*Te
 
 
 def code_files(project: Project) -> list[str]:
-    """git이 아는 파일 중 문서 · AI 도구 설정이 아닌 것."""
+    """Files git tracks that are neither documents nor AI-tool settings."""
     from .scan import is_doc_path
 
     return [f for f in git_out(["ls-files"], project.root).splitlines() if not is_doc_path(project, f)]
 
 
 def code_lines(project: Project, tests: bool = True) -> int:
-    """코드 파일의 줄 수를 센다 (git이 아는 파일만, 문서 · AI 도구 설정은 빼고).
+    """Count lines in code files (tracked by git, excluding documents and AI-tool settings).
 
     Args:
-        project: 프로젝트.
-        tests: 테스트 파일도 셀까. 설계 원칙의 규모(I-05)는 False로 센다.
+        project: The project.
+        tests: Whether to count test files. The design-principle size (I-05) counts with False.
 
     Returns:
-        줄 수. 파일이 아주 많으면 앞의 4000개만 센다.
+        Line count. With very many files, only the first 4000 are counted.
 
     Example:
         >>> code_lines(project, tests=False)  # doctest: +SKIP

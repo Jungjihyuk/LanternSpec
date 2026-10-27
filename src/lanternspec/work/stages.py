@@ -1,4 +1,4 @@
-"""Work-line steps the skills record: work stage · design approval (DE-03) · unit-size log (작업 단위 기록)."""
+"""Work-line steps the skills record: work stage · design approval (DE-03) · unit-size log (`작업 단위 기록`)."""
 
 from __future__ import annotations
 

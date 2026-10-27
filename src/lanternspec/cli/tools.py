@@ -1,4 +1,4 @@
-"""AI 도구 연결 명령: install · upgrade · build-adapters · docs-mode · hook · close."""
+"""AI-tool commands: install · upgrade · build-adapters · docs-mode · hook · close."""
 
 from __future__ import annotations
 
@@ -27,12 +27,12 @@ def cmd_install(a: argparse.Namespace) -> int:
 
 
 def _next_steps(project: Project) -> list[str]:
-    """설치 뒤 무엇을 하면 되는지 — 설치한 도구의 실행 명령과 스킬 부르는 법으로."""
+    """What to do after installing — the command that opens each configured tool and how to call the skill."""
     from ..core import state
     from ..tools import REGISTRY, resolve
 
     tools = resolve(state.load(project).get("tools") or ["claude"])
-    # 이 컴퓨터에 있지만 이 프로젝트에 설정하지 않은 AI 도구 — 알려만 주고 고르는 건 사람이
+    # AI tools on this computer but not set up for this project — suggest only, the person decides
     missing = [t for t in REGISTRY.values() if t not in tools and shutil.which(t.launch)]
     hint = (
         [

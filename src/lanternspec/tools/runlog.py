@@ -1,4 +1,4 @@
-"""실행 기록 `.lantern/runs.jsonl` — 평가 시스템의 재료. 지금은 쌓기만 한다 (H-6).
+"""Run log `.lantern/runs.jsonl` — the raw material for evaluation. For now it only accumulates (H-6).
 
 Two writers, one format:
 * agent hooks (Claude Code): per turn — start · end · model · skill · tool counts

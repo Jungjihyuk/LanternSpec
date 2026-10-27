@@ -1,4 +1,4 @@
-"""`lantern check --epic` — 수락 기준 규칙 검사 (PL-02, /l-plan 5단계).
+"""`lantern check --epic` — acceptance-criteria rule check (PL-02, /l-plan step 5).
 
 Two questions per criterion: does it mean one thing? can it be checked?
 """

@@ -1,4 +1,4 @@
-"""📊 AI 작업 평가 — "어떤 구성이 결과에 도움이 됐나?" (그림 6, H-6 실행 기록의 쓰임새).
+"""📊 AI work evaluation — "which setup helped the outcome?" (figure 6, what the H-6 run log is for).
 
 Reads `.lantern/runs.jsonl` (turn records from agent hooks, skill records from `lantern close`)
 and the work folders, then compares configurations (model · skill · profile settings) by
@@ -67,7 +67,7 @@ def _minutes(rec: dict[str, Any]) -> float | None:
 
 
 def task_durations(project: Project) -> dict[str, list[float]]:
-    """Actual hours per size from [시작:: …] → [완료:: …] (also used by `lantern task estimate`)."""
+    """Actual hours per size from `[시작:: …]` → `[완료:: …]` (also used by `lantern task estimate`)."""
     out: dict[str, list[float]] = defaultdict(list)
     for w in project.work_dirs(include_archive=True):
         tf = w / "할 일.md"

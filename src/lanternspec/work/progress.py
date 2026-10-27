@@ -1,14 +1,14 @@
-"""대화가 압축되기 직전, 진행 상황을 문서의 "지금 상황" 칸에 저장한다.
+"""Save progress into a document's "지금 상황" section just before the conversation is compacted.
 
-책임:
-    - 진행 중 작업의 `기록.md` "지금 상황"을 지금 상태(진행 · 다음 · 막힌 것 · 열린 질문)로 덮어쓰기
-    - 덮어쓰기 전의 내용을 "지난 기록"으로 옮겨 잃지 않기
-    - `기록.md`가 있는 작업이 없으면 `4. 운영 기록/세션/날짜.md`에 남기기
-    - 압축 뒤 다시 넣어 줄 수 있게 "지금 상황" 칸 읽기
+Responsibilities:
+    - overwrite "지금 상황" of each active work's `기록.md` with the current state (progress · next · blocked · open questions)
+    - move what it replaced into "지난 기록" so nothing is lost
+    - without any `기록.md`, write to `4. 운영 기록/세션/<date>.md`
+    - read "지금 상황" back so it can be put back after compaction
 
-하지 않는 일:
-    - 언제 저장할지 정하기 → tools/agent_hooks.py (pre-compact · session-start)
-    - 다음 할 일 고르기 → work/tasks.py (next_task)
+Not here:
+    - deciding when to save → tools/agent_hooks.py (pre-compact · session-start)
+    - picking the next task → work/tasks.py (next_task)
 """
 
 from __future__ import annotations
@@ -28,14 +28,14 @@ SESSION_TEMPLATE = "세션 기록"
 
 
 def section_body(text: str, heading: str) -> str:
-    r"""`## 제목` 칸의 내용을 돌려준다 (작성 안내 `> [!guide]` 줄은 뺀다).
+    r"""Return the content of a `## heading` section (without `> [!guide]` lines).
 
     Args:
-        text: 문서 전체 글.
-        heading: `## ` 뒤의 칸 이름.
+        text: The whole document.
+        heading: The section name after `## `.
 
     Returns:
-        칸의 내용. 칸이 없으면 빈 문자열.
+        The section content; an empty string if there is no such section.
 
     Example:
         >>> section_body("## 지금 상황\n> [!guide] 덮어쓴다\n\n- 진행: A\n\n## 증거\n", "지금 상황")
@@ -49,15 +49,15 @@ def section_body(text: str, heading: str) -> str:
 
 
 def replace_section(text: str, heading: str, body: str) -> tuple[str, str]:
-    r"""`## 제목` 칸의 내용을 바꾼다. 작성 안내 줄은 그대로 둔다.
+    r"""Replace the content of a `## heading` section, keeping its guide lines.
 
     Args:
-        text: 문서 전체 글.
-        heading: `## ` 뒤의 칸 이름.
-        body: 새 내용.
+        text: The whole document.
+        heading: The section name after `## `.
+        body: New content.
 
     Returns:
-        (바꾼 문서 글, 바꾸기 전 내용). 칸이 없으면 문서 끝에 칸을 만들고 바꾸기 전 내용은 빈 문자열.
+        (new document, previous content). Without the section, one is added at the end and the previous content is empty.
 
     Example:
         >>> new, old = replace_section("## 지금 상황\n> [!guide] 덮어쓴다\n\n- 진행: A\n\n## 증거\n", "지금 상황", "- 진행: B")
@@ -81,15 +81,15 @@ def replace_section(text: str, heading: str, body: str) -> tuple[str, str]:
 
 
 def append_history(text: str, stamp: str, old: str) -> str:
-    r"""밀려난 "지금 상황" 내용을 "지난 기록" 칸 끝에 시각과 함께 쌓는다.
+    r"""Append replaced "지금 상황" content, with a timestamp, to the end of "지난 기록".
 
     Args:
-        text: 문서 전체 글.
-        stamp: 기록 시각. 예: "2026-10-27 14:05".
-        old: 밀려난 내용.
+        text: The whole document.
+        stamp: Timestamp, e.g. "2026-10-27 14:05".
+        old: The replaced content.
 
     Returns:
-        "지난 기록"에 한 덩어리를 더한 문서 글. 칸이 없으면 문서 끝에 만든다.
+        The document with one more entry in "지난 기록"; the section is added at the end if missing.
 
     Example:
         >>> print(append_history("## 지난 기록\n> [!guide] 쌓는다\n", "2026-10-27 14:05", "- 진행: A"), end="")
@@ -108,14 +108,14 @@ def append_history(text: str, stamp: str, old: str) -> str:
 
 
 def work_state(project: Project, work: Path) -> str:
-    """작업 하나의 지금 상태를 "지금 상황" 칸 모양(3~4줄)으로 만든다.
+    """Describe one work item's current state in "지금 상황" form (3–4 lines).
 
     Args:
-        project: 프로젝트.
-        work: 작업 폴더.
+        project: The project.
+        work: The work folder.
 
     Returns:
-        `- 진행:` · `- 다음:` · (있으면) `- 막힌 것:` · `- 열린 질문:` 줄.
+        `- 진행:` · `- 다음:` lines, plus `- 막힌 것:` · `- 열린 질문:` when there are any.
 
     Example:
         >>> print(work_state(project, work))  # doctest: +SKIP
@@ -141,7 +141,7 @@ def work_state(project: Project, work: Path) -> str:
         lines.append("- 다음: 정해진 할 일 없음")
     if nxt.skipped:
         lines.append("- 막힌 것: " + " · ".join(f"{tid} ({why})" for tid, why in nxt.skipped[:3]))
-    from ..report.status import open_unknowns  # 작성 안내 속 언급은 빼고 센다
+    from ..report.status import open_unknowns  # mentions inside guide text don't count
 
     folder = project.docs_rel(work)
     unknowns = sum(n for doc, n in open_unknowns(project) if doc.startswith(folder + "/"))
@@ -151,18 +151,18 @@ def work_state(project: Project, work: Path) -> str:
 
 
 def save_before_compact(project: Project) -> dict[Path, str]:
-    """진행 상황을 문서에 저장하고, 문서마다 덮어쓰기 전의 "지금 상황"을 돌려준다.
+    """Save progress into documents and return each document's previous "지금 상황".
 
-    `기록.md`가 있는 진행 중 작업마다 "지금 상황"을 덮어쓴다. 그런 작업이 없으면
-    `4. 운영 기록/세션/날짜.md`(그날 하나)에 진행 중 작업 전체의 상태를 남긴다.
-    덮어쓰기 전의 내용은 "지난 기록"으로 옮긴다.
+    Overwrites "지금 상황" of every active work item that has a `기록.md`. Without any, the state of
+    all active work goes to `4. 운영 기록/세션/<date>.md` (one per day).
+    Previous content moves to "지난 기록".
 
     Args:
-        project: 프로젝트.
+        project: The project.
 
     Returns:
-        저장한 문서 경로 → 덮어쓰기 전에 적혀 있던 "지금 상황" (비어 있었거나 빈칸뿐이면 빈 문자열).
-        압축 뒤에 이 옛 내용(사람 · AI가 적어 둔 맥락)도 함께 다시 넣어 줄 수 있다.
+        Saved document path → the "지금 상황" it held before (empty when it was empty or only blanks).
+        This earlier context (written by a person or the AI) can be put back after compaction too.
 
     Example:
         >>> {project.rel(p): old for p, old in save_before_compact(project).items()}  # doctest: +SKIP
@@ -180,9 +180,9 @@ def save_before_compact(project: Project) -> dict[Path, str]:
 
 
 def _overwrite_now(path: Path, body: str, stamp: str) -> str:
-    """한 문서의 "지금 상황"을 덮어쓰고, 의미 있던 옛 내용은 "지난 기록"으로 옮긴 뒤 그 옛 내용을 돌려준다."""
+    """Overwrite one document's "지금 상황", move meaningful old content to "지난 기록", and return it."""
     text, old = replace_section(read(path), NOW, body)
-    old = "\n".join(l for l in old.split("\n") if l.strip() and "{{" not in l)  # 채우지 않은 빈칸 줄은 버린다
+    old = "\n".join(l for l in old.split("\n") if l.strip() and "{{" not in l)  # drop unfilled {{blank}} lines
     meaningful = bool(old) and old.strip() != body.strip()
     if meaningful:
         text = append_history(text, stamp, old)
@@ -191,5 +191,5 @@ def _overwrite_now(path: Path, body: str, stamp: str) -> str:
 
 
 def _section(text: str, heading: str) -> re.Match[str] | None:
-    """`## 제목` 줄과 그 칸의 내용(다음 `## ` · 템플릿 전용 표시 전까지)을 찾는다."""
+    """Find a `## heading` line and its content (up to the next `## ` or the template-only mark)."""
     return re.search(rf"^(## {re.escape(heading)}[ \t]*\n)(.*?)(?=^## |^<!-- lantern:template-only -->|\Z)", text, re.M | re.S)

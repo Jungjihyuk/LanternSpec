@@ -1,7 +1,7 @@
-"""AI 도구 연결 — 스킬 · 규칙 · 에이전트 hook을 각 도구 형식으로 설치하고, hook을 받아 처리한다.
+"""AI-tool connection — install skills, rules and agent hooks in each tool's format, and handle the hooks.
 
-도구 하나의 형식이 바뀌면 그 도구 파일(claude.py · codex.py · antigravity.py) 하나만 고친다.
-새 도구는 base.Tool을 구현한 파일 하나와 아래 REGISTRY 한 줄이면 된다.
+When one tool's format changes, only that tool's file changes (claude.py · codex.py · antigravity.py).
+A new tool needs one file implementing base.Tool and one line in REGISTRY below.
 """
 
 from __future__ import annotations

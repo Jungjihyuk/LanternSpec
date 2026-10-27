@@ -1,15 +1,15 @@
-"""Agent hooks — 있으면 더 편한 것. Without them the skills' common close (P4) does the same.
+"""Agent hooks — nice to have. Without them the skills' common close (P4) does the same.
 
 What each hook does, for every tool alike (a tool adapter only reads its payload and writes the answer):
 
-session-start  H-4  지금 상황 3줄을 대화에 넣는다 (압축 직후면 H-8 저장본도)
-prompt         H-6  어떤 스킬로 시작했나 · H-9 기술 질문 감지 · H-10 아이디어 감지
-post-tool      H-5  docs/ 문서를 쓰면 바로 양식 검사 → 깨졌으면 그 자리에서 고치게
-               H-6  도구 호출 수 세기
-feedback       (Antigravity) post-tool이 바로 말할 수 없어 미뤄 둔 H-5 결과를 전한다
-stop           H-6  한 번 답을 마칠 때마다 실행 기록 한 줄
-               H-7  코드는 바뀌었는데 작업 문서는 그대로면 /l-sync 권유 (작업당 한 번, 강제 없음)
-pre-compact    H-8  압축 직전 진행 상황을 기록.md(없으면 세션 문서)의 "지금 상황"에 저장 → 압축 직후 session-start가 다시 넣어 준다
+session-start  H-4  put the three-line status into the conversation (right after compaction, also the H-8 save)
+prompt         H-6  which skill started the turn · H-9 tech-question detection · H-10 idea detection
+post-tool      H-5  check the format as soon as a docs/ document is written → fix it on the spot if broken
+               H-6  count tool calls
+feedback       (Antigravity) deliver the H-5 result that post-tool could not say right away
+stop           H-6  one run-log line per finished answer
+               H-7  suggest /l-sync when code changed but the work documents did not (once per work item, never forced)
+pre-compact    H-8  save progress into "지금 상황" of `기록.md` (or the session document) before compaction; session-start puts it back
 """
 
 from __future__ import annotations
@@ -58,7 +58,7 @@ def _compact_file(project: Project, session: str) -> Path:
 
 
 def pre_compact(project: Project, tool: Tool, inp: HookInput) -> HookResult:
-    """H-8: 진행 상황을 문서의 "지금 상황"에 저장하고, 압축 뒤 다시 넣을 문서 목록을 기억한다."""
+    """H-8: save progress into the documents' "지금 상황" and remember which documents to put back after compaction."""
     from ..work.progress import save_before_compact
 
     saved = save_before_compact(project)
@@ -68,7 +68,7 @@ def pre_compact(project: Project, tool: Tool, inp: HookInput) -> HookResult:
 
 
 def _saved_progress(project: Project, session: str) -> list[str]:
-    """압축 직전에 저장한 문서들의 "지금 상황"(과 그때 밀려난 옛 내용)을 다시 넣을 줄로 만든다."""
+    """Build the lines that put back "지금 상황" of the documents saved before compaction (and what it replaced)."""
     from ..core.project import read
     from ..work.progress import NOW, section_body
 
@@ -176,7 +176,7 @@ def _once(project: Project, key: str) -> bool:
 
 
 def learn_detect(project: Project, session: str, text: str) -> str:
-    """H-9 (LE-01 대화 중 질문 감지): manual 안 셈 · ask 묻기 · auto 카드 있으면 바로 셈."""
+    """H-9 (LE-01, detect tech questions in conversation): manual: no count · ask: ask first · auto: count if a card exists."""
     mode = project.profile.get("learn.detect")
     if mode == "manual" or not project.profile.knowledge:
         return ""
@@ -211,7 +211,7 @@ def learn_detect(project: Project, session: str, text: str) -> str:
 
 
 def idea_detect(project: Project, session: str, text: str) -> str:
-    """H-10 (ID-03): ask 대화당 한 번 묻기 · auto 바로 기록."""
+    """H-10 (ID-03): ask — ask once per conversation · auto — record right away."""
     mode = project.profile.get("idea.capture")
     if mode == "manual" or not IDEA_HINT.search(text) or tech_term(text):
         return ""

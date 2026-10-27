@@ -1,4 +1,4 @@
-"""일하는 선로 명령: scaffold · idea · design · unit-log · task · work · pack · screen · dbml."""
+"""Work-line commands: scaffold · idea · design · unit-log · task · work · pack · screen · dbml."""
 
 from __future__ import annotations
 
@@ -251,7 +251,7 @@ def cmd_screen(a: argparse.Namespace) -> int:
 
 
 def _dbml_source(project: Project, path: str | None) -> tuple[Path, dbml.Schema]:
-    """A .dbml file, or ```dbml blocks of a 설계.md merged onto the current schema."""
+    """A .dbml file, or the ```dbml blocks of a `설계.md` merged onto the current schema."""
     import re
 
     from ..core.project import read

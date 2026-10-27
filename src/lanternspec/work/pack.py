@@ -1,6 +1,6 @@
-"""`lantern pack W-012` — 작업 꾸러미: the work folder + only the related current-state parts.
+"""`lantern pack W-012` — work pack: the work folder + only the related current-state parts.
 
-A one-off summary for the AI (그림 9). Regenerated every time, never edited, git-ignored.
+A one-off summary for the AI (figure 9). Regenerated every time, never edited, git-ignored.
 """
 
 from __future__ import annotations

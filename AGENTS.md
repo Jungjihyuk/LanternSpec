@@ -150,19 +150,20 @@ make release VERSION=0.2.0      # 안전 확인 → 확인 네 가지 → CHANGE
 ### docstring
 기준 예시: `src/lanternspec/core/enums.py` — 새로 쓰거나 고칠 때 이 파일처럼 쓴다.
 
-- **언어:** 설명은 한국어. 섹션 이름(`Args` · `Returns` · `Raises` · `Attributes` · `Example`)은 Google 스타일 그대로 영어.
-- **모듈 (파일):** 첫 줄에 이 파일의 책임 한 줄. 한 줄로 부족하면 `책임:`과 `하지 않는 일:`을 나눠 적고,
-  `하지 않는 일`에는 그 일을 맡은 파일을 함께 적는다.
+- **언어:** docstring은 **영어**로 쓴다 (해외 기여자도 읽을 수 있게). 다만 실제 파일 · 폴더 · 칸 이름(`기록.md`, `"지금 상황"`)과 Example의 데이터(`'해결'`)는 프로그램이 쓰는 그대로 한국어로 둔다.
+  `#` 주석도 같은 기준을 따른다. 사용자에게 보이는 글(출력 메시지 · 스킬 · 템플릿)은 docstring이 아니므로 이 규칙과 상관없다.
+- **모듈 (파일):** 첫 줄에 이 파일의 책임 한 줄. 한 줄로 부족하면 `Responsibilities:`와 `Not here:`를 나눠 적고,
+  `Not here`에는 그 일을 맡은 파일을 함께 적는다.
 
   ```python
-  """enums.yaml을 읽어 상태 · 종류 같은 선택지 목록을 제공한다.
+  """Read enums.yaml and provide the choice lists such as statuses and kinds.
 
-  책임:
-      - enums.yaml 읽기 (프로젝트 것, 없으면 패키지에 든 기본값)
-      - 역할(role)로 이름 · 아이콘 찾기
+  Responsibilities:
+      - read enums.yaml (the project's, else the default bundled with the package)
+      - find names and icons by role
 
-  하지 않는 일:
-      - 문서에 적힌 값 바꾸기 → core/meta.py (rename_enum_value)
+  Not here:
+      - changing values written in documents → core/meta.py (rename_enum_value)
   """
   ```
 
@@ -171,21 +172,21 @@ make release VERSION=0.2.0      # 안전 확인 → 확인 네 가지 → CHANGE
 
   ```python
   def rename_in_text(text: str, enum: str, old: str, new: str) -> str:
-      r"""enums.yaml 글에서 값 하나의 이름을 바꾼다.
+      r"""Rename one value in the text of enums.yaml.
 
-      그 목록 블록 안의 값 줄만 고치고 주석 · 순서 · 아이콘 · 역할은 그대로 둔다.
+      Only the value line inside that list's block changes; comments, order, icons and roles stay.
 
       Args:
-          text: enums.yaml 전체 글.
-          enum: 목록 이름.
-          old: 지금 이름.
-          new: 새 이름.
+          text: The whole text of enums.yaml.
+          enum: List name.
+          old: Current name.
+          new: New name.
 
       Returns:
-          이름을 바꾼 enums.yaml 글.
+          The enums.yaml text with the value renamed.
 
       Raises:
-          LookupError: 목록이나 값이 없을 때.
+          LookupError: The list or the value does not exist.
 
       Example:
           >>> text = "debt_status:\n  values:\n    되물음: {icon: 🤔, role: asked_again}\n"

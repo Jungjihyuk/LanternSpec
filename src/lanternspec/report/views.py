@@ -1,4 +1,4 @@
-"""`lantern report` — 보기를 글자로 직접 써 넣는다 (RE-01 · RE-02).
+"""`lantern report` — write the views out as plain text (RE-01 · RE-02).
 
 `4. 운영 기록/보고/현황.md` is always the latest; each run also writes
 `보고/지난 보고/YYYY-MM-DD.md` (one per day, same day overwrites) with a comparison
@@ -302,7 +302,7 @@ def run(project: Project, views: list[str] | None = None, summary: list[str] | N
         else:
             body, sync_total = sync_view(project)
         sections.append(f"## {VIEW_TITLE[v]}\n\n{body}")
-    if sync_total is None:  # 그림 8: stale docs are checked whenever the report is opened
+    if sync_total is None:  # figure 8: stale docs are checked whenever the report is opened
         from . import scan
 
         sync_total = scan.run(project, limit=100).total

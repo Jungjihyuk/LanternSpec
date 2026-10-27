@@ -1,15 +1,15 @@
-"""enums.yaml을 읽어 상태 · 종류 같은 선택지 목록을 제공한다.
+"""Read enums.yaml and provide the choice lists such as statuses and kinds.
 
-책임:
-    - enums.yaml 읽기 (프로젝트 것, 없으면 패키지에 든 기본값)
-    - 역할(role)로 이름 · 아이콘 찾기 — 코드는 "해결" 같은 이름을 직접 쓰지 않는다
-    - 스킬 · 템플릿에 넣을 값 묶음 만들기 (`<<debt_status.resolved>>` · `${work_status.plan}`)
-    - 필요한 역할이 빠졌는지 검사하기
-    - enums.yaml 글에서 값 이름 바꾸기
+Responsibilities:
+    - read enums.yaml (the project's, else the default bundled with the package)
+    - find names and icons by role — code never spells a name such as "해결" itself
+    - build the values for skills and templates (`<<debt_status.resolved>>` · `${work_status.plan}`)
+    - check that required roles are present
+    - rename a value in the text of enums.yaml
 
-하지 않는 일:
-    - 문서에 적힌 값 바꾸기 → core/meta.py (rename_enum_value)
-    - 스킬 · 템플릿에 실제로 값 채우기 → tools/skills.py · work/scaffold.py
+Not here:
+    - changing values written in documents → core/meta.py (rename_enum_value)
+    - actually filling skills and templates → tools/skills.py · work/scaffold.py
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ import yaml
 
 from .. import resources
 
-# 코드가 기대는 역할들. 프로젝트의 enums.yaml도 목록마다 이 역할을 어느 값엔가 붙여 두어야 한다.
+# Roles the code relies on. A project's enums.yaml must give each of them to some value of its list.
 REQUIRED_ROLES: dict[str, list[str]] = {
     "idea_status": ["new", "reviewing", "worked", "on_hold", "dropped"],
     "work_status": ["plan", "design", "tasks", "build", "done", "on_hold"],
@@ -38,14 +38,14 @@ REQUIRED_ROLES: dict[str, list[str]] = {
 
 @dataclass
 class Enum:
-    """enums.yaml의 목록 하나 (예: debt_status).
+    """One list of enums.yaml (e.g. debt_status).
 
     Attributes:
-        name: 목록 이름. 예: "debt_status".
-        label: 사람이 읽는 목록 설명. 예: "부채 상태".
-        values: 이름 → 아이콘. 순서는 enums.yaml에 적힌 순서.
-        applies: 문서 type → 이 목록을 쓰는 frontmatter 칸. 예: {"debt": "status"}.
-        roles: 역할 → 이름. 코드가 값을 찾는 열쇠.
+        name: List name, e.g. "debt_status".
+        label: Human-readable description of the list, e.g. "부채 상태".
+        values: Name → icon, in the order written in enums.yaml.
+        applies: Document type → the frontmatter field that uses this list, e.g. {"debt": "status"}.
+        roles: Role → name. The key code uses to find a value.
 
     Example:
         >>> e = load()["debt_status"]
@@ -60,13 +60,13 @@ class Enum:
     roles: dict[str, str] = field(default_factory=dict)
 
     def icon(self, value: str) -> str:
-        """이름에 붙은 아이콘을 돌려준다.
+        """Return the icon of a value.
 
         Args:
-            value: 값 이름. 예: "해결".
+            value: Value name, e.g. "해결".
 
         Returns:
-            아이콘. 목록에 없는 이름이면 빈 문자열.
+            The icon; an empty string if the name is not in the list.
 
         Example:
             >>> load()["debt_status"].icon("해결")
@@ -75,13 +75,13 @@ class Enum:
         return self.values.get(value, "")
 
     def labelled(self, value: str) -> str:
-        """아이콘과 이름을 붙여 화면에 보일 글로 만든다.
+        """Join icon and name into the text shown on screen.
 
         Args:
-            value: 값 이름.
+            value: Value name.
 
         Returns:
-            "아이콘 이름". 아이콘이 없으면 이름만.
+            "icon name"; just the name when there is no icon.
 
         Example:
             >>> load()["debt_status"].labelled("되물음")
@@ -91,16 +91,16 @@ class Enum:
         return f"{icon} {value}".strip()
 
     def value(self, role: str) -> str:
-        """역할이 붙은 값의 이름을 돌려준다.
+        """Return the name of the value that carries a role.
 
         Args:
-            role: 역할. 예: "resolved".
+            role: Role, e.g. "resolved".
 
         Returns:
-            그 역할이 붙은 값의 이름.
+            The name of the value with that role.
 
         Raises:
-            LookupError: 이 목록에 그 역할이 붙은 값이 없을 때.
+            LookupError: No value in this list carries that role.
 
         Example:
             >>> load()["debt_status"].value("asked_again")
@@ -111,13 +111,13 @@ class Enum:
         return self.roles[role]
 
     def role_of(self, value: str) -> str:
-        """이름에 붙은 역할을 돌려준다 (value의 반대 방향).
+        """Return the role of a value (the reverse of value).
 
         Args:
-            value: 값 이름.
+            value: Value name.
 
         Returns:
-            역할. 역할이 없는 값이면 빈 문자열.
+            The role; an empty string for a value without one.
 
         Example:
             >>> load()["debt_kind"].role_of("역량")
@@ -127,13 +127,13 @@ class Enum:
 
 
 class Enums:
-    """enums.yaml 전체 — 목록 이름으로 Enum을 찾고, 역할로 값을 찾는다.
+    """All of enums.yaml — find an Enum by list name and a value by role.
 
-    보통 직접 만들지 않고 load() 또는 project.enums로 얻는다.
+    Usually obtained through load() or project.enums rather than built directly.
 
     Attributes:
-        version: enums.yaml의 version 값.
-        enums: 목록 이름 → Enum.
+        version: The version value of enums.yaml.
+        enums: List name → Enum.
 
     Example:
         >>> enums = load()
@@ -142,12 +142,12 @@ class Enums:
     """
 
     def __init__(self, data: dict, fallback: Enums | None = None) -> None:
-        """읽어 온 YAML 내용으로 목록들을 만든다.
+        """Build the lists from loaded YAML.
 
         Args:
-            data: yaml.safe_load로 읽은 enums.yaml 내용.
-            fallback: 역할이 없는 옛 enums.yaml을 위해 역할을 빌려 올 기본 목록.
-                옛 파일의 이름이 기본값과 같으면 그 값에 기본 역할을 붙인다.
+            data: enums.yaml as read by yaml.safe_load.
+            fallback: Default lists to borrow roles from for an old enums.yaml without roles.
+                A value whose name matches the default gets the default role.
 
         Example:
             >>> e = Enums({"debt_status": {"values": {"해결": {"icon": "✅", "role": "resolved"}}}})
@@ -192,16 +192,16 @@ class Enums:
                         mine.roles[role] = value
 
     def __getitem__(self, name: str) -> Enum:
-        """목록 이름으로 Enum을 찾는다.
+        """Find an Enum by list name.
 
         Args:
-            name: 목록 이름. 예: "debt_status".
+            name: List name, e.g. "debt_status".
 
         Returns:
-            그 목록.
+            That list.
 
         Raises:
-            KeyError: 그런 목록이 없을 때.
+            KeyError: There is no such list.
 
         Example:
             >>> load()["debt_status"].label
@@ -210,13 +210,13 @@ class Enums:
         return self.enums[name]
 
     def get(self, name: str) -> Enum | None:
-        """목록 이름으로 Enum을 찾되, 없으면 None을 돌려준다.
+        """Find an Enum by list name, or None if there is none.
 
         Args:
-            name: 목록 이름.
+            name: List name.
 
         Returns:
-            그 목록, 없으면 None.
+            That list, or None.
 
         Example:
             >>> load().get("없는 목록") is None
@@ -225,13 +225,13 @@ class Enums:
         return self.enums.get(name)
 
     def values(self, name: str) -> list[str]:
-        """목록의 값 이름들을 enums.yaml에 적힌 순서대로 돌려준다.
+        """Return a list's value names in the order written in enums.yaml.
 
         Args:
-            name: 목록 이름.
+            name: List name.
 
         Returns:
-            값 이름 목록. 그런 목록이 없으면 빈 목록.
+            Value names; an empty list if there is no such list.
 
         Example:
             >>> load().values("debt_status")
@@ -241,18 +241,18 @@ class Enums:
         return list(e.values) if e else []
 
     def value(self, name: str, role: str) -> str:
-        """목록에서 역할이 붙은 값의 이름을 돌려준다.
+        """Return the name of the value in a list that carries a role.
 
         Args:
-            name: 목록 이름. 예: "debt_status".
-            role: 역할. 예: "resolved".
+            name: List name, e.g. "debt_status".
+            role: Role, e.g. "resolved".
 
         Returns:
-            값 이름.
+            The value name.
 
         Raises:
-            KeyError: 그런 목록이 없을 때.
-            LookupError: 그 역할이 붙은 값이 없을 때.
+            KeyError: There is no such list.
+            LookupError: No value carries that role.
 
         Example:
             >>> load().value("debt_status", "resolved")
@@ -261,18 +261,18 @@ class Enums:
         return self[name].value(role)
 
     def label(self, name: str, role: str) -> str:
-        """역할이 붙은 값을 "아이콘 이름"으로 돌려준다.
+        """Return the value carrying a role as "icon name".
 
         Args:
-            name: 목록 이름.
-            role: 역할.
+            name: List name.
+            role: Role.
 
         Returns:
-            "아이콘 이름".
+            "icon name".
 
         Raises:
-            KeyError: 그런 목록이 없을 때.
-            LookupError: 그 역할이 붙은 값이 없을 때.
+            KeyError: There is no such list.
+            LookupError: No value carries that role.
 
         Example:
             >>> load().label("debt_status", "resolved")
@@ -282,18 +282,18 @@ class Enums:
         return e.labelled(e.value(role))
 
     def icon(self, name: str, role: str) -> str:
-        """역할이 붙은 값의 아이콘만 돌려준다.
+        """Return only the icon of the value carrying a role.
 
         Args:
-            name: 목록 이름.
-            role: 역할.
+            name: List name.
+            role: Role.
 
         Returns:
-            아이콘.
+            The icon.
 
         Raises:
-            KeyError: 그런 목록이 없을 때.
-            LookupError: 그 역할이 붙은 값이 없을 때.
+            KeyError: There is no such list.
+            LookupError: No value carries that role.
 
         Example:
             >>> load().icon("debt_status", "practicing")
@@ -303,13 +303,13 @@ class Enums:
         return e.icon(e.value(role))
 
     def rules_for(self, doc_type: str) -> dict[str, Enum]:
-        """문서 종류 하나에서 어느 칸이 어느 목록의 값을 써야 하는지 돌려준다 (lantern check용).
+        """Return which field of a document type must use which list (for lantern check).
 
         Args:
-            doc_type: 문서의 type 값. 예: "debt".
+            doc_type: The document's type value, e.g. "debt".
 
         Returns:
-            frontmatter 칸 이름 → 그 칸이 따라야 할 목록.
+            Frontmatter field name → the list that field must follow.
 
         Example:
             >>> sorted(load().rules_for("debt"))
@@ -323,13 +323,13 @@ class Enums:
         return out
 
     def context(self) -> dict[str, str]:
-        """스킬 · 템플릿의 자리 표시를 채울 값 묶음을 만든다.
+        """Build the values that fill placeholders in skills and templates.
 
-        역할마다 세 가지 열쇠를 만든다: `목록.역할`(이름) · `목록.역할.label`(아이콘 이름) ·
-        `목록.역할.icon`(아이콘). 스킬은 `<<열쇠>>`, 템플릿은 `${열쇠}`로 쓴다.
+        Three keys per role: `list.role` (name) · `list.role.label` (icon name) ·
+        `list.role.icon` (icon). Skills write `<<key>>`, templates `${key}`.
 
         Returns:
-            열쇠 → 채울 글.
+            Key → text to fill in.
 
         Example:
             >>> ctx = load().context()
@@ -345,11 +345,11 @@ class Enums:
         return out
 
     def problems(self) -> list[str]:
-        """코드가 값을 찾지 못하게 되는 문제를 찾는다 (lantern doctor · lantern enums list용).
+        """Find problems that would stop code from finding values (for lantern doctor · lantern enums list).
 
         Returns:
-            문제 설명 목록. 문제가 없으면 빈 목록. 다음을 알린다:
-            REQUIRED_ROLES의 목록이나 역할이 빠진 것, 한 역할이 두 값에 붙은 것.
+            Problem descriptions; an empty list when there are none. Reports
+            lists or roles of REQUIRED_ROLES that are missing, and one role on two values.
 
         Example:
             >>> load().problems()
@@ -366,22 +366,22 @@ class Enums:
 
 
 def _base() -> Enums:
-    """패키지에 든 기본 enums.yaml을 읽는다."""
+    """Read the default enums.yaml bundled with the package."""
     return Enums(yaml.safe_load(resources.read_text("templates/_meta/enums.yaml")) or {})
 
 
 def load(enums_file: Path | None = None) -> Enums:
-    """enums.yaml을 읽는다.
+    """Read enums.yaml.
 
-    프로젝트 파일이 있으면 그것을, 없으면 패키지에 든 기본값을 쓴다.
-    프로젝트 코드에서는 보통 이 함수 대신 project.enums를 쓴다 (한 번만 읽는다).
+    Uses the project's file when it exists, else the default bundled with the package.
+    Project code usually uses project.enums instead (read only once).
 
     Args:
-        enums_file: 프로젝트의 enums.yaml 경로 (docs/0. 템플릿/_meta/enums.yaml).
-            None이거나 파일이 없으면 기본값을 읽는다.
+        enums_file: Path of the project's enums.yaml (`docs/0. 템플릿/_meta/enums.yaml`).
+            When None or missing, the default is read.
 
     Returns:
-        읽어 온 목록 전체.
+        All lists that were read.
 
     Example:
         >>> load().label("idea_status", "dropped")
@@ -393,21 +393,21 @@ def load(enums_file: Path | None = None) -> Enums:
 
 
 def rename_in_text(text: str, enum: str, old: str, new: str) -> str:
-    r"""enums.yaml 글에서 값 하나의 이름을 바꾼다.
+    r"""Rename one value in the text of enums.yaml.
 
-    그 목록 블록 안의 값 줄만 고치고 주석 · 순서 · 아이콘 · 역할은 그대로 둔다.
+    Only the value line inside that list's block changes; comments, order, icons and roles stay.
 
     Args:
-        text: enums.yaml 전체 글.
-        enum: 목록 이름.
-        old: 지금 이름.
-        new: 새 이름.
+        text: The whole text of enums.yaml.
+        enum: List name.
+        old: Current name.
+        new: New name.
 
     Returns:
-        이름을 바꾼 enums.yaml 글.
+        The enums.yaml text with the value renamed.
 
     Raises:
-        LookupError: 목록이나 값이 없을 때.
+        LookupError: The list or the value does not exist.
 
     Example:
         >>> text = "debt_status:\n  values:\n    되물음: {icon: 🤔, role: asked_again}\n"
@@ -428,24 +428,24 @@ def rename_in_text(text: str, enum: str, old: str, new: str) -> str:
 
 
 def _yaml_key(s: str) -> str:
-    """YAML 키로 그대로 쓸 수 없는 이름이면 따옴표로 감싼다."""
+    """Quote a name that cannot be a bare YAML key."""
     return s if re.fullmatch(r"[^\s:#'\"{}\[\],&*!|>%@`-][^:#{}\[\],]*", s) and s == s.strip() else '"' + s.replace('"', '\\"') + '"'
 
 
 def doc_value_updates(enums: Enums, enum: str, meta: dict[str, Any], old: str, new: str) -> dict[str, str]:
-    """값 이름이 바뀔 때 문서 하나에서 고쳐야 할 frontmatter 칸을 찾는다.
+    """Find the frontmatter fields of one document to update when a value is renamed.
 
-    문서의 type으로 그 목록을 쓰는 칸(applies)을 정하고, 그 칸의 값이 옛 이름인 것만 고른다.
+    The document's type decides which fields use that list (applies); only fields holding the old name are picked.
 
     Args:
-        enums: 지금 목록 전체.
-        enum: 이름이 바뀐 목록.
-        meta: 문서의 frontmatter.
-        old: 옛 이름.
-        new: 새 이름.
+        enums: All current lists.
+        enum: The list whose value was renamed.
+        meta: The document's frontmatter.
+        old: Old name.
+        new: New name.
 
     Returns:
-        칸 이름 → 새 이름. 고칠 칸이 없으면 빈 dict.
+        Field name → new name; an empty dict when nothing needs changing.
 
     Example:
         >>> doc_value_updates(load(), "debt_status", {"type": "debt", "status": "되물음"}, "되물음", "다시 물음")

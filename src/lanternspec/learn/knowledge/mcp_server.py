@@ -1,7 +1,7 @@
 """`lantern mcp` — the knowledge contract (search · read · propose · write) as an MCP server over stdio.
 
 v1 skills call the same functions through `lantern knowledge …` (LE-05). This server is the
-"MCP 서버 하나" of 그림 5 for tools that prefer MCP; register it with `lantern install --mcp`.
+"one MCP server" of figure 5 for tools that prefer MCP; register it with `lantern install --mcp`.
 Newline-delimited JSON-RPC 2.0, no dependencies.
 """
 

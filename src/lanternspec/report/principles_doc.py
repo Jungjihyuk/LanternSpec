@@ -1,11 +1,11 @@
-"""개발 원칙 문서(`규칙 · 결정 기록/개발 원칙.md`)를 기준표에서 만든다 — AGENTS.md에 넣은 핵심의 자세한 설명.
+"""Build the design-principles document (`규칙 · 결정 기록/개발 원칙.md`) from the tables — the details behind the AGENTS.md essentials.
 
-책임:
-    - 고른 설계 원칙 · 작업 방식 · 코드 컨벤션을 설명 · 이유 · 지키는 법과 함께 한 문서로 쓰기
+Responsibilities:
+    - write the chosen design principles, ways of working and code conventions, with reasons and how to follow them, in one document
 
-하지 않는 일:
-    - 무엇을 고를지 정하기 → core/principles.py (select)
-    - AGENTS.md의 짧은 요약 → tools/rules.py (principles_section)
+Not here:
+    - deciding what to choose → core/principles.py (select)
+    - the short AGENTS.md summary → tools/rules.py (principles_section)
 """
 
 from __future__ import annotations
@@ -19,10 +19,10 @@ DOC_NAME = "개발 원칙.md"
 
 
 def doc_path(project: Project) -> Path:
-    """개발 원칙 문서의 경로를 돌려준다.
+    """Return the path of the design-principles document.
 
     Args:
-        project: 프로젝트.
+        project: The project.
 
     Returns:
         `docs/3. 현재 상태/규칙 · 결정 기록/개발 원칙.md`.
@@ -35,14 +35,14 @@ def doc_path(project: Project) -> Path:
 
 
 def render(sel: principles.Selection, profile_language: str = "ko") -> str:
-    r"""고른 결과를 개발 원칙 문서의 본문(frontmatter 없이)으로 만든다.
+    r"""Render a selection as the body of the design-principles document (without frontmatter).
 
     Args:
-        sel: 고른 원칙 · 작업 방식 · 컨벤션.
-        profile_language: 문서 주석에 쓸 말 (lantern.yaml project.comment_language, 없으면 language).
+        sel: The chosen principles, ways of working and conventions.
+        profile_language: Language for doc comments (lantern.yaml project.comment_language, else language).
 
     Returns:
-        Markdown 본문.
+        Markdown body.
 
     Example:
         >>> from lanternspec.core.profile import DEFAULTS, Profile
@@ -102,13 +102,13 @@ def render(sel: principles.Selection, profile_language: str = "ko") -> str:
 
 
 def write_doc(project: Project) -> Path | None:
-    """개발 원칙 문서를 (다시) 쓴다. 내용이 그대로면 쓰지 않는다 (upgrade마다 바뀐 파일이 생기지 않게).
+    """(Re)write the design-principles document; skip when unchanged (so upgrades do not leave changed files).
 
     Args:
-        project: 프로젝트. lantern.yaml에 project.kind가 있어야 쓴다.
+        project: The project. Nothing is written without project.kind in lantern.yaml.
 
     Returns:
-        쓴 문서 경로. project.kind가 없거나 docs/가 아직 없거나 내용이 그대로면 None.
+        Path written; None without project.kind or docs/, or when unchanged.
 
     Example:
         >>> project.rel(write_doc(project))  # doctest: +SKIP

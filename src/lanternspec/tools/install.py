@@ -159,10 +159,10 @@ def install(
     agents = project.root / "AGENTS.md"
     write(agents, rules.merge_block(read(agents) if agents.exists() else "", rules.agents_block(project.profile, chosen, project.enums)))
     report.merged.append("AGENTS.md")
-    doc = principles_doc.write_doc(project)  # AGENTS.md 요약의 자세한 설명 — 늘 같은 기준으로
+    doc = principles_doc.write_doc(project)  # the details behind the AGENTS.md summary — always from the same tables
     if doc:
         report.written.append(project.rel(doc))
-    report.written += [project.rel(p) for p in obsidian.write_vault(project)]  # enums.yaml이 바뀌었으면 Obsidian 선택지도
+    report.written += [project.rel(p) for p in obsidian.write_vault(project)]  # Obsidian choices follow enums.yaml changes too
     for tool in chosen:  # each tool merges its own settings (rules hookup · hooks · MCP)
         report.merged += tool.install_config(project, mcp)
     st["mcp"] = mcp
@@ -174,7 +174,7 @@ def install(
 
 
 def upgrade_templates(project: Project, force: bool = False) -> list[str]:
-    """C-04 안 C: refresh docs/0. 템플릿 copies that nobody edited; report the edited ones."""
+    """C-04 option C: refresh the copies in `docs/0. 템플릿` that nobody edited; report the edited ones."""
     if not project.templates_dir.exists():
         return []
     st = state.load(project)

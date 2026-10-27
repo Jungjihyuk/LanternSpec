@@ -69,7 +69,7 @@ def build_block(project: Project) -> str:
             lines.append(f"- {wikilink(project, p, nfc(p.stem))}{mark}")
         lines.append("")
 
-    # works — 단계별 보기
+    # works — view by stage
     works = project.work_dirs()
     lines += ["## 📦 진행 중 작업 — 단계별 보기"]
     if not works:

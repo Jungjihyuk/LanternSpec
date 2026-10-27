@@ -89,7 +89,7 @@ def run(project: Project) -> list[tuple[str, str]]:
 
 
 def _code_size_row(project: Project) -> tuple[str, str]:
-    """코드가 자라 기록한 규모의 경계를 넘었으면 원칙을 한 단계 올릴지 묻는다 (줄면 그대로 둔다)."""
+    """Ask whether to raise the principles one level when the code grew past the recorded size (never lower it)."""
     from ..core import principles
     from ..report.harness import code_lines
 

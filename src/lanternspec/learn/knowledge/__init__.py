@@ -1,10 +1,10 @@
-"""지식 연결기 — the same four questions for any knowledge store (LE-05).
+"""Knowledge connector — the same four questions for any knowledge store (LE-05).
 
-| 계약     | 질문                               | 돌려주는 것                      |
-| search   | 이 용어에 관한 노트가 있나?        | 제목 · 위치 · 요약 · 수정일 목록 |
-| read     | 이 노트 내용은?                    | 본문                             |
-| propose  | 이 주제로 노트를 만들어도 되나?    | 초안 (승인 대기)                 |
-| write    | (승인 후) 노트를 만들어 줘         | 만들어진 위치 (쓰기 막힌 저장소는 거절) |
+| contract | question                               | returns                                          |
+| search   | is there a note about this term?       | list of title · location · summary · modified     |
+| read     | what does this note say?               | body                                             |
+| propose  | may I make a note on this topic?       | a draft (waiting for approval)                   |
+| write    | (after approval) make the note         | where it was made (stores that refuse writes say no) |
 
 The contract (names · inputs · outputs) is fixed now; v1 ships it as `lantern knowledge …`
 CLI commands, an MCP server can wrap the same functions later.
@@ -56,7 +56,7 @@ def adapter_for(project: Project) -> Adapter:
     if not k:
         raise KnowledgeError("지식 저장소가 설정되지 않았습니다 (lantern.yaml의 knowledge 블록)")
     kind = k["type"]
-    if kind in ("obsidian", "folder"):  # folder = 아무 Markdown 폴더 (기타 저장소)
+    if kind in ("obsidian", "folder"):  # folder = any Markdown folder (other stores)
         from .obsidian import ObsidianAdapter
 
         return ObsidianAdapter(Path(str(k["path"])).expanduser())

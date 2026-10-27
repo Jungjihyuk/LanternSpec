@@ -1,4 +1,4 @@
-"""`lantern` — the deterministic half of LanternSpec (P1: AI는 내용, 스크립트는 형식).
+"""`lantern` — the deterministic half of LanternSpec (P1: the AI writes content, scripts own the format).
 
 Each command group registers its own commands (cli/<group>.py, same groups as the package);
 this file only assembles the parser and runs the chosen handler.

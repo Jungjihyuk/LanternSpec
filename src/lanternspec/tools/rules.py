@@ -37,7 +37,7 @@ def merge_block(existing: str, block: str) -> str:
 
 
 def principles_section(profile: Profile) -> str:
-    """AGENTS.md 블록에 넣을 개발 원칙 · 코드 컨벤션 — 핵심만 (자세한 설명은 개발 원칙 문서)."""
+    """Design principles and code conventions for the AGENTS.md block — essentials only (details live in the design-principles document)."""
     sel = principles.select(profile)
     if sel is None:
         return ""

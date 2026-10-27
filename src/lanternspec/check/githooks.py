@@ -1,10 +1,10 @@
-"""git hooks — 구조 실수는 막고(block), 내용 실수는 경고(warn) (C-09 · C-10 · I-03).
+"""git hooks — block structural mistakes, warn about content mistakes (C-09 · C-10 · I-03).
 
-commit-msg  H-1  작업 ID가 있나 · 할 일 여러 개를 섞었나
-pre-commit  구조  docs/.git · .gitignore · .ignore · 코드 커밋에 docs/ 섞임   (항상 막음)
-            H-2  스키마 변경에 기록이 있나
-            H-3  바뀐 문서에 lantern check
-pre-push    R6   docs-local 브랜치 push 막기 (허용한 개인 원격만 통과)
+commit-msg  H-1        is there a task ID · are several tasks mixed in one commit
+pre-commit  structure  docs/.git · .gitignore · .ignore · docs/ mixed into a code commit   (always blocks)
+            H-2        is a schema change recorded
+            H-3        lantern check on the changed documents
+pre-push    R6         block pushing the docs-local branch (only an allowed personal remote passes)
 
 Shell shims call `lantern hook git-…`; an existing non-LanternSpec hook is kept as `<name>.local`
 and still runs first.

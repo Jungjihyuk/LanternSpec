@@ -272,11 +272,11 @@ def usage(project: Project, name: str) -> list[str]:
     return rows
 
 
-# --------------------------------------------------------------------------- new (시안 → 양식)
+# --------------------------------------------------------------------------- new (sample → template)
 
 
 def skeleton_from(project: Project, name: str, source: Path) -> str:
-    """시안 문서 → 빈칸 양식 뼈대: 제목 · 섹션 · 표 머리는 남기고 내용은 {{칸}}으로."""
+    """Sample document → blank template skeleton: keep the title, sections and table headers; turn the content into {{blanks}}."""
     body = frontmatter.parse(read(source)).body
     out: list[str] = ["# ${name}", "", "> [!abstract] 한눈에 보기", "> {{한눈에 보기 (필수)}}"]
     in_fence = False

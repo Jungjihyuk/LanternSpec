@@ -53,7 +53,7 @@ class HookInput:
 class HookResult:
     """What a hook wants to say — each tool decides how to deliver it."""
 
-    context: str = ""  # add to the model's context (H-4 · H-5 참고 · H-9 · H-10)
+    context: str = ""  # add to the model's context (H-4 · H-5 notes · H-9 · H-10)
     block: str = ""  # H-5: the doc just written is broken — fix it now
     notice: str = ""  # H-7: a one-line suggestion when the turn ends
 

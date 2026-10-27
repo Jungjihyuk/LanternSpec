@@ -1,7 +1,7 @@
 """DBML is the source of truth for data (DE-03).
 
 * `check`       — syntax · duplicates · references
-* `render`      — Mermaid ERD + data dictionary into 데이터.md (generated, never hand-edited)
+* `render`      — Mermaid ERD + data dictionary into `데이터.md` (generated, never hand-edited)
 * `from_sql`    — brownfield: rebuild DBML from SQL migrations
 * `diff`        — DBML vs migrations drift (/l-sync)
 """

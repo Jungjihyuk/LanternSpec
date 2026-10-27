@@ -1,4 +1,4 @@
-"""문서 형식 명령: profile(lantern.yaml) · principles(개발 원칙) · new-id · meta(frontmatter) · enums(선택지 목록)."""
+"""Document-format commands: profile (lantern.yaml) · principles (design principles) · new-id · meta (frontmatter) · enums (choices)."""
 
 from __future__ import annotations
 
@@ -97,7 +97,7 @@ def cmd_profile(a: argparse.Namespace) -> int:
 
 
 def cmd_principles(a: argparse.Namespace) -> int:
-    """`lantern principles show|detect` — 고른 개발 원칙 보기 · 언어와 이미 쓰는 도구 알아보기."""
+    """`lantern principles show|detect` — show the chosen design principles · detect languages and tools already in use."""
     from ..core import principles
     from ..core import profile as pm
     from ..report.harness import code_lines
@@ -142,7 +142,7 @@ def cmd_principles(a: argparse.Namespace) -> int:
         updates["project.languages"] = d.languages
     languages = data["project"].get("languages") or d.languages
     d.languages = [x for x in languages if x in principles.language_names()]
-    # 기존 프로젝트는 이미 있는 설정만 기록한다 (새 도구를 들이지 않는다). 사람이 적은 값은 덮지 않는다
+    # existing projects record only what is configured (no new tools); values a person wrote are kept
     for role, cmd in d.commands(fill_defaults=not project.profile.brownfield).items():
         if not data["build"].get(role):
             updates[f"build.{role}"] = cmd
@@ -208,7 +208,7 @@ def cmd_enums(a: argparse.Namespace) -> int:
         write_status(project)
     from ..report.obsidian import write_vault
 
-    write_vault(project)  # Obsidian 칸 선택지도 새 이름으로
+    write_vault(project)  # Obsidian choices follow the new name too
     return 0
 
 

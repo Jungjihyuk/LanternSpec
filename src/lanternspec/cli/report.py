@@ -1,4 +1,4 @@
-"""보고 · 맞추기 명령: report · status · scan · sync · map · eval · harness · obsidian."""
+"""Report and sync commands: report · status · scan · sync · map · eval · harness · obsidian."""
 
 from __future__ import annotations
 
@@ -102,11 +102,11 @@ def cmd_harness(a: argparse.Namespace) -> int:
 
 
 def cmd_obsidian(a: argparse.Namespace) -> int:
-    """`lantern obsidian plugins` — 권장 Obsidian 플러그인을 받아 docs/.obsidian/plugins/에 넣는다."""
+    """`lantern obsidian plugins` — download the recommended Obsidian plugins into docs/.obsidian/plugins/."""
     from ..report.obsidian import install_plugins, write_vault
 
     project = _p()
-    write_vault(project)  # 플러그인 설정 · .gitignore가 먼저 있어야 한다
+    write_vault(project)  # plugin settings and .gitignore must exist first
     for plugin_id, version in install_plugins(project):
         print(f"✔ {plugin_id} {version}")
     print("다음: Obsidian에서 docs/ 폴더를 볼트로 열고, 커뮤니티 플러그인을 켜 달라고 물으면 켭니다 (제한 모드 해제)")

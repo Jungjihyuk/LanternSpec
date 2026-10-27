@@ -1,4 +1,4 @@
-"""📒 부채 장부 — one card per debt. Counting and status changes are scripted (LE-01 · LE-03)."""
+"""📒 Debt ledger — one card per debt. Counting and status changes are scripted (LE-01 · LE-03)."""
 
 from __future__ import annotations
 
@@ -137,7 +137,7 @@ def new_card(
     context: str = "",
     kind: str | None = None,
 ) -> Path:
-    """이해 부채 (default) — or 기술 부채 recorded by hand (`--kind 기술`). 역량 부채 comes from `promote`."""
+    """Understanding debt by default — or technical debt recorded by hand (`--kind 기술`). Competency debt comes from `promote`."""
     enums = project.enums
     allowed = [enums.value("debt_kind", "understanding"), enums.value("debt_kind", "tech")]
     kind = kind or allowed[0]
@@ -256,11 +256,11 @@ def resolve(project: Project, term: str, note: str | None = None) -> Path:
     return card.path
 
 
-# --------------------------------------------------------------------------- 역량 부채 (이해 → 역량)
+# --------------------------------------------------------------------------- competency debt (understanding → competency)
 
 
 def promote(project: Project, term: str, name: str | None = None) -> Path:
-    """이해 부채가 해결되면 "직접 만들어 볼까?" → 역량 부채 카드 (08 · LE-03)."""
+    """Once understanding debt is resolved, "shall I build it myself?" → a competency-debt card (08 · LE-03)."""
     src = find(project, term, kind="understanding")
     if src is None:
         raise LookupError(f"'{term}' 이해 부채 카드가 없습니다")
@@ -325,7 +325,7 @@ def practice(project: Project, term: str, result: str) -> Path:
     return card.path
 
 
-# --------------------------------------------------------------------------- 부채 현황 (generated)
+# --------------------------------------------------------------------------- debt status page (generated)
 
 
 def stats(project: Project) -> dict:

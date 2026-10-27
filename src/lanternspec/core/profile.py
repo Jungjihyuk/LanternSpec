@@ -1,7 +1,7 @@
 """`lantern.yaml` — the project's answers to /l-init, plus what can be computed from them.
 
 Only human answers live in the file. Everything derived (enabled docs, folder paths)
-is computed here on demand ("한 사실은 한 곳에만").
+is computed here on demand (one fact, one place).
 """
 
 from __future__ import annotations
@@ -420,7 +420,7 @@ CLIENT_LABEL = {"web": "웹", "desktop": "데스크톱", "mobile": "모바일"}
 
 
 def enabled_docs(profile: Profile) -> list[DocSpec]:
-    """The 08 문서 '답에 따라 켜지는 문서' table, as data."""
+    """Spec 08's "documents enabled by the answers" table, as data."""
     clients = profile.clients
     server = profile.server
     extra = set(profile.get("docs.extra") or [])
@@ -479,7 +479,7 @@ def enabled_docs(profile: Profile) -> list[DocSpec]:
     return out
 
 
-# Doc keys that may become "사용 안 함" when answers change (I-01). Folders are never removed.
+# Doc keys that may become "사용 안 함" (inactive) when answers change (I-01). Folders are never removed.
 OPTIONAL_DOC_KEYS = {"screens", "platform", "deploy", "api", "server-ops", "collab", "known-tech", "legacy-map"}
 
 # Which /l-init follow-up questions a newly enabled doc needs (I-01 ③).

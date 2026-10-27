@@ -1,4 +1,4 @@
-"""Parse and edit `할 일.md` task lines and `기획.md` acceptance criteria.
+"""Parse and edit the task lines of `할 일.md` and the acceptance criteria of `기획.md`.
 
 Task line (TA-01):
     - [ ] W-012-T02 무엇 [크기:: M] [기준:: AC-1] [먼저:: T01] [담당:: 이름]

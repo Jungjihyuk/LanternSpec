@@ -1,4 +1,4 @@
-"""지금 상황 3줄 (H-4): 진행 중 작업 · 다음 할 일 · 열린 ❓ 확인 필요."""
+"""Current status in three lines (H-4): work in progress · next task · open ❓ questions."""
 
 from __future__ import annotations
 

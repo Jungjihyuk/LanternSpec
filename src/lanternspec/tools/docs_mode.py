@@ -1,4 +1,4 @@
-"""`lantern docs-mode local|shared` — 문서 저장 방식 바꾸기 (C-10).
+"""`lantern docs-mode local|shared` — switch how documents are stored (C-10).
 
 local = the same repository's orphan branch `docs-local`, checked out at docs/ as a worktree:
     git worktree add --orphan -b docs-local docs

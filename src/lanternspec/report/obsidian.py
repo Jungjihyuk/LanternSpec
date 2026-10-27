@@ -1,14 +1,14 @@
-"""docs/를 Obsidian 볼트로 열 때 쓰는 설정(.obsidian)과 Metadata Menu의 문서 종류별 칸 정의를 enums.yaml에서 만든다.
+"""Build the settings for opening docs/ as an Obsidian vault (.obsidian) and per-type Metadata Menu fields, from enums.yaml.
 
-책임:
-    - 문서 종류(type)마다 Metadata Menu fileClass 파일 만들기 — 상태 · 종류 · 주제 칸의 선택지는 enums.yaml에서
-    - docs/.obsidian의 LanternSpec 몫 설정 합치기 (사용자가 바꾼 다른 설정은 그대로)
-    - CSS 조각: 문서 단계별 폴더 색 · callout · 인용문 모양 (테마와 상관없이)
-    - 권장 플러그인(Dataview · Metadata Menu)의 공식 배포 파일 받기 (install_plugins)
+Responsibilities:
+    - a Metadata Menu fileClass file per document type — status · kind · topic choices come from enums.yaml
+    - merge LanternSpec's share of docs/.obsidian settings (other user settings stay)
+    - CSS snippet: folder colors per document stage · callout · quote styles (any theme)
+    - download the recommended plugins' official releases (Dataview · Metadata Menu) (install_plugins)
 
-하지 않는 일:
-    - 선택지 이름 바꾸기 → core/meta.py (rename_enum_value) — 바꾼 뒤 write_vault를 다시 부른다
-    - 언제 플러그인을 받을지 정하기 → /l-init이 묻고 lantern obsidian plugins를 부른다
+Not here:
+    - renaming choices → core/meta.py (rename_enum_value) — write_vault runs again afterwards
+    - deciding when to download plugins → /l-init asks and calls lantern obsidian plugins
 """
 
 from __future__ import annotations
@@ -27,11 +27,11 @@ from ..core.enums import Enums
 from ..core.profile import FOLDERS
 from ..core.project import Project, read, write
 
-PLUGINS = {  # 권장 플러그인 id → GitHub 저장소. [key:: value] 표시(할 일) · 칸 선택지(상태 · 종류 · 주제)
+PLUGINS = {  # recommended plugin id → GitHub repo. [key:: value] display (tasks) · field choices (status · kind · topic)
     "dataview": "blacksmithgu/obsidian-dataview",
     "metadata-menu": "mdelobelle/metadatamenu",
 }
-PLUGIN_FILES = ("main.js", "manifest.json", "styles.css")  # 커뮤니티 플러그인의 공식 배포 파일 (styles.css는 없을 수도)
+PLUGIN_FILES = ("main.js", "manifest.json", "styles.css")  # official release files of a community plugin (styles.css may be missing)
 RELEASE_URL = "https://github.com/{repo}/releases/latest/download/{file}"
 VAULT_GITIGNORE = """# LanternSpec가 생성 — 창 배치 · 플러그인 코드는 git에 올리지 않는다 (플러그인은 lantern obsidian plugins로 받는다)
 workspace*.json
@@ -39,9 +39,9 @@ plugins/*/main.js
 plugins/*/manifest.json
 plugins/*/styles.css
 """
-CLASS_DIR = f"{FOLDERS['templates']}/_meta/fileClass/"  # 볼트(docs/) 안의 경로 — Metadata Menu가 앞에 그대로 붙여 쓴다
-TYPE_FIELD = "type"  # 문서 종류 칸 = Metadata Menu가 fileClass를 고르는 열쇠
-PROPERTY_TYPES = {  # Obsidian Properties 칸 종류 (types.json)
+CLASS_DIR = f"{FOLDERS['templates']}/_meta/fileClass/"  # path inside the vault (docs/) — Metadata Menu uses it as a prefix as is
+TYPE_FIELD = "type"  # the document-type field = the key Metadata Menu picks the fileClass by
+PROPERTY_TYPES = {  # Obsidian Properties field types (types.json)
     "created": "date",
     "updated": "date",
     "resolved": "date",
@@ -54,9 +54,9 @@ PROPERTY_TYPES = {  # Obsidian Properties 칸 종류 (types.json)
     "generated": "checkbox",
     "ui": "checkbox",
 }
-APP_DEFAULTS = {"alwaysUpdateLinks": True, "showInlineTitle": True}  # 이름을 바꾸면 [[링크]]도 따라 바뀌게
-SNIPPET = "lanternspec"  # .obsidian/snippets/lanternspec.css — 폴더 색 · callout · 인용문 모양
-FOLDER_COLORS = {  # 맨 위 폴더 → (밝은 화면 색, 어두운 화면 색). 단계 순서대로 무지개
+APP_DEFAULTS = {"alwaysUpdateLinks": True, "showInlineTitle": True}  # renaming a file updates its [[links]]
+SNIPPET = "lanternspec"  # .obsidian/snippets/lanternspec.css — folder colors · callout · quote styles
+FOLDER_COLORS = {  # top-level folder → (light color, dark color). A rainbow in stage order
     "debt": ("#d64545", "#f07171"),
     "templates": ("#d9730d", "#f59a4b"),
     "ideas": ("#c79100", "#e8c14a"),
@@ -68,14 +68,14 @@ FOLDER_COLORS = {  # 맨 위 폴더 → (밝은 화면 색, 어두운 화면 색
 
 
 def field_id(doc_type: str, name: str) -> str:
-    """Metadata Menu fileClass 칸의 id를 만든다 — 다시 만들어도 같게 (칸 순서 · 화면 설정을 id로 기억하므로).
+    """Make the id of a Metadata Menu fileClass field — stable across rebuilds (field order and views are keyed by id).
 
     Args:
-        doc_type: 문서 종류. 예: "debt".
-        name: 칸 이름. 예: "status".
+        doc_type: Document type, e.g. "debt".
+        name: Field name, e.g. "status".
 
     Returns:
-        6글자 id.
+        A 6-character id.
 
     Example:
         >>> field_id("debt", "status") == field_id("debt", "status"), len(field_id("debt", "status"))
@@ -85,16 +85,16 @@ def field_id(doc_type: str, name: str) -> str:
 
 
 def file_class(enums: Enums, doc_type: str) -> str:
-    r"""문서 종류 하나의 Metadata Menu fileClass 파일 내용을 만든다.
+    r"""Build the Metadata Menu fileClass file for one document type.
 
-    enums.yaml에서 그 종류에 쓰이는 목록(applies)마다 선택 칸 하나를 만든다. type 칸은 fileClass를 고르는 열쇠라 뺀다.
+    One select field per enums.yaml list that applies to the type. The type field is left out — it selects the fileClass.
 
     Args:
-        enums: 프로젝트의 선택지 목록.
-        doc_type: 문서 종류. 예: "debt".
+        enums: The project's choice lists.
+        doc_type: Document type, e.g. "debt".
 
     Returns:
-        frontmatter에 fields가 든 Markdown.
+        Markdown with `fields` in its frontmatter.
 
     Example:
         >>> from lanternspec.core.enums import load
@@ -157,10 +157,10 @@ body {
 
 
 def snippet_css() -> str:
-    """LanternSpec CSS 조각을 만든다 — 문서 단계별 폴더 색 · callout · 인용문 (어떤 테마 위에서도).
+    """Build the LanternSpec CSS snippet — folder colors per document stage · callouts · quotes (on any theme).
 
     Returns:
-        CSS 글. 폴더 이름은 core/profile.py의 FOLDERS에서 가져온다.
+        CSS text. Folder names come from FOLDERS in core/profile.py.
 
     Example:
         >>> css = snippet_css()
@@ -192,13 +192,13 @@ def snippet_css() -> str:
 
 
 def write_vault(project: Project) -> list[Path]:
-    """docs/의 Obsidian 설정과 fileClass 파일을 (다시) 쓴다. 내용이 그대로인 파일은 건드리지 않는다.
+    """(Re)write docs/ Obsidian settings and fileClass files. Unchanged files are left alone.
 
     Args:
-        project: 프로젝트. docs/가 있어야 쓴다.
+        project: The project. Nothing is written without docs/.
 
     Returns:
-        새로 쓰거나 바꾼 파일들.
+        Files created or changed.
 
     Example:
         >>> [project.rel(p) for p in write_vault(project)][:2]  # doctest: +SKIP
@@ -233,7 +233,7 @@ def write_vault(project: Project) -> list[Path]:
     wanted = {f"{t}.md": file_class(enums, t) for t in enums.values("doc_type")}
     for name, text in wanted.items():
         save(class_dir / name, text)
-    for stale in class_dir.glob("*.md"):  # 이름이 바뀌어 더는 없는 문서 종류
+    for stale in class_dir.glob("*.md"):  # document types that no longer exist after a rename
         if stale.name not in wanted:
             stale.unlink()
             out.append(stale)
@@ -241,19 +241,19 @@ def write_vault(project: Project) -> list[Path]:
 
 
 def install_plugins(project: Project, fetch: Callable[[str], bytes | None] | None = None) -> list[tuple[str, str]]:
-    """권장 Obsidian 플러그인(Dataview · Metadata Menu)의 최신 공식 배포 파일을 받아 docs/.obsidian/plugins/에 넣는다.
+    """Download the latest official releases of the recommended Obsidian plugins (Dataview · Metadata Menu) into docs/.obsidian/plugins/.
 
-    플러그인 설정(data.json)은 건드리지 않는다. 받은 파일은 .obsidian/.gitignore로 git에서 빠진다.
+    Plugin settings (data.json) are not touched. Downloaded files stay out of git via .obsidian/.gitignore.
 
     Args:
-        project: 프로젝트. docs/가 있어야 한다.
-        fetch: 주소 → 내용(없으면 None). 기본은 인터넷에서 받기 (테스트에서 바꿔 끼운다).
+        project: The project. docs/ must exist.
+        fetch: URL → content (None if missing). Downloads from the internet by default (replaced in tests).
 
     Returns:
-        (플러그인 id, 받은 버전) 목록.
+        List of (plugin id, downloaded version).
 
     Raises:
-        RuntimeError: docs/가 없거나, main.js · manifest.json을 받지 못했을 때.
+        RuntimeError: docs/ is missing, or main.js · manifest.json could not be downloaded.
 
     Example:
         >>> install_plugins(project)  # doctest: +SKIP
@@ -277,9 +277,9 @@ def install_plugins(project: Project, fetch: Callable[[str], bytes | None] | Non
 
 
 def _download(url: str) -> bytes | None:
-    """주소의 내용을 받는다. 없으면(404) None."""
+    """Download a URL; None on 404."""
     try:
-        with urllib.request.urlopen(url, timeout=30) as r:  # GitHub가 최신 배포 파일로 넘겨 준다
+        with urllib.request.urlopen(url, timeout=30) as r:  # GitHub redirects to the latest release file
             return r.read()
     except urllib.error.HTTPError as e:
         if e.code == 404:
@@ -290,7 +290,7 @@ def _download(url: str) -> bytes | None:
 
 
 def _managed_fields(enums: Enums) -> set[str]:
-    """enums.yaml이 정하는 칸 이름 — Preset Fields에 남아 있으면 fileClass와 겹치므로 뺀다."""
+    """Field names enums.yaml defines — removed from Preset Fields since they would clash with the fileClasses."""
     return {name for e in enums.enums.values() for name in e.applies.values()}
 
 

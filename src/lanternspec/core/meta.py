@@ -1,4 +1,4 @@
-"""`lantern meta get|set` — read · write one document's frontmatter, with enum checks (P1: 형식은 스크립트)."""
+"""`lantern meta get|set` — read · write one document's frontmatter, with enum checks (P1: scripts own the format)."""
 
 from __future__ import annotations
 

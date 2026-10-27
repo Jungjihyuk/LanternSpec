@@ -1,4 +1,4 @@
-"""배우는 선로 — 이해 · 역량 부채 장부(debt)와 지식 연결기(knowledge/) (그림 1의 아래쪽 줄).
+"""The learning line — the understanding/competency debt ledger (debt) and the knowledge connector (knowledge/) (lower row of figure 1).
 
-여기를 고치는 이유: 부채를 세고 해결하는 규칙, 또는 지식 저장소와 주고받는 방식이 바뀔 때.
+Change this group when: the rules for counting and resolving debt, or the way we talk to knowledge stores, change.
 """

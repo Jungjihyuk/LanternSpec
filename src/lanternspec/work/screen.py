@@ -1,8 +1,8 @@
-"""화면 시안 (DE-01 · PL-04): bring mockups in as files, and compare a capture with its mockup.
+"""Screen mockups (DE-01 · PL-04): bring mockups in as files, and compare a capture with its mockup.
 
 * `import`  — images · HTML · PDF, or a handoff bundle (zip / folder) → `2. 작업/W-012 …/화면/`
 * `compare` — PNG capture vs PNG mockup → similarity %. Automatic comparison is a *hint*;
-  the person still answers "시안과 같나요?" before the criterion is ticked.
+  the person still answers "does it match the mockup?" before the criterion is ticked.
 """
 
 from __future__ import annotations

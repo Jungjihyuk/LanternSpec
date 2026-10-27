@@ -1,4 +1,4 @@
-"""배우는 선로 명령: knowledge(지식 연결기) · debt(부채 장부) · mcp."""
+"""Learning-line commands: knowledge (knowledge connector) · debt (debt ledger) · mcp."""
 
 from __future__ import annotations
 

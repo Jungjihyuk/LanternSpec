@@ -135,7 +135,7 @@ def reopen(project: Project, task_id: str) -> Task:
 
 
 def check_ac(project: Project, work_id: str, ac_id: str) -> Path:
-    """Tick an acceptance criterion in 기획.md once it was verified (AC checkpoint)."""
+    """Tick an acceptance criterion in `기획.md` once it was verified (AC checkpoint)."""
     folder = project.find_work(work_id, include_archive=False)
     if folder is None:
         raise ValueError(f"작업 {work_id}를 찾지 못했습니다")
@@ -236,11 +236,11 @@ def ready(project: Project, work_id: str | None = None) -> list[Task]:
     return out
 
 
-DEFAULT_HOURS = {"S": 2.0, "M": 4.0, "L": 8.0}  # S 한두 시간 · M 반나절 · L 하루 (/l-task)
+DEFAULT_HOURS = {"S": 2.0, "M": 4.0, "L": 8.0}  # S an hour or two · M half a day · L a day (/l-task)
 
 
 def estimate(project: Project, work_id: str, start: str | None = None, hours_per_day: float = 6.0, apply: bool = False) -> list[str]:
-    """크기별 실제 평균으로 예정일 **제안** (TA-02 다음 버전). Writes only with apply (after the person agrees)."""
+    """**Suggest** due dates from the actual average per size (TA-02, next version). Writes only with apply (after the person agrees)."""
     import datetime as dt
     from statistics import median
 

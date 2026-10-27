@@ -1,4 +1,4 @@
-"""브라운필드 기존 문서 (I-02): 원본은 `5. 기존 문서/`에 그대로, 지도와 TODO 후보는 스크립트가."""
+"""Existing documents of a brownfield project (I-02): originals stay in `5. 기존 문서/`; the script builds the map and TODOs."""
 
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ def _move(project: Project, src: Path, dest: Path) -> None:
 
 
 def adopt(project: Project, source: Path | None = None) -> list[str]:
-    """Move existing documents into docs/5. 기존 문서/ (git mv keeps their history)."""
+    """Move existing documents into `docs/5. 기존 문서/` (git mv keeps their history)."""
     legacy = project.folder("legacy")
     moved: list[str] = []
     if source is None:

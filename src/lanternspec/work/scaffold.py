@@ -43,7 +43,7 @@ def project_template_path(project: Project, name: str) -> Path:
 
 
 def template_text(project: Project, name: str) -> str:
-    """The project's template (docs/0. 템플릿) wins; the bundled base is the fallback."""
+    """The project's template (`docs/0. 템플릿`) wins; the bundled base is the fallback."""
     p = project_template_path(project, name)
     if p.exists():
         return read(p)
@@ -54,7 +54,7 @@ def template_text(project: Project, name: str) -> str:
 
 
 def install_templates(project: Project, names: list[str] | None = None) -> list[str]:
-    """Copy base templates into docs/0. 템플릿 (C-04 안 C). Existing files are never overwritten."""
+    """Copy base templates into `docs/0. 템플릿` (C-04 option C). Existing files are never overwritten."""
     created: list[str] = []
     st = state.load(project)
     project.templates_dir.mkdir(parents=True, exist_ok=True)
@@ -215,7 +215,7 @@ def init_apply(project: Project) -> list[str]:
     state.ensure_state_dir(project)
     project.docs.mkdir(parents=True, exist_ok=True)
     done += install_templates(project)
-    from ..report.obsidian import write_vault  # docs/를 Obsidian으로 열 때의 칸 선택지 (enums.yaml에서)
+    from ..report.obsidian import write_vault  # field choices for opening docs/ in Obsidian (from enums.yaml)
 
     done += [project.rel(p) for p in write_vault(project)]
     for action in init_plan(project):

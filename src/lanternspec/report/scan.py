@@ -1,10 +1,10 @@
-"""`lantern scan` — 찾기 (/l-sync 앞 절반, /l-report 문서-코드 일치).
+"""`lantern scan` — finding (the first half of /l-sync, docs-vs-code status in /l-report).
 
-* 주인 없는 변경: commits without a work ID (SY-01)
-* 오래된 문서: `3. 현재 상태` docs whose `code` paths changed after `checked_commit`
-* 기록 없는 스키마 변경: schema files changed but no 기록.md entry (H-2)
-* DBML ↔ 마이그레이션 어긋남 (DE-03)
-* 실패한 수락 기준 테스트 (build.test, with --tests)
+* unowned changes: commits without a work ID (SY-01)
+* stale documents: `3. 현재 상태` docs whose `code` paths changed after `checked_commit`
+* unrecorded schema changes: schema files changed but no `기록.md` entry (H-2)
+* DBML ↔ migration drift (DE-03)
+* failing acceptance tests (build.test, with --tests)
 """
 
 from __future__ import annotations
@@ -88,7 +88,7 @@ def schema_files(project: Project, files: list[str]) -> list[str]:
 
 
 def _owned_hashes(project: Project) -> str:
-    """Text of every record that may mention a commit hash (기록.md + 작업 없이 고친 것)."""
+    """Text of every record that may mention a commit hash (`기록.md` files + the no-work log)."""
     texts = []
     for w in project.work_dirs(include_archive=True):
         r = w / "기록.md"
@@ -242,7 +242,7 @@ def run_tests(project: Project, cmd: str, cwd: Path | None = None) -> dict:
     return {"command": cmd, "ok": r.returncode == 0, "code": r.returncode, "tail": tail}
 
 
-# --------------------------------------------------------------------------- adopt (맞추기 결과 기록)
+# --------------------------------------------------------------------------- adopt (recording sync results)
 
 
 def record_no_work(project: Project, short: str, reason: str) -> Path:

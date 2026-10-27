@@ -1,4 +1,4 @@
-"""`lantern check` — 양식 검사 (/l-check, H-3, H-5).
+"""`lantern check` — format checks (/l-check, H-3, H-5).
 
 Looks at: required blanks · enums.yaml values · broken links · leftover {{blanks}} ·
 old template versions · duplicate IDs · document length · task line format.
@@ -161,7 +161,7 @@ def _active_doc(project: Project, path: Path, meta: dict) -> bool:
 
 
 def required_headings(template_text: str) -> list[str]:
-    """`## ` sections of a template that hold a (필수) blank — removing one breaks the structure."""
+    """`## ` sections of a template that hold a required `(필수)` blank — removing one breaks the structure."""
     body = templating.strip_template_only(template_text)
     out = []
     for heading, start, end in _section_spans(body):
@@ -294,7 +294,7 @@ def check_file(project: Project, path: Path, text: str, ctx: _Ctx) -> list[Findi
                     )
                 )
 
-    # structure: sections holding required blanks must survive (H-5 "AI가 템플릿 구조를 바꿈")
+    # structure: sections holding required blanks must survive (H-5: the AI changed the template structure)
     if tname and tname in ctx.templates.required and not generated and not disabled:
         have = {h for h, _, _ in _section_spans(text)}
         for heading in ctx.templates.required[tname]:

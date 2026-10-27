@@ -1,4 +1,4 @@
-"""검사 · 양식 명령: check · lint(코드) · template · legacy · hooks(git) · doctor."""
+"""Check and template commands: check · lint (code) · template · legacy · hooks (git) · doctor."""
 
 from __future__ import annotations
 
@@ -135,7 +135,7 @@ def cmd_doctor(a: argparse.Namespace) -> int:
 
 
 def cmd_lint(a: argparse.Namespace) -> int:
-    """`lantern lint` — lantern.yaml의 build.lint · build.typecheck를 돌린다 (/l-build · CI)."""
+    """`lantern lint` — run build.lint and build.typecheck from lantern.yaml (/l-build · CI)."""
     from ..report.scan import run_tests
 
     project = _p()
