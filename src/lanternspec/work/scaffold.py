@@ -215,6 +215,9 @@ def init_apply(project: Project) -> list[str]:
     state.ensure_state_dir(project)
     project.docs.mkdir(parents=True, exist_ok=True)
     done += install_templates(project)
+    from ..report.obsidian import write_vault  # docs/를 Obsidian으로 열 때의 칸 선택지 (enums.yaml에서)
+
+    done += [project.rel(p) for p in write_vault(project)]
     for action in init_plan(project):
         spec, path = action.spec, action.path
         if action.kind == "create-folder":

@@ -1,4 +1,4 @@
-"""보고 · 맞추기 명령: report · status · scan · sync · map · eval · harness."""
+"""보고 · 맞추기 명령: report · status · scan · sync · map · eval · harness · obsidian."""
 
 from __future__ import annotations
 
@@ -101,11 +101,25 @@ def cmd_harness(a: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_obsidian(a: argparse.Namespace) -> int:
+    """`lantern obsidian plugins` — 권장 Obsidian 플러그인을 받아 docs/.obsidian/plugins/에 넣는다."""
+    from ..report.obsidian import install_plugins, write_vault
+
+    project = _p()
+    write_vault(project)  # 플러그인 설정 · .gitignore가 먼저 있어야 한다
+    for plugin_id, version in install_plugins(project):
+        print(f"✔ {plugin_id} {version}")
+    print("다음: Obsidian에서 docs/ 폴더를 볼트로 열고, 커뮤니티 플러그인을 켜 달라고 물으면 켭니다 (제한 모드 해제)")
+    return 0
+
+
 def register(add: Add) -> None:
     p = add("report", cmd_report, "현황 보고 생성")
     p.add_argument("--views")
     p.add_argument("--summary", nargs="+", help="팀장 보고 3줄")
     add("status", cmd_status, "지금 상황 3줄")
+    p = add("obsidian", cmd_obsidian, "Obsidian 권장 플러그인(Dataview · Metadata Menu) 받기")
+    p.add_argument("action", choices=["plugins"])
     p = add("scan", cmd_scan, "문서-코드 어긋남 찾기")
     p.add_argument("--range", help="git 범위 (예: main..HEAD)")
     p.add_argument("--limit", type=int, default=200)

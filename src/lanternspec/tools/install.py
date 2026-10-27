@@ -15,7 +15,7 @@ from .. import __version__
 from ..check.check_docs import version_gap
 from ..core import principles, state
 from ..core.project import Project, read, write
-from ..report import principles_doc
+from ..report import obsidian, principles_doc
 from ..work.scaffold import base_template_names, base_template_text, project_template_path, template_version
 from . import resolve as resolve_tools
 from . import rules, skills
@@ -162,6 +162,7 @@ def install(
     doc = principles_doc.write_doc(project)  # AGENTS.md 요약의 자세한 설명 — 늘 같은 기준으로
     if doc:
         report.written.append(project.rel(doc))
+    report.written += [project.rel(p) for p in obsidian.write_vault(project)]  # enums.yaml이 바뀌었으면 Obsidian 선택지도
     for tool in chosen:  # each tool merges its own settings (rules hookup · hooks · MCP)
         report.merged += tool.install_config(project, mcp)
     st["mcp"] = mcp

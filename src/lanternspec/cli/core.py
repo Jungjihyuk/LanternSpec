@@ -206,6 +206,9 @@ def cmd_enums(a: argparse.Namespace) -> int:
         from ..learn.debt import write_status
 
         write_status(project)
+    from ..report.obsidian import write_vault
+
+    write_vault(project)  # Obsidian 칸 선택지도 새 이름으로
     return 0
 
 

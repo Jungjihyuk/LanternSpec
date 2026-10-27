@@ -111,13 +111,17 @@ lantern scaffold init --plan        # 만들 폴더 · 문서 목록 (아직 아
 4. **빈칸 묻기:** 필수 칸만 · 짐작되면 "이게 맞나요?"로 · 한 문서의 질문은 묶어서 · "모름"은 `❓ 확인 필요`.
 5. **덤:** `lantern legacy todos`로 기존 문서의 TODO · 나중에 할 것을 모아 아이디어 후보로 보여 준다. 사용자가 고른 것만 `/l-idea`로 기록한다.
 
-## 6. git hook · CI
+## 6. git hook · CI · Obsidian
 "커밋할 때 작업 ID · 스키마 기록 · 양식을 검사하는 git hook을 설치할까요? (기본은 경고만)" → 예면 `lantern hooks install`.
 2인 이상(team)이면 한 번 더: "처음부터 막을까요?" → 예면 `lantern profile set git.hooks=block`.
 (구조 실수 — 문서 저장 방식 규칙 — 는 이 값과 상관없이 항상 막는다.)
 
 `git remote -v`에 github.com이 있으면 이어서 묻는다: "GitHub에서도 검사할까요? push할 때마다 GitHub이 양식 검사 · 린트 · 타입 검사 · 테스트를 대신 돌려요 (CI)." → 예면 `lantern install --ci`.
 워크플로에 이 프로젝트 언어의 도구 준비 단계(uv · pnpm 설치 등)가 함께 들어간다. 나중에 끄려면 `lantern install --no-ci`.
+
+이어서 묻는다: "문서를 Obsidian으로 볼 때 쓰는 권장 플러그인(Dataview · Metadata Menu)을 같이 받아 둘까요? 상태 · 종류를 고르는 메뉴와 할 일 표시가 바로 동작해요." (추천: 예) → 예면 `lantern obsidian plugins`.
+- 받은 플러그인 코드는 git에 올라가지 않는다 (`docs/.obsidian/.gitignore`). 팀원은 같은 명령으로 받는다.
+- 받지 못하면(인터넷 없음 등) 실패로 멈추지 말고, Obsidian의 커뮤니티 플러그인에서 두 플러그인을 직접 설치하면 된다고 알린다.
 
 ## 7. 작업 방식 추천 · 공통 마무리
 `lantern harness suggest`로 프로젝트 크기에 맞는 AI 작업 방식(하네스 · 루프 · 그래프)을 한 줄로 알려 주고, 사용자가 원하면 `--apply` 뒤 `lantern upgrade`.
