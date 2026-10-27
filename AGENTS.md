@@ -127,13 +127,15 @@ uv run pytest                       # 테스트 + docstring Example
 PyPI 업로드는 `.github/workflows/release.yml`이 한다 (Trusted Publishing — 토큰 없음). 사람이 하는 일은 태그까지다.
 main에 push하거나 PR을 열 때마다 `.github/workflows/ci.yml`이 같은 확인 네 가지를 돈다 (배포는 하지 않는다).
 
+변경할 때마다는 커밋 · push만 한다 (버전 · 태그는 그대로). 배포할 때만 두 단계를 밟는다:
+
 ```bash
-# CHANGELOG.md · CHANGELOG.ko.md의 [Unreleased]를 [새 버전] - 날짜로 옮긴다
-uv version 0.1.1                                   # 버전은 pyproject.toml 한 곳에만 있다
-git commit -am "Release 0.1.1" && git tag -a v0.1.1 -m "LanternSpec 0.1.1"
-git push origin main && git push origin v0.1.1      # 태그가 올라가면 확인 → 만들기 → 배포가 돈다
+/release-notes                  # (Claude Code) 마지막 태그 이후 변경 → CHANGELOG [Unreleased] · README 초안 → 승인 → 커밋
+make release VERSION=0.2.0      # 안전 확인 → 확인 네 가지 → CHANGELOG에 버전 찍기 → uv version → 커밋 · 태그 → (묻고) push
 ```
 
+- 내용(무엇이 바뀌었나)은 스킬이, 형식(버전 · 날짜 · 링크 · 커밋 · 태그)은 `Makefile` · `scripts/changelog.py`가 맡는다.
+- `make release`는 main이 아니거나, 커밋하지 않은 변경이 있거나, GitHub에 이쪽에 없는 커밋이 있거나, 같은 태그가 있거나, `[Unreleased]`가 비었으면 멈춘다. 아직 안 올린 커밋은 배포 push 때 같이 올라간다.
 - 태그와 `pyproject.toml`의 버전이 다르거나 확인 네 가지 중 하나라도 실패하면 배포하지 않는다.
 - 올리기 전에 실패했으면 고친 뒤 태그를 지우고(`git push --delete origin v0.1.1` · `git tag -d v0.1.1`) 다시 단다.
   이미 PyPI에 올라간 버전은 다시 올릴 수 없으니, 그 뒤의 수정은 버전을 올려 새 태그로 낸다.
