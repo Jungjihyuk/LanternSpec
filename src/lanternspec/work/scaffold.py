@@ -99,7 +99,7 @@ def _profile_table(project: Project) -> str:
     server = {"none": "없음", "external": "외부 서비스", "custom": "직접 구축"}.get(p.server, p.server)
     k = p.knowledge
     rows = [
-        ("시작", "🌱 그린필드 (새로)" if not p.brownfield else "🏚 브라운필드 (기존 코드 있음)"),
+        ("시작", "🌱 그린필드 (새로)" if not p.brownfield else "🏠 브라운필드 (기존 코드 있음)"),
         ("인원", "1인" if not p.team else f"2인 이상 ({', '.join(p.get('project.members') or [])})"),
         ("화면 유형", clients),
         ("서버", server),
