@@ -23,6 +23,7 @@ PATCH_FILE = re.compile(r"^\*\*\* (?:Add|Update) File: (.+)$", re.M)
 class Codex(ClaudeHooks, Tool):
     name = "codex"
     label = "Codex"
+    launch = "codex"
     skill_root = ".agents/skills"
     command_prefix = "$"
     config_paths = (".agents/", ".codex/")

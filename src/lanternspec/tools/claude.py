@@ -58,6 +58,7 @@ class ClaudeHooks:
 class ClaudeCode(ClaudeHooks, Tool):
     name = "claude"
     label = "Claude Code"
+    launch = "claude"
     skill_root = ".claude/skills"
     session_expr = "${CLAUDE_SESSION_ID}"
     expands_arguments = True

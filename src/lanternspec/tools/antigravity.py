@@ -27,6 +27,7 @@ PATH_ARGS = ("Path", "TargetFile", "AbsolutePath", "FilePath", "path", "file_pat
 class Antigravity(Tool):
     name = "antigravity"
     label = "Antigravity CLI"
+    launch = "agy"
     skill_root = ".agents/skills"
     config_paths = (".agents/", "GEMINI.md")
     write_tools = frozenset(

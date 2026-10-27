@@ -68,6 +68,7 @@ class HookReply:
 class Tool:
     name = ""
     label = ""
+    launch = ""  # the terminal command that opens this tool (claude · codex · agy)
     skill_root = ""  # folder that holds <skill>/SKILL.md
     command_prefix = "/"  # how a user calls a skill: /l-build · $l-build
     session_expr = "$(date +%Y-%m-%d)"  # shell expression a skill passes as --session

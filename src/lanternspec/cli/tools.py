@@ -3,10 +3,15 @@
 from __future__ import annotations
 
 import argparse
+import shutil
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from .common import Add, CliError, _csv, _p, _print
+
+if TYPE_CHECKING:
+    from ..core.project import Project
 
 
 def cmd_install(a: argparse.Namespace) -> int:
@@ -17,8 +22,43 @@ def cmd_install(a: argparse.Namespace) -> int:
         project, _csv(a.tools) or None, force=a.force, mcp=True if a.mcp else None, ci=True if a.ci else False if a.no_ci else None
     )
     _print(rep.lines())
-    print("다음: AI 도구에서 /l-init (Codex는 $l-init)")
+    _print(_next_steps(project))
     return 0
+
+
+def _next_steps(project: Project) -> list[str]:
+    """설치 뒤 무엇을 하면 되는지 — 설치한 도구의 실행 명령과 스킬 부르는 법으로."""
+    from ..core import state
+    from ..tools import REGISTRY, resolve
+
+    tools = resolve(state.load(project).get("tools") or ["claude"])
+    # 이 컴퓨터에 있지만 이 프로젝트에 설정하지 않은 AI 도구 — 알려만 주고 고르는 건 사람이
+    missing = [t for t in REGISTRY.values() if t not in tools and shutil.which(t.launch)]
+    hint = (
+        [
+            "",
+            f"ℹ 이 컴퓨터에 {' · '.join(t.label for t in missing)}도 있습니다. 함께 쓰려면: "
+            f"lantern install --tools {','.join(t.name for t in tools + missing)}",
+        ]
+        if missing
+        else []
+    )
+    if project.profile.exists:
+        return ["", "다음 단계: AI 도구에서 하던 작업을 이어 갑니다 (지금 상황은 lantern status)", *hint]
+    if len(tools) == 1:
+        opens = f"{tools[0].label}를 엽니다 — 터미널에 `{tools[0].launch}` 입력"
+    else:
+        opens = "AI 도구를 엽니다 — " + ", ".join(f"{t.label}는 `{t.launch}`" for t in tools)
+    others = [f"{t.label}는 `{t.command_prefix}l-init`" for t in tools if t.command_prefix != "/"]
+    return [
+        "",
+        "다음 단계",
+        f"  1. 이 폴더에서 {opens}",
+        "  2. 입력창에 `/l-init`을 입력합니다"
+        + (f" ({', '.join(others)})" if others else "")
+        + " — 몇 가지 질문에 답하면 문서 구조와 설정이 만들어집니다",
+        *hint,
+    ]
 
 
 def cmd_upgrade(a: argparse.Namespace) -> int:
