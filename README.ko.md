@@ -138,6 +138,19 @@ docs/
 
 문서를 원격 저장소에 올리고 싶지 않으면 `lantern docs-mode local`을 쓴다. 문서는 같은 저장소의 `docs-local` 브랜치에만 두고, 그 브랜치의 push는 막는다.
 
+### Obsidian으로 보기
+`docs/` 폴더를 Obsidian에서 볼트로 열면 바로 읽기 좋게 설정이 들어 있다 (`docs/.obsidian/`).
+
+- **폴더 색 · callout · 인용문 모양** — 문서 단계마다 폴더 색이 다르고, callout과 인용문이 깔끔하게 보인다. 어떤 테마 위에서도 동작한다.
+- **상태 · 종류 고르기** — 문서 종류마다 그 종류의 선택지만 메뉴로 고른다 (Metadata Menu). 선택지는 `enums.yaml`에서 만들어져, 이름을 바꾸면 같이 바뀐다.
+- **권장 플러그인** — Dataview(할 일의 `[시작:: …]` 표시) · Metadata Menu(선택지 메뉴). `/l-init`이 받을지 묻고, 나중에 받으려면:
+
+```bash
+lantern obsidian plugins     # 두 플러그인의 최신 공식 배포 파일을 docs/.obsidian/plugins/에 받는다
+```
+
+처음 열 때 Obsidian이 커뮤니티 플러그인을 켤지 물으면 켠다 (제한 모드 해제). 플러그인 코드와 창 배치(`workspace.json`)는 git에 올라가지 않고 설정만 올라간다. 팀원은 같은 명령으로 받는다.
+
 ## 지원 AI 도구
 
 | 도구 | 스킬 | 규칙 | 에이전트 hook | MCP (`--mcp`) |
@@ -232,7 +245,7 @@ Claude Design · Figma · Canva를 각 도구의 MCP로 쓴다.
 일       task next [--all]|start|done|ac|list|estimate · task add [--parallel] · pack · screen import|compare
          work branch|start|list|finish|archive|stage · design approve · unit-log add · idea find|status
 배움     knowledge search|read|propose|write|areas · debt find|new|ask|resolve|promote|practice|known|status|list · mcp
-보고     report [--views] [--summary] · status · scan [--tests] · sync adopt · eval
+보고     report [--views] [--summary] · status · scan [--tests] · sync adopt · eval · obsidian plugins
 양식     template list|lint|level|bump|outdated|diff|usage|new|migrate · legacy adopt|todos
 git      hooks install|uninstall|status · docs-mode local|shared
 마무리   close <스킬>

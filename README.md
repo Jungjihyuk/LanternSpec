@@ -140,6 +140,19 @@ Which documents you get depends on your `/l-init` answers (`lantern.yaml`; check
 
 If you don't want documents on the remote, use `lantern docs-mode local`. Documents then live only on a `docs-local` branch in the same repository, and pushing that branch is blocked.
 
+### Viewing the docs in Obsidian
+Open the `docs/` folder as a vault in Obsidian and it is already set up for reading (`docs/.obsidian/`).
+
+- **Folder colors, callouts and quotes** — each document stage has its own folder color, and callouts and quotes look clean. Works on top of any theme.
+- **Picking status and kind** — each document type offers only its own choices in a menu (Metadata Menu). The choices are generated from `enums.yaml`, so renaming a value updates them too.
+- **Recommended plugins** — Dataview (shows `[start:: …]` fields in task lists) and Metadata Menu (choice menus). `/l-init` asks whether to download them; to do it later:
+
+```bash
+lantern obsidian plugins     # downloads the latest official release files of both plugins into docs/.obsidian/plugins/
+```
+
+When Obsidian first asks whether to turn on community plugins, turn them on (leave restricted mode). Plugin code and the window layout (`workspace.json`) stay out of git; only the settings are committed. Teammates run the same command.
+
 ## Supported AI tools
 
 | Tool | Skills | Rules | Agent hooks | MCP (`--mcp`) |
@@ -234,7 +247,7 @@ checks     check [--changed] [--epic W-012] · lint · check-dbml · dbml render
 work       task next [--all]|start|done|ac|list|estimate · task add [--parallel] · pack · screen import|compare
            work branch|start|list|finish|archive|stage · design approve · unit-log add · idea find|status
 learning   knowledge search|read|propose|write|areas · debt find|new|ask|resolve|promote|practice|known|status|list · mcp
-reports    report [--views] [--summary] · status · scan [--tests] · sync adopt · eval
+reports    report [--views] [--summary] · status · scan [--tests] · sync adopt · eval · obsidian plugins
 templates  template list|lint|level|bump|outdated|diff|usage|new|migrate · legacy adopt|todos
 git        hooks install|uninstall|status · docs-mode local|shared
 wrap-up    close <skill>
