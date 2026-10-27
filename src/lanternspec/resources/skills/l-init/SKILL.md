@@ -57,7 +57,7 @@ argument-hint: "[바뀐 점 (다시 실행할 때)]"
 **지식 저장소를 골랐으면** (5번이 없음이 아닐 때만, 하나씩)
 - **어디에 있나요?** — 먼저 후보를 찾는다: Obsidian이면 `.obsidian` 폴더가 있는 곳(`find ~ -maxdepth 4 -name .obsidian -type d`), Markdown 폴더면 문서 폴더 근처. 찾은 경로를 선택지로 내고(최대 3개), 없으면 "맨 아래 직접 입력 칸에 폴더 경로를 써 주세요".
 - **새 노트는 어떻게 만들까요?** — 승인하면 저장소에 바로 쓰기(direct, 추천) / 저장소는 건드리지 않고 초안 파일만 만들기(propose_only)
-- **부채를 분류할 때 참고할 폴더가 있나요?** (선택) — 저장소 맨 위 폴더를 훑어 주제별 폴더(예: `2. Study`)가 보이면 선택지로 낸다. 기본은 "참고 안 함". 고른 폴더의 하위 분류를 보고 부채 영역(backend · frontend …)에 더할 것을 제안한다.
+- **(저장소에 주제별로 나눈 폴더가 보일 때만) 그 분류도 함께 쓸까요?** (선택) — 먼저 저장소 맨 위 폴더를 훑어, 하위 폴더가 주제처럼 나뉜 폴더(예: `2. Study`)가 없으면 **이 질문은 건너뛴다**. 있으면 질문 문장에 뜻을 먼저 적는다: "모르는 기술은 부채 카드로 남고, 카드마다 주제가 하나 붙어요 (지금은 backend · frontend · data · ai · infra · 기타). 저장소에 주제별로 나눠 둔 폴더가 있는 것 같은데, 그 이름도 주제로 함께 쓸까요? 프로젝트 구조와는 상관없어요." 선택지는 찾은 폴더들과 "기본 주제만 쓰기"(추천).
 
 답이 애매하면 추측하지 말고 다시 묻는다. 다 모았으면 답을 한 번에 요약해 보여 주고 2단계로 간다.
 
@@ -79,7 +79,10 @@ lantern scaffold init --plan        # 만들 폴더 · 문서 목록 (아직 아
 - 🌱 greenfield: 컨벤션의 도구를 개발 의존성에 넣고(예: `uv add --dev ruff pyright` · `pnpm add -D @biomejs/biome typescript`) 설정(예: `pyproject.toml`의 `[tool.ruff]` · `[tool.pyright]`)을 만들지 **묻고, 승인하면** 한다. 개발 의존성에 있어야 CI에서도 같은 도구가 설치된다. 거절하면 `lantern profile set build.lint= build.typecheck=`로 비운다.
 `--plan` 결과를 사용자에게 짧게 보여 준다 (예: "모바일 → 플랫폼 연동 · 배포 문서가 생겨요").
 
-지식 저장소에 `--areas-from`이 있으면 `lantern knowledge areas`로 폴더 분류를 읽고, 기본 영역(backend · frontend · data · ai · infra)에 **추가할 영역을 제안만** 한다. 사용자가 고른 것만 `docs/0. 템플릿/_meta/enums.yaml`의 `area`에 넣는다 (2단계 scaffold 뒤).
+지식 저장소에 `--areas-from`이 있으면 `lantern knowledge areas`로 폴더 분류를 읽고, **부채 카드의 주제**(기본: backend · frontend · data · ai · infra · 기타)에 더할 것을 **제안만** 한다.
+- 질문 문장에 무엇을 고르는지 먼저 적는다: "저장소에서 찾은 폴더 이름이에요. 부채 카드의 주제로 더하고 싶은 것을 골라 주세요. 부채 현황에서 주제별로 모르는 기술이 몇 개씩 쌓였는지 볼 때 쓰여요 (프로젝트 구조 · 노트 저장 위치와는 상관없어요)."
+- 기본 분류와 겹치는 것(예: AI Engineering → ai)은 빼고 그 이유를 한 줄로 알린다. "기본 주제만 쓰기"를 늘 선택지에 둔다.
+- 사용자가 고른 것만 `docs/0. 템플릿/_meta/enums.yaml`의 `area`에 넣는다 (3단계 scaffold 뒤).
 
 ## 3. 구조 만들기
 - `local`을 골랐으면 **먼저** `lantern docs-mode local` (빈 문서 브랜치 · `.gitignore` · `.ignore` · push 막는 hook을 한 번에)
