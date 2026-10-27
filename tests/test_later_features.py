@@ -376,7 +376,7 @@ def test_antigravity_agent_hooks(repo, vault):
     r = hook("post-tool", stepIdx=2, toolCall={"name": "write_file", "args": {"Path": str(plan), "Content": "…"}})
     assert r.returncode == 0 and json.loads(r.stdout) == {}
     held = json.loads(hook("feedback", invocationNum=0).stdout)["injectSteps"][0]["systemMessage"]["systemMessage"]
-    assert "H-5" in held and "'## 왜'" in held
+    assert "LanternSpec 문서 양식" in held and "'## 왜'" in held
     assert json.loads(hook("feedback", invocationNum=1).stdout) == {}  # delivered once
     plan.write_text(plan.read_text(encoding="utf-8").replace("## 이유", "## 왜"), encoding="utf-8")
     hook("post-tool", stepIdx=4, toolCall={"name": "edit_file", "args": {"Path": str(plan), "Target": "a", "Replacement": "b"}})
@@ -384,7 +384,7 @@ def test_antigravity_agent_hooks(repo, vault):
     repo("profile", "set", "learn.detect=ask")
     assert json.loads(hook("prompt", invocationNum=1, lastUserInput="JWT가 뭐야?").stdout) == {}
     steps = json.loads(hook("prompt", invocationNum=0, lastUserInput="JWT가 뭐야?").stdout)["injectSteps"]
-    assert "H-9" in steps[0]["systemMessage"]["systemMessage"]
+    assert "LanternSpec 기술 질문" in steps[0]["systemMessage"]["systemMessage"]
     # H-7 at Stop: keep going once so the agent tells the user; never on errors
     repo("work", "stage", "W-001", "구현")
     repo.git("add", "-A")

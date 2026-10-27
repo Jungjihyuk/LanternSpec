@@ -297,11 +297,11 @@ def render(data: dict[str, Any]) -> str:
         f"  approval: {s(d['design']['approval'])}  # required(항상 승인) | auto(작은 설계는 건너뜀) | off",
         "",
         "git:",
-        f"  hooks: {s(d['git']['hooks'])}              # warn(경고만) | block(막기) — 내용 검사(H-1~H-3)에만 적용",
+        f"  hooks: {s(d['git']['hooks'])}              # warn(경고만) | block(막기) — 커밋 메시지 · 스키마 기록 · 문서 양식 검사에만 적용",
         f"  base: {s(d['git']['base'])}                 # 작업 브랜치를 머지할 기준 브랜치 (main | dev …)",
     ]
     if d["git"].get("schema_paths"):
-        lines.append(f"  schema_paths: {s(d['git']['schema_paths'])}  # 스키마 파일 위치 (H-2)")
+        lines.append(f"  schema_paths: {s(d['git']['schema_paths'])}  # 스키마 파일 위치 (스키마 기록 검사)")
     lines += [
         "",
         "idea:",

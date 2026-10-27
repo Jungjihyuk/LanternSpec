@@ -58,7 +58,7 @@ def build(project: Project, work_id: str) -> str:
             f"- 크기 {nxt.task.size or '?'} · 기준 {', '.join(nxt.task.criteria) or '—'}",
         ]
     elif nxt.all_done:
-        parts += ["", "## ✅ 모든 할 일 완료 — 현재 상태 반영(BU-03) 단계"]
+        parts += ["", "## ✅ 모든 할 일 완료 — 현재 상태 반영 단계"]
     if nxt.skipped:
         parts += ["", "### 지금 시작할 수 없는 할 일"] + [f"- {tid}: {why}" for tid, why in nxt.skipped]
 

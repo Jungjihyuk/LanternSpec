@@ -11,7 +11,7 @@ argument-hint: "new | refine <양식> | migrate [<양식> | <문서 경로>]"
 
 입력: `$ARGUMENTS` — `new` · `refine 기획` · `migrate` · `migrate 기획` · `migrate "2. 작업/W-012 …/기획.md"` · `migrate "5. 기존 문서/옛 기획.md"`
 
-## 양식 규칙 (TE-01 · TE-02 · TE-05)
+## 양식 규칙
 - 채울 칸 `{{칸 이름}}`, 필수 칸 `{{칸 이름 (필수)}}` — `|`는 표를 깨뜨리므로 쓰지 않는다
 - 칸 이름에 `date` · `time` · `title` 금지 (Obsidian 기본 템플릿이 바꿔 버림)
 - 작성 안내는 `> [!guide] …` (다 쓰면 지워도 됨). 칸마다 **🟦 원본 칸 / 🔗 가져오는 칸**을 안내에 표시

@@ -54,7 +54,7 @@ def next_task(project: Project, work_id: str | None = None) -> NextResult:
                 continue
             reason = graph.blocked_reason(t)
             if reason is None and ui_required and t.screen and not has_mockup(w):
-                reason = "화면 시안 없음 (PL-04) — 화면/ 아래 이미지 · HTML 필요"
+                reason = "화면 시안 없음 — 화면/ 아래 이미지 · HTML 필요"
             if reason:
                 skipped.append((t.id, reason))
                 continue

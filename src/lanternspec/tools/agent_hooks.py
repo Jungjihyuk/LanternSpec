@@ -75,7 +75,7 @@ def _saved_progress(project: Project, session: str) -> list[str]:
     f = _compact_file(project, session)
     if not f.exists():
         return []
-    out = ["", "[LanternSpec 압축 전 진행 상황 (H-8) — 문서에 저장됨]"]
+    out = ["", "[LanternSpec 압축 전 진행 상황 — 문서에 저장됨]"]
     for item in json.loads(f.read_text(encoding="utf-8")):
         path = project.root / item["path"]
         if not path.exists():
@@ -113,7 +113,7 @@ def post_tool(project: Project, tool: Tool, inp: HookInput) -> HookResult:
         soft = [f for f in findings if f not in hard and f.level == "warn"]
         rel = project.rel(path)
         if hard:
-            hard_msgs.append(f"LanternSpec H-5: {rel} 양식이 깨졌습니다 — 지금 고치세요 (템플릿 구조는 바꾸지 않는다):")
+            hard_msgs.append(f"LanternSpec 문서 양식: {rel} 양식이 깨졌습니다 — 지금 고치세요 (템플릿 구조는 바꾸지 않는다):")
             hard_msgs += [f"- {f.message}" + (f" (줄 {f.line})" if f.line else "") + (f" → {f.hint}" if f.hint else "") for f in hard]
         if soft:
             soft_msgs.append(f"LanternSpec 참고 ({rel}): " + " · ".join(f.message for f in soft[:5]))
@@ -190,22 +190,24 @@ def learn_detect(project: Project, session: str, text: str) -> str:
     card = debt.find(project, term)
     if mode == "ask":
         return (
-            f"LanternSpec H-9: 사용자가 기술 '{term}'을(를) 물었습니다. 답한 뒤 한 줄로 \"📒 부채로 남길까요?\"라고 묻고, "
+            f"LanternSpec 기술 질문: 사용자가 기술 '{term}'을(를) 물었습니다. 답한 뒤 한 줄로 \"📒 부채로 남길까요?\"라고 묻고, "
             f"남기면 /l-learn {term}"
             + (f" (카드 {card.id} 있음 — {project.enums.value('debt_status', 'asked_again')}으로 셈)" if card else "")
         )
     if card:  # auto + card → count without asking
-        r = debt.ask(project, term, session=session, context="대화 중 질문 (H-9 자동)")
+        r = debt.ask(project, term, session=session, context="대화 중 질문 (자동 감지)")
         if not r.counted:
             return ""
         return (
-            f"LanternSpec H-9: '{term}'은(는) 부채 카드 {card.id}에 있어 물은 횟수를 셌습니다 ({r.ask_count}번째"
+            f"LanternSpec 기술 질문: '{term}'은(는) 부채 카드 {card.id}에 있어 물은 횟수를 셌습니다 ({r.ask_count}번째"
             + (f", {project.enums.value('debt_status', 'resolved')} → 다시 열림" if r.reopened else "")
             + "). 답할 때 지난 노트 · 카드를 링크해 복습을 돕는다."
         )
     if not _once(project, f"learn:{session}:{debt.norm(term)}"):
         return ""
-    return f"LanternSpec H-9: '{term}' 카드가 없습니다. 답한 뒤 한 줄로 \"📒 부채 카드를 만들까요?\"라고 제안하세요 (/l-learn {term})."
+    return (
+        f"LanternSpec 기술 질문: '{term}' 카드가 없습니다. 답한 뒤 한 줄로 \"📒 부채 카드를 만들까요?\"라고 제안하세요 (/l-learn {term})."
+    )
 
 
 def idea_detect(project: Project, session: str, text: str) -> str:
@@ -217,11 +219,11 @@ def idea_detect(project: Project, session: str, text: str) -> str:
         if not _once(project, f"idea:{session}"):
             return ""
         return (
-            "LanternSpec H-10: 아이디어 같은 말이 있습니다. "
+            "LanternSpec 아이디어: 아이디어 같은 말이 있습니다. "
             '하던 일을 마친 뒤 한 줄로 "💡 이거 아이디어로 남길까요?"라고 한 번만 묻는다 (남기면 /l-idea).'
         )
     return (
-        "LanternSpec H-10: 아이디어 같은 말이 있습니다. 하던 일은 멈추지 말고 /l-idea 규칙대로 바로 기록한다: "
+        "LanternSpec 아이디어: 아이디어 같은 말이 있습니다. 하던 일은 멈추지 말고 /l-idea 규칙대로 바로 기록한다: "
         'lantern scaffold idea "<제목>" --kind <유형> --raw "<원문>" --auto → 한 줄로만 알림.'
     )
 

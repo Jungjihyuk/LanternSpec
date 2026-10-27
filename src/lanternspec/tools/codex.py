@@ -57,7 +57,7 @@ class Codex(ClaudeHooks, Tool):
 
     def install_config(self, project: Project, mcp: bool) -> list[str]:
         merge_json_file(project.root / ".codex" / "hooks.json", lambda d: replace_hook_entries(d, self.hooks()))
-        merged = [".codex/hooks.json (hook H-4~H-10 — Codex가 처음 실행할 때 신뢰 여부를 묻는다)"]
+        merged = [".codex/hooks.json (에이전트 hook — Codex가 처음 실행할 때 신뢰 여부를 묻는다)"]
         if mcp:
             path = project.root / ".codex" / "config.toml"
             write(path, add_mcp_server_toml(read(path) if path.exists() else ""))

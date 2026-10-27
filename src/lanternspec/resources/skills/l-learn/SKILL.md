@@ -29,7 +29,7 @@ argument-hint: "<기술 용어> [용어 …]"
    - 🟢 노트 있음, 처음 물음 → 노트 링크만 붙인다
    - 🟡 노트 있는데 다시 물음 (카드가 이미 있음) → 복습 제안
    - 🔴 노트 없음 → 학습 노트 초안 제안
-   - 다른 스킬이 넘긴 후보 중 **노트가 있는 기술은 처음부터 뺀다** (LE-02)
+   - 다른 스킬이 넘긴 후보 중 **노트가 있는 기술은 처음부터 뺀다**
 4. **부채 카드 만들기 · 갱신** (번호 · 횟수는 스크립트가 센다 — 같은 대화에서는 한 번만 센다):
    ```bash
    # 카드가 없으면
@@ -50,7 +50,7 @@ argument-hint: "<기술 용어> [용어 …]"
      - 지금 저장소 쓰기 방식: `<<knowledge.write>>` — `direct`면 승인 후 `lantern knowledge write "<초안 경로>"`, `propose_only`면 초안 경로만 알려 주고 넣는 것은 사용자가 한다.
      - 노트가 생기면 카드에 연결: `lantern meta set "<카드>" note="<노트 위치>"`
 
-## "이해했어" (LE-03) — 지금 설정: learn.verify = <<learn.verify>>
+## "이해했어" — 지금 설정: learn.verify = <<learn.verify>>
 - `self`: 사용자가 이해했다고 하면 바로 `lantern debt resolve <D-NNN>`
 - `explain`: "한 줄로 설명해 볼래요?" → 노트와 비교해 빠진 부분을 짚는다 → 괜찮으면 `lantern debt resolve <D-NNN>`. 설명은 카드 "지금 이해한 것"에 적는다.
 - 해결 뒤 "직접 만들어 볼까요?"라고 **역량 부채**로 넘길지 한 번 묻는다 (이해 → 역량 순서). 예면:
@@ -63,12 +63,12 @@ argument-hint: "<기술 용어> [용어 …]"
 ## 기술 부채 (코드에 남은 빚)
 일반적인 기술 부채는 기존 도구의 영역이지만, 사용자가 남기자고 하면 같은 장부에 둔다: `lantern debt new "<무엇>" --kind "<<debt_kind.tech>>" --area <영역> [--work W-012]`.
 
-## "이건 알아" (LE-02)
+## "이건 알아"
 사용자가 아는 기술이라고 하면 `lantern debt known add "<용어>" --alias "<별칭>"` — 다시 묻지 않는다.
 
 ## 대화 중 질문 감지 — 지금 설정: learn.detect = <<learn.detect>>
 - `manual`: `/l-learn`을 부르거나 다른 스킬이 넘길 때만 센다.
-- (에이전트 hook이 설치된 도구 — Claude Code · Codex · Antigravity — 에서는 `ask` · `auto`일 때 hook(H-9)이 질문을 알아채 `LanternSpec H-9` 메시지로 알려 준다. 그 메시지를 따른다.)
+- (에이전트 hook이 설치된 도구 — Claude Code · Codex · Antigravity — 에서는 `ask` · `auto`일 때 hook이 질문을 알아채 `LanternSpec 기술 질문` 메시지로 알려 준다. 그 메시지를 따른다.)
 <!-- lantern:if learn.detect=ask -->
 - `ask`: 대화 중 "JWT가 뭐야?" 같은 기술 질문을 알아챌 때마다, 답한 뒤 한 줄로 "📒 부채로 남길까요?"를 묻는다.
 <!-- lantern:endif -->

@@ -37,7 +37,7 @@ lantern idea status IDEA-014 "<<idea_status.dropped>>" --reason "<이유 한 줄
 
 <!-- lantern:if idea.capture=ask -->
 ## 대화 중 알아채기 (idea.capture: ask)
-사용자가 대화 중 아이디어 같은 말("~하면 좋겠다", "나중에 ~도")을 하면 (Claude Code에서는 hook H-10이 `LanternSpec H-10` 메시지로 알려 준다), 하던 일을 마친 뒤 **한 줄로만** 묻는다: "💡 이거 아이디어로 남길까요?" — **대화당 한 번만** 묻고, 거절하면 다시 묻지 않는다.
+사용자가 대화 중 아이디어 같은 말("~하면 좋겠다", "나중에 ~도")을 하면 (에이전트 hook이 `LanternSpec 아이디어` 메시지로 알려 준다), 하던 일을 마친 뒤 **한 줄로만** 묻는다: "💡 이거 아이디어로 남길까요?" — **대화당 한 번만** 묻고, 거절하면 다시 묻지 않는다.
 <!-- lantern:endif -->
 <!-- lantern:if idea.capture=auto -->
 ## 대화 중 알아서 기록 (idea.capture: auto)

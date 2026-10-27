@@ -168,10 +168,10 @@ def commit_msg(project: Project, msg_file: str) -> int:
     problems: list[str] = []
     if code and not ID_RE.search(msg):
         where = "문서 브랜치" if docs_branch else "코드 커밋"
-        problems.append(f"H-1 {where} 메시지에 작업 ID가 없습니다 — 끝에 [W-012-T03] 처럼 붙이세요")
+        problems.append(f"커밋 메시지: {where} 메시지에 할 일 번호가 없습니다 — 끝에 [W-001-T02] 처럼 붙이세요")
     tasks = sorted(set(TASK_RE.findall(msg)))
     if len(tasks) > 1:
-        problems.append(f"H-1 할 일 여러 개가 한 커밋에 섞였습니다 ({', '.join(tasks)}) — 할 일 하나 = 커밋 하나 (BU-01)")
+        problems.append(f"커밋 메시지: 할 일 여러 개가 한 커밋에 섞였습니다 ({', '.join(tasks)}) — 할 일 하나 = 커밋 하나")
     return _content_result(project, problems, "커밋 메시지 검사")
 
 
@@ -236,7 +236,7 @@ def pre_commit(project: Project) -> int:
                 recorded = "기록.md" in nfc(docs_status) or "기록.md" in nfc(recent)
             if not recorded:
                 problems.append(
-                    f"H-2 스키마 파일이 바뀌었는데 기록.md 변경이 없습니다: {', '.join(sfiles[:3])}"
+                    f"스키마 기록: 스키마 파일이 바뀌었는데 기록.md 변경이 없습니다: {', '.join(sfiles[:3])}"
                     " — 작업 기록.md '## 스키마 변경'에 남기세요"
                 )
     # H-3 lantern check on the documents in this commit
@@ -256,9 +256,9 @@ def pre_commit(project: Project) -> int:
         bad = [f for f in rep.findings if f.level == "error"]
         warn = [f for f in rep.findings if f.level == "warn"]
         for f in bad:
-            problems.append(f"H-3 {f.path}: {f.message}")
+            problems.append(f"문서 양식: {f.path}: {f.message}")
         if warn and not bad:
-            _say([f"⚠ LanternSpec H-3 참고: {f.path}: {f.message}" for f in warn[:5]])
+            _say([f"⚠ LanternSpec 문서 양식 참고: {f.path}: {f.message}" for f in warn[:5]])
     return _content_result(project, problems, "커밋 전 검사")
 
 

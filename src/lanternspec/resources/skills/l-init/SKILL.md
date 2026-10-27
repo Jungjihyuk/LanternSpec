@@ -13,7 +13,7 @@ argument-hint: "[바뀐 점 (다시 실행할 때)]"
 
 ## 0. 처음인가, 다시 실행인가
 - `lantern.yaml`이 **없으면** → 아래 1단계부터.
-- **있으면** → [다시 실행할 때](#다시-실행할-때-i-01)로 간다. 질문 7개를 다시 묻지 않는다.
+- **있으면** → [다시 실행할 때](#다시-실행할-때)로 간다. 질문 7개를 다시 묻지 않는다.
 
 ## 1. 질문 7개 — 하나씩 묻고, 답은 모았다가 한 번에 쓴다
 **묻는 법**
@@ -61,7 +61,7 @@ lantern scaffold init --plan        # 만들 폴더 · 문서 목록 (아직 아
 ```
 `principles show` 결과를 한두 줄로 알려 준다 (예: "CLI 도구 · 바깥 연결 → 단일 책임 · 확장 지점은 지킴, Python은 ruff · pyright").
 
-**도구 설정 파일 (I-05 ⑤):**
+**도구 설정 파일:**
 - 🏚 brownfield: `detect`가 찾은 **이미 쓰는 설정은 기록만** 한다 — 설정 파일(`pyproject.toml` · `.eslintrc` 등)을 바꾸거나 다른 도구로 갈아타자고 하지 않는다. 컨벤션에 있는데 설정이 없는 도구는 "들일까요?"만 묻는다.
 - 🌱 greenfield: 컨벤션의 도구를 개발 의존성에 넣고(예: `uv add --dev ruff pyright` · `pnpm add -D @biomejs/biome typescript`) 설정(예: `pyproject.toml`의 `[tool.ruff]` · `[tool.pyright]`)을 만들지 **묻고, 승인하면** 한다. 개발 의존성에 있어야 CI에서도 같은 도구가 설치된다. 거절하면 `lantern profile set build.lint= build.typecheck=`로 비운다.
 `--plan` 결과를 사용자에게 짧게 보여 준다 (예: "모바일 → 플랫폼 연동 · 배포 문서가 생겨요").
@@ -76,7 +76,7 @@ lantern scaffold init --plan        # 만들 폴더 · 문서 목록 (아직 아
 ## 4. 🌱 그린필드 — 짧은 인터뷰로 프로젝트 정의서 초안
 `docs/3. 현재 상태/프로젝트 정의서.md`의 `(필수)` 칸만 묻는다: 한 문장 소개 · 주 사용자와 문제 · 목표. 한 번에 묶어서 묻고, 답을 빈칸에 채운다. 모르는 칸은 `❓ 확인 필요`로 둔다. 선택 칸은 비어 있어도 된다.
 
-## 5. 🏚 브라운필드 — 채우기 → 연결하기 → 빈칸 묻기 (I-02)
+## 5. 🏚 브라운필드 — 채우기 → 연결하기 → 빈칸 묻기
 1. **채우기:** 코드(무엇이 있나: 사실) + `5. 기존 문서/`(왜: 배경)를 읽고 `3. 현재 상태`의 초안을 채운다 — 시스템 구조 · 기능 목록 · 데이터 · (있으면) API.
    - 데이터: SQL 마이그레이션이 있으면 `lantern dbml from-sql <마이그레이션 폴더> --out "docs/3. 현재 상태/데이터/schema.dbml"` → `lantern dbml render`. **마이그레이션 · 실제 DB가 기준**이다.
    - 각 현재 상태 문서 frontmatter에 관련 코드와 확인 시점을 적는다: `lantern meta set "<문서>" 'code=[src/auth, src/api]' checked_commit=$(git rev-parse --short HEAD)`
@@ -105,7 +105,7 @@ lantern close l-init
 
 ---
 
-## 다시 실행할 때 (I-01)
+## 다시 실행할 때
 1. `lantern profile show`로 지난 답을 보여 주고 **"바뀐 게 있나요?"**만 묻는다.
 2. 바뀐 값을 `lantern profile set key=value …`로 고친다 (예: `project.team=team 'project.members=[지혁, 민수]'`, `'project.clients=[mobile, web]'`).
 3. `lantern scaffold init --plan`으로 **새로 켜질 문서를 먼저 알려 주고** 되묻는다: "웹이 추가되면 웹 화면 · 웹 배포 칸이 생겨요. 추가할까요?"

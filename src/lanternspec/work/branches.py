@@ -259,7 +259,7 @@ def finish(project: Project, work_id: str, test: bool = True, keep: bool = False
             msgs.append(f"✔ worktree 정리: {wt.path}")
         r = git(["branch", "-d", name], project.root)
         msgs.append(f"✔ 브랜치 삭제: {name}" if r.returncode == 0 else f"⚠ 브랜치를 지우지 못했습니다: {r.stderr.strip()}")
-    msgs.append("다음: 현재 상태 반영 요약(BU-03) → 승인 → 반영 → lantern work archive " + wid)
+    msgs.append("다음: 현재 상태 반영 요약 → 승인 → 반영 → lantern work archive " + wid)
     return msgs
 
 

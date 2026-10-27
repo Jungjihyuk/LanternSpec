@@ -128,7 +128,7 @@ def cmd_task(a: argparse.Namespace) -> int:
             t = res.task
             print(f"▶ {t.id} {t.title} [크기:: {t.size or '?'}] [기준:: {', '.join(t.criteria) or '—'}]")
         elif res.all_done:
-            print("✅ 모든 할 일 완료 — 현재 상태 반영(BU-03) 단계로")
+            print("✅ 모든 할 일 완료 — 현재 상태 반영 단계로")
         else:
             print("지금 시작할 수 있는 할 일이 없습니다")
         for tid, why in res.skipped:
@@ -144,7 +144,7 @@ def cmd_task(a: argparse.Namespace) -> int:
         for ac in res.checkpoints:
             print(f"🔎 AC 체크포인트: {ac} — 연결된 할 일이 모두 끝났습니다. 이 기준만 확인하고 lantern task ac {res.task.work_id} {ac}")
         if res.work_done:
-            print("✅ 이 작업의 할 일을 모두 끝냈습니다 — 현재 상태 반영(BU-03)")
+            print("✅ 이 작업의 할 일을 모두 끝냈습니다 — 현재 상태 반영")
         return 0
     if a.action == "reopen":
         t = task_cmd.reopen(project, a.target)

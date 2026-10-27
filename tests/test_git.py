@@ -25,7 +25,7 @@ def test_commit_msg_warns_then_blocks(repo):
     write(repo, "src/a.py", "a = 1\n")
     repo.git("add", "src")
     res = commit(repo, "feat: a")
-    assert "H-1" in res.stderr  # warned, still committed
+    assert "커밋 메시지:" in res.stderr  # warned, still committed
     write(repo, "src/a.py", "a = 2\n")
     repo.git("add", "src")
     res = commit(repo, "feat: a [W-001-T01] [W-001-T02]")
@@ -34,7 +34,7 @@ def test_commit_msg_warns_then_blocks(repo):
     write(repo, "src/a.py", "a = 3\n")
     repo.git("add", "src", "lantern.yaml")
     res = commit(repo, "fix: a", check=False)
-    assert res.returncode != 0 and "H-1" in res.stderr
+    assert res.returncode != 0 and "커밋 메시지:" in res.stderr
     assert commit(repo, "fix: a [W-001-T03]").returncode == 0
     repo("hooks", "uninstall")
     _, out = repo("hooks", "status")
@@ -63,13 +63,13 @@ def test_schema_change_needs_a_record_and_doc_check(repo):
     write(repo, "migrations/001.sql", "CREATE TABLE a (id int);\n")
     repo.git("add", "migrations")
     res = commit(repo, "feat: a [W-001-T01]")
-    assert "H-2" in res.stderr
+    assert "스키마 기록:" in res.stderr
     repo("scaffold", "work", "작업")
     repo("scaffold", "doc", "W-001", "기록")
     write(repo, "migrations/002.sql", "CREATE TABLE b (id int);\n")
     repo.git("add", "-A")
     res = commit(repo, "feat: b [W-001-T02]")
-    assert "H-2" not in res.stderr
+    assert "스키마 기록:" not in res.stderr
     # H-3: a broken link in a staged doc
     idea_dir = docs(repo) / "1. 아이디어"
     repo("scaffold", "idea", "링크")
@@ -77,7 +77,7 @@ def test_schema_change_needs_a_record_and_doc_check(repo):
     fill(idea, [("{{관련 문서}}", "[[없음]]")])
     repo.git("add", "-A")
     res = commit(repo, "docs: 아이디어 [IDEA-001]")
-    assert "H-3" in res.stderr and "깨진 링크" in res.stderr
+    assert "문서 양식:" in res.stderr and "깨진 링크" in res.stderr
 
 
 def test_structure_rules_always_block(repo):

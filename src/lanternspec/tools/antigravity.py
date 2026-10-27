@@ -52,7 +52,7 @@ class Antigravity(Tool):
             return data
 
         merge_json_file(project.root / ".agents" / "hooks.json", merge)
-        merged = [".agents/hooks.json (hook H-4~H-7 · H-9 · H-10 — 압축 hook이 없어 H-8은 없음)"]
+        merged = [".agents/hooks.json (에이전트 hook — 압축 hook이 없어 압축 전 저장은 빠짐)"]
         if mcp:
             write(project.root / PLUGIN_DIR / "plugin.json", json.dumps({"name": "lanternspec"}, indent=2) + "\n")
             merge_json_file(

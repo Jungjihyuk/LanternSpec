@@ -99,7 +99,7 @@ class ClaudeCode(ClaudeHooks, Tool):
             write(claude_md, ("@AGENTS.md\n\n" + text) if text.strip() else "@AGENTS.md\n")
             merged.append("CLAUDE.md (@AGENTS.md)")
         merge_json_file(project.root / ".claude" / "settings.json", lambda d: replace_hook_entries(d, self.hooks()))
-        merged.append(".claude/settings.json (hook H-4~H-10)")
+        merged.append(".claude/settings.json (에이전트 hook)")
         if mcp:
             merge_json_file(project.root / ".mcp.json", add_mcp_server)
             merged.append(f".mcp.json (MCP {MCP_NAME})")

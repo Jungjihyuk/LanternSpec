@@ -34,7 +34,7 @@ lantern idea status IDEA-014 "<<idea_status.reviewing>>"   # 아이디어에서 
 lantern scaffold work "<작업 이름>" --idea IDEA-014 [--ui]  # 화면이 바뀌는 작업이면 --ui
 lantern idea status IDEA-014 "<<idea_status.worked>>" --work W-012
 ```
-- **아이디어 없이 바로** 시작하면(PL-03) 아이디어 카드를 뒤에서 함께 만든다: `lantern scaffold idea "<이름>" --kind 기능 --raw "<사용자 설명>" --status "<<idea_status.worked>>"` → 그 ID로 `scaffold work --idea` → `idea status … "<<idea_status.worked>>" --work …`.
+- **아이디어 없이 바로** 시작하면 아이디어 카드를 뒤에서 함께 만든다: `lantern scaffold idea "<이름>" --kind 기능 --raw "<사용자 설명>" --status "<<idea_status.worked>>"` → 그 ID로 `scaffold work --idea` → `idea status … "<<idea_status.worked>>" --work …`.
 - **기존 작업에 넣기**면 폴더를 만들지 않고 그 작업의 `기획.md`에 시나리오 · 수락 기준을 보탠 뒤 `lantern idea status IDEA-014 "<<idea_status.worked>>" --work W-010`.
 
 ## 3. 기획.md 채우기
@@ -68,7 +68,7 @@ lantern check --epic W-012
 <!-- lantern:endif -->
 
 <!-- lantern:if knowledge -->
-## 7. 모르는 기술 → /l-learn 후보 (LE-02)
+## 7. 모르는 기술 → /l-learn 후보
 기획에 기술 용어가 나오면 후보를 고른다: `lantern debt find "<용어>"`(아는 기술 · 카드 확인)와 `lantern knowledge search "<용어>"`로 **노트가 있는 기술은 처음부터 뺀다.** 한 번에 최대 <<learn.max_candidates>>개, 마지막 보고 때 보여 주고 **작업은 멈추지 않는다.** 사용자가 고르면 `/l-learn`으로 넘긴다. "이건 알아"는 `lantern debt known add "<용어>"`.
 <!-- lantern:endif -->
 

@@ -182,7 +182,7 @@ def test_agent_hooks_status_check_and_runlog(repo):
     _hook(repo.root, "prompt", {"session_id": "s1", "prompt": "/l-plan 작업"})
     fill(plan, [("## 왜", "## 이유")])
     r = _hook(repo.root, "post-tool", {"session_id": "s1", "tool_name": "Edit", "tool_input": {"file_path": str(plan)}})
-    assert r.returncode == 2 and "H-5" in r.stderr and "'## 왜'" in r.stderr
+    assert r.returncode == 2 and "LanternSpec 문서 양식" in r.stderr and "'## 왜'" in r.stderr
     fill(plan, [("## 이유", "## 왜")])
     r = _hook(repo.root, "post-tool", {"session_id": "s1", "tool_name": "Write", "tool_input": {"file_path": str(plan)}})
     assert r.returncode == 0 and "additionalContext" in r.stdout
@@ -367,9 +367,9 @@ def test_h7_sync_nudge_once_per_work_and_h8_compact_roundtrip(repo):
     assert "로그인 버튼 붙이는 중" not in now and "로그인 버튼 붙이는 중" in history
     assert "> [!guide] **덮어쓰는 칸.**" in now  # the guide line stays
     r = _hook(repo.root, "session-start", {"session_id": "s1", "source": "compact"})
-    assert "압축 전 진행 상황 (H-8)" in r.stdout and "하는 중 W-001-T01" in r.stdout and "로그인 버튼 붙이는 중" in r.stdout
+    assert "압축 전 진행 상황 — 문서에 저장됨" in r.stdout and "하는 중 W-001-T01" in r.stdout and "로그인 버튼 붙이는 중" in r.stdout
     r = _hook(repo.root, "session-start", {"session_id": "s1", "source": "startup"})
-    assert "H-8" not in r.stdout
+    assert "압축 전 진행 상황" not in r.stdout
     code, out = repo("check", ok=False)
     assert code == 0, out
     # a second compaction keeps one 지금 상황 and doesn't pile up identical history
