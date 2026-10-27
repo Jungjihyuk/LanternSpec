@@ -142,7 +142,7 @@ def new_card(
     allowed = [enums.value("debt_kind", "understanding"), enums.value("debt_kind", "tech")]
     kind = kind or allowed[0]
     if area not in enums.values("area"):
-        raise ValueError(f"영역 '{area}'은 enums.yaml area 값이 아닙니다 (가능: {', '.join(enums.values('area'))})")
+        raise ValueError(f"주제 '{area}'은 enums.yaml area 값이 아닙니다 (가능: {', '.join(enums.values('area'))})")
     if kind not in allowed:
         raise ValueError(f"새 카드의 종류는 {' · '.join(allowed)} (역량 부채는 lantern debt promote D-NNN)")
     existing = find(project, name, kind=enums["debt_kind"].role_of(kind))
@@ -369,7 +369,7 @@ def write_status(project: Project) -> Path:
     resolved = project.enums.value("debt_status", "resolved")
     open_cards = [c for c in cs if c.meta.get("status") != resolved]
     open_cards.sort(key=lambda c: (-int(c.meta.get("ask_count") or 0), c.id))
-    rows = ["| 카드 | 종류 | 영역 | 상태 | 물은 횟수 | 노트 |", "|---|---|---|---|---|---|"]
+    rows = ["| 카드 | 종류 | 주제 | 상태 | 물은 횟수 | 노트 |", "|---|---|---|---|---|---|"]
     for c in open_cards:
         st = str(c.meta.get("status") or "")
         note = str(c.meta.get("note") or "")
@@ -391,7 +391,7 @@ def write_status(project: Project) -> Path:
             "> [!abstract] 한눈에 보기",
             f"> 열린 부채 {s['open']}개 ({open_counts}) · {project.enums.label('debt_status', 'resolved')} {s['resolved']}개",
             "",
-            "## 유형 × 영역",
+            "## 종류별 · 주제별 개수",
             status_markdown(project),
             "",
             "## 열린 카드 (많이 물은 순)",

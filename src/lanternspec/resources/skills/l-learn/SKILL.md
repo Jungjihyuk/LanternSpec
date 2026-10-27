@@ -33,18 +33,18 @@ argument-hint: "<기술 용어> [용어 …]"
 4. **부채 카드 만들기 · 갱신** (번호 · 횟수는 스크립트가 센다 — 같은 대화에서는 한 번만 센다):
    ```bash
    # 카드가 없으면
-   lantern debt new "<용어>" --area <영역> --alias "<별칭>" [--work W-012] [--note "<노트 위치>"] --session "<<SESSION_ID>>" --context "<어디서 나왔나 한 줄>"
+   lantern debt new "<용어>" --area <주제> --alias "<별칭>" [--work W-012] [--note "<노트 위치>"] --session "<<SESSION_ID>>" --context "<어디서 나왔나 한 줄>"
    # 카드가 있으면
    lantern debt ask <D-NNN> [--work W-012] --session "<<SESSION_ID>>" --context "<맥락>"
    ```
-   - **영역**은 `enums.yaml`의 `area` 중 하나 (backend · frontend · data · ai · infra · 기타). 카드 하나에 영역 하나. 맞는 게 없으면 `기타`로 두고 새 영역을 제안한다 (사용자가 승인하면 `enums.yaml`에 추가).
+   - **주제**는 `enums.yaml`의 `area` 중 하나 (backend · frontend · data · ai · infra · 기타). 카드 하나에 주제 하나. 맞는 게 없으면 `기타`로 두고 새 주제를 제안한다 (사용자가 승인하면 `enums.yaml`에 추가).
    - <<debt_status.resolved.label>>된 카드를 또 물으면 스크립트가 다시 연다 (<<debt_status.resolved.label>> → <<debt_status.asked_again.label>>).
    - 카드의 "한눈에 보기"에 이 기술이 무엇이고 왜 쓰는지 한 줄을 채운다.
 5. **제안:**
    - 🟡 → 노트를 읽고(`lantern knowledge read "<경로>"`) 노트 링크 + 복습 포인트 2~3개
    - 🔴 → 학습 노트 초안을 만든다:
      ```bash
-     lantern knowledge propose "<용어>" --area <영역>
+     lantern knowledge propose "<용어>" --area <주제>
      ```
      만들어진 초안(`📒 부채/노트 초안/…`)의 빈칸을 채워 보여 주고 승인을 묻는다.
      - 지금 저장소 쓰기 방식: `<<knowledge.write>>` — `direct`면 승인 후 `lantern knowledge write "<초안 경로>"`, `propose_only`면 초안 경로만 알려 주고 넣는 것은 사용자가 한다.
@@ -61,7 +61,7 @@ argument-hint: "<기술 용어> [용어 …]"
   `lantern debt practice <역량 D-NNN> "<만든 것 · 링크 · 한 줄 소감>"` (<<debt_status.practicing.label>>), 과제를 다 하면 `lantern debt resolve <역량 D-NNN>`.
 
 ## 기술 부채 (코드에 남은 빚)
-일반적인 기술 부채는 기존 도구의 영역이지만, 사용자가 남기자고 하면 같은 장부에 둔다: `lantern debt new "<무엇>" --kind "<<debt_kind.tech>>" --area <영역> [--work W-012]`.
+일반적인 기술 부채는 기존 도구의 영역이지만, 사용자가 남기자고 하면 같은 장부에 둔다: `lantern debt new "<무엇>" --kind "<<debt_kind.tech>>" --area <주제> [--work W-012]`.
 
 ## "이건 알아"
 사용자가 아는 기술이라고 하면 `lantern debt known add "<용어>" --alias "<별칭>"` — 다시 묻지 않는다.

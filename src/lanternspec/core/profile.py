@@ -288,7 +288,7 @@ def render(data: dict[str, Any]) -> str:
         if k.get("token_env"):
             lines.append(f"  token_env: {s(k['token_env'])}   # Notion 토큰을 담은 환경 변수")
         if k.get("areas_from"):
-            lines.append(f"  areas_from: {s(k['areas_from'])}    # (선택) 이 폴더 분류를 읽어 부채 영역 추가를 제안한다")
+            lines.append(f"  areas_from: {s(k['areas_from'])}    # (선택) 이 폴더 분류를 읽어 부채 카드 주제 추가를 제안한다")
         lines += [f"  write: {s(k['write'])}            # direct(승인 후 바로 씀) | propose_only(초안 파일만)", ""]
     else:
         lines += ["# knowledge: 지식 저장소가 생기면 블록을 추가한다 (type · path · write)", ""]

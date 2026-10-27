@@ -82,7 +82,7 @@ def test_debt_counting_once_per_conversation_and_reopen(repo, vault):
     m = card_meta(repo, "D-001")
     assert m["status"] == "되물음" and m["ask_count"] == 3 and m["resolved"] == ""
     code, out = repo("debt", "new", "CRDT", "--area", "quantum", ok=False)
-    assert code == 1 and "영역" in out
+    assert code == 1 and "주제" in out
     # status page
     repo("debt", "status")
     status = (docs(repo) / "📒 부채/부채 현황.md").read_text(encoding="utf-8")
