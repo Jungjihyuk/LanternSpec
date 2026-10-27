@@ -123,6 +123,21 @@ uv run pytest                       # 테스트 + docstring Example
 - 한 줄은 140자까지. 포맷터가 자르지 못하는 긴 문자열은 이어 붙는 조각(`"앞" "뒤"`)으로 나눈다.
 - Python 3.12 이상을 지원한다 (`requires-python >= 3.12`, 개발 버전은 `.python-version`). 3.12까지의 문법은 자유롭게 쓴다.
 
+### 배포
+PyPI 업로드는 `.github/workflows/release.yml`이 한다 (Trusted Publishing — 토큰 없음). 사람이 하는 일은 태그까지다.
+main에 push하거나 PR을 열 때마다 `.github/workflows/ci.yml`이 같은 확인 네 가지를 돈다 (배포는 하지 않는다).
+
+```bash
+# CHANGELOG.md · CHANGELOG.ko.md의 [Unreleased]를 [새 버전] - 날짜로 옮긴다
+uv version 0.1.1                                   # 버전은 pyproject.toml 한 곳에만 있다
+git commit -am "Release 0.1.1" && git tag -a v0.1.1 -m "LanternSpec 0.1.1"
+git push origin main && git push origin v0.1.1      # 태그가 올라가면 확인 → 만들기 → 배포가 돈다
+```
+
+- 태그와 `pyproject.toml`의 버전이 다르거나 확인 네 가지 중 하나라도 실패하면 배포하지 않는다.
+- 올리기 전에 실패했으면 고친 뒤 태그를 지우고(`git push --delete origin v0.1.1` · `git tag -d v0.1.1`) 다시 단다.
+  이미 PyPI에 올라간 버전은 다시 올릴 수 없으니, 그 뒤의 수정은 버전을 올려 새 태그로 낸다.
+
 ### 타입 힌트
 - 함수 · 메서드의 모든 인자와 반환값에 타입 힌트를 단다 (`ruff`의 `ANN`이 검사한다. 테스트 함수는 빼고).
 - 3.12의 표기를 쓴다: `dict[str, int]` · `list[str]` · `X | None` · `collections.abc`의 `Callable` · `Iterator`.
