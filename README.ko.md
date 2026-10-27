@@ -2,7 +2,7 @@
 
 <img src="https://raw.githubusercontent.com/Jungjihyuk/LanternSpec/main/assets/Banner_ko.png" alt="LanternSpec — 모르는 것은 밝히고, 걸어온 길은 보여 준다. AI 에이전트 협업을 위한 명세 주도 개발 프레임워크" width="100%">
 
-<a href="https://github.com/Jungjihyuk/LanternSpec/blob/main/CHANGELOG.md"><img src="https://img.shields.io/badge/release-v0.1.0-007ec6" alt="release v0.1.0"></a>
+<a href="https://github.com/Jungjihyuk/LanternSpec/blob/main/CHANGELOG.ko.md"><img src="https://img.shields.io/badge/release-v0.1.0-007ec6" alt="release v0.1.0"></a>
 <a href="https://github.com/Jungjihyuk/LanternSpec"><img src="https://img.shields.io/github/stars/Jungjihyuk/LanternSpec?style=social" alt="GitHub Stars"></a>
 <a href="https://github.com/Jungjihyuk/LanternSpec/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-97ca00" alt="license MIT"></a>
 <img src="https://img.shields.io/badge/python-3.12%2B-007ec6" alt="python 3.12+">
