@@ -2,7 +2,7 @@
 
 <img src="https://raw.githubusercontent.com/Jungjihyuk/LanternSpec/main/assets/Banner.png" alt="LanternSpec — Illuminate the unknown. Show the path taken. Spec-Driven Development for Agentic Software Engineering." width="100%">
 
-<a href="https://github.com/Jungjihyuk/LanternSpec/blob/main/CHANGELOG.md"><img src="https://img.shields.io/badge/release-v0.1.0-007ec6" alt="release v0.1.0"></a>
+<a href="https://pypi.org/project/lanternspec/"><img src="https://img.shields.io/pypi/v/lanternspec?label=release&color=007ec6" alt="PyPI release"></a>
 <a href="https://github.com/Jungjihyuk/LanternSpec"><img src="https://img.shields.io/github/stars/Jungjihyuk/LanternSpec?style=social" alt="GitHub Stars"></a>
 <a href="https://github.com/Jungjihyuk/LanternSpec/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-97ca00" alt="license MIT"></a>
 <img src="https://img.shields.io/badge/python-3.12%2B-007ec6" alt="python 3.12+">
