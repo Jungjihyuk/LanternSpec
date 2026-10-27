@@ -33,7 +33,10 @@ argument-hint: "[바뀐 점 (다시 실행할 때)]"
 1. 🌱 새 프로젝트(greenfield)인가, 🏠 기존 코드가 있는 프로젝트(brownfield)인가? — 코드가 이미 있으면 brownfield를 추천
 2. 몇 명이 하나? 1인(solo) / 2인 이상(team) — team이면 팀원 이름도
 3. 무엇을 만드나? (화면 쪽, 여러 개 가능) 웹 · 데스크톱 · 모바일 · 없음
-4. 서버가 필요한가? 없음(none) / 외부 서비스 Supabase · Firebase 등(external) / 직접 구축(custom)
+4. 백엔드(서버 쪽 코드와 데이터 저장)는 어떻게 하나? — 서버를 *어디에* 띄우는지가 아니라 서버 코드를 *직접 쓰는지*를 묻는다
+   - 없음(none): 서버 없이 앱 · 웹 안에서만 동작. 데이터는 기기나 브라우저에 저장
+   - 외부 서비스(external): Supabase · Firebase처럼 이미 만들어진 백엔드를 가져다 씀 — 서버 코드를 직접 쓰지 않음
+   - 직접 만듦(custom): 서버 코드를 직접 작성 — AWS · GCP · Vercel · 사내 서버 등 어디에 띄우든 (로컬에서만 돌려도 여기)
    - external이면: "API 명세 문서도 켤까요?" (필요하면 켜짐 → `--extra api`)
 5. 지식 저장소는? (없음 가능) Obsidian 폴더 · 아무 Markdown 폴더. 있으면: 노트를 승인 후 바로 쓸까(direct), 초안 파일만 만들까(propose_only)? 영역 분류 폴더(예: `2. Study`)가 있나?
 6. 디자인 도구는? Claude Design / Figma / Canva / 없음 — Figma · Canva는 그 도구의 MCP 서버가 이 AI 도구에 연결돼 있어야 한다 (없으면 연결 방법을 안내하고, 연결 전까지는 내보낸 파일을 받는다)

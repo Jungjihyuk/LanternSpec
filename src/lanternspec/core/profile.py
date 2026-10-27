@@ -262,7 +262,8 @@ def render(data: dict[str, Any]) -> str:
         f"  team: {s(p['team'])}              # solo(1인) | team(2인 이상)",
         f"  members: {s(p.get('members') or [])}            # team일 때 담당자 후보",
         f"  clients: {s(p.get('clients') or [])}          # web | desktop | mobile — 여러 개 가능",
-        f"  server: {s(p['server'])}            # none | external(Supabase 등) | custom(직접 구축)",
+        f"  server: {s(p['server'])}            # none(서버 없음) | external(Supabase · Firebase 같은 백엔드 서비스)"
+        " | custom(서버 코드를 직접 작성 — 어디에 띄우든)",
         f"  language: {s(p.get('language', 'ko'))}",
         f"  kind: {s(p.get('kind'))}              # {' | '.join(principles.kind_names())} — 설계 원칙을 고르는 기준",
         f"  external: {s(bool(p.get('external')))}         # 바깥 도구 · 서비스(AI 도구 · 결제 · 외부 API 등)에 붙나",
