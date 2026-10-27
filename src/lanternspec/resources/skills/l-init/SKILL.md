@@ -21,7 +21,7 @@ argument-hint: "[바뀐 점 (다시 실행할 때)]"
 3. 무엇을 만드나? (화면 쪽, 여러 개 가능) 웹 · 데스크톱 · 모바일 · 없음
 4. 서버가 필요한가? 없음(none) / 외부 서비스 Supabase · Firebase 등(external) / 직접 구축(custom)
    - external이면: "API 명세 문서도 켤까요?" (필요하면 켜짐 → `--extra api`)
-5. 지식 저장소는? (없음 가능) Obsidian 폴더 · MY_BRAIN(`.my-wiki/document_cards.jsonl` 카드 색인이 있는 볼트) · 아무 Markdown 폴더 · Notion(부모 페이지 ID + 환경 변수 `NOTION_TOKEN`). 있으면: 노트를 승인 후 바로 쓸까(direct), 초안 파일만 만들까(propose_only)? 영역 분류 폴더(예: `2. Study`)가 있나?
+5. 지식 저장소는? (없음 가능) Obsidian 폴더 · 아무 Markdown 폴더. 있으면: 노트를 승인 후 바로 쓸까(direct), 초안 파일만 만들까(propose_only)? 영역 분류 폴더(예: `2. Study`)가 있나?
 6. 디자인 도구는? Claude Design / Figma / Canva / 없음 — Figma · Canva는 그 도구의 MCP 서버가 이 AI 도구에 연결돼 있어야 한다 (없으면 연결 방법을 안내하고, 연결 전까지는 내보낸 파일을 받는다)
 7. 어떤 종류의 프로젝트인가? 스크립트 · 실험(script) / CLI 도구(cli) / 라이브러리 · 플러그인(library) / 서비스 — 웹 · 앱(service) / 데이터 · ML(data). 그리고 **바깥 도구 · 서비스에 붙나?** (AI 도구 · 결제 · 외부 API · 플러그인을 받는 구조 등) — 설계 원칙을 이 답으로 고른다
    - 언어는 묻기 전에 먼저 `lantern principles detect`로 알아본다. 알아본 것이 없으면(새 프로젝트) "무엇으로 만드나요? Python · TypeScript · Swift · Rust · Go"를 함께 묻는다
@@ -38,7 +38,7 @@ argument-hint: "[바뀐 점 (다시 실행할 때)]"
 ```bash
 lantern profile write --name "<이름>" --origin greenfield|brownfield --team solo|team [--members "지혁,민수"] \
   --clients web,mobile --server none|external|custom [--extra api] \
-  [--knowledge "<경로 · Notion 부모 페이지 ID>" --knowledge-type obsidian|my_brain|folder|notion --knowledge-write direct|propose_only [--areas-from "2. Study"]] \
+  [--knowledge "<지식 저장소 경로>" --knowledge-type obsidian|folder --knowledge-write direct|propose_only [--areas-from "2. Study"]] \
   --design claude-design|figma|canva|none --remote shared|local --base main \
   --kind script|cli|library|service|data --external yes|no [--languages python,typescript]
 lantern principles detect --write   # 코드 규모 · 언어 · 확인 명령(build.format · lint · typecheck)을 기록

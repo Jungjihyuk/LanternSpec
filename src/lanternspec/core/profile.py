@@ -55,7 +55,7 @@ CHOICES: dict[str, tuple[str, ...]] = {
     "project.kind": principles.kind_names(),
     "project.code_size": principles.SIZES,
     "docs.remote": ("shared", "local"),
-    "knowledge.type": ("obsidian", "my_brain", "folder", "notion"),
+    "knowledge.type": ("obsidian", "folder", "notion"),
     "knowledge.write": ("direct", "propose_only"),
     "design.tool": ("claude-design", "figma", "canva", "none"),
     "design.approval": ("required", "auto", "off"),
@@ -218,9 +218,7 @@ def validate(data: dict[str, Any]) -> list[str]:
     if data.get("knowledge"):
         k = data["knowledge"]
         if not isinstance(k, dict) or not k.get("path"):
-            problems.append(
-                "knowledge.path: 지식 저장소 경로(notion이면 부모 페이지 ID)가 비어 있습니다 (없으면 knowledge 블록을 지우세요)"
-            )
+            problems.append("knowledge.path: 지식 저장소 경로가 비어 있습니다 (없으면 knowledge 블록을 지우세요)")
     if get_path(data, "project.team") == "team" and not get_path(data, "project.members"):
         problems.append("project.members: 2인 이상(team)이면 담당자 후보를 적어 주세요")
     if get_path(data, "lantern") != PROFILE_VERSION:
@@ -283,8 +281,7 @@ def render(data: dict[str, Any]) -> str:
         k = _deep_merge(KNOWLEDGE_DEFAULTS, k)
         lines += [
             "knowledge:                  # 배우는 선로. 없으면 이 블록을 지운다",
-            f"  type: {s(k['type'])}            # obsidian | my_brain(카드 색인) | folder(아무 Markdown 폴더)"
-            " | notion(path=부모 페이지 ID)",
+            f"  type: {s(k['type'])}            # obsidian | folder(아무 Markdown 폴더)",
             f"  path: {s(k['path'])}",
         ]
         if k.get("token_env"):

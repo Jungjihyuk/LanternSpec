@@ -91,7 +91,7 @@
   | 지점 | 지금 구현 | 더하는 법 |
   |---|---|---|
   | AI 도구 | Claude Code · Codex · Antigravity | `tools/<도구>.py`(`Tool` 구현) + `tools/__init__.py`의 `REGISTRY` 한 줄 |
-  | 지식 저장소 | obsidian · folder · my_brain · notion | `learn/knowledge/<저장소>.py`(`Adapter` 구현) + `adapter_for`의 분기 + `core/profile.py`의 선택지 (아직 한 곳으로 모이지 않음) |
+  | 지식 저장소 | obsidian · folder · notion | `learn/knowledge/<저장소>.py`(`Adapter` 구현) + `adapter_for`의 분기 + `core/profile.py`의 선택지 (아직 한 곳으로 모이지 않음) |
   | 상태 · 종류 값 | `enums.yaml`의 목록들 | `enums.yaml`에 한 줄 (코드 수정 없음) |
   | CLI 명령 | 6개 그룹 | 그룹 파일의 `register()`에 추가 |
 

@@ -17,7 +17,7 @@ GROUPS = (tools, core, work, learn, report, check)  # order of the help list
 
 
 def build_parser() -> argparse.ArgumentParser:
-    ap = argparse.ArgumentParser(prog="lantern", description="LanternSpec — Light up the unknowns. See how far you've come.")
+    ap = argparse.ArgumentParser(prog="lantern", description="LanternSpec — 모르는 것은 밝히고, 걸어온 길은 보여 준다.")
     ap.add_argument("--version", action="version", version=f"lanternspec {__version__}")
     sub = ap.add_subparsers(dest="command", metavar="<명령>")
 

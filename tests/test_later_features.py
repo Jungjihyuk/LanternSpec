@@ -1,4 +1,4 @@
-"""08 · 09의 '나중 · 다음 버전' 항목: H-9 · H-10 · Notion · MY_BRAIN · 역량 부채 · Figma/Canva ·
+"""08 · 09의 '나중 · 다음 버전' 항목: H-9 · H-10 · Notion · 역량 부채 · Figma/Canva ·
 AI 작업 평가 · 작업 방식 추천 · [P] 병렬 · 예정일 제안 · 시안 자동 비교 · 큰 반복."""
 
 import json
@@ -65,36 +65,6 @@ def test_h10_idea_detection(repo):
 
 
 # --------------------------------------------------------------------------- knowledge adapters
-
-
-def test_my_brain_adapter_uses_cards_and_only_proposes(repo, tmp_path):
-    brain = tmp_path / "brain"
-    (brain / ".my-wiki").mkdir(parents=True)
-    (brain / "2. Study/Backend").mkdir(parents=True)
-    (brain / "2. Study/Backend/JWT.md").write_text("# JWT\n토큰\n", encoding="utf-8")
-    cards = [
-        {
-            "path": "2. Study/Backend/JWT.md",
-            "title": "JWT",
-            "summary": "서명된 토큰",
-            "headings": [],
-            "tags": ["study/backend"],
-            "properties": {},
-            "updated_at": "2026-10-01",
-        },
-        {"path": "4. Work/면접/JWT 질문.md", "title": "JWT 질문", "summary": "", "properties": {}},
-    ]
-    (brain / ".my-wiki/document_cards.jsonl").write_text("\n".join(json.dumps(c, ensure_ascii=False) for c in cards), encoding="utf-8")
-    init_project(repo)
-    repo("profile", "set", f"knowledge={{type: my_brain, path: '{brain}'}}")
-    _, out = repo("knowledge", "search", "JWT", "--json")
-    hits = json.loads(out)
-    assert [h["path"] for h in hits] == ["2. Study/Backend/JWT.md"]  # 4. Work stays out
-    assert hits[0]["summary"] == "서명된 토큰"
-    repo("knowledge", "propose", "CRDT", "--file", str(brain / "2. Study/Backend/JWT.md"))
-    _, out = repo("knowledge", "write", "docs/📒 부채/노트 초안/CRDT.md")
-    assert ".my-wiki/workspace/lanternspec/CRDT.md" in out
-    assert not (brain / "2. Study" / "CRDT.md").exists()
 
 
 class FakeNotion:

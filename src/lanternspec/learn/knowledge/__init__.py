@@ -60,12 +60,8 @@ def adapter_for(project: Project) -> Adapter:
         from .obsidian import ObsidianAdapter
 
         return ObsidianAdapter(Path(str(k["path"])).expanduser())
-    if kind == "my_brain":
-        from .my_brain import MyBrainAdapter
-
-        return MyBrainAdapter(Path(str(k["path"])).expanduser())
     if kind == "notion":
         from .notion import from_config
 
         return from_config(k)
-    raise KnowledgeError(f"'{kind}' 어댑터가 없습니다 (가능: obsidian · my_brain · folder · notion)")
+    raise KnowledgeError(f"'{kind}' 어댑터가 없습니다 (가능: obsidian · folder · notion)")

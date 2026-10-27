@@ -14,7 +14,7 @@ from lanternspec.core.profile import Profile, enabled_docs
 def test_profile_render_roundtrip_and_spec_example(tmp_path):
     data = {
         "project": {"name": "소셜 가계부", "clients": ["mobile"], "server": "external", "members": ["지혁"]},
-        "knowledge": {"type": "obsidian", "path": "~/MY_BRAIN", "areas_from": "2. Study"},
+        "knowledge": {"type": "obsidian", "path": "~/vault", "areas_from": "2. Study"},
     }
     profile.save(tmp_path, data)
     loaded = profile.load(tmp_path)
