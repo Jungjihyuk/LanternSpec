@@ -146,8 +146,8 @@ def test_upgrade_refreshes_untouched_templates_only(repo, monkeypatch):
 
     orig = scaffold.base_template_text
 
-    def newer(name):
-        text = orig(name)
+    def newer(name, language="ko"):
+        text = orig(name, language)
         if name in ("ADR", "기획"):
             text = text.replace("template_version: 1.0.0", "template_version: 1.1.0").replace("based_on: 1.0.0", "based_on: 1.1.0")
         return text

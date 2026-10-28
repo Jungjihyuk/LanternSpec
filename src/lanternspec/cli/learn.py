@@ -51,9 +51,8 @@ def cmd_knowledge(a: argparse.Namespace) -> int:
         folder = a.arg or k.get("areas_from")
         if not folder:
             raise CliError('knowledge.areas_from이 없습니다 (lantern knowledge areas "2. Study")')
-        from ..core import enums as enums_mod
 
-        have = set(enums_mod.load(project.enums_file).values("area"))
+        have = set(project.enums.values("area"))
         found = adapter_for(project).areas(str(folder))
         for name in found:
             print(f"{'· 있음' if name.lower() in {h.lower() for h in have} else '✚ 제안'}  {name}")

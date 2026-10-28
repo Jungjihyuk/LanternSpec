@@ -43,7 +43,7 @@ def close(
     counts = {"error": 0, "warn": 0, "info": 0}
     if check and project.docs.exists():
         changed = check_docs.changed_docs(project)
-        rep = check_docs.run(project, changed if changed else None)
+        rep = check_docs.run(project, changed if changed else None, templates=True)
         counts = rep.counts()
         shown = [f for f in rep.findings if f.level != "info"]
         if shown:

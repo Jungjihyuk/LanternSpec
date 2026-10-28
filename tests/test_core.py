@@ -100,7 +100,7 @@ def test_render_strips_template_only_and_based_on():
     assert "based_on" not in out
     assert "변경 기록" not in out
     assert "# 이름" in out and "id: IDEA-001" in out
-    assert templating.placeholders(out) == [("칸 (필수)", True, 7)]
+    assert templating.placeholders(out, "(필수)") == [("칸 (필수)", True, 7)]
 
 
 # --------------------------------------------------------------------------- frontmatter

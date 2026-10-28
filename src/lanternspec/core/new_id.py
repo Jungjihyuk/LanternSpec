@@ -107,7 +107,7 @@ def next_task_id(project: Project, work_id: str, tasks_file: Path | None = None)
         work = project.find_work(work_id)
         if work is None:
             raise ValueError(f"작업 {work_id} 폴더를 찾지 못했습니다")
-        tasks_file = work / "할 일.md"
+        tasks_file = project.doc_path(work, "tasks")
     n = 0
     if tasks_file.exists():
         for m in TASK_RE.finditer(read(tasks_file)):

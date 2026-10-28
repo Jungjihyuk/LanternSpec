@@ -23,6 +23,7 @@ from typing import Any
 
 import yaml
 
+from . import names as names_mod
 from . import principles
 
 PROFILE_FILE = "lantern.yaml"
@@ -44,7 +45,7 @@ DEFAULTS: dict[str, Any] = {
         "languages": [],
         "code_size": None,
     },
-    "docs": {"root": "docs/", "remote": "shared", "extra": []},
+    "docs": {"root": "docs/", "remote": "shared", "extra": [], "sections": {}, "unused_sections": []},
     "knowledge": None,
     "design": {"tool": "none", "approval": "required"},
     "git": {"hooks": "warn", "base": "main"},
@@ -233,6 +234,16 @@ class Profile:
         return str(self.get("project.comment_language") or self.get("project.language") or "ko")
 
     @property
+    def language(self) -> str:
+        """Language of documents, skills and messages (project.language), fixed when the project is set up."""
+        return str(self.get("project.language") or "ko")
+
+    @property
+    def names(self) -> names_mod.Names:
+        """Every name the program uses for this project: the language's names plus renamed or unused protected sections."""
+        return names_mod.load(self.language, self.get("docs.sections") or {}, self.get("docs.unused_sections") or [])
+
+    @property
     def brownfield(self) -> bool:
         """Whether the project started from existing code."""
         return self.get("project.origin") == "brownfield"
@@ -326,10 +337,35 @@ def validate(data: dict[str, Any]) -> list[str]:
         k = data["knowledge"]
         if not isinstance(k, dict) or not k.get("path"):
             problems.append("knowledge.path: 지식 저장소 경로가 비어 있습니다 (없으면 knowledge 블록을 지우세요)")
+    problems += _section_problems(data)
     if get_path(data, "project.team") == "team" and not get_path(data, "project.members"):
         problems.append("project.members: 2인 이상(team)이면 담당자 후보를 적어 주세요")
     if get_path(data, "lantern") != PROFILE_VERSION:
         problems.append(f"lantern: 파일 형식 버전은 {PROFILE_VERSION} 이어야 합니다")
+    return problems
+
+
+def _section_problems(data: dict[str, Any]) -> list[str]:
+    """Check project.language and the protected-section decisions (docs.sections · docs.unused_sections)."""
+    language = str(get_path(data, "project.language") or "ko")
+    if language not in names_mod.languages():
+        return [f"project.language: '{language}' 언어 묶음이 없습니다 (가능: {', '.join(names_mod.languages())})"]
+    roles = [s.role for s in names_mod.load(language).sections()]
+    problems: list[str] = []
+    renamed = get_path(data, "docs.sections") or {}
+    if not isinstance(renamed, dict):
+        return ["docs.sections: 칸 → 새 이름 형태여야 합니다 (예: {now: 오늘 한 일})"]
+    for role, titles in renamed.items():
+        if role not in roles:
+            problems.append(f"docs.sections: '{role}'는 보호 칸이 아닙니다 (가능: {', '.join(roles)})")
+        elif not (isinstance(titles, str) and titles.strip()) and not (
+            isinstance(titles, list) and titles and all(isinstance(x, str) and x.strip() for x in titles)
+        ):
+            problems.append(f"docs.sections.{role}: 새 이름(글자)이나 이름 목록이어야 합니다")
+    unused = get_path(data, "docs.unused_sections") or []
+    if not isinstance(unused, list):
+        return problems + ["docs.unused_sections: 목록이어야 합니다 (예: [schema])"]
+    problems += [f"docs.unused_sections: '{r}'는 보호 칸이 아닙니다 (가능: {', '.join(roles)})" for r in unused if r not in roles]
     return problems
 
 
@@ -396,6 +432,11 @@ def render(data: dict[str, Any]) -> str:
     ]
     if docs.get("extra"):
         lines.append(f"  extra: {s(docs['extra'])}           # '필요하면 켜짐' 문서 중 켠 것 (api)")
+    if docs.get("sections"):
+        lines.append("  sections:                  # 이름을 바꾼 보호 칸 (lantern sections rename) — 목록이면 앞이 지금 이름")
+        lines += [f"    {role}: {s(title)}" for role, title in docs["sections"].items()]
+    if docs.get("unused_sections"):
+        lines.append(f"  unused_sections: {s(docs['unused_sections'])}   # 쓰지 않는 보호 칸 (lantern sections off)")
     lines.append("")
     if k:
         k = _deep_merge(KNOWLEDGE_DEFAULTS, k)
@@ -487,8 +528,8 @@ def save(root: Path, data: dict[str, Any]) -> Path:
 def update(root: Path, updates: dict[str, Any]) -> None:
     """Change some values in lantern.yaml.
 
-    When every key is already written in the file, only those values change and the comments stay;
-    otherwise the whole file is written again.
+    When every key is already written in the file (and no value is a mapping), only those values change
+    and the comments stay; otherwise the whole file is written again.
 
     Args:
         root: Project root.
@@ -509,7 +550,8 @@ def update(root: Path, updates: dict[str, Any]) -> None:
         raise ValueError("\n".join(problems))
     text: str | None = path.read_text(encoding="utf-8")
     for k, v in updates.items():
-        text = set_in_text(text, k, v) if text is not None else None
+        # a mapping spans several lines: render the whole file again instead of editing one line
+        text = set_in_text(text, k, v) if text is not None and not isinstance(v, dict) else None
     if text is None:  # a key not written in the file yet: render the whole file again
         save(root, data)
     else:
@@ -564,25 +606,6 @@ class DocSpec:
     variant: str | None = None
 
 
-FOLDERS = {
-    "templates": "0. 템플릿",
-    "ideas": "1. 아이디어",
-    "works": "2. 작업",
-    "archive": "2. 작업/보관",
-    "current": "3. 현재 상태",
-    "rules": "3. 현재 상태/규칙 · 결정 기록",
-    "ops": "4. 운영 기록",
-    "reports": "4. 운영 기록/보고",
-    "past_reports": "4. 운영 기록/보고/지난 보고",
-    "sessions": "4. 운영 기록/세션",
-    "meetings": "4. 운영 기록/회의록",
-    "legacy": "5. 기존 문서",
-    "debt": "📒 부채",
-    "debt_cards": "📒 부채/카드",
-    "note_drafts": "📒 부채/노트 초안",
-}
-MOC_FILE = "개발문서 MOC.md"
-
 DATA_VARIANT = {"none": "기기 안 저장소", "external": "외부 DB", "custom": "서버 DB"}
 CLIENT_LABEL = {"web": "웹", "desktop": "데스크톱", "mobile": "모바일"}
 
@@ -604,58 +627,62 @@ def enabled_docs(profile: Profile) -> list[DocSpec]:
     clients = profile.clients
     server = profile.server
     extra = set(profile.get("docs.extra") or [])
+    n = profile.names
+    f = n.folder
+
+    def doc(key: str, folder: str, role: str, reason: str, **kw: Any) -> DocSpec:
+        """A document named by its role, created from the template of the same name."""
+        return DocSpec(key, f"{f(folder)}/{n.file(role)}", n.doc(role), reason, **kw)
+
+    def folder(key: str, reason: str, folder_key: str = "") -> DocSpec:
+        """A folder; folder_key names it in names.yaml when it differs from the key."""
+        return DocSpec(key, f(folder_key or key) + "/", None, reason)
+
+    data_dir = f"{f('current')}/{f('data')}"
     out: list[DocSpec] = [
-        DocSpec("moc", MOC_FILE, "개발문서 MOC", "항상"),
-        DocSpec("templates", FOLDERS["templates"] + "/", None, "항상"),
-        DocSpec("ideas", FOLDERS["ideas"] + "/", None, "항상"),
-        DocSpec("works", FOLDERS["works"] + "/", None, "항상"),
-        DocSpec("archive", FOLDERS["archive"] + "/", None, "항상"),
-        DocSpec("project-definition", f"{FOLDERS['current']}/프로젝트 정의서.md", "프로젝트 정의서", "항상"),
-        DocSpec("features", f"{FOLDERS['current']}/기능 목록.md", "기능 목록", "항상"),
-        DocSpec("architecture", f"{FOLDERS['current']}/시스템 구조.md", "시스템 구조", "항상"),
+        DocSpec("moc", n.file("moc"), n.doc("moc"), "항상"),
+        folder("templates", "항상"),
+        folder("ideas", "항상"),
+        folder("works", "항상"),
+        folder("archive", "항상"),
+        doc("project-definition", "current", "project_definition", "항상"),
+        doc("features", "current", "features", "항상"),
+        doc("architecture", "current", "architecture", "항상"),
         DocSpec(
             "data",
-            f"{FOLDERS['current']}/데이터/데이터.md",
-            "데이터",
+            f"{data_dir}/{n.file('data')}",
+            n.doc("data"),
             f"항상 ({DATA_VARIANT.get(server, server)})",
             variant=DATA_VARIANT.get(server),
         ),
-        DocSpec("schema", f"{FOLDERS['current']}/데이터/schema.dbml", None, "데이터 원본 (DBML)"),
-        DocSpec("rules", FOLDERS["rules"] + "/", None, "항상"),
-        DocSpec("unit-log", f"{FOLDERS['rules']}/작업 단위 기록.md", "작업 단위 기록", "항상"),
-        DocSpec("reports", FOLDERS["past_reports"] + "/", None, "항상"),
+        DocSpec("schema", f"{data_dir}/schema.dbml", None, "데이터 원본 (DBML)"),
+        folder("rules", "항상"),
+        doc("unit-log", "rules", "unit_log", "항상"),
+        folder("reports", "항상", "past_reports"),
     ]
     if clients:
         labels = ", ".join(CLIENT_LABEL[c] for c in clients if c in CLIENT_LABEL)
         out += [
-            DocSpec("screens", f"{FOLDERS['current']}/화면/화면.md", "화면", f"화면 유형: {labels}"),
-            DocSpec("platform", f"{FOLDERS['current']}/플랫폼 연동.md", "플랫폼 연동", f"화면 유형: {labels}", sections=list(clients)),
-            DocSpec("deploy", f"{FOLDERS['current']}/배포.md", "배포", f"화면 유형: {labels}", sections=list(clients)),
+            DocSpec("screens", f"{f('current')}/{f('screens')}/{n.file('screens')}", n.doc("screens"), f"화면 유형: {labels}"),
+            doc("platform", "current", "platform", f"화면 유형: {labels}", sections=list(clients)),
+            doc("deploy", "current", "deploy", f"화면 유형: {labels}", sections=list(clients)),
         ]
     if server == "custom" or (server == "external" and "api" in extra):
-        out.append(
-            DocSpec("api", f"{FOLDERS['current']}/API.md", "API", "서버 직접 구축" if server == "custom" else "외부 서비스 + API 켬")
-        )
+        out.append(doc("api", "current", "api", "서버 직접 구축" if server == "custom" else "외부 서비스 + API 켬"))
     if server == "custom":
-        out.append(DocSpec("server-ops", f"{FOLDERS['current']}/서버 배포 · 운영.md", "서버 배포 · 운영", "서버 직접 구축"))
+        out.append(doc("server-ops", "current", "server_ops", "서버 직접 구축"))
     if profile.team:
-        out += [
-            DocSpec("collab", f"{FOLDERS['rules']}/협업 규칙.md", "협업 규칙", "2인 이상"),
-            DocSpec("meetings", FOLDERS["meetings"] + "/", None, "2인 이상"),
-        ]
+        out += [doc("collab", "rules", "collab", "2인 이상"), folder("meetings", "2인 이상")]
     if profile.knowledge:
         out += [
-            DocSpec("debt-cards", FOLDERS["debt_cards"] + "/", None, "지식 저장소 있음 (배우는 선로)"),
-            DocSpec("debt-status", f"{FOLDERS['debt']}/부채 현황.md", None, "지식 저장소 있음 (자동 생성)"),
-            DocSpec("known-tech", f"{FOLDERS['debt']}/아는 기술.md", "아는 기술", "지식 저장소 있음"),
+            folder("debt-cards", "지식 저장소 있음 (배우는 선로)", "debt_cards"),
+            DocSpec("debt-status", f"{f('debt')}/{n.file('debt_status')}", None, "지식 저장소 있음 (자동 생성)"),
+            doc("known-tech", "debt", "known_tech", "지식 저장소 있음"),
         ]
     if profile.get("project.kind"):
-        out.append(DocSpec("principles", f"{FOLDERS['rules']}/개발 원칙.md", None, "프로젝트 종류를 정함 (자동 생성)"))
+        out.append(DocSpec("principles", f"{f('rules')}/{n.file('principles')}", None, "프로젝트 종류를 정함 (자동 생성)"))
     if profile.brownfield:
-        out += [
-            DocSpec("legacy", FOLDERS["legacy"] + "/", None, "브라운필드"),
-            DocSpec("legacy-map", f"{FOLDERS['legacy']}/기존 문서 지도.md", "기존 문서 지도", "브라운필드"),
-        ]
+        out += [folder("legacy", "브라운필드"), doc("legacy-map", "legacy", "legacy_map", "브라운필드")]
     return out
 
 

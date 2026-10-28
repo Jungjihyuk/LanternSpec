@@ -189,10 +189,13 @@ class Tool:
             >>> list(get("claude").skill_files(src, profile, "/"))[0]  # doctest: +SKIP
             '.claude/skills/l-build/SKILL.md'
         """
-        from .skills import render_body, rewrite_commands
+        from dataclasses import replace
+
+        from .skills import body_context, fill_tokens, render_body, rewrite_commands
 
         base = f"{self.skill_root}/{src.name}"
         body = render_body(src, profile, self, prefix, enums)
+        src = replace(src, description=fill_tokens(src.description, body_context(profile, self.name, enums)))
         files = {f"{base}/SKILL.md": yaml_front(self.skill_meta(src, profile, prefix)) + GENERATED_NOTE + "\n" + body}
         for rel, text in src.extra.items():
             files[f"{base}/{rel}"] = rewrite_commands(text, prefix)

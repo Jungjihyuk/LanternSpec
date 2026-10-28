@@ -10,8 +10,6 @@ from ..core.project import Project, read, work_id_of, work_name_of
 from ..core.taskfile import parse_tasks
 from ..work.tasks import next_task
 
-UNKNOWN = "❓ 확인 필요"
-
 
 def open_unknowns(project: Project) -> list[tuple[str, int]]:
     """Count the open "❓ 확인 필요" marks in documents still in use (active works and current state).
@@ -28,6 +26,7 @@ def open_unknowns(project: Project) -> list[tuple[str, int]]:
         >>> open_unknowns(project)  # doctest: +SKIP
         [('2. 작업/W-012 로그인/설계.md', 2)]
     """
+    unknown = project.names.marker("unknown")
     out = []
     targets = []
     for w in project.work_dirs():
@@ -39,7 +38,7 @@ def open_unknowns(project: Project) -> list[tuple[str, int]]:
         lines = [
             l
             for l in read(p).split("\n")
-            if UNKNOWN in l and "[!guide]" not in l and f"`{UNKNOWN}" not in l and not l.lstrip().startswith("> -")
+            if unknown in l and "[!guide]" not in l and f"`{unknown}" not in l and not l.lstrip().startswith("> -")
         ]
         if lines:
             out.append((project.docs_rel(p), len(lines)))
@@ -63,15 +62,16 @@ def lines(project: Project) -> list[str]:
     if works:
         parts = []
         for w in works[:3]:
-            meta = frontmatter.parse(read(w / "기획.md")).meta if (w / "기획.md").exists() else {}
+            plan = project.doc_path(w, "plan")
+            meta = frontmatter.parse(read(plan)).meta if plan.exists() else {}
             stage = str(meta.get("status") or "")
             extra = ""
-            tf = w / "할 일.md"
+            tf = project.doc_path(w, "tasks")
             if tf.exists():
-                ts = parse_tasks(read(tf))
+                ts = parse_tasks(read(tf), project.names)
                 if ts:
                     extra = f", 할 일 {sum(t.done for t in ts)}/{len(ts)}"
-            design = w / "설계.md"
+            design = project.doc_path(w, "design")
             if (
                 design.exists()
                 and not frontmatter.parse(read(design)).meta.get("approved")
@@ -97,7 +97,7 @@ def lines(project: Project) -> list[str]:
     if unknowns:
         total = sum(n for _, n in unknowns)
         where = ", ".join(f"{d} ({n})" for d, n in unknowns[:3])
-        third = f"❓ 확인 필요 {total}개: {where}"
+        third = f"{project.names.marker('unknown')} {total}개: {where}"
     else:
-        third = "❓ 확인 필요: 없음"
+        third = f"{project.names.marker('unknown')}: 없음"
     return [first, second, third]

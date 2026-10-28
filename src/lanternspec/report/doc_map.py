@@ -9,7 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from ..core import frontmatter
-from ..core.profile import FOLDERS
+from ..core.names import WORK_DOCS
 from ..core.project import Project, nfc, now_minute, read, wikilink, work_id_of, work_name_of, write
 from ..core.taskfile import parse_criteria, parse_tasks
 
@@ -70,7 +70,7 @@ def build_block(project: Project) -> str:
         if not folder.exists():
             continue
         count = len(_md_files(folder, recursive=True))
-        lines.append(f"| {FOLDERS[key]} | {role} | {count} | {tmpl} | `{cmd}` |")
+        lines.append(f"| {project.names.folder(key)} | {role} | {count} | {tmpl} | `{cmd}` |")
     lines.append("")
 
     # current state
@@ -93,24 +93,24 @@ def build_block(project: Project) -> str:
         lines += ["| 작업 | 단계 | 📋 기획 | 📐 설계 | ✅ 할 일 | 🔨 기록 |", "|---|---|---|---|---|---|"]
         for w in works:
             wid, name = work_id_of(w), work_name_of(w)
-            plan = w / "기획.md"
+            plan = project.doc_path(w, "plan")
             stage = _status_of(plan) if plan.exists() else ""
             cells = []
-            for doc in ("기획.md", "설계.md", "할 일.md", "기록.md"):
-                p = w / doc
+            for role in WORK_DOCS:
+                p = project.doc_path(w, role)
                 if not p.exists():
                     cells.append("—")
                     continue
                 extra = ""
-                if doc == "기획.md":
+                if role == "plan":
                     acs = parse_criteria(read(p))
                     if acs:
                         extra = f" (AC {sum(a.done for a in acs)}/{len(acs)})"
-                if doc == "할 일.md":
-                    ts = parse_tasks(read(p))
+                if role == "tasks":
+                    ts = parse_tasks(read(p), project.names)
                     if ts:
                         extra = f" ({sum(t.done for t in ts)}/{len(ts)})"
-                if doc == "설계.md":
+                if role == "design":
                     approved = frontmatter.parse(read(p)).meta.get("approved")
                     extra = " ✅ 승인" if approved else " ⏳ 승인 대기"
                 cells.append(wikilink(project, p, p.stem, table=True) + extra)
@@ -122,7 +122,7 @@ def build_block(project: Project) -> str:
     if done:
         lines += ["## 🗄 보관된 작업"]
         for w in done:
-            lines.append(f"- {wikilink(project, w / '기획.md', work_id_of(w) + ' ' + work_name_of(w))}")
+            lines.append(f"- {wikilink(project, project.doc_path(w, 'plan'), work_id_of(w) + ' ' + work_name_of(w))}")
         lines.append("")
 
     # ideas
@@ -144,13 +144,13 @@ def build_block(project: Project) -> str:
 
     # debt + reports
     extras = []
-    status = project.folder("debt") / "부채 현황.md"
+    status = project.folder("debt") / project.names.file("debt_status")
     if status.exists():
         extras.append(f"- 📒 {wikilink(project, status, '부채 현황')}")
-    report = project.folder("reports") / "현황.md"
+    report = project.folder("reports") / project.names.file("report")
     if report.exists():
         extras.append(f"- 📊 {wikilink(project, report, '현황 보고')}")
-    legacy_map = project.folder("legacy") / "기존 문서 지도.md"
+    legacy_map = project.folder("legacy") / project.names.file("legacy_map")
     if legacy_map.exists():
         extras.append(f"- 🗂 {wikilink(project, legacy_map, '기존 문서 지도')}")
     if extras:
@@ -191,7 +191,7 @@ def run(project: Project) -> Path:
     if not moc.exists():
         from ..work.scaffold import create_from_template
 
-        create_from_template(project, "개발문서 MOC", moc)
+        create_from_template(project, project.names.doc("moc"), moc)
     text = read(moc)
     block = build_block(project)
     s, e = text.find(START), text.find(END)

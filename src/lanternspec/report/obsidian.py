@@ -24,7 +24,7 @@ from typing import Any
 import yaml
 
 from ..core.enums import Enums
-from ..core.profile import FOLDERS
+from ..core.names import Names
 from ..core.project import Project, read, write
 
 PLUGINS = {  # recommended plugin id → GitHub repo. [key:: value] display (tasks) · field choices (status · kind · topic)
@@ -39,7 +39,6 @@ plugins/*/main.js
 plugins/*/manifest.json
 plugins/*/styles.css
 """
-CLASS_DIR = f"{FOLDERS['templates']}/_meta/fileClass/"  # path inside the vault (docs/) — Metadata Menu uses it as a prefix as is
 TYPE_FIELD = "type"  # the document-type field = the key Metadata Menu picks the fileClass by
 PROPERTY_TYPES = {  # Obsidian Properties field types (types.json)
     "created": "date",
@@ -156,14 +155,35 @@ body {
 """
 
 
-def snippet_css() -> str:
-    """Build the LanternSpec CSS snippet — folder colors per document stage · callouts · quotes (on any theme).
+def class_dir(names: Names) -> str:
+    """Return the fileClass folder inside the vault (docs/), with a trailing slash — Metadata Menu uses it as a prefix as is.
+
+    Args:
+        names: The project's names (the template folder's name).
 
     Returns:
-        CSS text. Folder names come from FOLDERS in core/profile.py.
+        e.g. "0. 템플릿/_meta/fileClass/".
 
     Example:
-        >>> css = snippet_css()
+        >>> from lanternspec.core.names import load
+        >>> class_dir(load("ko"))
+        '0. 템플릿/_meta/fileClass/'
+    """
+    return f"{names.folder('templates')}/_meta/fileClass/"
+
+
+def snippet_css(names: Names) -> str:
+    """Build the LanternSpec CSS snippet — folder colors per document stage · callouts · quotes (on any theme).
+
+    Args:
+        names: The project's names (folder names).
+
+    Returns:
+        CSS text.
+
+    Example:
+        >>> from lanternspec.core.names import load
+        >>> css = snippet_css(load("ko"))
         >>> '.nav-folder-title[data-path="1. 아이디어"]' in css, "--callout-radius" in css
         (True, True)
     """
@@ -173,9 +193,9 @@ def snippet_css() -> str:
         "/* 문서 단계별 폴더 색 */",
     ]
     for key, (light, dark) in FOLDER_COLORS.items():
-        sel = f'.nav-folder-title[data-path="{FOLDERS[key]}"]'
+        sel = f'.nav-folder-title[data-path="{names.folder(key)}"]'
         lines += [f"body {sel} {{ --ls-folder: {light}; }}", f".theme-dark {sel} {{ --ls-folder: {dark}; }}"]
-    titles = ",\n".join(f'.nav-folder-title[data-path="{FOLDERS[k]}"]' for k in FOLDER_COLORS)
+    titles = ",\n".join(f'.nav-folder-title[data-path="{names.folder(k)}"]' for k in FOLDER_COLORS)
     lines += [
         "",
         titles + " {",
@@ -216,7 +236,7 @@ def write_vault(project: Project) -> list[Path]:
             out.append(path)
 
     save(obs / "app.json", _dump({**APP_DEFAULTS, **_load(obs / "app.json")}))
-    save(obs / "snippets" / f"{SNIPPET}.css", snippet_css())
+    save(obs / "snippets" / f"{SNIPPET}.css", snippet_css(project.names))
     look = _load(obs / "appearance.json")
     snippets = look.get("enabledCssSnippets") or []
     save(obs / "appearance.json", _dump({**look, "enabledCssSnippets": snippets + [SNIPPET] * (SNIPPET not in snippets)}))
@@ -226,14 +246,14 @@ def write_vault(project: Project) -> list[Path]:
     types = _load(obs / "types.json")
     save(obs / "types.json", _dump({**types, "types": {**PROPERTY_TYPES, **(types.get("types") or {})}}))
     mm = _load(obs / "plugins" / "metadata-menu" / "data.json")
-    mm.update({"fileClassAlias": TYPE_FIELD, "classFilesPath": CLASS_DIR})
+    mm.update({"fileClassAlias": TYPE_FIELD, "classFilesPath": class_dir(project.names)})
     mm["presetFields"] = [f for f in mm.get("presetFields") or [] if f.get("name") not in _managed_fields(enums)]
     save(obs / "plugins" / "metadata-menu" / "data.json", _dump(mm))
-    class_dir = project.docs / CLASS_DIR
+    classes = project.docs / class_dir(project.names)
     wanted = {f"{t}.md": file_class(enums, t) for t in enums.values("doc_type")}
     for name, text in wanted.items():
-        save(class_dir / name, text)
-    for stale in class_dir.glob("*.md"):  # document types that no longer exist after a rename
+        save(classes / name, text)
+    for stale in classes.glob("*.md"):  # document types that no longer exist after a rename
         if stale.name not in wanted:
             stale.unlink()
             out.append(stale)

@@ -13,6 +13,7 @@ from pathlib import Path
 
 from ..core import frontmatter
 from ..core.links import Resolver, iter_links
+from ..core.names import WORK_DOCS
 from ..core.project import Project, now_minute, read, work_id_of, work_name_of, write
 from .tasks import next_task
 
@@ -70,7 +71,7 @@ def build(project: Project, work_id: str) -> str:
         "",
         "## 규칙",
         "- 할 일 하나 = 커밋 하나, 메시지 끝에 `[할 일 ID]` · 시작/완료는 `lantern task start|done`",
-        "- 설계에 없는 큰 변경 · `❓ 확인 필요` · 테스트 3번 실패 · 실제 DB 마이그레이션 → 바로 보고하고 멈춘다",
+        f"- 설계에 없는 큰 변경 · `{project.names.marker('unknown')}` · 테스트 3번 실패 · 실제 DB 마이그레이션 → 바로 보고하고 멈춘다",
         f"- 보고 주기: {project.profile.get('build.report_cycle')} · 반영 승인: {project.profile.get('build.merge_approval')}",
     ]
     nxt = next_task(project, wid)
@@ -87,25 +88,26 @@ def build(project: Project, work_id: str) -> str:
 
     linked: list[Path] = []
     resolver = Resolver(project.docs)
-    for doc in ("기획.md", "설계.md", "할 일.md", "기록.md"):
-        p = folder / doc
+    n = project.names
+    for role in WORK_DOCS:
+        p = project.doc_path(folder, role)
         if not p.exists():
             continue
         text = read(p)
-        parts += ["", f"---\n## 📄 {doc}", _strip_guides(text)]
+        parts += ["", f"---\n## 📄 {p.name}", _strip_guides(text)]
         for link in iter_links(text):
             target = resolver.resolve(link, p)
             if target and target.suffix == ".md" and folder not in target.parents and target not in linked:
                 linked.append(target)
     # current state: project definition glance always, linked docs in full (data doc if the design touches data)
     current = project.folder("current")
-    definition = current / "프로젝트 정의서.md"
+    definition = current / n.file("project_definition")
     parts += ["", "---\n## 📘 현재 상태 (관련 부분만)"]
     if definition.exists():
-        parts += ["### 프로젝트 정의서 — 한눈에 보기", _glance(read(definition)) or "(비어 있음)"]
-    design = folder / "설계.md"
+        parts += [f"### {n.doc('project_definition')} — {n.marker('glance')}", _glance(read(definition)) or "(비어 있음)"]
+    design = project.doc_path(folder, "design")
     if design.exists() and "```dbml" in read(design):
-        schema = current / "데이터" / "schema.dbml"
+        schema = current / n.folder("data") / "schema.dbml"
         if schema.exists():
             parts += ["### 데이터 원본 (schema.dbml)", "```dbml", read(schema).strip(), "```"]
     for p in linked:

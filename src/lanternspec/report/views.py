@@ -34,9 +34,9 @@ SUM_START, SUM_END = "<!-- l-report:summary:start -->", "<!-- l-report:summary:e
 SIZE_DAYS = {"S": 1, "M": 2, "L": 3}
 
 
-def _work_tasks(w: Path) -> list[Task]:
-    tf = w / "할 일.md"
-    return parse_tasks(read(tf)) if tf.exists() else []
+def _work_tasks(project: Project, w: Path) -> list[Task]:
+    tf = project.doc_path(w, "tasks")
+    return parse_tasks(read(tf), project.names) if tf.exists() else []
 
 
 def _meta(p: Path) -> dict:
@@ -65,10 +65,10 @@ def kanban(project: Project) -> str:
     """
     cols: dict[str, list[str]] = {"todo": [], "blocked": [], "doing": [], "done": []}
     for w in project.work_dirs():
-        tasks = _work_tasks(w)
+        tasks = _work_tasks(project, w)
         graph = TaskGraph(tasks)
         for t in tasks:
-            label = f"{t.id} {t.title}" + (f" [{t.size}]" if t.size else "") + (f" @{t.attrs['담당']}" if t.attrs.get("담당") else "")
+            label = f"{t.id} {t.title}" + (f" [{t.size}]" if t.size else "") + (f" @{t.attrs['owner']}" if t.attrs.get("owner") else "")
             if t.done:
                 cols["done"].append(label)
             elif t.started:
@@ -126,8 +126,8 @@ def timeline(project: Project) -> str:
     any_task = False
     for w in works:
         wid = work_id_of(w)
-        tasks = _work_tasks(w)
-        plan_meta = _meta(w / "기획.md")
+        tasks = _work_tasks(project, w)
+        plan_meta = _meta(project.doc_path(w, "plan"))
         lines.append(f"  section {_gantt_name(wid + ' ' + work_name_of(w))}")
         # idea → work: when did the idea appear?
         for link in frontmatter.as_list(plan_meta.get("links")):
@@ -144,7 +144,7 @@ def timeline(project: Project) -> str:
             tid = t.id.lower().replace("-", "")
             name = _gantt_name(f"{t.id.split('-')[-1]} {t.title}")
             start, end = _parse_dt(t.started), _parse_dt(t.finished)
-            planned_s, planned_e = _parse_dt(t.attrs.get("시작 예정", "")), _parse_dt(t.attrs.get("마감 예정", ""))
+            planned_s, planned_e = _parse_dt(t.attrs.get("start_plan", "")), _parse_dt(t.attrs.get("due_plan", ""))
             tag = "done, " if t.done else ("active, " if t.started else "")
             if start and end:
                 if end <= start:
@@ -188,14 +188,14 @@ def domain(project: Project) -> str:
     """
     groups: dict[str, list[str]] = {}
     for w in project.work_dirs(include_archive=True):
-        meta = _meta(w / "기획.md")
+        meta = _meta(project.doc_path(w, "plan"))
         dom = str(meta.get("domain") or "")
         if not dom or "{{" in dom:
             dom = "(도메인 없음)"
-        acs = parse_criteria(read(w / "기획.md")) if (w / "기획.md").exists() else []
-        tasks = _work_tasks(w)
+        acs = parse_criteria(read(project.doc_path(w, "plan"))) if (project.doc_path(w, "plan")).exists() else []
+        tasks = _work_tasks(project, w)
         row = (
-            f"| {_cell(dom)} | {wikilink(project, w / '기획.md', work_id_of(w) + ' ' + work_name_of(w), table=True)} | "
+            f"| {_cell(dom)} | {wikilink(project, project.doc_path(w, 'plan'), work_id_of(w) + ' ' + work_name_of(w), table=True)} | "
             f"{meta.get('status', '')} | {sum(a.done for a in acs)}/{len(acs)} | {sum(t.done for t in tasks)}/{len(tasks)} |"
         )
         groups.setdefault(dom, []).append(row)
@@ -225,7 +225,7 @@ def trace(project: Project) -> str:
     works = project.work_dirs(include_archive=True)
     work_by_idea: dict[str, list[Path]] = {}
     for w in works:
-        for link in frontmatter.as_list(_meta(w / "기획.md").get("links")):
+        for link in frontmatter.as_list(_meta(project.doc_path(w, "plan")).get("links")):
             m = re.search(r"(IDEA-\d{3,})", str(link))
             if m:
                 work_by_idea.setdefault(m.group(1), []).append(w)
@@ -243,7 +243,7 @@ def trace(project: Project) -> str:
             last = log[0] if log else "—"
             rows.append(
                 f"| {wikilink(project, idea, nfc(idea.stem), table=True)} | {meta.get('status', '')} | "
-                f"{wikilink(project, w / '기획.md', wid, table=True)} | {len(log)} | {last} |"
+                f"{wikilink(project, project.doc_path(w, 'plan'), wid, table=True)} | {len(log)} | {last} |"
             )
     if len(rows) == 2:
         return "_아이디어가 없습니다._"
@@ -268,7 +268,7 @@ def debt_view(project: Project) -> str:
         return "_배우는 선로가 꺼져 있습니다 (lantern.yaml knowledge)._"
     debt_mod.write_status(project)
     s = debt_mod.stats(project)
-    status = project.folder("debt") / "부채 현황.md"
+    status = project.folder("debt") / project.names.file("debt_status")
     return (
         f"열린 부채 **{s['open']}개** · {project.enums.label('debt_status', 'resolved')} {s['resolved']}개"
         f" — 자세히: {wikilink(project, status, '부채 현황')}\n\n" + debt_mod.status_markdown(project)
@@ -314,11 +314,13 @@ def collect_stats(project: Project, sync_total: int | None) -> dict:
     """
     tasks_done = tasks_total = 0
     for w in project.work_dirs(include_archive=True):
-        ts = _work_tasks(w)
+        ts = _work_tasks(project, w)
         tasks_total += len(ts)
         tasks_done += sum(t.done for t in ts)
     active = project.work_dirs()
-    approvals = [work_id_of(w) for w in active if (w / "설계.md").exists() and not _meta(w / "설계.md").get("approved")]
+    approvals = [
+        work_id_of(w) for w in active if project.doc_path(w, "design").exists() and not _meta(project.doc_path(w, "design")).get("approved")
+    ]
     d = debt_mod.stats(project) if project.folder("debt").exists() else {"open": 0, "resolved": 0, "total": 0}
     s = {
         "tasks_done": tasks_done,
@@ -408,7 +410,7 @@ def run(project: Project, views: list[str] | None = None, summary: list[str] | N
     bad = [v for v in views if v not in VIEWS]
     if bad:
         raise ValueError(f"알 수 없는 보기: {', '.join(bad)} (가능: {', '.join(VIEWS)})")
-    current = project.folder("reports") / "현황.md"
+    current = project.folder("reports") / project.names.file("report")
     sections: list[str] = []
     sync_total: int | None = None
     for v in views:
@@ -447,7 +449,7 @@ def run(project: Project, views: list[str] | None = None, summary: list[str] | N
         "",
         f"> ⚙️ 자동 생성 — `lantern report` · **기준: {now_minute()}** · 보기: {', '.join(VIEW_TITLE[v] for v in views)}",
         "",
-        "> [!abstract] 한눈에 보기",
+        f"> [!abstract] {project.names.marker('glance')}",
         f"> 진행 중 작업 {stats['works_active']}개 · 할 일 {stats['tasks_done']}/{stats['tasks_total']} 완료 · "
         f"열린 부채 {stats['debt_open']}개"
         + (f" · ⏳ 설계 승인 대기 {', '.join(waiting)}" if waiting else "")

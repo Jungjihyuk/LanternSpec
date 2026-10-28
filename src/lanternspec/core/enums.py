@@ -365,12 +365,12 @@ class Enums:
         return out
 
 
-def _base() -> Enums:
-    """Read the default enums.yaml bundled with the package."""
-    return Enums(yaml.safe_load(resources.read_text("templates/_meta/enums.yaml")) or {})
+def _base(language: str = "ko") -> Enums:
+    """Read the default enums.yaml of a language bundled with the package."""
+    return Enums(yaml.safe_load(resources.read_text(f"locales/{language}/templates/_meta/enums.yaml")) or {})
 
 
-def load(enums_file: Path | None = None) -> Enums:
+def load(enums_file: Path | None = None, language: str = "ko") -> Enums:
     """Read enums.yaml.
 
     Uses the project's file when it exists, else the default bundled with the package.
@@ -379,6 +379,7 @@ def load(enums_file: Path | None = None) -> Enums:
     Args:
         enums_file: Path of the project's enums.yaml (`docs/0. 템플릿/_meta/enums.yaml`).
             When None or missing, the default is read.
+        language: Language of the default (lantern.yaml project.language).
 
     Returns:
         All lists that were read.
@@ -388,8 +389,8 @@ def load(enums_file: Path | None = None) -> Enums:
         '❌ 버림'
     """
     if enums_file is not None and enums_file.exists():
-        return Enums(yaml.safe_load(enums_file.read_text(encoding="utf-8")) or {}, fallback=_base())
-    return _base()
+        return Enums(yaml.safe_load(enums_file.read_text(encoding="utf-8")) or {}, fallback=_base(language))
+    return _base(language)
 
 
 def rename_in_text(text: str, enum: str, old: str, new: str) -> str:

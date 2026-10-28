@@ -17,7 +17,6 @@ from collections.abc import Iterable
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from ..core import enums as enums_mod
 from ..core import frontmatter, templating
 from ..core.links import Resolver, iter_links
 from ..core.project import Project, git_out, nfc, read
@@ -26,7 +25,6 @@ from ..core.taskfile import parse_criteria, parse_tasks
 COMMON_FIELDS = ["id", "type", "status", "created", "updated", "links", "template", "template_version"]
 LEVEL_ICON = {"error": "✖", "warn": "⚠", "info": "ℹ"}
 LEVEL_ORDER = {"error": 0, "warn": 1, "info": 2}
-UNKNOWN = "❓ 확인 필요"
 
 
 @dataclass
@@ -228,10 +226,10 @@ def _section_spans(text: str) -> list[tuple[str, int, int]]:
     return spans
 
 
-def _glance_empty(body: str) -> bool:
+def _glance_empty(body: str, title: str) -> bool:
     lines = body.split("\n")
     for i, line in enumerate(lines):
-        if re.match(r"^>\s*\[!abstract\][^\n]*한눈에 보기", line):
+        if re.match(rf"^>\s*\[!abstract\][^\n]*{re.escape(title)}", line):
             content = []
             for nxt in lines[i + 1 :]:
                 if not nxt.startswith(">"):
@@ -260,33 +258,35 @@ def is_generated(meta: dict) -> bool:
 def _active_doc(project: Project, path: Path, meta: dict) -> bool:
     """Only docs still in use get migrate suggestions."""
     rel = project.docs_rel(path)
-    if rel.startswith(nfc("3. 현재 상태")):
+    n = project.names
+    if rel.startswith(nfc(n.folder("current"))):
         return meta.get("status") != project.enums.value("current_status", "inactive")
-    if rel.startswith(nfc("2. 작업/보관")):
+    if rel.startswith(nfc(n.folder("archive"))):
         return False
-    if rel.startswith(nfc("2. 작업")):
+    if rel.startswith(nfc(n.folder("works"))):
         return meta.get("status") != project.enums.value("work_status", "done")
     return False
 
 
-def required_headings(template_text: str) -> list[str]:
+def required_headings(template_text: str, required: str) -> list[str]:
     r"""List the `## ` sections of a template that hold a required `(필수)` blank — removing one breaks the structure.
 
     Args:
         template_text: The template.
+        required: The mark of a required blank, e.g. "(필수)".
 
     Returns:
         The section headings.
 
     Example:
-        >>> required_headings("## 목표\n{{목표 (필수)}}\n## 메모\n{{메모}}\n")
+        >>> required_headings("## 목표\n{{목표 (필수)}}\n## 메모\n{{메모}}\n", "(필수)")
         ['목표']
     """
     body = templating.strip_template_only(template_text)
     out = []
     for heading, start, end in _section_spans(body):
         section = "\n".join(body.split("\n")[start - 1 : end])
-        if "(필수)}}" in section:
+        if f"{required}}}}}" in section:
             out.append(heading)
     return out
 
@@ -297,6 +297,7 @@ class TemplateIndex:
     Attributes:
         versions: Template name → template_version.
         required: Template name → headings of sections with required blanks.
+        texts: Template name → template text.
 
     Example:
         >>> TemplateIndex(project).versions["기획"]  # doctest: +SKIP
@@ -311,7 +312,8 @@ class TemplateIndex:
         """
         self.versions: dict[str, str] = {}
         self.required: dict[str, list[str]] = {}
-        texts: dict[str, str] = {}
+        self.texts: dict[str, str] = {}
+        texts = self.texts
         if project.templates_dir.exists():
             for p in project.templates_dir.glob("*.md"):
                 text = read(p)
@@ -320,10 +322,96 @@ class TemplateIndex:
         if not texts:
             from ..work.scaffold import base_template_names, base_template_text
 
-            texts = {name: base_template_text(name) for name in base_template_names()}
+            language = project.profile.language
+            texts.update({name: base_template_text(name, language) for name in base_template_names(language)})
+        mark = project.names.marker("required")
         for name, text in texts.items():
             self.versions[name] = frontmatter.as_str(frontmatter.parse(text).meta.get("template_version"))
-            self.required[name] = required_headings(text)
+            self.required[name] = required_headings(text, mark)
+
+
+# --------------------------------------------------------------------------- protected sections
+
+
+def missing_sections(project: Project, template: str, text: str) -> list[str]:
+    r"""List the protected sections a document (or template) of a kind lacks.
+
+    Sections the project turned off (docs.unused_sections) are not listed.
+
+    Args:
+        project: The project.
+        template: The template name the text belongs to, e.g. "기록".
+        text: The document or template text.
+
+    Returns:
+        Roles of the missing protected sections, in names.yaml order.
+
+    Example:
+        >>> missing_sections(project, "기록", "## 지금 상황\n- …\n")  # doctest: +SKIP
+        ['past', 'schema']
+    """
+    from ..core import sections
+
+    n = project.names
+    role = n.doc_role(template)
+    if role is None:
+        return []
+    return [s.role for s in n.sections_in(role) if not n.is_unused(s.role) and not sections.has(text, n.titles(s.role))]
+
+
+def section_question(project: Project, path: Path, role: str, template: str, rel: str, code: str) -> Finding:
+    """Ask, in a finding, what the person meant when a protected section is gone (no change is made).
+
+    Args:
+        project: The project.
+        path: The document or template without the section.
+        role: The protected section's role, e.g. "now".
+        template: The template the document belongs to, e.g. "기록".
+        rel: The path to show, relative to the project root.
+        code: "section-missing" for a document, "template-section-missing" for a template.
+
+    Returns:
+        A warning whose message asks the question and whose hint lists the three answers.
+
+    Example:
+        >>> section_question(project, path, "now", "기록", "docs/…/기록.md", "section-missing").message  # doctest: +SKIP
+        "'지금 상황' 칸이 없습니다. 이 칸은 대화가 길어져 … 일부러 바꾸셨나요?"
+    """
+    n = project.names
+    s = n.section(role)
+    template_rel = f"{n.folder('templates')}/{template}.md"
+    return Finding(
+        "warn",
+        rel,
+        code,
+        f"'{n.title(role)}' 칸이 없습니다. 이 칸은 {s.feature}. 일부러 바꾸셨나요?",
+        None,
+        f'제목을 바꿨다면 lantern sections rename {role} "새 제목" · 이 기능을 안 쓰면 lantern sections off {role} · '
+        f"실수였다면 {template_rel}의 '## {s.title}' 칸을 다시 넣기",
+    )
+
+
+def template_findings(project: Project) -> list[Finding]:
+    """Ask about protected sections missing from the project's own templates (once per template, not per document).
+
+    Args:
+        project: The project.
+
+    Returns:
+        One finding per missing protected section.
+
+    Example:
+        >>> template_findings(project)  # doctest: +SKIP
+        []
+    """
+    out: list[Finding] = []
+    if not project.templates_dir.exists():
+        return out
+    for p in sorted(project.templates_dir.glob("*.md")):
+        name = nfc(p.stem)
+        for role in missing_sections(project, name, read(p)):
+            out.append(section_question(project, p, role, name, project.rel(p), "template-section-missing"))
+    return out
 
 
 # --------------------------------------------------------------------------- the check
@@ -394,7 +482,7 @@ def check_file(project: Project, path: Path, text: str, ctx: _Ctx) -> list[Findi
     # placeholders
     if not generated and not disabled:
         optional_lines: list[int] = []
-        for name, required, line_no in templating.placeholders(text):
+        for name, required, line_no in templating.placeholders(text, project.names.marker("required")):
             if required:
                 out.append(Finding("warn", rel, "required-blank", f"필수 칸이 비어 있습니다: {{{{{name}}}}}", line_no))
             else:
@@ -403,14 +491,16 @@ def check_file(project: Project, path: Path, text: str, ctx: _Ctx) -> list[Findi
             out.append(
                 Finding("info", rel, "blank", f"빈 칸 {len(optional_lines)}개", optional_lines[0], "채우거나, 해당 없으면 칸을 지우세요")
             )
-        if _glance_empty(doc.body):
-            out.append(Finding("warn", rel, "glance-empty", "'한눈에 보기' 칸이 비어 있습니다"))
+        glance = project.names.marker("glance")
+        if _glance_empty(doc.body, glance):
+            out.append(Finding("warn", rel, "glance-empty", f"'{glance}' 칸이 비어 있습니다"))
 
     # unknowns
-    unknown_lines = [i for i, l in enumerate(text.split("\n"), start=1) if UNKNOWN in l and "`" + UNKNOWN not in l and "[!guide]" not in l]
+    unknown = project.names.marker("unknown")
+    unknown_lines = [i for i, l in enumerate(text.split("\n"), start=1) if unknown in l and "`" + unknown not in l and "[!guide]" not in l]
     if unknown_lines and not generated:
         out.append(
-            Finding("info", rel, "unknown", f"{UNKNOWN} {len(unknown_lines)}개", unknown_lines[0], "답을 받으면 해당 칸에 반영하세요")
+            Finding("info", rel, "unknown", f"{unknown} {len(unknown_lines)}개", unknown_lines[0], "답을 받으면 해당 칸에 반영하세요")
         )
 
     # links
@@ -461,6 +551,13 @@ def check_file(project: Project, path: Path, text: str, ctx: _Ctx) -> list[Findi
                     )
                 )
 
+    # protected sections: ask only when the template still has the section (a template change is asked about once, there)
+    if tname and tname in ctx.templates.texts and not generated and not disabled:
+        in_template = set(missing_sections(project, tname, ctx.templates.texts[tname]))
+        for role in missing_sections(project, tname, text):
+            if role not in in_template:
+                out.append(section_question(project, path, role, tname, rel, "section-missing"))
+
     # idea: dropped needs a reason
     if (
         doc_type == "idea"
@@ -492,10 +589,10 @@ def check_file(project: Project, path: Path, text: str, ctx: _Ctx) -> list[Findi
 
 def _check_tasks(project: Project, path: Path, text: str, rel: str) -> list[Finding]:
     out: list[Finding] = []
-    tasks = parse_tasks(text)
+    tasks = parse_tasks(text, project.names)
     ids = Counter(t.id for t in tasks)
     known = set(ids)
-    plan = path.parent / "기획.md"
+    plan = project.doc_path(path.parent, "plan")
     acs = {c.id for c in parse_criteria(read(plan))} if plan.exists() else set()
     team = project.profile.team
     for t in tasks:
@@ -505,7 +602,7 @@ def _check_tasks(project: Project, path: Path, text: str, rel: str) -> list[Find
         if t.size and t.size not in ("S", "M", "L") and "{{" not in t.size:
             out.append(Finding("warn", rel, "task-size", f"{t.id} 크기는 S · M · L 중 하나입니다 (지금 '{t.size}')", line))
         if not t.size:
-            out.append(Finding("warn", rel, "task-size", f"{t.id}에 크기가 없습니다 [크기:: S|M|L]", line))
+            out.append(Finding("warn", rel, "task-size", f"{t.id}에 크기가 없습니다 [{project.names.attr('size')}:: S|M|L]", line))
         for dep in t.deps:
             if dep not in known:
                 out.append(Finding("warn", rel, "task-dep", f"{t.id}: 먼저 끝나야 할 일 {dep}이 목록에 없습니다", line))
@@ -513,9 +610,10 @@ def _check_tasks(project: Project, path: Path, text: str, rel: str) -> list[Find
                 out.append(Finding("warn", rel, "task-dep", f"{t.id}: 자기 자신을 먼저로 지정했습니다", line))
         for ac in t.criteria:
             if acs and ac not in acs:
-                out.append(Finding("warn", rel, "task-ac", f"{t.id}: 수락 기준 {ac}이 기획.md에 없습니다", line))
-        if team and not t.attrs.get("담당") and not t.done:
-            out.append(Finding("info", rel, "task-owner", f"{t.id}에 담당이 없습니다 [담당:: 이름]", line))
+                out.append(Finding("warn", rel, "task-ac", f"{t.id}: 수락 기준 {ac}이 {plan.name}에 없습니다", line))
+        if team and not t.attrs.get("owner") and not t.done:
+            owner = project.names.attr("owner")
+            out.append(Finding("info", rel, "task-owner", f"{t.id}에 {owner}이 없습니다 [{owner}:: 이름]", line))
     covered = {ac for t in tasks for ac in t.criteria}
     real_tasks = [t for t in tasks if "{{" not in t.title]
     if real_tasks:
@@ -556,7 +654,7 @@ def _check_tasks(project: Project, path: Path, text: str, rel: str) -> list[Find
 
 class _Ctx:
     def __init__(self, project: Project) -> None:
-        self.enums = enums_mod.load(project.enums_file)
+        self.enums = project.enums
         self.resolver = Resolver(project.docs)
         self.templates = TemplateIndex(project)
         self.ids: dict[tuple[str, str], list[str]] = defaultdict(list)
@@ -592,14 +690,15 @@ def changed_docs(project: Project) -> list[Path]:
     return paths
 
 
-def run(project: Project, paths: Iterable[Path] | None = None) -> Report:
+def run(project: Project, paths: Iterable[Path] | None = None, templates: bool = False) -> Report:
     """Check documents, then look for IDs used twice across all documents.
 
-    Templates and legacy originals are never checked.
+    Templates and legacy originals are not checked as documents.
 
     Args:
         project: The project.
         paths: Documents to check; every document when None.
+        templates: Also ask about protected sections missing from the project's templates.
 
     Returns:
         The report.
@@ -636,11 +735,13 @@ def run(project: Project, paths: Iterable[Path] | None = None) -> Report:
     # task ids across all task files
     seen: dict[str, str] = {}
     for p in all_docs:
-        if nfc(p.name) != "할 일.md":
+        if nfc(p.name) != nfc(project.names.file("tasks")):
             continue
-        for t in parse_tasks(read(p)):
+        for t in parse_tasks(read(p), project.names):
             r = project.rel(p)
             if t.id in seen and seen[t.id] != r and r in target_rels:
                 findings.append(Finding("error", r, "task-dup", f"할 일 ID {t.id}가 {seen[t.id]}에도 있습니다", t.line_no + 1))
             seen.setdefault(t.id, r)
+    if templates:
+        findings += template_findings(project)
     return Report(findings=findings, files=len(targets))

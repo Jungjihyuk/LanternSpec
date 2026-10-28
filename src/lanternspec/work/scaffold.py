@@ -21,20 +21,24 @@ from typing import Any
 
 from .. import resources
 from ..core import frontmatter, state, templating
+from ..core.names import WORK_DOCS
 from ..core.new_id import next_id
 from ..core.profile import CLIENT_LABEL, DATA_VARIANT, OPTIONAL_DOC_KEYS, DocSpec, enabled_docs
 from ..core.project import Project, nfc, read, safe_name, today, wikilink, write
 
-BASE_TEMPLATE_DIR = "templates"
-WORK_DOCS = {"기획": "기획.md", "설계": "설계.md", "할 일": "할 일.md", "기록": "기록.md"}
-WORK_DOC_ALIASES = {"plan": "기획", "design": "설계", "tasks": "할 일", "task": "할 일", "record": "기록", "할일": "할 일"}
-
-
 # --------------------------------------------------------------------------- templates
 
 
-def base_template_names() -> list[str]:
+def _base_dir(language: str) -> str:
+    """Folder of a language's base templates inside the resources."""
+    return f"locales/{language}/templates"
+
+
+def base_template_names(language: str = "ko") -> list[str]:
     """List the base templates bundled with the package.
+
+    Args:
+        language: Language of the templates (lantern.yaml project.language).
 
     Returns:
         Template names (file names without `.md`), sorted.
@@ -43,14 +47,15 @@ def base_template_names() -> list[str]:
         >>> "기획" in base_template_names()
         True
     """
-    return sorted(nfc(p.stem) for _, p in resources.iter_files(BASE_TEMPLATE_DIR) if p.suffix == ".md")
+    return sorted(nfc(p.stem) for rel, p in resources.iter_files(_base_dir(language)) if p.suffix == ".md" and "/" not in rel)
 
 
-def base_template_text(name: str) -> str:
+def base_template_text(name: str, language: str = "ko") -> str:
     """Read a base template bundled with the package.
 
     Args:
         name: Template name, e.g. "기획".
+        language: Language of the templates.
 
     Returns:
         The template text.
@@ -62,7 +67,7 @@ def base_template_text(name: str) -> str:
         >>> base_template_text("기획").startswith("---")
         True
     """
-    for _, p in resources.iter_files(BASE_TEMPLATE_DIR):
+    for _, p in resources.iter_files(_base_dir(language)):
         if p.suffix == ".md" and nfc(p.stem) == nfc(name):
             return p.read_text(encoding="utf-8")
     raise FileNotFoundError(f"기본 양식 '{name}'이 없습니다")
@@ -124,7 +129,7 @@ def template_text(project: Project, name: str) -> str:
     for cand in project.templates_dir.glob("*.md") if project.templates_dir.exists() else []:
         if nfc(cand.stem) == nfc(name):
             return read(cand)
-    return base_template_text(name)
+    return base_template_text(name, project.profile.language)
 
 
 def install_templates(project: Project, names: list[str] | None = None) -> list[str]:
@@ -146,17 +151,18 @@ def install_templates(project: Project, names: list[str] | None = None) -> list[
     created: list[str] = []
     st = state.load(project)
     project.templates_dir.mkdir(parents=True, exist_ok=True)
-    for name in names or base_template_names():
+    language = project.profile.language
+    for name in names or base_template_names(language):
         dest = project_template_path(project, name)
         if dest.exists():
             continue
-        text = base_template_text(name)
+        text = base_template_text(name, language)
         write(dest, text)
         st["templates"][name] = {"based_on": template_version(text), "sha256": state.sha256_text(text)}
         created.append(project.rel(dest))
     enums_dest = project.enums_file
     if not enums_dest.exists():
-        text = resources.read_text("templates/_meta/enums.yaml")
+        text = resources.read_text(f"{_base_dir(language)}/_meta/enums.yaml")
         write(enums_dest, text)
         st["templates"]["_meta/enums.yaml"] = {"based_on": "1", "sha256": state.sha256_text(text)}
         created.append(project.rel(enums_dest))
@@ -402,6 +408,10 @@ def init_apply(project: Project) -> list[str]:
     from ..report.obsidian import write_vault  # field choices for opening docs/ in Obsidian (from enums.yaml)
 
     done += [project.rel(p) for p in write_vault(project)]
+    from ..report.sections_doc import write_page  # which sections lantern uses, and this project's choices
+
+    page = write_page(project)
+    done += [project.rel(page)] if page else []
     for action in init_plan(project):
         spec, path = action.spec, action.path
         if action.kind == "create-folder":
@@ -434,7 +444,7 @@ def init_apply(project: Project) -> list[str]:
             write(path, frontmatter.set_fields(read(path), {"status": project.enums.value("current_status", "active")}))
             done.append(project.rel(path) + " (다시 사용)")
     if project.profile.clients:
-        (project.folder("current") / "화면").mkdir(parents=True, exist_ok=True)
+        (project.folder("current") / project.names.folder("screens")).mkdir(parents=True, exist_ok=True)
     return done
 
 
@@ -474,7 +484,7 @@ def new_work(project: Project, name: str, idea_id: str | None = None, ui: bool =
         project: The project.
         name: The work's name.
         idea_id: The idea it comes from; linked from the plan.
-        ui: Mark it as screen work (`ui: true`) and create its `화면/` folder.
+        ui: Mark it as screen work (`ui: true`) and create its mockup folder (`화면/`).
 
     Returns:
         The new work folder.
@@ -495,10 +505,10 @@ def new_work(project: Project, name: str, idea_id: str | None = None, ui: bool =
         if idea is None:
             raise ValueError(f"아이디어 {idea_id}를 찾지 못했습니다")
         links.append(wikilink(project, idea))
-    plan = folder / WORK_DOCS["기획"]
+    plan = project.doc_path(folder, "plan")
     create_from_template(
         project,
-        "기획",
+        project.names.doc("plan"),
         plan,
         {
             "work_id": work_id,
@@ -509,8 +519,29 @@ def new_work(project: Project, name: str, idea_id: str | None = None, ui: bool =
     if ui:
         write(plan, frontmatter.set_fields(read(plan), {"ui": True}, touch=False))
     if ui or project.profile.get("design.tool") not in (None, "none"):
-        (folder / "화면").mkdir(exist_ok=True)
+        (folder / project.names.folder("screens")).mkdir(exist_ok=True)
     return folder
+
+
+def work_doc_role(project: Project, kind: str) -> str | None:
+    """Tell which work document a kind names.
+
+    Args:
+        project: The project.
+        kind: A role ("plan" · "design" · "tasks" · "record", or "task") or the document's name
+            in the project's language (e.g. "설계").
+
+    Returns:
+        The role; None when the kind names no work document.
+
+    Example:
+        >>> work_doc_role(project, "설계"), work_doc_role(project, "task")  # doctest: +SKIP
+        ('design', 'tasks')
+    """
+    kind = {"task": "tasks"}.get(kind, kind)
+    if kind in WORK_DOCS:
+        return kind
+    return next((r for r in WORK_DOCS if nfc(project.names.doc(r)) == nfc(kind)), None)
 
 
 def work_doc(project: Project, work_id: str, kind: str) -> Path:
@@ -519,7 +550,7 @@ def work_doc(project: Project, work_id: str, kind: str) -> Path:
     Args:
         project: The project.
         work_id: A work in progress.
-        kind: "기획", "설계", "할 일" or "기록" (English aliases such as "design" work too).
+        kind: The document's name in the project's language (e.g. "설계") or its role (e.g. "design").
 
     Returns:
         The new document.
@@ -532,20 +563,21 @@ def work_doc(project: Project, work_id: str, kind: str) -> Path:
         >>> work_doc(project, "W-012", "design").name  # doctest: +SKIP
         '설계.md'
     """
-    kind = WORK_DOC_ALIASES.get(kind, kind)
-    if kind not in WORK_DOCS:
-        raise ValueError(f"작업 문서 종류는 {', '.join(WORK_DOCS)} 중 하나입니다")
+    n = project.names
+    role = work_doc_role(project, kind)
+    if role is None:
+        raise ValueError(f"작업 문서 종류는 {', '.join(n.doc(r) for r in WORK_DOCS)} 중 하나입니다")
     folder = project.find_work(work_id, include_archive=False)
     if folder is None:
         raise ValueError(f"진행 중인 작업 {work_id}를 찾지 못했습니다")
-    dest = folder / WORK_DOCS[kind]
-    plan = folder / WORK_DOCS["기획"]
-    links = [wikilink(project, plan, f"{work_id} 기획")] if plan.exists() and kind != "기획" else []
+    dest = project.doc_path(folder, role)
+    plan = project.doc_path(folder, "plan")
+    links = [wikilink(project, plan, f"{work_id} {n.doc('plan')}")] if plan.exists() and role != "plan" else []
     from ..core.project import work_name_of
 
     create_from_template(
         project,
-        kind,
+        n.doc(role),
         dest,
         {
             "work_id": work_id.upper(),
@@ -559,7 +591,7 @@ def work_doc(project: Project, work_id: str, kind: str) -> Path:
 def new_idea(
     project: Project,
     name: str,
-    kind: str = "기능",
+    kind: str | None = None,
     raw: str = "",
     status: str | None = None,
     auto: bool = False,
@@ -570,7 +602,7 @@ def new_idea(
     Args:
         project: The project.
         name: Short title.
-        kind: Idea kind, e.g. "기능".
+        kind: Idea kind; the first idea_kind value of enums.yaml when None.
         raw: The words as the person said them; the title when empty.
         status: Initial status; the "new" role when None.
         auto: Mark it as recorded automatically (not asked for).
@@ -583,13 +615,14 @@ def new_idea(
         >>> new_idea(project, "카톡 로그인", raw="카톡으로도 로그인되면 좋겠다").name  # doctest: +SKIP
         'IDEA-004 카톡 로그인.md'
     """
+    kind = kind or project.enums.values("idea_kind")[0]
     status = status or project.enums.value("idea_status", "new")
     idea_id = next_id(project, "idea")
     dest = project.folder("ideas") / f"{idea_id} {safe_name(name)}.md"
     quoted = "\n".join(f"> {line}" if line.strip() else ">" for line in (raw or name).strip().split("\n"))
     create_from_template(
         project,
-        "아이디어",
+        project.names.doc("idea"),
         dest,
         {
             "id": idea_id,
@@ -632,8 +665,10 @@ def new_adr(project: Project, name: str, work_id: str | None = None) -> Path:
         folder = project.find_work(work_id)
         if folder is None:
             raise ValueError(f"작업 {work_id}를 찾지 못했습니다")
-        links.append(wikilink(project, folder / "기획.md", f"{work_id.upper()} 기획"))
-    create_from_template(project, "ADR", dest, {"id": adr_id, "name": safe_name(name), "links": templating.yaml_list(links)})
+        links.append(wikilink(project, project.doc_path(folder, "plan"), f"{work_id.upper()} {project.names.doc('plan')}"))
+    create_from_template(
+        project, project.names.doc("adr"), dest, {"id": adr_id, "name": safe_name(name), "links": templating.yaml_list(links)}
+    )
     return dest
 
 
@@ -653,5 +688,5 @@ def new_meeting(project: Project, name: str) -> Path:
     """
     mid = next_id(project, "meeting")
     dest = project.folder("meetings") / f"{today()} {mid} {safe_name(name)}.md"
-    create_from_template(project, "회의록", dest, {"id": mid, "name": safe_name(name)})
+    create_from_template(project, project.names.doc("meeting"), dest, {"id": mid, "name": safe_name(name)})
     return dest

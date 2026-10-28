@@ -15,8 +15,6 @@ from pathlib import Path
 from ..core import frontmatter, principles
 from ..core.project import Project, read, today, write
 
-DOC_NAME = "개발 원칙.md"
-
 
 def doc_path(project: Project) -> Path:
     """Return the path of the design-principles document.
@@ -31,7 +29,7 @@ def doc_path(project: Project) -> Path:
         >>> project.rel(doc_path(project))  # doctest: +SKIP
         'docs/3. 현재 상태/규칙 · 결정 기록/개발 원칙.md'
     """
-    return project.folder("rules") / DOC_NAME
+    return project.folder("rules") / project.names.file("principles")
 
 
 def render(sel: principles.Selection, profile_language: str = "ko") -> str:

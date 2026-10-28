@@ -13,52 +13,9 @@ from pathlib import Path
 
 from ..check.check_docs import Finding
 from ..core import frontmatter
+from ..core.names import Names
 from ..core.project import Project, read
 from ..core.taskfile import parse_criteria
-
-# words that make a result impossible to check ("빠르게" ✕ → "2초 안에" ○)
-VAGUE_WORDS = [
-    "빠르게",
-    "빠른",
-    "신속",
-    "느리지 않",
-    "적절히",
-    "적절한",
-    "적당히",
-    "쉽게",
-    "쉬운",
-    "편리",
-    "편하게",
-    "직관적",
-    "효율적",
-    "최적",
-    "충분히",
-    "충분한",
-    "원활",
-    "자연스럽",
-    "깔끔",
-    "보기 좋",
-    "사용자 친화",
-    "안정적",
-    "많은",
-    "적은",
-    "대부분",
-    "일반적으로",
-    "가능한 한",
-    "가급적",
-    "등등",
-    "잘 ",
-    "좋게",
-    "좋은",
-    "향상",
-    "개선된",
-    "더 나은",
-    "유연",
-    "강력",
-    "멋진",
-    "합리적",
-]
-AMBIGUOUS = [" 또는 ", "혹은", "및/또는", "/또는", "필요하면", "경우에 따라", "상황에 따라", "등 "]
 
 
 def check_criteria(project: Project, plan: Path) -> list[Finding]:
@@ -84,9 +41,11 @@ def check_criteria(project: Project, plan: Path) -> list[Finding]:
     meta = frontmatter.parse(text).meta
     fmt = project.profile.get("plan.ac_format") or "gwt"
     acs = parse_criteria(text)
+    n = project.names
+    situation, action, result_word = n.acceptance("situation"), n.acceptance("action"), n.acceptance("result")
     out: list[Finding] = []
     if not acs:
-        return [Finding("warn", rel, "ac-none", "수락 기준(- [ ] AC-1 …)이 없습니다", hint="기획.md '## 수락 기준'에 한 줄에 하나씩")]
+        return [Finding("warn", rel, "ac-none", "수락 기준(- [ ] AC-1 …)이 없습니다", hint=f"{plan.name}에 한 줄에 하나씩")]
     seen = set()
     for i, ac in enumerate(acs, start=1):
         line = ac.line_no + 1
@@ -100,23 +59,23 @@ def check_criteria(project: Project, plan: Path) -> list[Finding]:
             out.append(Finding("warn", rel, "ac-blank", f"{ac.id}: 빈칸이 남아 있습니다", line))
             continue
         if fmt == "gwt":
-            if not re.search(r"행동\s*:", body) or not re.search(r"결과\s*:", body):
+            if not re.search(rf"{action}\s*:", body) or not re.search(rf"{result_word}\s*:", body):
                 out.append(
                     Finding(
                         "warn",
                         rel,
                         "ac-format",
-                        f"{ac.id}: 상황 · 행동 · 결과 형식이 아닙니다",
+                        f"{ac.id}: {situation} · {action} · {result_word} 형식이 아닙니다",
                         line,
                         "예: AC-1 상황: 로그인 화면에서 · 행동: 카카오 버튼을 누르면 · 결과: 2초 안에 홈이 열린다",
                     )
                 )
-            result = re.split(r"결과\s*:", body, maxsplit=1)[-1]
+            result = re.split(rf"{result_word}\s*:", body, maxsplit=1)[-1]
         else:
-            if "면" not in body:
+            if n.acceptance("simple_mark") not in body:
                 out.append(Finding("warn", rel, "ac-format", f"{ac.id}: '~하면 ~된다' 형식이 아닙니다", line))
-            result = body.split("면", 1)[-1]
-        for word in VAGUE_WORDS:
+            result = body.split(n.acceptance("simple_mark"), 1)[-1]
+        for word in n.acceptance("vague"):
             if word in body:
                 out.append(
                     Finding(
@@ -129,7 +88,7 @@ def check_criteria(project: Project, plan: Path) -> list[Finding]:
                     )
                 )
                 break
-        for word in AMBIGUOUS:
+        for word in n.acceptance("ambiguous"):
             if word in f" {result} ":
                 out.append(
                     Finding(
@@ -156,7 +115,7 @@ def check_criteria(project: Project, plan: Path) -> list[Finding]:
                     hint="예: AC-n 결과: 화면이 화면/로그인.png 시안과 같다",
                 )
             )
-        if not _has_mockup(plan.parent):
+        if not has_mockup(plan.parent, n):
             out.append(
                 Finding(
                     "warn",
@@ -172,25 +131,23 @@ def check_criteria(project: Project, plan: Path) -> list[Finding]:
 MOCKUP_EXT = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg", ".html", ".htm", ".pdf"}
 
 
-def _has_mockup(work_dir: Path) -> bool:
-    d = work_dir / "화면"
-    return d.exists() and any(p.suffix.lower() in MOCKUP_EXT for p in d.rglob("*") if p.is_file())
-
-
-def has_mockup(work_dir: Path) -> bool:
-    """Tell whether a work folder has a screen mockup (an image, HTML or PDF under `화면/`).
+def has_mockup(work_dir: Path, names: Names) -> bool:
+    """Tell whether a work folder has a screen mockup (an image, HTML or PDF in its mockup folder, `화면/`).
 
     Args:
         work_dir: The work folder.
+        names: The project's names (the mockup folder's name).
 
     Returns:
         True when at least one mockup file exists.
 
     Example:
-        >>> has_mockup(Path("no-such-work"))
+        >>> from lanternspec.core.names import load
+        >>> has_mockup(Path("no-such-work"), load("ko"))
         False
     """
-    return _has_mockup(work_dir)
+    d = work_dir / names.folder("screens")
+    return d.exists() and any(p.suffix.lower() in MOCKUP_EXT for p in d.rglob("*") if p.is_file())
 
 
 def run(project: Project, work_id: str | None = None) -> list[Finding]:
@@ -215,7 +172,7 @@ def run(project: Project, work_id: str | None = None) -> list[Finding]:
     for w in works:
         if w is None:
             raise ValueError(f"작업 {work_id}를 찾지 못했습니다")
-        plan = w / "기획.md"
+        plan = project.doc_path(w, "plan")
         if plan.exists():
             out += check_criteria(project, plan)
     return out

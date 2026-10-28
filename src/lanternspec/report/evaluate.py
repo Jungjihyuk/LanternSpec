@@ -110,10 +110,10 @@ def task_durations(project: Project) -> dict[str, list[float]]:
     """
     out: dict[str, list[float]] = defaultdict(list)
     for w in project.work_dirs(include_archive=True):
-        tf = w / "할 일.md"
+        tf = project.doc_path(w, "tasks")
         if not tf.exists():
             continue
-        for t in parse_tasks(read(tf)):
+        for t in parse_tasks(read(tf), project.names):
             a, b = _dt_of(t.started), _dt_of(t.finished)
             if t.done and a and b and b > a:
                 out[t.size or "?"].append((b - a).total_seconds() / 3600)

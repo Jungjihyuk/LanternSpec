@@ -17,7 +17,7 @@ from pathlib import Path
 
 from ..core import frontmatter
 from ..core.project import Project, now_minute, read, work_id_of, write
-from ..core.taskfile import Task, TaskGraph, find_task, parse_criteria, parse_tasks, set_attr, set_checked
+from ..core.taskfile import Task, TaskGraph, drop_attr, find_task, parse_criteria, parse_tasks, set_attr, set_checked
 from .epic_rules import has_mockup
 
 STAGE_ROLES = ["plan", "design", "tasks", "build", "done"]  # work_status roles, in order
@@ -48,9 +48,9 @@ def _tasks_file(project: Project, work_id: str) -> Path:
     folder = project.find_work(work_id, include_archive=False)
     if folder is None:
         raise ValueError(f"진행 중인 작업 {work_id}를 찾지 못했습니다")
-    p = folder / "할 일.md"
+    p = project.doc_path(folder, "tasks")
     if not p.exists():
-        raise ValueError(f"{work_id}에 할 일.md가 없습니다 — /l-task 먼저")
+        raise ValueError(f"{work_id}에 {p.name}이 없습니다 — /l-task 먼저")
     return p
 
 
@@ -85,16 +85,16 @@ def next_task(project: Project, work_id: str | None = None) -> NextResult:
     for w in works:
         if w is None:
             raise ValueError(f"진행 중인 작업 {work_id}를 찾지 못했습니다")
-        tf = w / "할 일.md"
+        tf = project.doc_path(w, "tasks")
         if not tf.exists():
             continue
-        graph = TaskGraph(parse_tasks(read(tf)))
+        graph = TaskGraph(parse_tasks(read(tf), project.names))
         any_tasks = any_tasks or bool(graph.tasks)
         for t in graph.tasks:
             if t.done:
                 continue
             reason = graph.blocked_reason(t)
-            if reason is None and ui_required and t.screen and not has_mockup(w):
+            if reason is None and ui_required and t.screen and not has_mockup(w, project.names):
                 reason = "화면 시안 없음 — 화면/ 아래 이미지 · HTML 필요"
             if reason:
                 skipped.append((t.id, reason))
@@ -120,14 +120,14 @@ def _bump_stage(project: Project, path: Path, role: str) -> None:
 def _edit_task(project: Project, task_id: str, edit: Callable[[str, Task], str]) -> tuple[Task, Path, list[Task]]:
     tf = _tasks_file(project, _work_of_task(task_id))
     lines = read(tf).split("\n")
-    tasks = parse_tasks("\n".join(lines))
+    tasks = parse_tasks("\n".join(lines), project.names)
     t = find_task(tasks, task_id)
     if t is None:
         raise ValueError(f"할 일 {task_id}가 {project.rel(tf)}에 없습니다")
     lines[t.line_no] = edit(lines[t.line_no], t)
     text = frontmatter.set_fields("\n".join(lines), {})
     write(tf, text)
-    new_tasks = parse_tasks(text)
+    new_tasks = parse_tasks(text, project.names)
     return find_task(new_tasks, task_id), tf, new_tasks  # type: ignore[return-value]
 
 
@@ -150,11 +150,11 @@ def start(project: Project, task_id: str) -> Task:
     """
 
     def edit(line: str, t: Task) -> str:
-        return line if t.started else set_attr(line, "시작", now_minute())
+        return line if t.started else set_attr(line, "start", now_minute(), project.names)
 
     t, tf, _ = _edit_task(project, task_id, edit)
-    for doc in ("기획.md", "할 일.md", "기록.md"):
-        _bump_stage(project, tf.parent / doc, "build")
+    for role in ("plan", "tasks", "record"):
+        _bump_stage(project, project.doc_path(tf.parent, role), "build")
     return t
 
 
@@ -198,8 +198,8 @@ def done(project: Project, task_id: str) -> DoneResult:
     def edit(line: str, t: Task) -> str:
         line = set_checked(line, True)
         if not t.started:
-            line = set_attr(line, "시작", now_minute())
-        return set_attr(line, "완료", now_minute())
+            line = set_attr(line, "start", now_minute(), project.names)
+        return set_attr(line, "finish", now_minute(), project.names)
 
     t, tf, tasks = _edit_task(project, task_id, edit)
     checkpoints = []
@@ -229,10 +229,7 @@ def reopen(project: Project, task_id: str) -> Task:
     """
 
     def edit(line: str, t: Task) -> str:
-        import re
-
-        line = set_checked(line, False)
-        return re.sub(r"\s*\[완료::[^\]]*\]", "", line)
+        return drop_attr(set_checked(line, False), "finish", project.names)
 
     t, _, _ = _edit_task(project, task_id, edit)
     return t
@@ -259,14 +256,14 @@ def check_ac(project: Project, work_id: str, ac_id: str) -> Path:
     folder = project.find_work(work_id, include_archive=False)
     if folder is None:
         raise ValueError(f"작업 {work_id}를 찾지 못했습니다")
-    plan = folder / "기획.md"
+    plan = project.doc_path(folder, "plan")
     lines = read(plan).split("\n")
     for c in parse_criteria("\n".join(lines)):
         if c.id == ac_id.upper():
             lines[c.line_no] = set_checked(lines[c.line_no], True)
             write(plan, frontmatter.set_fields("\n".join(lines), {}))
             return plan
-    raise ValueError(f"{work_id} 기획.md에 {ac_id}가 없습니다")
+    raise ValueError(f"{work_id} {plan.name}에 {ac_id}가 없습니다")
 
 
 def summary(project: Project, work_id: str | None = None) -> list[str]:
@@ -288,11 +285,11 @@ def summary(project: Project, work_id: str | None = None) -> list[str]:
     for w in works:
         if w is None:
             continue
-        tf = w / "할 일.md"
+        tf = project.doc_path(w, "tasks")
         if not tf.exists():
             out.append(f"{work_id_of(w)}: 할 일 없음")
             continue
-        tasks = parse_tasks(read(tf))
+        tasks = parse_tasks(read(tf), project.names)
         graph = TaskGraph(tasks)
         out.append(f"{work_id_of(w)}: {sum(t.done for t in tasks)}/{len(tasks)} 완료")
         for t in tasks:
@@ -348,32 +345,37 @@ def add(
         raise ValueError("크기는 S · M · L 중 하나입니다")
     wid = work_id.upper()
     tf = _tasks_file(project, wid)
-    # the scaffolded example line (`… {{할 일 (필수)}} …`) gives way to the first real task
-    lines = [l for l in read(tf).split("\n") if not (re.match(r"^\s*- \[ \] W-\d{3,}-T\d{2,}\b", l) and "{{할 일" in l)]
-    existing = parse_tasks("\n".join(lines))
-    n = max((int(t.id.rsplit("-T", 1)[1]) for t in existing if t.work_id == wid), default=0)
-    task_id = f"{wid}-T{n + 1:02d}"
-    parts = [f"- [ ] {task_id}" + (" [P]" if parallel else "") + f" {what.strip()}", f"[크기:: {size}]"]
+    n = project.names
+    # the scaffolded example line (a task line with {{blanks}}) gives way to the first real task, in the same place
+    lines = read(tf).split("\n")
+    example = next((i for i, l in enumerate(lines) if re.match(r"^\s*- \[ \] W-\d{3,}-T\d{2,}\b", l) and "{{" in l), None)
+    if example is not None:
+        del lines[example]
+    existing = parse_tasks("\n".join(lines), n)
+    num = max((int(t.id.rsplit("-T", 1)[1]) for t in existing if t.work_id == wid), default=0)
+    task_id = f"{wid}-T{num + 1:02d}"
+    parts = [f"- [ ] {task_id}" + (" [P]" if parallel else "") + f" {what.strip()}", f"[{n.attr('size')}:: {size}]"]
     if ac:
-        parts.append(f"[기준:: {', '.join(a.upper() for a in ac)}]")
+        parts.append(f"[{n.attr('criteria')}:: {', '.join(a.upper() for a in ac)}]")
     if after:
-        parts.append(f"[먼저:: {', '.join(a.upper().rsplit('-', 1)[-1] for a in after)}]")
-    for key, value in (("담당", owner), ("화면", screen), ("시작 예정", start_plan), ("마감 예정", due_plan)):
+        parts.append(f"[{n.attr('after')}:: {', '.join(a.upper().rsplit('-', 1)[-1] for a in after)}]")
+    for role, value in (("owner", owner), ("screen", screen), ("start_plan", start_plan), ("due_plan", due_plan)):
         if value:
-            parts.append(f"[{key}:: {value}]")
-    line = " ".join(parts) + (" ❓ 확인 필요" if unknown else "")
+            parts.append(f"[{n.attr(role)}:: {value}]")
+    line = " ".join(parts) + (f" {n.marker('unknown')}" if unknown else "")
     if existing:
         insert_at = existing[-1].line_no + 1
-    else:  # first task: right under "## 할 일"
-        insert_at = next((i + 1 for i, l in enumerate(lines) if l.strip() == "## 할 일"), len(lines))
-        while insert_at < len(lines) and lines[insert_at].strip() == "":
-            insert_at += 1
-        if insert_at < len(lines) and lines[insert_at].startswith(("<!--", "## ")):
-            lines.insert(insert_at, "")
+    elif example is not None:
+        insert_at = example
+    else:  # no task and no example line: add at the end
+        while lines and not lines[-1].strip():
+            lines.pop()
+        lines.append("")
+        insert_at = len(lines)
     lines.insert(insert_at, line)
     text = re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).rstrip("\n") + "\n"
     write(tf, frontmatter.set_fields(text, {}))
-    return find_task(parse_tasks(read(tf)), task_id)  # type: ignore[return-value]
+    return find_task(parse_tasks(read(tf), n), task_id)  # type: ignore[return-value]
 
 
 def ready(project: Project, work_id: str | None = None) -> list[Task]:
@@ -394,13 +396,13 @@ def ready(project: Project, work_id: str | None = None) -> list[Task]:
     works = [project.find_work(work_id, include_archive=False)] if work_id else project.work_dirs()
     ui_required = project.profile.get("plan.ui_reference") == "required"
     for w in works:
-        if w is None or not (w / "할 일.md").exists():
+        if w is None or not project.doc_path(w, "tasks").exists():
             continue
-        graph = TaskGraph(parse_tasks(read(w / "할 일.md")))
+        graph = TaskGraph(parse_tasks(read(project.doc_path(w, "tasks")), project.names))
         for t in graph.tasks:
             if t.done or graph.blocked_reason(t):
                 continue
-            if ui_required and t.screen and not has_mockup(w):
+            if ui_required and t.screen and not has_mockup(w, project.names):
                 continue
             out.append(t)
     return out
@@ -440,7 +442,7 @@ def estimate(project: Project, work_id: str, start: str | None = None, hours_per
     per_size = {k: (median(hist[k]) if len(hist.get(k, [])) >= 2 else DEFAULT_HOURS[k]) for k in DEFAULT_HOURS}
     tf = _tasks_file(project, work_id)
     lines = read(tf).split("\n")
-    tasks = parse_tasks("\n".join(lines))
+    tasks = parse_tasks("\n".join(lines), project.names)
     day = dt.date.fromisoformat(start) if start else dt.date.today()
     used = 0.0
     out = [
@@ -465,10 +467,12 @@ def estimate(project: Project, work_id: str, start: str | None = None, hours_per
         end = day
         out.append(f"{t.id} {t.title} [{t.size or '?'}] → {begin.isoformat()} ~ {end.isoformat()}")
         if apply:
-            lines[t.line_no] = set_attr(set_attr(lines[t.line_no], "시작 예정", begin.isoformat()), "마감 예정", end.isoformat())
+            line = set_attr(lines[t.line_no], "start_plan", begin.isoformat(), project.names)
+            lines[t.line_no] = set_attr(line, "due_plan", end.isoformat(), project.names)
     if apply:
         write(tf, frontmatter.set_fields("\n".join(lines), {}))
-        out.append("✔ 할 일.md에 [시작 예정] · [마감 예정]을 적었습니다")
+        n = project.names
+        out.append(f"✔ {tf.name}에 [{n.attr('start_plan')}] · [{n.attr('due_plan')}]을 적었습니다")
     else:
         out.append("제안입니다 — 사람이 동의하면 --apply")
     return out

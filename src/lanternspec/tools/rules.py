@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 
 from .. import resources
 from ..core import principles, templating
-from ..core.profile import FOLDERS, Profile
+from ..core.profile import Profile
 from .skills import PROFILE_TOKEN, body_context, command_prefix, rewrite_commands
 
 if TYPE_CHECKING:
@@ -40,7 +40,7 @@ def agents_block(profile: Profile, tools: list[Tool], enums: Enums | None = None
         >>> agents_block(Profile(data={}), [get("claude")]).splitlines()[0]
         '<!-- lanternspec:start -->'
     """
-    text = resources.read_text("agents/AGENTS.md")
+    text = resources.read_text(f"locales/{profile.language}/agents/AGENTS.md")
     ctx = body_context(profile, "agents", enums)
     text = rewrite_commands(templating.apply_conditions(text, ctx), command_prefix(tools))
     text = PROFILE_TOKEN.sub(lambda m: str(ctx.get(m.group(1), m.group(0))), text)
@@ -90,7 +90,7 @@ def principles_section(profile: Profile) -> str:
     if sel is None:
         return ""
     names = principles.table()["levels"]
-    doc = f"{profile.docs_root}/{FOLDERS['rules']}/개발 원칙.md"
+    doc = f"{profile.docs_root}/{profile.names.folder('rules')}/{profile.names.file('principles')}"
     lines = [f"### 개발 원칙 — {sel.summary()}", f"자세히: `{doc}` (자동 생성 · `lantern principles show`)"]
     for level in ("must", "should"):
         chosen = sel.at(level)

@@ -10,8 +10,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from ..core import enums as enums_mod
-from ..core import frontmatter
+from ..core import frontmatter, sections
 from ..core.project import Project, nfc, read, today, wikilink, write
 
 
@@ -54,8 +53,7 @@ def idea_find(project: Project, text: str, limit: int = 5) -> list[dict[str, Any
         title = nfc(p.stem).split(" ", 1)[-1]
         glance = re.search(r"\[!abstract\][^\n]*\n>\s*(.+)", doc.body)
         hay = _tokens(title) | _tokens(glance.group(1) if glance else "")
-        raw = re.search(r"## 원문(.*?)(?=\n## )", doc.body, re.S)
-        hay_raw = _tokens(raw.group(1) if raw else "")
+        hay_raw = _tokens(sections.body(doc.body, project.names.titles("raw")))
         score = 3 * len(q & hay) + len(q & hay_raw)
         if score:
             hits.append(
@@ -71,23 +69,6 @@ def idea_find(project: Project, text: str, limit: int = 5) -> list[dict[str, Any
             )
     hits.sort(key=lambda h: (-h["score"], h["id"]))
     return hits[:limit]
-
-
-def _append_under(text: str, heading: str, line: str) -> str:
-    marker = f"## {heading}"
-    if marker not in text:
-        return text.rstrip() + f"\n\n{marker}\n{line}\n"
-    head, tail = text.split(marker, 1)
-    parts = tail.split("\n")
-    insert_at = len(parts)
-    for i, l in enumerate(parts[1:], start=1):
-        if l.startswith("## ") or l.startswith("<!--"):
-            insert_at = i
-            break
-    while insert_at > 1 and parts[insert_at - 1].strip() == "":
-        insert_at -= 1
-    parts.insert(insert_at, line)
-    return head + marker + "\n".join(parts)
 
 
 def idea_status(
@@ -118,7 +99,7 @@ def idea_status(
     path = project.find_by_id(idea_id)
     if path is None or nfc(path.parent.name) != nfc(project.folder("ideas").name):
         raise ValueError(f"아이디어 {idea_id}를 찾지 못했습니다")
-    enums = enums_mod.load(project.enums_file)
+    enums = project.enums
     allowed = enums.values("idea_status")
     if status not in allowed:
         raise ValueError(f"상태 '{status}'는 아이디어 상태가 아닙니다 (가능: {', '.join(allowed)})")
@@ -135,7 +116,7 @@ def idea_status(
         folder = project.find_work(work)
         if folder is None:
             raise ValueError(f"작업 {work}를 찾지 못했습니다")
-        link = wikilink(project, folder / "기획.md", work.upper())
+        link = wikilink(project, project.doc_path(folder, "plan"), work.upper())
         links = frontmatter.as_list(meta.get("links"))
         if link not in links:
             updates["links"] = links + [link]
@@ -147,5 +128,7 @@ def idea_status(
         detail += f" ({note})"
     icon = enums["idea_status"].icon(status)
     text = frontmatter.set_fields(text, updates)
-    write(path, _append_under(text, "상태 기록", f"- {today()} {icon} {status}{detail}"))
+    if not project.names.is_unused("status_log"):  # a missing section only loses the log line; check asks about it
+        text = sections.append(text, project.names.titles("status_log"), f"- {today()} {icon} {status}{detail}") or text
+    write(path, text)
     return path

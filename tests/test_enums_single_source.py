@@ -2,26 +2,32 @@
 
 import re
 
+import pytest
+
 from conftest import docs, init_project
 from lanternspec import resources
 from lanternspec.core import enums as enums_mod
 from lanternspec.core import frontmatter
+from lanternspec.core import names as names_mod
 
 
 def _enums_file(repo):
     return docs(repo) / "0. 템플릿/_meta/enums.yaml"
 
 
-def test_every_enum_token_in_skills_and_templates_resolves():
-    ctx = enums_mod.load().context()
-    names = set(enums_mod.load().enums)
-    for _, p in list(resources.iter_files("skills")) + list(resources.iter_files("templates")):
+@pytest.mark.parametrize("language", names_mod.languages())
+def test_every_enum_token_in_skills_and_templates_resolves(language):
+    enums = enums_mod.load(language=language)
+    ctx, lists = enums.context(), set(enums.enums)
+    files = list(resources.iter_files(f"locales/{language}/skills")) + list(resources.iter_files(f"locales/{language}/templates"))
+    assert files
+    for _, p in files:
         text = p.read_text(encoding="utf-8")
         for tok in re.findall(r"<<([a-z_.]+)>>|\$\{([a-z_.]+)\}", text):
             key = tok[0] or tok[1]
-            if "." in key and key.split(".")[0] in names:
+            if "." in key and key.split(".")[0] in lists:
                 assert key in ctx, f"{p.name}: {key}"
-    assert enums_mod.load().problems() == []
+    assert enums.problems() == []
 
 
 def test_icon_change_and_rename_follow_everywhere(repo, vault):

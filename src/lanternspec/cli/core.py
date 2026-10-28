@@ -216,6 +216,56 @@ def cmd_enums(a: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_sections(a: argparse.Namespace) -> int:
+    """`lantern sections list|rename|off|on` — record what the project decided about protected sections."""
+    from ..core import profile as pm
+    from ..core import state
+
+    project = _p()
+    n = project.names
+    if a.action == "list":
+        for s in n.sections():
+            older = [x for x in n.titles(s.role) if x != n.title(s.role)]
+            mark = " (쓰지 않음)" if n.is_unused(s.role) else ""
+            print(f"{s.role:<12} ## {n.title(s.role)}{mark}" + (f"  · 예전 이름: {', '.join(older)}" if older else ""))
+            print(f"{'':<12} {s.feature}")
+        return 0
+    roles = [s.role for s in n.sections()]
+    if a.role not in roles:
+        raise CliError(f"보호 칸 키는 {', '.join(roles)} 중 하나입니다 (lantern sections list)")
+    if a.action == "rename":
+        if not a.title:
+            raise CliError(f'lantern sections rename {a.role} "새 제목"')
+        titles = [a.title] + [x for x in n.titles(a.role) if x != a.title and x != n.section(a.role).title]
+        if a.title == n.section(a.role).title:
+            titles = titles[1:]  # back to the default title: the default is always accepted
+        renamed = dict(project.profile.get("docs.sections") or {})
+        if titles:
+            renamed[a.role] = titles[0] if len(titles) == 1 else titles
+        else:
+            renamed.pop(a.role, None)
+        pm.update(project.root, {"docs.sections": renamed})
+        print(f"✔ '{n.section(a.role).title}' 칸을 이제 '## {a.title}'(으)로 알아봅니다 — 예전 제목으로 만든 문서도 계속 알아봅니다")
+    else:
+        unused = [r for r in project.profile.get("docs.unused_sections") or [] if r != a.role]
+        if a.action == "off":
+            unused.append(a.role)
+        pm.update(project.root, {"docs.unused_sections": unused})
+        state_word = "쓰지 않습니다 — 더 묻지 않습니다" if a.action == "off" else "다시 씁니다"
+        print(f"✔ '{n.title(a.role)}' 칸을 {state_word} ({n.section(a.role).feature})")
+    project = _p()  # read the new decisions
+    if state.load(project).get("version"):  # skills spell section titles in their text: render them again
+        from ..tools.install import install
+
+        rep = install(project)
+        print(f"✔ 스킬 다시 생성 ({len(rep.written)}개)")
+    else:
+        from ..report.sections_doc import write_page
+
+        write_page(project)
+    return 0
+
+
 def register(add: Add) -> None:
     """Register the document-format commands."""
     p = add("profile", cmd_profile, "lantern.yaml 보기 · 쓰기 · 고치기 · 켜질 문서")
@@ -254,6 +304,10 @@ def register(add: Add) -> None:
     p.add_argument("action", choices=["get", "set"])
     p.add_argument("doc")
     p.add_argument("items", nargs="*")
+    p = add("sections", cmd_sections, "보호 칸(lantern이 읽고 쓰는 칸) 보기 · 바꾼 제목 알리기 · 쓰지 않기")
+    p.add_argument("action", choices=["list", "rename", "off", "on"])
+    p.add_argument("role", nargs="?", help="보호 칸 키 (lantern sections list)")
+    p.add_argument("title", nargs="?", help="rename: 새 제목")
     p = add("enums", cmd_enums, "상태 · 유형 목록 보기 · 이름 바꾸기 (enums.yaml과 문서 값을 함께)")
     p.add_argument("action", choices=["list", "rename"])
     p.add_argument("name", nargs="?", help="목록 이름 (예: debt_status)")

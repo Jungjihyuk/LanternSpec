@@ -80,7 +80,12 @@ def session_start(project: Project, tool: Tool, inp: HookInput) -> HookResult:
         return HookResult(context="[LanternSpec] 아직 프로젝트 준비 전입니다 — /l-init 으로 시작하세요.")
     from ..report.status import lines
 
-    out = ["[LanternSpec 지금 상황]", *lines(project), "(자세한 내용은 해당 작업 폴더의 기록.md · 할 일.md를 필요할 때만 연다)"]
+    n = project.names
+    out = [
+        "[LanternSpec 지금 상황]",
+        *lines(project),
+        f"(자세한 내용은 해당 작업 폴더의 {n.file('record')} · {n.file('tasks')}를 필요할 때만 연다)",
+    ]
     if inp.source == "compact":
         out += _saved_progress(project, inp.session)
     return HookResult(context="\n".join(out))
@@ -116,9 +121,11 @@ def pre_compact(project: Project, tool: Tool, inp: HookInput) -> HookResult:
 
 def _saved_progress(project: Project, session: str) -> list[str]:
     """Build the lines that put back "지금 상황" of the documents saved before compaction (and what it replaced)."""
+    from ..core import sections
     from ..core.project import read
-    from ..work.progress import NOW, section_body
 
+    names = project.names
+    now, past = names.title("now"), names.title("past")
     f = _compact_file(project, session)
     if not f.exists():
         return []
@@ -127,10 +134,10 @@ def _saved_progress(project: Project, session: str) -> list[str]:
         path = project.root / item["path"]
         if not path.exists():
             continue
-        out += [f"{item['path']} · {NOW}:", section_body(read(path), NOW)]
+        out += [f"{item['path']} · {now}:", sections.body(read(path), names.titles("now"))]
         if item.get("before"):
-            out += ["(압축 직전에 적혀 있던 내용 — 지난 기록으로 옮김)", item["before"]]
-    out.append("→ 필요하면 이 문서의 '## 지금 상황'에 진행 맥락을 보탠다 (요약만).")
+            out += [f"(압축 직전에 적혀 있던 내용 — {past}으로 옮김)", item["before"]]
+    out.append(f"→ 필요하면 이 문서의 '## {now}'에 진행 맥락을 보탠다 (요약만).")
     return out
 
 
@@ -411,8 +418,8 @@ def sync_nudge(project: Project, session: str) -> str:
     works = [
         w
         for w in project.work_dirs()
-        if (w / "기획.md").exists()
-        and frontmatter.parse(read(w / "기획.md")).meta.get("status") == project.enums.value("work_status", "build")
+        if project.doc_path(w, "plan").exists()
+        and frontmatter.parse(read(project.doc_path(w, "plan"))).meta.get("status") == project.enums.value("work_status", "build")
     ]
     if not works:
         return ""

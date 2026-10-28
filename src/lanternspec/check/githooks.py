@@ -324,19 +324,20 @@ def pre_commit(project: Project) -> int:
     # schema change without a record
     from ..report.scan import is_doc_path, schema_files
 
-    if not docs_branch:
+    n = project.names
+    if not docs_branch and not n.is_unused("schema"):
         sfiles = schema_files(project, staged)
         if sfiles:
             if project.profile.remote == "shared":
-                recorded = any(nfc(f).endswith("기록.md") for f in staged)
+                recorded = any(nfc(f).endswith(nfc(n.file("record"))) for f in staged)
             else:
                 docs_status = git_out(["status", "--porcelain"], project.docs) if project.docs.exists() else ""
                 recent = git_out(["log", "--since=1.day", "--name-only", "--format="], project.docs) if project.docs.exists() else ""
-                recorded = "기록.md" in nfc(docs_status) or "기록.md" in nfc(recent)
+                recorded = nfc(n.file("record")) in nfc(docs_status) or nfc(n.file("record")) in nfc(recent)
             if not recorded:
                 problems.append(
-                    f"스키마 기록: 스키마 파일이 바뀌었는데 기록.md 변경이 없습니다: {', '.join(sfiles[:3])}"
-                    " — 작업 기록.md '## 스키마 변경'에 남기세요"
+                    f"스키마 기록: 스키마 파일이 바뀌었는데 {n.file('record')} 변경이 없습니다: {', '.join(sfiles[:3])}"
+                    f" — 작업 {n.file('record')} '## {n.title('schema')}'에 남기세요"
                 )
     # lantern check on the documents in this commit
     from . import check_docs

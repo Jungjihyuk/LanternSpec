@@ -3,6 +3,9 @@
 Task line:
     - [ ] W-012-T02 무엇 [크기:: M] [기준:: AC-1] [먼저:: T01] [담당:: 이름]
 
+Attribute names (`크기` …) and the "❓ 확인 필요" marker come from the project's names.yaml (core/names.py);
+parsed attributes are keyed by role ("size" · "criteria" · "after" …), so callers never spell a name.
+
 Responsibilities:
     - read task lines and acceptance-criteria lines (outside code fences)
     - change one attribute or the check box of a line
@@ -17,10 +20,11 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
+from .names import Names
+
 TASK_LINE = re.compile(r"^(\s*)- \[( |x|X)\] (W-\d{3,}-T\d{2,})\b\s*(.*)$")
 ATTR = re.compile(r"\[([^\[\]:]+?)::\s*([^\[\]]*?)\s*\]")
 AC_LINE = re.compile(r"^(\s*)- \[( |x|X)\] (AC-\d+)\b\s*(.*)$")
-UNKNOWN = "❓ 확인 필요"
 
 
 @dataclass
@@ -31,14 +35,15 @@ class Task:
         id: Task ID, e.g. "W-012-T02".
         title: The text of the task, without attributes and markers.
         done: Whether the box is checked.
-        attrs: Attribute name → value, from the `[이름:: 값]` parts.
+        attrs: Attribute role → value, from the `[name:: value]` parts (unknown names are kept as written).
         line_no: The 0-based line in the file.
         raw: The line exactly as written.
-        unknown: Whether the line carries the "❓ 확인 필요" marker.
+        unknown: The "❓ 확인 필요" marker when the line carries it; "" otherwise.
         parallel: Whether the line carries `[P]` (can run alongside other `[P]` tasks).
 
     Example:
-        >>> task = parse_tasks("- [ ] W-012-T02 버튼 [크기:: M] [먼저:: T01]")[0]
+        >>> from lanternspec.core.names import load
+        >>> task = parse_tasks("- [ ] W-012-T02 버튼 [크기:: M] [먼저:: T01]", load("ko"))[0]
         >>> task.id, task.title, task.size, task.deps
         ('W-012-T02', '버튼', 'M', ['W-012-T01'])
     """
@@ -49,7 +54,7 @@ class Task:
     attrs: dict[str, str]
     line_no: int  # 0-based
     raw: str
-    unknown: bool = False
+    unknown: str = ""
     parallel: bool = False  # [P] — can run alongside other [P] tasks (parallel agents)
 
     @property
@@ -61,13 +66,14 @@ class Task:
         """Read an attribute that holds several values.
 
         Args:
-            key: Attribute name, e.g. "먼저".
+            key: Attribute role, e.g. "after".
 
         Returns:
             The values split on commas and spaces; empty when the attribute is missing.
 
         Example:
-            >>> parse_tasks("- [ ] W-012-T03 셋 [먼저:: T01, T02]")[0].list_attr("먼저")
+            >>> from lanternspec.core.names import load
+            >>> parse_tasks("- [ ] W-012-T03 셋 [먼저:: T01, T02]", load("ko"))[0].list_attr("after")
             ['T01', 'T02']
         """
         return [x.strip() for x in re.split(r"[,\s]+", self.attrs.get(key, "")) if x.strip()]
@@ -76,7 +82,7 @@ class Task:
     def deps(self) -> list[str]:
         """Task IDs that must finish first, with short forms (`T01`) expanded to full IDs."""
         out = []
-        for d in self.list_attr("먼저"):
+        for d in self.list_attr("after"):
             d = d.upper()
             if re.fullmatch(r"T\d+", d):
                 d = f"{self.work_id}-T{int(d[1:]):02d}"
@@ -86,27 +92,27 @@ class Task:
     @property
     def criteria(self) -> list[str]:
         """Acceptance criteria the task serves (`[기준:: AC-1]`), upper-cased."""
-        return [c.upper() for c in self.list_attr("기준") if re.fullmatch(r"(?i)AC-\d+", c)]
+        return [c.upper() for c in self.list_attr("criteria") if re.fullmatch(r"(?i)AC-\d+", c)]
 
     @property
     def size(self) -> str:
         """The size attribute (S · M · L), or ""."""
-        return self.attrs.get("크기", "")
+        return self.attrs.get("size", "")
 
     @property
     def started(self) -> str:
         """The start time attribute, or ""."""
-        return self.attrs.get("시작", "")
+        return self.attrs.get("start", "")
 
     @property
     def finished(self) -> str:
         """The finish time attribute, or ""."""
-        return self.attrs.get("완료", "")
+        return self.attrs.get("finish", "")
 
     @property
     def screen(self) -> str:
         """The screen attribute (which mockup the task builds), or ""."""
-        return self.attrs.get("화면", "")
+        return self.attrs.get("screen", "")
 
 
 @dataclass
@@ -130,20 +136,23 @@ class Criterion:
     line_no: int
 
 
-def parse_tasks(text: str) -> list[Task]:
+def parse_tasks(text: str, names: Names) -> list[Task]:
     r"""Read every task line of a document (outside code fences).
 
     Args:
         text: The whole document.
+        names: The project's names (attribute names and the "❓ 확인 필요" marker).
 
     Returns:
         The tasks, in file order.
 
     Example:
+        >>> from lanternspec.core.names import load
         >>> text = "- [x] W-001-T01 하나 [크기:: S]\n- [ ] W-001-T02 둘 [P] ❓ 확인 필요"
-        >>> [(t.id, t.done, t.parallel, t.unknown) for t in parse_tasks(text)]
-        [('W-001-T01', True, False, False), ('W-001-T02', False, True, True)]
+        >>> [(t.id, t.done, t.parallel, bool(t.unknown), t.attrs) for t in parse_tasks(text, load("ko"))]
+        [('W-001-T01', True, False, False, {'size': 'S'}), ('W-001-T02', False, True, True, {})]
     """
+    unknown = names.marker("unknown")
     tasks: list[Task] = []
     in_fence = False
     for i, line in enumerate(text.split("\n")):
@@ -156,8 +165,8 @@ def parse_tasks(text: str) -> list[Task]:
         if not m:
             continue
         rest = m.group(4)
-        attrs = {k.strip(): v.strip() for k, v in ATTR.findall(rest)}
-        title = ATTR.sub("", rest).replace(UNKNOWN, "").replace("[P]", "").strip()
+        attrs = {names.attr_role(k.strip()): v.strip() for k, v in ATTR.findall(rest)}
+        title = ATTR.sub("", rest).replace(unknown, "").replace("[P]", "").strip()
         tasks.append(
             Task(
                 id=m.group(3).upper(),
@@ -166,7 +175,7 @@ def parse_tasks(text: str) -> list[Task]:
                 attrs=attrs,
                 line_no=i,
                 raw=line,
-                unknown=UNKNOWN in rest,
+                unknown=unknown if unknown in rest else "",
                 parallel="[P]" in rest,
             )
         )
@@ -200,34 +209,56 @@ def parse_criteria(text: str) -> list[Criterion]:
     return out
 
 
-def set_attr(line: str, key: str, value: str) -> str:
-    """Set one `[key:: value]` attribute on a line, replacing it when present.
+def set_attr(line: str, role: str, value: str, names: Names) -> str:
+    """Set one `[name:: value]` attribute on a line, replacing it when present.
 
     A trailing "❓ 확인 필요" marker stays at the very end.
 
     Args:
         line: A task line.
-        key: Attribute name.
+        role: Attribute role, e.g. "start".
         value: New value.
+        names: The project's names (the attribute's name and the marker).
 
     Returns:
         The changed line.
 
     Example:
-        >>> set_attr("- [ ] W-001-T01 하나 [크기:: S]", "크기", "M")
+        >>> from lanternspec.core.names import load
+        >>> set_attr("- [ ] W-001-T01 하나 [크기:: S]", "size", "M", load("ko"))
         '- [ ] W-001-T01 하나 [크기:: M]'
-        >>> set_attr("- [ ] W-001-T01 하나 ❓ 확인 필요", "시작", "09:00")
+        >>> set_attr("- [ ] W-001-T01 하나 ❓ 확인 필요", "start", "09:00", load("ko"))
         '- [ ] W-001-T01 하나 [시작:: 09:00] ❓ 확인 필요'
     """
+    key, unknown = names.attr(role), names.marker("unknown")
     pat = re.compile(r"\[" + re.escape(key) + r"::\s*[^\[\]]*?\s*\]")
     new = f"[{key}:: {value}]"
     if pat.search(line):
         return pat.sub(new, line, count=1)
     # keep a trailing ❓ marker at the very end
-    if line.rstrip().endswith(UNKNOWN):
-        base = line.rstrip()[: -len(UNKNOWN)].rstrip()
-        return f"{base} {new} {UNKNOWN}"
+    if line.rstrip().endswith(unknown):
+        base = line.rstrip()[: -len(unknown)].rstrip()
+        return f"{base} {new} {unknown}"
     return f"{line.rstrip()} {new}"
+
+
+def drop_attr(line: str, role: str, names: Names) -> str:
+    """Remove one `[name:: value]` attribute from a line.
+
+    Args:
+        line: A task line.
+        role: Attribute role, e.g. "finish".
+        names: The project's names.
+
+    Returns:
+        The line without that attribute (unchanged when it has none).
+
+    Example:
+        >>> from lanternspec.core.names import load
+        >>> drop_attr("- [x] W-001-T01 하나 [완료:: 10:00]", "finish", load("ko"))
+        '- [x] W-001-T01 하나'
+    """
+    return re.sub(r"\s*\[" + re.escape(names.attr(role)) + r"::[^\]]*\]", "", line)
 
 
 def set_checked(line: str, checked: bool) -> str:
@@ -258,7 +289,8 @@ def find_task(tasks: list[Task], task_id: str) -> Task | None:
         The task; None when it is not in the list.
 
     Example:
-        >>> find_task(parse_tasks("- [ ] W-001-T01 하나"), "w-001-t01").title
+        >>> from lanternspec.core.names import load
+        >>> find_task(parse_tasks("- [ ] W-001-T01 하나", load("ko")), "w-001-t01").title
         '하나'
     """
     task_id = task_id.upper()
@@ -276,7 +308,8 @@ class TaskGraph:
         tasks: All tasks of the work.
 
     Example:
-        >>> graph = TaskGraph(parse_tasks("- [ ] W-001-T01 하나\n- [ ] W-001-T02 둘 [먼저:: T01]"))
+        >>> from lanternspec.core.names import load
+        >>> graph = TaskGraph(parse_tasks("- [ ] W-001-T01 하나\n- [ ] W-001-T02 둘 [먼저:: T01]", load("ko")))
         >>> graph.blocked_reason(graph.tasks[1])
         'W-001-T01 먼저'
     """
@@ -290,7 +323,8 @@ class TaskGraph:
             Task ID → task.
 
         Example:
-            >>> list(TaskGraph(parse_tasks("- [ ] W-001-T01 하나")).by_id())
+            >>> from lanternspec.core.names import load
+            >>> list(TaskGraph(parse_tasks("- [ ] W-001-T01 하나", load("ko"))).by_id())
             ['W-001-T01']
         """
         return {t.id: t for t in self.tasks}
@@ -306,14 +340,15 @@ class TaskGraph:
             None when the task can start.
 
         Example:
-            >>> graph = TaskGraph(parse_tasks("- [x] W-001-T01 하나\n- [ ] W-001-T02 둘 [먼저:: T01]"))
+            >>> from lanternspec.core.names import load
+            >>> graph = TaskGraph(parse_tasks("- [x] W-001-T01 하나\n- [ ] W-001-T02 둘 [먼저:: T01]", load("ko")))
             >>> graph.blocked_reason(graph.tasks[1]) is None
             True
         """
         if task.done:
             return "이미 완료"
         if task.unknown:
-            return "❓ 확인 필요"
+            return task.unknown
         index = self.by_id()
         for dep in task.deps:
             d = index.get(dep)

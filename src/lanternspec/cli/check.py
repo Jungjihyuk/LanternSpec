@@ -30,7 +30,7 @@ def cmd_check(a: argparse.Namespace) -> int:
                 if found is None:
                     raise CliError(f"없습니다: {raw}")
                 paths += sorted(found.rglob("*.md")) if found.is_dir() else [found]
-        rep = check_docs.run(project, paths)
+        rep = check_docs.run(project, paths, templates=True)
     if a.json:
         print(rep.to_json())
     else:

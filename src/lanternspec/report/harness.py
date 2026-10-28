@@ -115,9 +115,9 @@ def facts(project: Project) -> dict[str, Any]:
     works = project.work_dirs()
     tasks, parallel_ready = 0, 0
     for w in works:
-        tf = w / "할 일.md"
+        tf = project.doc_path(w, "tasks")
         if tf.exists():
-            ts = parse_tasks(read(tf))
+            ts = parse_tasks(read(tf), project.names)
             tasks += len(ts)
             g = TaskGraph(ts)
             parallel_ready += sum(1 for t in ts if t.parallel and g.blocked_reason(t) is None)

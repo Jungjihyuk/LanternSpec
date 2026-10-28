@@ -18,13 +18,12 @@ import subprocess
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from ..core import frontmatter
+from ..core import frontmatter, sections
 from ..core.project import Project, git, git_out, nfc, read, today, write
 from ..work import dbml
 
 ID_RE = re.compile(r"\b((?:IDEA|W|ADR|D)-\d{3,}(?:-T\d{2,})?)\b")
 TASK_ID_RE = re.compile(r"\bW-\d{3,}-T\d{2,}\b")
-NO_WORK_FILE = "4. 운영 기록/작업 없이 고친 것.md"
 SKIP_SUBJECT = re.compile(r"^(Merge |Revert \"|fixup! |squash! |amend! )|\[lantern\]")
 
 
@@ -166,23 +165,38 @@ def _owned_hashes(project: Project) -> str:
     """Text of every record that may mention a commit hash (`기록.md` files + the no-work log)."""
     texts = []
     for w in project.work_dirs(include_archive=True):
-        r = w / "기록.md"
+        r = project.doc_path(w, "record")
         if r.exists():
             texts.append(read(r))
-    nf = project.docs / NO_WORK_FILE
+    nf = no_work_file(project)
     if nf.exists():
         texts.append(read(nf))
     return "\n".join(texts)
 
 
-def _section(text: str, heading: str) -> str:
-    m = re.search(rf"^## {re.escape(heading)}\s*$(.*?)(?=^## |\Z)", text, re.M | re.S)
-    return m.group(1) if m else ""
+def no_work_file(project: Project) -> Path:
+    """Return the log of code changes that belong to no work (`4. 운영 기록/작업 없이 고친 것.md`).
+
+    Args:
+        project: The project.
+
+    Returns:
+        Its path (it may not exist).
+
+    Example:
+        >>> no_work_file(project).name  # doctest: +SKIP
+        '작업 없이 고친 것.md'
+    """
+    return project.folder("ops") / project.names.file("no_work")
 
 
-def _has_schema_rows(record_text: str) -> bool:
-    sec = _section(record_text, "스키마 변경")
-    rows = [l for l in sec.split("\n") if l.startswith("|") and not re.match(r"^\|[\s\-|:]*\|$", l)]
+def _schema_recorded(project: Project, record_text: str) -> bool:
+    """Whether a work's record lists a schema change; True (nothing to check) when the section is missing or off."""
+    n = project.names
+    m = None if n.is_unused("schema") else sections.find(record_text, n.titles("schema"))
+    if m is None:
+        return True
+    rows = [l for l in m.group(2).split("\n") if l.startswith("|") and not re.match(r"^\|[\s\-|:]*\|$", l)]
     return len(rows) > 1  # header + at least one row
 
 
@@ -250,7 +264,7 @@ class ScanResult:
             for s in self.stale:
                 lines.append(f"- {s['doc']} — {s['reason']}")
         if self.schema:
-            lines.append(f"## 기록 없는 스키마 변경 ({len(self.schema)}) — 기록.md 스키마 변경 칸")
+            lines.append(f"## 기록 없는 스키마 변경 ({len(self.schema)}) — 작업 기록의 스키마 변경 칸")
             lines += [
                 f"- `{s['short']}` {s['subject']} ({', '.join(s['files'])}){' · ' + s['work'] if s.get('work') else ''}"
                 for s in self.schema
@@ -309,7 +323,8 @@ def run(project: Project, rev: str | None = None, limit: int = 200, tests: bool 
             work_name = ""
             for wid in c.work_ids:
                 folder = project.find_work(wid)
-                if folder and (folder / "기록.md").exists() and _has_schema_rows(read(folder / "기록.md")):
+                record = project.doc_path(folder, "record") if folder else None
+                if record and record.exists() and _schema_recorded(project, read(record)):
                     recorded = True
                 work_name = wid
             if not recorded:
@@ -338,7 +353,7 @@ def run(project: Project, rev: str | None = None, limit: int = 200, tests: bool 
                     {"doc": rel, "reason": f"{checked} 이후 관련 코드 커밋 {len(changed)}개: " + "; ".join(changed[:3]), "commits": changed}
                 )
     # DBML drift
-    schema_path = current / "데이터" / "schema.dbml"
+    schema_path = current / project.names.folder("data") / "schema.dbml"
     sql_files = sorted(
         (
             p
@@ -400,7 +415,7 @@ def record_no_work(project: Project, short: str, reason: str) -> Path:
         >>> record_no_work(project, "abc1234", "오타 수정").name  # doctest: +SKIP
         '작업 없이 고친 것.md'
     """
-    p = project.docs / NO_WORK_FILE
+    p = no_work_file(project)
     if not p.exists():
         body = (
             "# 작업 없이 고친 것\n\n> [!abstract] 한눈에 보기\n> 작업(W-…)에 속하지 않는 코드 변경. `/l-sync`가 기록한다.\n\n"
@@ -446,25 +461,18 @@ def adopt_into_work(project: Project, short: str, work_id: str) -> Path:
     folder = project.find_work(work_id)
     if folder is None:
         raise ValueError(f"작업 {work_id}를 찾지 못했습니다")
-    rec = folder / "기록.md"
+    n = project.names
+    rec = project.doc_path(folder, "record")
     if not rec.exists():
         from ..work.scaffold import work_doc
 
-        work_doc(project, work_id, "기록")
+        work_doc(project, work_id, "record")
+    if n.is_unused("past"):
+        return rec
     subject = git_out(["log", "-1", "--format=%s", short], project.root)
-    text = read(rec)
     line = f"- {today()} 주인 없는 변경 `{short}` ({subject})을 이 작업으로 연결 (/l-sync)"
-    if "## 지난 기록" in text:
-        head, tail = text.split("## 지난 기록", 1)
-        parts = tail.split("\n")
-        insert_at = len(parts)
-        for i, l in enumerate(parts[1:], start=1):
-            if l.startswith("## ") or l.startswith("<!--"):
-                insert_at = i
-                break
-        parts.insert(insert_at, line)
-        text = head + "## 지난 기록" + "\n".join(parts)
-    else:
-        text = text.rstrip() + f"\n\n## 지난 기록\n{line}\n"
+    text = sections.append(read(rec), n.titles("past"), line)
+    if text is None:
+        raise sections.SectionMissing(n, "past", rec)
     write(rec, frontmatter.set_fields(text, {}))
     return rec

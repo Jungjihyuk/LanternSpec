@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from ..core import frontmatter
+from ..core.names import WORK_DOCS
 from ..core.project import Project, git, git_out, nfc, read, work_name_of, write
 from ..core.taskfile import parse_tasks
 
@@ -191,14 +192,15 @@ def work_worktree(project: Project, work_id: str) -> Worktree | None:
 def _touch_points(project: Project, work_id: str) -> set[str]:
     """Tables and files a design says it will change — for start-time conflict warnings."""
     folder = project.find_work(work_id, include_archive=False)
-    if folder is None or not (folder / "설계.md").exists():
+    design = project.doc_path(folder, "design") if folder else None
+    if design is None or not design.exists():
         return set()
-    text = frontmatter.parse(read(folder / "설계.md")).body
+    text = frontmatter.parse(read(design)).body
     points: set[str] = set()
     for block in re.findall(r"```dbml\n(.*?)```", text, re.S):
         points |= {f"테이블 {m}" for m in re.findall(r"(?im)^\s*Table\s+\"?([\w.]+)\"?", block)}
     for m in re.findall(r"`([\w./\-]+\.[A-Za-z0-9]{1,6})`", text):
-        if "/" in m and not m.startswith("화면/"):
+        if "/" in m and not m.startswith(project.names.folder("screens") + "/"):
             points.add(f"파일 {m}")
     return points
 
@@ -307,9 +309,9 @@ def _progress(project: Project, wid: str, root: Path | None = None) -> str:
     folder = base.find_work(wid, include_archive=False) if base.docs.exists() else None
     if folder is None:
         folder = project.find_work(wid, include_archive=False)
-    if folder is None or not (folder / "할 일.md").exists():
+    if folder is None or not project.doc_path(folder, "tasks").exists():
         return "할 일 없음"
-    ts = parse_tasks(read(folder / "할 일.md"))
+    ts = parse_tasks(read(project.doc_path(folder, "tasks")), project.names)
     return f"{sum(t.done for t in ts)}/{len(ts)} 완료"
 
 
@@ -446,8 +448,8 @@ def archive(project: Project, work_id: str) -> Path:
     folder = project.find_work(work_id, include_archive=False)
     if folder is None:
         raise WorkError(f"진행 중인 작업 {work_id}가 없습니다")
-    for doc in ("기획.md", "설계.md", "할 일.md", "기록.md"):
-        p = folder / doc
+    for role in WORK_DOCS:
+        p = project.doc_path(folder, role)
         if p.exists():
             write(p, frontmatter.set_fields(read(p), {"status": project.enums.value("work_status", "done")}))
     dest_parent = project.folder("archive")

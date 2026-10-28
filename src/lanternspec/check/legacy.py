@@ -10,15 +10,15 @@ import re
 import shutil
 from pathlib import Path
 
-from ..core.profile import FOLDERS, MOC_FILE
+from ..core import sections
 from ..core.project import Project, git, git_out, nfc, read, write
 
 TODO_RE = re.compile(r"(TODO|FIXME|나중에|추후|언젠가|해야 할|할 것|아이디어|개선 필요|- \[ \])", re.I)
 
 
 def _ours(project: Project) -> set:
-    tops = {nfc(v.split("/")[0]) for v in FOLDERS.values()}
-    return tops | {nfc(MOC_FILE), ".git", ".obsidian"}
+    tops = {nfc(v.split("/")[0]) for v in project.names.folders().values()}
+    return tops | {nfc(project.names.file("moc")), ".git", ".obsidian"}
 
 
 def _move(project: Project, src: Path, dest: Path) -> None:
@@ -91,7 +91,9 @@ def legacy_files(project: Project) -> list[Path]:
     return sorted(
         p
         for p in legacy.rglob("*")
-        if p.is_file() and nfc(p.name) != "기존 문서 지도.md" and not any(x.startswith(".") for x in p.relative_to(legacy).parts)
+        if p.is_file()
+        and nfc(p.name) != nfc(project.names.file("legacy_map"))
+        and not any(x.startswith(".") for x in p.relative_to(legacy).parts)
     )
 
 
@@ -132,31 +134,30 @@ def add_map_rows(project: Project) -> Path | None:
         >>> add_map_rows(project).name  # doctest: +SKIP
         '기존 문서 지도.md'
     """
-    m = project.folder("legacy") / "기존 문서 지도.md"
-    if not m.exists():
-        return None
+    n = project.names
+    m = project.folder("legacy") / n.file("legacy_map")
+    if not m.exists() or n.is_unused("legacy_docs"):
+        return None if not m.exists() else m
     text = read(m)
     missing = [p for p in legacy_files(project) if project.docs_rel(p).rsplit(".", 1)[0] not in text]
     if not missing:
         return m
-    rows = map_rows(project, missing)
-    lines = text.split("\n")
-    # drop the template's blank example row once real rows exist
-    lines = [l for l in lines if l.strip() != "| {{문서}} | {{무슨 내용}} | {{아직 맞나}} | {{흡수 · 보관 · 옮기기}} | {{새 위치}} |"]
-    try:
-        start = next(i for i, l in enumerate(lines) if l.strip() == "## 문서")
-    except StopIteration:
-        write(m, text.rstrip() + "\n\n## 문서\n| 문서 | 무슨 내용 | 아직 맞나 | 갈래 | 새 위치 |\n|---|---|---|---|---|\n" + rows + "\n")
+    section = sections.find(text, n.titles("legacy_docs"))
+    if section is None:  # the person removed or renamed the section: check asks about it
         return m
-    last = start
-    for i in range(start + 1, len(lines)):
-        if lines[i].startswith("|"):
-            last = i
-        elif lines[i].startswith("## "):
-            break
-    lines[last + 1 : last + 1] = rows.split("\n")
-    write(m, "\n".join(lines))
+    lines = section.group(2).split("\n")
+    # drop the template's blank example row (every cell a {{blank}}) once real rows exist
+    lines = [l for l in lines if not _blank_row(l)]
+    last = max((i for i, l in enumerate(lines) if l.startswith("|")), default=-1)
+    lines[last + 1 : last + 1] = map_rows(project, missing).split("\n")
+    write(m, text[: section.start(2)] + "\n".join(lines) + text[section.end(2) :])
     return m
+
+
+def _blank_row(line: str) -> bool:
+    """A table row whose every cell is a {{blank}}."""
+    cells = [c.strip() for c in line.strip().strip("|").split("|")] if line.startswith("|") else []
+    return bool(cells) and all(re.fullmatch(r"\{\{[^{}]+\}\}", c) for c in cells)
 
 
 def todos(project: Project) -> list[dict[str, str]]:

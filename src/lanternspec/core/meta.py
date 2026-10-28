@@ -102,7 +102,7 @@ def meta_set(project: Project, target: str, items: list[str]) -> tuple[Path, dic
     updates = parse_assignments(items)
     text = read(path)
     meta = frontmatter.parse(text).meta
-    enums = enums_mod.load(project.enums_file)
+    enums = project.enums
     rules = enums.rules_for(str(updates.get("type") or meta.get("type") or ""))
     for k, v in updates.items():
         if k in rules and str(v) not in rules[k].values:

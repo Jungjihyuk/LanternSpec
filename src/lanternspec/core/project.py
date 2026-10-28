@@ -25,8 +25,9 @@ from pathlib import Path
 
 from . import enums as enums_mod
 from . import frontmatter
+from . import names as names_mod
 from . import profile as profile_mod
-from .profile import FOLDERS, MOC_FILE, Profile
+from .profile import Profile
 
 STATE_DIR = ".lantern"
 
@@ -220,7 +221,7 @@ def find_root(start: Path | None = None) -> Path:
 class Project:
     """One LanternSpec project: its root folder and its lantern.yaml.
 
-    Every path the scripts use is built here, so folder names live in one place (core/profile.py FOLDERS).
+    Every path the scripts use is built here; folder and file names come from names.yaml (core/names.py).
 
     Attributes:
         root: Project root folder.
@@ -262,19 +263,19 @@ class Project:
         """Return one of the numbered document folders.
 
         Args:
-            key: Folder key from core/profile.py FOLDERS, e.g. "works" or "templates".
+            key: Folder key from names.yaml, e.g. "works" or "templates".
 
         Returns:
             The folder path under the documents root (it may not exist yet).
 
         Raises:
-            KeyError: The key is not in FOLDERS.
+            KeyError: The key is not in names.yaml.
 
         Example:
             >>> Project.load().folder("templates").name  # doctest: +SKIP
             '0. 템플릿'
         """
-        return self.docs / FOLDERS[key]
+        return self.docs / self.names.folder(key)
 
     @property
     def templates_dir(self) -> Path:
@@ -289,7 +290,28 @@ class Project:
     @cached_property
     def enums(self) -> enums_mod.Enums:
         """The project's choice lists (its own enums.yaml, else the bundled one), read once per command."""
-        return enums_mod.load(self.enums_file)
+        return enums_mod.load(self.enums_file, self.profile.language)
+
+    @cached_property
+    def names(self) -> names_mod.Names:
+        """Every name the program uses for this project (names.yaml of its language plus its own section decisions)."""
+        return self.profile.names
+
+    def doc_path(self, folder: Path, role: str) -> Path:
+        """Return the path of a named document inside a folder.
+
+        Args:
+            folder: The folder, e.g. a work folder.
+            role: Document role, e.g. "plan".
+
+        Returns:
+            `folder / <name>.md`.
+
+        Example:
+            >>> project.doc_path(work, "plan").name  # doctest: +SKIP
+            '기획.md'
+        """
+        return folder / self.names.file(role)
 
     def reload_enums(self) -> None:
         """Forget the cached choice lists so the next access reads enums.yaml again.
@@ -304,7 +326,7 @@ class Project:
     @property
     def moc(self) -> Path:
         """The document map (MOC) file at the documents root."""
-        return self.docs / MOC_FILE
+        return self.docs / self.names.file("moc")
 
     @property
     def state(self) -> Path:

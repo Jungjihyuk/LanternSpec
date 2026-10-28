@@ -17,7 +17,7 @@ from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
-from ..core import frontmatter, templating
+from ..core import frontmatter, sections, templating
 from ..core.new_id import next_id
 from ..core.project import Project, nfc, now_minute, read, safe_name, today, wikilink, write
 
@@ -181,7 +181,7 @@ def known_file(project: Project) -> Path:
         >>> known_file(project).name  # doctest: +SKIP
         '아는 기술.md'
     """
-    return project.folder("debt") / "아는 기술.md"
+    return project.folder("debt") / project.names.file("known_tech")
 
 
 def known_list(project: Project) -> list[list[str]]:
@@ -242,33 +242,18 @@ def known_add(project: Project, name: str, aliases: list[str] | None = None) -> 
         >>> known_add(project, "React", ["ReactJS"]).name  # doctest: +SKIP
         '아는 기술.md'
     """
+    n = project.names
     p = known_file(project)
     if not p.exists():
         from ..work.scaffold import create_from_template
 
-        create_from_template(project, "아는 기술", p)
-    if is_known(project, name):
+        create_from_template(project, n.doc("known_tech"), p)
+    if is_known(project, name) or n.is_unused("known_list"):
         return p
-    text = read(p)
     alias = f" ({', '.join(aliases)})" if aliases else ""
-    line = f"- {name}{alias} — {today()}"
-    marker = "## 목록"
-    if marker in text:
-        head, tail = text.split(marker, 1)
-        tail_lines = tail.split("\n")
-        # insert after the last list item of the section (before the next heading / template-only)
-        insert_at = 1
-        for i, l in enumerate(tail_lines[1:], start=1):
-            if l.startswith("## ") or l.startswith("<!--"):
-                break
-            if l.startswith("- "):
-                insert_at = i + 1
-        if insert_at == 1:
-            insert_at = 2 if len(tail_lines) > 1 and tail_lines[1] == "" else 1
-        tail_lines.insert(insert_at, line)
-        text = head + marker + "\n".join(tail_lines)
-    else:
-        text = text.rstrip() + f"\n\n{marker}\n{line}\n"
+    text = sections.append(read(p), n.titles("known_list"), f"- {name}{alias} — {today()}")
+    if text is None:
+        raise sections.SectionMissing(n, "known_list", p)
     write(p, frontmatter.set_fields(text, {}))
     return p
 
@@ -333,7 +318,7 @@ def new_card(
 
     create_from_template(
         project,
-        "부채 카드",
+        project.names.doc("debt_card"),
         dest,
         {
             "id": debt_id,
@@ -357,24 +342,15 @@ def _work_link(project: Project, work_id: str) -> str:
     folder = project.find_work(work_id)
     if folder is None:
         return work_id.upper()
-    return wikilink(project, folder / "기획.md", work_id.upper())
+    return wikilink(project, project.doc_path(folder, "plan"), work_id.upper())
 
 
-def _append_origin(text: str, line: str) -> str:
-    marker = "## 어디서 나왔나"
-    if marker not in text:
-        return text.rstrip() + f"\n\n{marker}\n{line}\n"
-    head, tail = text.split(marker, 1)
-    parts = tail.split("\n")
-    insert_at = len(parts)
-    for i, l in enumerate(parts[1:], start=1):
-        if l.startswith("## "):
-            insert_at = i
-            while insert_at > 1 and parts[insert_at - 1] == "":
-                insert_at -= 1
-            break
-    parts.insert(insert_at, line)
-    return head + marker + "\n".join(parts)
+def _append_origin(project: Project, text: str, line: str) -> str:
+    """Add a line to the card's "어디서 나왔나"; unchanged when the section is missing or turned off."""
+    n = project.names
+    if n.is_unused("origin"):
+        return text
+    return sections.append(text, n.titles("origin"), line) or text
 
 
 @dataclass
@@ -449,7 +425,7 @@ def ask(project: Project, term: str, work: str | None = None, session: str = "",
     origin = f"- {today()} {again}{_work_link(project, work) if work else '직접 물음'}"
     if context:
         origin += f" · {context}"
-    write(card.path, _append_origin(text, origin))
+    write(card.path, _append_origin(project, text, origin))
     return AskResult(card.path, True, new_status, count + 1, reopened)
 
 
@@ -520,7 +496,7 @@ def promote(project: Project, term: str, name: str | None = None) -> Path:
     link = wikilink(project, src.path, src.id)
     create_from_template(
         project,
-        "역량 카드",
+        project.names.doc("competency_card"),
         dest,
         {
             "status": templating.yaml_str(project.enums.value("debt_status", "new")),
@@ -536,7 +512,7 @@ def promote(project: Project, term: str, name: str | None = None) -> Path:
         },
     )
     competency = project.enums.label("debt_kind", "competency")
-    write(src.path, _append_origin(read(src.path), f"- {today()} {competency} 부채로 넘김 → {wikilink(project, dest, debt_id)}"))
+    write(src.path, _append_origin(project, read(src.path), f"- {today()} {competency} 부채로 넘김 → {wikilink(project, dest, debt_id)}"))
     return dest
 
 
@@ -565,22 +541,9 @@ def practice(project: Project, term: str, result: str) -> Path:
     if card is None:
         raise LookupError(f"'{term}' 역량 카드가 없습니다 (lantern debt promote 먼저)")
     text = frontmatter.set_fields(read(card.path), {"status": project.enums.value("debt_status", "practicing")})
-    marker = "## 만들어 본 것"
-    line = f"- {today()} {result}"
-    if marker in text:
-        head, tail = text.split(marker, 1)
-        parts = tail.split("\n")
-        insert_at = len(parts)
-        for i, l in enumerate(parts[1:], start=1):
-            if l.startswith("## ") or l.startswith("<!--"):
-                insert_at = i
-                break
-        while insert_at > 1 and parts[insert_at - 1].strip() == "":
-            insert_at -= 1
-        parts.insert(insert_at, line)
-        text = head + marker + "\n".join(parts)
-    else:
-        text = text.rstrip() + f"\n\n{marker}\n{line}\n"
+    n = project.names
+    if not n.is_unused("practice"):  # a missing section only loses the log line; check asks about it
+        text = sections.append(text, n.titles("practice"), f"- {today()} {result}") or text
     write(card.path, text)
     return card.path
 
@@ -660,7 +623,7 @@ def write_status(project: Project) -> Path:
         >>> write_status(project).name  # doctest: +SKIP
         '부채 현황.md'
     """
-    p = project.folder("debt") / "부채 현황.md"
+    p = project.folder("debt") / project.names.file("debt_status")
     s = stats(project)
     cs = cards(project)
     resolved = project.enums.value("debt_status", "resolved")
@@ -685,7 +648,7 @@ def write_status(project: Project) -> Path:
             "",
             f"> ⚙️ 자동 생성 — `lantern debt status` · 기준: {now_minute()}. 손으로 고치지 마세요.",
             "",
-            "> [!abstract] 한눈에 보기",
+            f"> [!abstract] {project.names.marker('glance')}",
             f"> 열린 부채 {s['open']}개 ({open_counts}) · {project.enums.label('debt_status', 'resolved')} {s['resolved']}개",
             "",
             "## 종류별 · 주제별 개수",

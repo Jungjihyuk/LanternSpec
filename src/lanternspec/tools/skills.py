@@ -113,8 +113,11 @@ def validate_name(name: str) -> None:
         raise ValueError("스킬 이름에 ':'는 넣지 않는다")
 
 
-def load_sources() -> list[SkillSource]:
-    """Read every skill source bundled with the package.
+def load_sources(language: str = "ko") -> list[SkillSource]:
+    """Read every skill source of a language bundled with the package.
+
+    Args:
+        language: Language of the skills (lantern.yaml project.language).
 
     Returns:
         One source per name in SKILL_NAMES, in that order.
@@ -129,7 +132,7 @@ def load_sources() -> list[SkillSource]:
     out: list[SkillSource] = []
     for name in SKILL_NAMES:
         validate_name(name)
-        base = resources.path(f"skills/{name}")
+        base = resources.path(f"locales/{language}/skills/{name}")
         text = (base / "SKILL.md").read_text(encoding="utf-8")
         doc = frontmatter.parse(text)
         if doc.meta.get("name") != name:
@@ -171,17 +174,19 @@ def body_context(profile: Profile, tool: str, enums: enums_mod.Enums | None = No
         enums: The project's choice lists; the bundled ones when None.
 
     Returns:
-        Enum names by role, every lantern.yaml value by dotted key, and tool, knowledge and team.
+        Enum names by role, names from names.yaml (`folder.*` · `file.*` · `section.*` …),
+        every lantern.yaml value by dotted key, and tool, knowledge and team.
 
     Example:
         >>> ctx = body_context(Profile(data={"plan": {"max_questions": 3}}), "claude")
-        >>> ctx["plan.max_questions"], ctx["debt_status.resolved"], ctx["tool"]
-        (3, '해결', 'claude')
+        >>> ctx["plan.max_questions"], ctx["debt_status.resolved"], ctx["folder.templates"], ctx["tool"]
+        (3, '해결', '0. 템플릿', 'claude')
     """
     data = dict(profile.data)
     data["knowledge"] = profile.knowledge  # with defaults (write: direct …)
     # <<debt_status.resolved>> · <<idea_status.dropped.label>> — status names come from enums.yaml only
-    ctx: dict[str, Any] = dict((enums or enums_mod.load()).context())
+    ctx: dict[str, Any] = dict((enums or enums_mod.load(language=profile.language)).context())
+    ctx.update(profile.names.context())  # <<folder.current>> · <<file.plan>> · <<section.now>> — names come from names.yaml only
     ctx.update(_flatten(data))
     ctx["tool"] = tool
     ctx["knowledge"] = bool(profile.knowledge)
@@ -231,7 +236,25 @@ def render_body(src: SkillSource, profile: Profile, tool: Tool, prefix: str, enu
     if not tool.expands_arguments:
         body = body.replace("`$ARGUMENTS`", "사용자가 명령과 함께 준 입력").replace("$ARGUMENTS", "사용자 입력")
     # <<plan.max_questions>> → the project's current answer (lantern upgrade re-renders on change)
-    return PROFILE_TOKEN.sub(lambda m: _token_value(ctx.get(m.group(1))), body)
+    return fill_tokens(body, ctx)
+
+
+def fill_tokens(text: str, ctx: dict[str, Any]) -> str:
+    """Replace every `<<dotted.key>>` with its value from a context.
+
+    Args:
+        text: Skill text (body or description).
+        ctx: Values from body_context.
+
+    Returns:
+        The text with tokens filled; a missing value becomes "(없음)".
+
+    Example:
+        >>> ctx = {"folder.templates": "0. 템플릿", "plan.max_questions": 3}
+        >>> fill_tokens("<<folder.templates>> · <<plan.max_questions>> · <<no.such>>", ctx)
+        '0. 템플릿 · 3 · (없음)'
+    """
+    return PROFILE_TOKEN.sub(lambda m: _token_value(ctx.get(m.group(1))), text)
 
 
 def _token_value(value: Any) -> str:
@@ -289,7 +312,7 @@ def generate(profile: Profile, tools: list[Tool], enums: enums_mod.Enums | None 
     for t in tools:
         by_root.setdefault(t.skill_root, []).append(t)
     files: dict[str, str] = {}
-    for src in load_sources():
+    for src in load_sources(profile.language):
         for group in by_root.values():
             prefix = command_prefix(group)
             for t in group:

@@ -23,7 +23,7 @@ from .. import __version__
 from ..check.check_docs import version_gap
 from ..core import principles, state
 from ..core.project import Project, read, write
-from ..report import obsidian, principles_doc
+from ..report import obsidian, principles_doc, sections_doc
 from ..work.scaffold import base_template_names, base_template_text, project_template_path, template_version
 from . import resolve as resolve_tools
 from . import rules, skills
@@ -254,7 +254,10 @@ def install(
     doc = principles_doc.write_doc(project)  # the details behind the AGENTS.md summary — always from the same tables
     if doc:
         report.written.append(project.rel(doc))
-    report.written += [project.rel(p) for p in obsidian.write_vault(project)]  # Obsidian choices follow enums.yaml changes too
+    report.written += [project.rel(p) for p in obsidian.write_vault(project)]
+    page = sections_doc.write_page(project)  # protected sections follow renames and the project's choices
+    if page:
+        report.written.append(project.rel(page))  # Obsidian choices follow enums.yaml changes too
     for tool in chosen:  # each tool merges its own settings (rules hookup · hooks · MCP)
         report.merged += tool.install_config(project, mcp)
     st["mcp"] = mcp
@@ -284,8 +287,9 @@ def upgrade_templates(project: Project, force: bool = False) -> list[str]:
     st = state.load(project)
     rec = st["templates"]
     out: list[str] = []
-    for name in base_template_names():
-        base_text = base_template_text(name)
+    language = project.profile.language
+    for name in base_template_names(language):
+        base_text = base_template_text(name, language)
         base_ver = template_version(base_text)
         dest = project_template_path(project, name)
         if not dest.exists():

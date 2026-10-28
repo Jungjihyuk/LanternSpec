@@ -7,6 +7,7 @@ import pytest
 
 from lanternspec import resources
 from lanternspec.cli import build_parser
+from lanternspec.core.names import languages
 from lanternspec.tools.skills import SKILL_NAMES
 
 
@@ -36,7 +37,7 @@ def _normalise(cmd: str) -> str:
     return re.sub(r"\s+", " ", cmd).strip()
 
 
-SOURCES = [f"skills/{n}/SKILL.md" for n in SKILL_NAMES] + ["agents/AGENTS.md"]
+SOURCES = [f"locales/{lang}/{rel}" for lang in languages() for rel in [*(f"skills/{n}/SKILL.md" for n in SKILL_NAMES), "agents/AGENTS.md"]]
 
 
 @pytest.mark.parametrize("source", SOURCES)
@@ -57,9 +58,10 @@ def test_skill_commands_parse(source):
             pytest.fail(f"{source}: `{raw}` → `{' '.join(argv)}` does not parse")
 
 
-def test_every_skill_mentions_its_wrapup():
+@pytest.mark.parametrize("language", languages())
+def test_every_skill_mentions_its_wrapup(language):
     for name in SKILL_NAMES:
-        text = resources.read_text(f"skills/{name}/SKILL.md")
+        text = resources.read_text(f"locales/{language}/skills/{name}/SKILL.md")
         if name in ("l-map",):
             assert "lantern map" in text
             continue

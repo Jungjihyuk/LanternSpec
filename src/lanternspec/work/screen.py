@@ -46,7 +46,7 @@ def import_files(project: Project, work_id: str, sources: list[Path]) -> list[st
     folder = project.find_work(work_id, include_archive=False)
     if folder is None:
         raise ValueError(f"진행 중인 작업 {work_id}를 찾지 못했습니다")
-    dest = folder / "화면"
+    dest = folder / project.names.folder("screens")
     dest.mkdir(exist_ok=True)
     out: list[str] = []
     for src in sources:

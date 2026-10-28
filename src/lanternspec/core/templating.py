@@ -3,7 +3,8 @@
 Three kinds of marks live in a template:
 
 * ``${name}``  — filled by the script (id, today, work link …). Never by the AI.
-* ``{{name}}`` / ``{{name (필수)}}`` — blanks the AI (or a person) fills; ``(필수)`` marks a required one.
+* ``{{name}}`` / ``{{name (필수)}}`` — blanks the AI (or a person) fills; ``(필수)`` marks a required one
+  (the mark comes from the project's names.yaml, `markers.required`).
 * ``<!-- lantern:if key=a,b -->`` … ``<!-- lantern:endif -->`` — kept only when the
   profile matches (client-only sections, acceptance-criteria format, team-only lines).
 
@@ -160,43 +161,43 @@ def render(template_text: str, values: Mapping[str, Any], ctx: Mapping[str, Any]
     return text
 
 
-def placeholders(text: str) -> list[tuple[str, bool, int]]:
+def placeholders(text: str, required: str) -> list[tuple[str, bool, int]]:
     r"""List every `{{…}}` blank, including those inside code fences (templates put some there on purpose).
 
     Args:
         text: A document or template.
+        required: The mark of a required blank, e.g. "(필수)" (names.yaml `markers.required`).
 
     Returns:
         (name, required, line_no) for each blank; line_no is 1-based.
 
     Example:
-        >>> placeholders("# {{제목 (필수)}}\n{{메모}}")
+        >>> placeholders("# {{제목 (필수)}}\n{{메모}}", "(필수)")
         [('제목 (필수)', True, 1), ('메모', False, 2)]
     """
-    # blanks inside mermaid/dbml fences count too — templates put them there on purpose
     out: list[tuple[str, bool, int]] = []
     for i, line in enumerate(text.split("\n"), start=1):
         for m in PLACEHOLDER_RE.finditer(line):
             name = m.group(1).strip()
-            required = name.endswith("(필수)")
-            out.append((name, required, i))
+            out.append((name, name.endswith(required), i))
     return out
 
 
-def field_base_name(name: str) -> str:
-    """Strip the "(필수)" mark from a blank's name.
+def field_base_name(name: str, required: str) -> str:
+    """Strip the required mark from a blank's name.
 
     Args:
         name: Blank name as written.
+        required: The mark of a required blank, e.g. "(필수)".
 
     Returns:
         The name alone.
 
     Example:
-        >>> field_base_name("결과 (필수)")
+        >>> field_base_name("결과 (필수)", "(필수)")
         '결과'
     """
-    return re.sub(r"\s*\(필수\)\s*$", "", name).strip()
+    return re.sub(rf"\s*{re.escape(required)}\s*$", "", name).strip()
 
 
 def yaml_list(items: list[str]) -> str:

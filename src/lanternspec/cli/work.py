@@ -42,7 +42,7 @@ def cmd_scaffold(a: argparse.Namespace) -> int:
         return 0
     if a.kind == "work":
         folder = scaffold.new_work(project, a.name, idea_id=a.idea, ui=a.ui)
-        print(f"✔ {project.rel(folder)}/기획.md")
+        print(f"✔ {project.rel(project.doc_path(folder, 'plan'))}")
         return 0
     if a.kind == "doc":
         dest = scaffold.work_doc(project, a.work, a.doc)
@@ -106,7 +106,7 @@ def cmd_task(a: argparse.Namespace) -> int:
         if not tasks:
             print("지금 시작할 수 있는 할 일이 없습니다")
         for t in tasks:
-            print(f"▶ {t.id}{' [P]' if t.parallel else ''} {t.title} [크기:: {t.size or '?'}]")
+            print(f"▶ {t.id}{' [P]' if t.parallel else ''} {t.title} [{project.names.attr('size')}:: {t.size or '?'}]")
         par = [t for t in tasks if t.parallel]
         if len(par) > 1:
             print(f"ℹ [P] {len(par)}개는 병렬 에이전트에 하나씩 맡길 수 있습니다 (할 일 하나 = 커밋 하나)")
@@ -129,7 +129,8 @@ def cmd_task(a: argparse.Namespace) -> int:
             return 0
         if res.task:
             t = res.task
-            print(f"▶ {t.id} {t.title} [크기:: {t.size or '?'}] [기준:: {', '.join(t.criteria) or '—'}]")
+            n = project.names
+            print(f"▶ {t.id} {t.title} [{n.attr('size')}:: {t.size or '?'}] [{n.attr('criteria')}:: {', '.join(t.criteria) or '—'}]")
         elif res.all_done:
             print("✅ 모든 할 일 완료 — 현재 상태 반영 단계로")
         else:
@@ -139,11 +140,11 @@ def cmd_task(a: argparse.Namespace) -> int:
         return 0
     if a.action == "start":
         t = task_cmd.start(project, a.target)
-        print(f"▶ {t.id} 시작 [시작:: {t.started}]")
+        print(f"▶ {t.id} 시작 [{project.names.attr('start')}:: {t.started}]")
         return 0
     if a.action == "done":
         res = task_cmd.done(project, a.target)
-        print(f"✔ {res.task.id} 완료 [완료:: {res.task.finished}]")
+        print(f"✔ {res.task.id} 완료 [{project.names.attr('finish')}:: {res.task.finished}]")
         for ac in res.checkpoints:
             print(f"🔎 AC 체크포인트: {ac} — 연결된 할 일이 모두 끝났습니다. 이 기준만 확인하고 lantern task ac {res.task.work_id} {ac}")
         if res.work_done:
@@ -266,7 +267,7 @@ def _dbml_source(project: Project, path: str | None) -> tuple[Path, dbml.Schema]
     from ..core.project import read
     from ..work import dbml
 
-    schema_file = project.folder("current") / "데이터" / "schema.dbml"
+    schema_file = project.folder("current") / project.names.folder("data") / "schema.dbml"
     if not path:
         return schema_file, dbml.parse(read(schema_file)) if schema_file.exists() else dbml.Schema()
     p = Path(path)
@@ -296,10 +297,10 @@ def cmd_dbml(a: argparse.Namespace) -> int:
 
     project = _p()
     a.sql = (a.sql or []) + (a.sql_opt or [])  # diff takes --sql, from-sql takes positionals
-    data_dir = project.folder("current") / "데이터"
+    data_dir = project.folder("current") / project.names.folder("data")
     if a.action == "render":
         schema_file = Path(a.schema) if a.schema else data_dir / "schema.dbml"
-        doc = Path(a.doc) if a.doc else data_dir / "데이터.md"
+        doc = Path(a.doc) if a.doc else data_dir / project.names.file("data")
         if not schema_file.exists():
             raise CliError(f"DBML이 없습니다: {project.rel(schema_file)}")
         schema = dbml.parse(read(schema_file))
@@ -367,7 +368,7 @@ def register(add: Add) -> None:
     ss = p.add_subparsers(dest="kind", required=True)
     s = ss.add_parser("init", help="lantern.yaml대로 폴더 · 템플릿 · MOC")
     s.add_argument("--plan", action="store_true", help="만들 것만 보여 주기")
-    s = ss.add_parser("work", help="작업 폴더 + 기획.md")
+    s = ss.add_parser("work", help="작업 폴더 + 기획 문서")
     s.add_argument("name")
     s.add_argument("--idea")
     s.add_argument("--ui", action="store_true", help="화면이 바뀌는 작업")
@@ -376,7 +377,7 @@ def register(add: Add) -> None:
     s.add_argument("doc")
     s = ss.add_parser("idea", help="아이디어 카드")
     s.add_argument("name")
-    s.add_argument("--kind", dest="kind_of", default="기능")
+    s.add_argument("--kind", dest="kind_of", help="아이디어 유형 (기본: enums.yaml idea_kind의 첫 값)")
     s.add_argument("--raw")
     s.add_argument("--status", help="기본: enums.yaml idea_status의 new")
     s.add_argument("--auto", action="store_true", help="🤖 자동 기록 표시")
@@ -413,7 +414,7 @@ def register(add: Add) -> None:
     p.add_argument("--all", action="store_true", help="next: 지금 시작할 수 있는 할 일 전부 ([P]는 병렬 에이전트로)")
     p.add_argument("--from", dest="from_date", help="estimate: 시작 날짜")
     p.add_argument("--hours", type=float, default=6.0, help="estimate: 하루 작업 시간")
-    p.add_argument("--apply", action="store_true", help="estimate: 제안을 할 일.md에 적기")
+    p.add_argument("--apply", action="store_true", help="estimate: 제안을 할 일 문서에 적기")
     p = add("task-add", cmd_task_add, argparse.SUPPRESS)
     p.add_argument("work")
     p.add_argument("what")
@@ -449,5 +450,5 @@ def register(add: Add) -> None:
     p.add_argument("--schema")
     p.add_argument("--doc")
     p.add_argument("--out")
-    p = add("check-dbml", cmd_check_dbml, "DBML 검사 (.dbml 또는 설계.md의 dbml 블록)")
+    p = add("check-dbml", cmd_check_dbml, "DBML 검사 (.dbml 또는 설계 문서의 dbml 블록)")
     p.add_argument("path", nargs="?")
