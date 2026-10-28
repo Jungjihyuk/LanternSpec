@@ -1,0 +1,89 @@
+# Python 코드 컨벤션 — 코드 크기(작음 · 중간 · 큼)에 따라 강도를 고른다. 문서 주석의 언어는 lantern.yaml의 project.comment_language(없으면 language)를 따른다.
+# 글(규칙 · 메모 · 문서 주석)은 언어마다 ko: · en: 아래에 둔다 — 나머지(찾기 · 명령 · 실행기)는 모든 언어가 함께 쓴다.
+
+language: python
+label: Python
+detect: [pyproject.toml, setup.py, setup.cfg, requirements.txt]
+
+tools:
+  package:
+    name: uv
+    note: {ko: "모든 명령은 uv run으로 실행한다. pip · .venv/bin을 직접 쓰지 않는다."}
+  format: {name: ruff format, command: ruff format .}
+  lint: {name: ruff, command: ruff check .}
+  typecheck: {name: pyright, command: pyright}
+  test: {name: pytest, command: pytest}
+
+runners:                   # 명령 앞에 붙이는 실행기 — 기존 프로젝트는 lock 파일로 알아본다 (맞는 것이 없으면 처음 것)
+                           # ci: GitHub Actions에서 확인 명령을 돌리기 전에 도구 · 의존성을 준비하는 단계 (lantern install --ci)
+  - name: uv
+    lock: uv.lock
+    prefix: 'uv run '
+    ci:
+      - {uses: astral-sh/setup-uv@v10.3.2}
+      - {run: uv sync}
+  - name: poetry
+    lock: poetry.lock
+    prefix: 'poetry run '
+    ci:
+      - {run: pipx install poetry && poetry install}
+  - name: pipenv
+    lock: Pipfile.lock
+    prefix: 'pipenv run '
+    ci:
+      - {run: pip install pipenv && pipenv install --dev}
+
+existing:                  # 기존 프로젝트에 이미 있는 설정 — 찾으면 이 명령을 기록만 하고 설정은 바꾸지 않는다
+  format:
+    - {name: ruff format, find: [ruff.toml, .ruff.toml, 'pyproject.toml:[tool.ruff'], command: ruff format .}
+    - {name: black, find: ['pyproject.toml:[tool.black]'], command: black .}
+  lint:
+    - {name: ruff, find: [ruff.toml, .ruff.toml, 'pyproject.toml:[tool.ruff'], command: ruff check .}
+    - {name: flake8, find: [.flake8, 'setup.cfg:[flake8]', 'tox.ini:[flake8]'], command: flake8}
+    - {name: pylint, find: [.pylintrc, pylintrc, 'pyproject.toml:[tool.pylint'], command: pylint .}
+  typecheck:
+    - {name: pyright, find: [pyrightconfig.json, 'pyproject.toml:[tool.pyright]'], command: pyright}
+    - {name: mypy, find: [mypy.ini, .mypy.ini, 'pyproject.toml:[tool.mypy]', 'setup.cfg:[mypy'], command: mypy .}
+
+docs:                      # 문서 주석 — lantern.yaml project.comment_language(없으면 language)로 고른다
+  ko:
+    style: Google 스타일 docstring
+    example: |
+      def rename_in_text(text: str, enum: str, old: str, new: str) -> str:
+          """enums.yaml 글에서 값 하나의 이름을 바꾼다.
+
+          Args:
+              text: enums.yaml 전체 글.
+              enum: 목록 이름.
+              old: 지금 이름.
+              new: 새 이름.
+
+          Returns:
+              이름을 바꾼 enums.yaml 글.
+
+          Raises:
+              LookupError: 목록이나 값이 없을 때.
+          """
+
+levels:                    # 코드 크기별 규칙 (글)
+  small:
+    ko:
+      lint: ruff 규칙 F · E · W · I · B (pyflakes · pycodestyle · import 정렬 · bugbear)
+      typecheck: pyright basic
+      type_hints: 공개 함수의 인자와 반환값
+      docs: 공개 함수 · 클래스에 무엇을 하는지 한 줄
+      tests: pytest — 핵심 동작부터
+  medium:
+    ko:
+      lint: 작음 + UP(최신 문법) · ANN(타입 힌트) · D(docstring, google)
+      typecheck: pyright standard
+      type_hints: 모든 함수의 인자와 반환값 (모양이 정해지지 않은 데이터만 Any)
+      docs: 모듈은 책임 한 줄 + 하지 않는 일, 공개 함수 · 클래스는 Google 스타일(Args · Returns · Raises)
+      tests: pytest
+  large:
+    ko:
+      lint: 중간 + 테스트 밖의 모든 파일에 D
+      typecheck: pyright strict
+      type_hints: 모든 함수, Any는 경계에서만
+      docs: 중간 + 공개 함수마다 실제로 돌아가는 Example (pytest --doctest-modules)
+      tests: pytest + doctest

@@ -1,0 +1,69 @@
+# Rust 코드 컨벤션 — 코드 크기(작음 · 중간 · 큼)에 따라 강도를 고른다. 문서 주석의 언어는 lantern.yaml의 project.comment_language(없으면 language)를 따른다.
+# 글(규칙 · 메모 · 문서 주석)은 언어마다 ko: · en: 아래에 둔다 — 나머지(찾기 · 명령 · 실행기)는 모든 언어가 함께 쓴다.
+
+language: rust
+label: Rust
+detect: [Cargo.toml]
+
+tools:
+  package:
+    name: cargo
+    note: {ko: "의존성은 Cargo.toml로 관리하고, 실행 파일이면 Cargo.lock을 커밋한다."}
+  format: {name: rustfmt, command: cargo fmt}
+  lint: {name: clippy, command: cargo clippy --all-targets -- -D warnings}
+  typecheck:
+    command: cargo check
+    name: {ko: "Rust 컴파일러"}
+  test: {name: cargo test, command: cargo test}
+
+runners:                   # 명령 앞에 붙이는 실행기 — 기존 프로젝트는 lock 파일로 알아본다 (맞는 것이 없으면 처음 것)
+                           # ci: GitHub Actions에서 확인 명령을 돌리기 전에 도구 · 의존성을 준비하는 단계 (lantern install --ci)
+  - name: cargo
+    prefix: ''
+    ci:
+      - {uses: dtolnay/rust-toolchain@stable, with: {components: 'clippy, rustfmt'}}
+
+existing:                  # 기존 프로젝트에 이미 있는 설정 — 찾으면 이 명령을 기록만 하고 설정은 바꾸지 않는다
+  format: []
+  lint: []
+  typecheck: []
+
+docs:                      # 문서 주석 — lantern.yaml project.comment_language(없으면 language)로 고른다
+  ko:
+    style: 문서 주석 /// (rustdoc)
+    example: |
+      /// enums.yaml 글에서 값 하나의 이름을 바꾼다.
+      ///
+      /// # Errors
+      ///
+      /// 목록이나 값이 없으면 `EnumsError::NotFound`를 돌려준다.
+      ///
+      /// # Examples
+      ///
+      /// ```
+      /// let out = rename_in_text(text, "debt_status", "되물음", "다시 물음")?;
+      /// ```
+      pub fn rename_in_text(text: &str, list: &str, old: &str, new: &str) -> Result<String, EnumsError> {
+
+levels:                    # 코드 크기별 규칙 (글)
+  small:
+    ko:
+      lint: clippy 기본 규칙
+      typecheck: 컴파일러 기본
+      type_hints: 공개 함수 시그니처는 늘 명시 (언어가 요구)
+      docs: 공개 항목에 무엇을 하는지 한 줄
+      tests: cargo test — 핵심 동작부터
+  medium:
+    ko:
+      lint: 기본 + 경고를 오류로(-D warnings) · clippy::pedantic 경고
+      typecheck: 컴파일러 기본
+      type_hints: 작음과 같음
+      docs: '공개 항목에 문서 주석 (# Errors · # Panics), 라이브러리는 #![warn(missing_docs)]'
+      tests: cargo test
+  large:
+    ko:
+      lint: 중간 + 고른 pedantic 규칙을 오류로
+      typecheck: 컴파일러 기본
+      type_hints: 작음과 같음
+      docs: '중간 + #![deny(missing_docs)] · 공개 함수마다 # Examples (cargo test가 돌린다)'
+      tests: cargo test + 문서 예시 테스트

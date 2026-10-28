@@ -1,8 +1,14 @@
-"""resources/principles — the principle table and per-language conventions have the shape the program reads."""
+"""principles.yaml · conventions/*.yaml — the shape the program reads, in every language.
 
+Each table keeps one set of rules; text sits next to it under language keys (ko: · en:).
+"""
+
+import pytest
 import yaml
 
 from lanternspec import resources
+from lanternspec.core import principles
+from lanternspec.core.names import languages
 
 LEVELS = {"must", "should", "skip"}
 SIZES = ["small", "medium", "large"]
@@ -10,12 +16,32 @@ LEVEL_KEYS = {"lint", "typecheck", "type_hints", "docs", "tests"}
 TOOL_KEYS = {"package", "format", "lint", "typecheck", "test"}
 
 
-def _load(rel):
-    return yaml.safe_load(resources.read_text(f"principles/{rel}"))
+def _text_blocks(node, path=""):
+    """Every mapping that holds text under language keys, with where it is."""
+    if isinstance(node, dict):
+        if set(node) & {"ko", "en"}:
+            yield path, node
+        for k, v in node.items():
+            if k not in ("ko", "en"):
+                yield from _text_blocks(v, f"{path}.{k}")
+    elif isinstance(node, list):
+        for i, v in enumerate(node):
+            yield from _text_blocks(v, f"{path}[{i}]")
 
 
-def test_every_principle_has_a_level_for_every_kind():
-    data = _load("principles.yaml")
+@pytest.mark.parametrize("rel", ["principles.yaml", *(f"conventions/{p.name}" for _, p in resources.iter_files("conventions"))])
+def test_every_text_has_every_language(rel):
+    raw = yaml.safe_load(resources.read_text(rel))
+    blocks = list(_text_blocks(raw))
+    assert blocks
+    for path, block in blocks:
+        missing = [lang for lang in languages() if lang not in block]
+        assert not missing, f"{rel}{path}: {missing}"
+
+
+@pytest.mark.parametrize("locale", languages())
+def test_every_principle_has_a_level_for_every_kind(locale):
+    data = principles.table(locale)
     kinds = set(data["kinds"])
     assert kinds == {"script", "cli", "library", "service", "data"}
     assert list(data["sizes"]["code"]) == SIZES and list(data["sizes"]["people"]) == SIZES
@@ -31,15 +57,18 @@ def test_every_principle_has_a_level_for_every_kind():
             assert values <= LEVELS, (pid, kind)
     assert set(data["always"]) == {"think_first", "surgical_changes", "verify_by_goal"}
     assert set(data["levels"]) == LEVELS and data["priority"]
+    assert set(data["roles"]) == {"package", "format", "lint", "typecheck", "test"} and set(data["rules"]) == LEVEL_KEYS
+    assert set(principles.comment_languages(locale)) == {"ko", "en"}
     for p in data["principles"].values():
         assert p.get("min_when_large", "should") in LEVELS
 
 
-def test_every_language_file_has_the_same_shape():
-    names = sorted(p.name for _, p in resources.iter_files("principles/conventions"))
+@pytest.mark.parametrize("locale", languages())
+def test_every_language_file_has_the_same_shape(locale):
+    names = sorted(p.name for _, p in resources.iter_files("conventions"))
     assert names == ["go.yaml", "python.yaml", "rust.yaml", "swift.yaml", "typescript.yaml"]
     for name in names:
-        c = _load(f"conventions/{name}")
+        c = principles.conventions(name.removesuffix(".yaml"), locale)
         assert c["language"] == name.removesuffix(".yaml") and c["label"] and c["detect"], name
         assert set(c["tools"]) == TOOL_KEYS, name
         assert all(t["name"] for t in c["tools"].values()), name

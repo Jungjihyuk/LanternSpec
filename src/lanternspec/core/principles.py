@@ -1,7 +1,8 @@
 """Pick what fits this project from the design-principle table and the per-language conventions.
 
 Responsibilities:
-    - read principles.yaml · conventions/<language>.yaml (tables bundled with the package)
+    - read principles.yaml · conventions/<language>.yaml (tables bundled with the package), with the
+      project language's text picked out of their `ko:` · `en:` blocks
     - set each principle's level (must · should · skip) from kind · external integrations · size
     - pick code conventions by language and size
     - turn line and people counts into sizes (small · medium · large)
@@ -24,37 +25,54 @@ from typing import TYPE_CHECKING, Any
 import yaml
 
 from .. import resources
+from .names import localize
 
 if TYPE_CHECKING:
     from .profile import Profile
 
 SIZES = ("small", "medium", "large")
 COMMAND_ROLES = ("format", "lint", "typecheck")  # commands recorded in lantern.yaml build.<role>
-ROLE_LABEL = {"format": "포맷", "lint": "린트", "typecheck": "타입 검사", "test": "테스트"}
-DOC_LANGUAGE = {"ko": "한국어", "en": "영어"}  # lantern.yaml project.comment_language → language name for doc comments
-RULE_LABEL = {"lint": "린트", "typecheck": "타입 검사", "type_hints": "타입 힌트", "docs": "문서 주석", "tests": "테스트"}
 
 
 @functools.cache
-def table() -> dict[str, Any]:
-    """Read the design-principle table (principles.yaml).
-
-    Returns:
-        All of principles.yaml (levels · kinds · external · sizes · principles · always).
-
-    Example:
-        >>> table()["levels"]["must"]
-        '지킴'
-    """
-    return yaml.safe_load(resources.read_text("principles/principles.yaml"))
+def _raw_table() -> dict[str, Any]:
+    """Read principles.yaml once, with every language's text."""
+    return yaml.safe_load(resources.read_text("principles.yaml"))
 
 
 @functools.cache
-def conventions(language: str) -> dict[str, Any]:
-    """Read one language's code conventions (conventions/<language>.yaml).
+def table(locale: str = "ko") -> dict[str, Any]:
+    """Read the design-principle table (principles.yaml) with one language's text.
 
     Args:
-        language: Language name, e.g. "python".
+        locale: Language of the text (lantern.yaml project.language).
+
+    Returns:
+        All of principles.yaml (levels · words · roles · rules · kinds · external · sizes · principles · always).
+
+    Example:
+        >>> table()["levels"]["must"], table()["principles"]["simplicity"]["grows_with"]
+        ('지킴', 'none')
+    """
+    return localize(_raw_table(), locale)
+
+
+@functools.cache
+def _raw_conventions(language: str) -> dict[str, Any]:
+    """Read conventions/<language>.yaml once, with every language's text."""
+    if language not in language_names():
+        raise LookupError(f"'{language}' 컨벤션이 없습니다 (가능: {', '.join(language_names())})")
+    return yaml.safe_load(resources.read_text(f"conventions/{language}.yaml"))
+
+
+def conventions(language: str, locale: str = "ko", comment_locale: str | None = None) -> dict[str, Any]:
+    """Read one programming language's code conventions (conventions/<language>.yaml).
+
+    Args:
+        language: Programming language, e.g. "python".
+        locale: Language of the rules and notes (lantern.yaml project.language).
+        comment_locale: Language of the doc-comment style and example (lantern.yaml project.comment_language);
+            the same as locale when None.
 
     Returns:
         That language's conventions (tools · runners · existing · docs · levels).
@@ -63,12 +81,63 @@ def conventions(language: str) -> dict[str, Any]:
         LookupError: There is no conventions file for that language.
 
     Example:
-        >>> conventions("python")["tools"]["lint"]["name"]
-        'ruff'
+        >>> conventions("python")["tools"]["lint"]["name"], conventions("python")["docs"]["style"]
+        ('ruff', 'Google 스타일 docstring')
     """
-    if language not in language_names():
-        raise LookupError(f"'{language}' 컨벤션이 없습니다 (가능: {', '.join(language_names())})")
-    return yaml.safe_load(resources.read_text(f"principles/conventions/{language}.yaml"))
+    raw = _raw_conventions(language)
+    out = localize({k: v for k, v in raw.items() if k != "docs"}, locale)
+    out["docs"] = localize(raw.get("docs") or {}, comment_locale or locale)
+    return out
+
+
+def role_label(role: str, locale: str = "ko") -> str:
+    """Return the name of a check command's role, e.g. "린트" for lint.
+
+    Args:
+        role: "package", "format", "lint", "typecheck" or "test".
+        locale: Language of the name.
+
+    Returns:
+        The name; the role itself when it has none.
+
+    Example:
+        >>> role_label("typecheck")
+        '타입 검사'
+    """
+    return str(table(locale)["roles"].get(role, role))
+
+
+def rule_label(item: str, locale: str = "ko") -> str:
+    """Return the name of a convention rule item, e.g. "타입 힌트" for type_hints.
+
+    Args:
+        item: "lint", "typecheck", "type_hints", "docs" or "tests".
+        locale: Language of the name.
+
+    Returns:
+        The name; the item itself when it has none.
+
+    Example:
+        >>> rule_label("type_hints")
+        '타입 힌트'
+    """
+    return str(table(locale)["rules"].get(item, item))
+
+
+def comment_languages(locale: str = "ko") -> dict[str, str]:
+    """Return the languages code comments can be written in (lantern.yaml project.comment_language).
+
+    Args:
+        locale: Language of the names.
+
+    Returns:
+        Code → name, e.g. {"ko": "한국어", "en": "영어"}.
+
+    Example:
+        >>> comment_languages()
+        {'ko': '한국어', 'en': '영어'}
+    """
+    return {str(c["code"]): str(c["name"]) for c in table(locale)["comment_languages"]}
 
 
 def kind_names() -> tuple[str, ...]:
@@ -94,7 +163,7 @@ def language_names() -> tuple[str, ...]:
         >>> language_names()
         ('go', 'python', 'rust', 'swift', 'typescript')
     """
-    return tuple(sorted(Path(rel).stem for rel, _ in resources.iter_files("principles/conventions")))
+    return tuple(sorted(Path(rel).stem for rel, _ in resources.iter_files("conventions")))
 
 
 def code_size(lines: int) -> str:
@@ -137,7 +206,7 @@ def people_size(team: bool, members: int) -> str:
     return SIZES[-1]
 
 
-def level_for(pid: str, kind: str, external: bool, code: str, people: str) -> tuple[str, str]:
+def level_for(pid: str, kind: str, external: bool, code: str, people: str, locale: str = "ko") -> tuple[str, str]:
     """Decide one principle's level, and why, from the table.
 
     The base level comes from the kind (and external integrations), then size adjusts it:
@@ -149,6 +218,7 @@ def level_for(pid: str, kind: str, external: bool, code: str, people: str) -> tu
         external: Whether it integrates with outside tools or services.
         code: Code size.
         people: Team size.
+        locale: Language of the reason.
 
     Returns:
         (level, reason). Level is "must" · "should" · "skip".
@@ -162,24 +232,25 @@ def level_for(pid: str, kind: str, external: bool, code: str, people: str) -> tu
         >>> level_for("dependency_direction", "cli", False, "medium", "small")
         ('must', 'CLI 도구 → 권장, 코드 중간 → 지킴')
     """
-    t = table()
+    t = table(locale)
+    w = t["words"]
     p = t["principles"][pid]
     rule = p["levels"][kind]
     kind_label = t["kinds"][kind]["label"]
     if isinstance(rule, dict):
         level = rule["external" if external else "else"]
-        why = f"{kind_label} · {'바깥 연결' if external else '바깥 연결 없음'} → {t['levels'][level]}"
+        why = f"{kind_label} · {w['external'] if external else w['no_external']} → {t['levels'][level]}"
     else:
         level = rule
         why = f"{kind_label} → {t['levels'][level]}"
-    signal = {"code": ("코드", code), "people": ("사람", people)}.get(p["grows_with"])
+    signal = {"code": (w["code"], code), "people": (w["people"], people)}.get(p["grows_with"])
     if level == "should" and signal and signal[1] != SIZES[0]:
         level = "must"
         why += f", {signal[0]} {t['sizes'][p['grows_with']][signal[1]]['label']} → {t['levels'][level]}"
     floor = p.get("min_when_large")
     if floor and code == SIZES[-1] and _rank(level) < _rank(floor):
         level = floor
-        why += f", 코드 {t['sizes']['code'][code]['label']} → {t['levels'][level]}"
+        why += f", {w['code']} {t['sizes']['code'][code]['label']} → {t['levels'][level]}"
     return level, why
 
 
@@ -248,6 +319,7 @@ class Selection:
         principles: All principles in table order (including skip).
         always: Ways of working always included (name, rules).
         conventions: One per language.
+        locale: Language of the text (lantern.yaml project.language).
 
     Example:
         >>> from lanternspec.core.profile import DEFAULTS, Profile
@@ -264,6 +336,7 @@ class Selection:
     principles: tuple[Principle, ...]
     always: tuple[tuple[str, tuple[str, ...]], ...]
     conventions: tuple[Convention, ...] = field(default=())
+    locale: str = "ko"
 
     def at(self, level: str) -> list[Principle]:
         """Return the principles at one level, in table order.
@@ -290,9 +363,10 @@ class Selection:
             >>> selection.summary()  # doctest: +SKIP
             'CLI 도구 · 바깥 연결 · 코드 작음 · 1인'
         """
-        t = table()
-        parts = [t["kinds"][self.kind]["label"]] + (["바깥 연결"] if self.external else [])
-        parts += [f"코드 {t['sizes']['code'][self.code]['label']}", t["sizes"]["people"][self.people]["label"]]
+        t = table(self.locale)
+        w = t["words"]
+        parts = [t["kinds"][self.kind]["label"]] + ([w["external"]] if self.external else [])
+        parts += [f"{w['code']} {t['sizes']['code'][self.code]['label']}", t["sizes"]["people"][self.people]["label"]]
         return " · ".join(parts)
 
 
@@ -316,25 +390,26 @@ def select(profile: Profile) -> Selection | None:
     kind = profile.get("project.kind")
     if not kind:
         return None
-    t = table()
+    locale = profile.language
+    t = table(locale)
     external = bool(profile.get("project.external"))
     code = str(profile.get("project.code_size") or SIZES[0])
     people = people_size(profile.team, len(profile.get("project.members") or []))
     principles = []
     for pid, p in t["principles"].items():
-        level, why = level_for(pid, kind, external, code, people)
+        level, why = level_for(pid, kind, external, code, people, locale)
         note = str(p.get("data_note") or "") if kind == "data" else ""
         principles.append(Principle(pid, p["name"], level, why, p["explain"], tuple(p["rules"]), note))
     always = tuple((a["name"], tuple(a["rules"])) for a in t["always"].values())
     docs_size = t["kinds"][kind].get("docs") or code
     convs = []
     for lang in profile.get("project.languages") or []:
-        c = conventions(lang)
+        c = conventions(lang, locale, profile.comment_language)
         rules = dict(c["levels"][code])
         rules["docs"] = c["levels"][docs_size]["docs"]
         tools = {role: (spec["name"], _default_command(c, role)) for role, spec in c["tools"].items()}
         convs.append(Convention(lang, c["label"], code, tools, rules, c["docs"]["style"], c["docs"]["example"]))
-    return Selection(kind, external, code, people, tuple(principles), always, tuple(convs))
+    return Selection(kind, external, code, people, tuple(principles), always, tuple(convs), locale)
 
 
 @dataclass

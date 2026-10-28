@@ -64,7 +64,7 @@ CHOICES: dict[str, tuple[str, ...]] = {
     "project.team": ("solo", "team"),
     "project.server": ("none", "external", "custom"),
     "project.kind": principles.kind_names(),
-    "project.comment_language": tuple(principles.DOC_LANGUAGE),
+    "project.comment_language": tuple(principles.comment_languages()),
     "project.code_size": principles.SIZES,
     "docs.remote": ("shared", "local"),
     "knowledge.type": ("obsidian", "folder", "notion"),
@@ -489,7 +489,7 @@ def render(data: dict[str, Any]) -> str:
     for role in principles.COMMAND_ROLES:
         if d["build"].get(role):
             where = "고친 뒤 돌린다" if role == "format" else "lantern lint · /l-build · CI"
-            lines.append(f"  {role}: {s(d['build'][role])}   # {principles.ROLE_LABEL[role]} 명령 ({where})")
+            lines.append(f"  {role}: {s(d['build'][role])}   # {principles.role_label(role)} 명령 ({where})")
     lines += [
         "check:",
         f"  max_lines: {s(d['check']['max_lines'])}            # 이보다 길면 나누자고 경고 (막지는 않음)",

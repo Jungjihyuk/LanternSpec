@@ -46,7 +46,7 @@
   | `check/` | 검사와 양식 관리 (양식 검사 · git hook · doctor · 템플릿 버전) | "맞다 · 틀리다"의 기준이 바뀔 때 |
   | `tools/` | AI 도구 연결 (스킬 · 규칙 · 에이전트 hook 설치와 처리) | AI 도구의 형식이 바뀔 때 |
   | `cli/` | 명령 (그룹마다 한 파일) | 명령의 이름 · 옵션 · 출력이 바뀔 때 |
-  | `resources/` | 코드가 아닌 원본 데이터 (언어 묶음 `locales/<언어>/`: 이름표 · 템플릿 · 스킬 원본 · 규칙 원본, 그리고 원칙 기준표) | 사용자에게 설치될 글이 바뀔 때 |
+  | `resources/` | 코드가 아닌 원본 데이터 (이름표 · 원칙 기준표 · 컨벤션, 언어 묶음 `locales/<언어>/`의 템플릿 · 스킬 원본 · 규칙 원본) | 사용자에게 설치될 글이 바뀔 때 |
 
 - **지키는 법:**
   - hook이 *하는 일*은 `tools/agent_hooks.py`, 도구별 *입출력 형식*은 그 도구 파일에 둔다.
@@ -61,10 +61,10 @@
   | 사실 | 단 하나의 출처 | 거기서 만들어지는 것 |
   |---|---|---|
   | 상태 · 종류의 이름 · 아이콘 | `enums.yaml` | 코드의 값 · 출력, 스킬 글, 템플릿 칸, 검사 |
-  | 폴더 · 문서 · 할 일 칸 이름, 보호 칸 | `resources/locales/<언어>/names.yaml` | 코드의 경로 · 찾기, 스킬 글, `보호 칸.md` |
+  | 폴더 · 문서 · 할 일 칸 이름, 보호 칸 | `resources/names.yaml` (이름은 언어마다 `ko:` · `en:`) | 코드의 경로 · 찾기, 스킬 글, `보호 칸.md` |
   | 스킬 내용 | `resources/locales/<언어>/skills/l-*/SKILL.md` (언어마다 한 벌) | 도구별 스킬 파일 (`lantern install`, 프로젝트 언어의 것만) |
   | 기본 문서 양식 | `resources/locales/<언어>/templates/` | 프로젝트의 `docs/0. 템플릿/` |
-  | 설계 원칙 · 코드 컨벤션 기준 | `resources/principles/` (`principles.yaml` · `conventions/<언어>.yaml`) | 사용자 프로젝트 AGENTS.md의 개발 원칙 · `개발 원칙.md` |
+  | 설계 원칙 · 코드 컨벤션 기준 | `resources/principles.yaml` · `resources/conventions/<언어>.yaml` (글은 언어마다 `ko:` · `en:`) | 사용자 프로젝트 AGENTS.md의 개발 원칙 · `개발 원칙.md` |
   | 사람이 정한 프로젝트 설정 | `lantern.yaml` | 켜질 문서, 스킬에 들어가는 값, 보호 칸을 바꾼 · 쓰지 않는 결정 |
   | AI 도구가 쓰는 설정 폴더 | 각 `Tool.config_paths` | 문서-코드 어긋남 · 작업 방식 추천에서 "코드가 아닌 것" 판단 |
 
@@ -73,6 +73,8 @@
     코드 `project.enums.value("debt_status", "resolved")` · 스킬 `<<debt_status.resolved.label>>` · 템플릿 `${work_status.plan}`
   - 폴더 · 문서 · 칸 이름도 같다. 코드 `project.folder("works")` · `project.doc_path(work, "plan")` · `project.names.attr("size")`,
     스킬 `<<folder.current>>` · `<<file.record>>` · `<<section.now>>`. `tests/test_names.py`가 코드에 적힌 이름을 잡는다.
+  - 글을 언어별로 두는 법: 긴 글 문서(스킬 · 템플릿 · 규칙)는 `locales/<언어>/`에 파일째, 표 안의 짧은 글(이름 · 원칙 설명 · 규칙 문장)은
+    그 자리에 `ko:` · `en:`으로 둔다 — 기준은 한 벌만 두고, 하나를 더할 때 고치는 곳이 한 곳이게.
   - 코드는 일반 섹션 제목을 읽지 않는다. 읽거나 써 넣어야 하는 칸은 `names.yaml`의 보호 칸(`sections`)으로 두고 `core/sections.py`로 찾는다.
     칸이 없으면 새로 만들지 말고 그 기능만 건너뛴다 (`lantern check`가 사람에게 묻는다).
   - 만들어진 파일(스킬 · 보고 · MOC)은 손으로 고치지 않는다. 출처를 고치고 다시 만든다.
@@ -98,7 +100,7 @@
   | AI 도구 | Claude Code · Codex · Antigravity | `tools/<도구>.py`(`Tool` 구현) + `tools/__init__.py`의 `REGISTRY` 한 줄 |
   | 지식 저장소 | obsidian · folder · notion | `learn/knowledge/<저장소>.py`(`Adapter` 구현) + `adapter_for`의 분기 + `core/profile.py`의 선택지 (아직 한 곳으로 모이지 않음) |
   | 상태 · 종류 값 | `enums.yaml`의 목록들 | `enums.yaml`에 한 줄 (코드 수정 없음) |
-  | 언어 | ko | `resources/locales/<언어>/` 폴더 하나 (`names.yaml` · `skills/` · `templates/` · `agents/AGENTS.md`). CLI 출력 문구는 아직 코드 안에 한국어로 있다 |
+  | 언어 | ko | `resources/locales/<언어>/` 폴더 하나(`skills/` · `templates/` · `agents/AGENTS.md`) + `names.yaml` · `principles.yaml` · `conventions/*.yaml`의 글마다 그 언어 칸. CLI 출력 문구는 아직 코드 안에 한국어로 있다 |
   | CLI 명령 | 6개 그룹 | 그룹 파일의 `register()`에 추가 |
 
 - **계약을 지키는 법:**

@@ -109,15 +109,16 @@ def cmd_principles(a: argparse.Namespace) -> int:
         if sel is None:
             print("lantern.yaml에 project.kind가 없습니다 — /l-init (또는 lantern profile set project.kind=cli)")
             return 1
-        names = principles.table()["levels"]
+        t = principles.table(sel.locale)
+        names = t["levels"]
         print(f"■ {sel.summary()}")
         for p in sel.principles:
             print(f"  {names[p.level]:<5} {p.name} — {p.reason}")
         print("  작업 방식: " + " · ".join(name for name, _ in sel.always))
         for c in sel.conventions:
-            print(f"■ {c.label} (코드 {principles.table()['sizes']['code'][c.size]['label']})")
+            print(f"■ {c.label} (코드 {t['sizes']['code'][c.size]['label']})")
             for k, v in c.rules.items():
-                print(f"  {principles.RULE_LABEL[k]}: {v}")
+                print(f"  {principles.rule_label(k, sel.locale)}: {v}")
         for role in (*principles.COMMAND_ROLES, "test"):
             cmd = project.profile.get(f"build.{role}")
             print(f"  build.{role}: {cmd or '(없음)'}")
@@ -125,13 +126,13 @@ def cmd_principles(a: argparse.Namespace) -> int:
     lines = code_lines(project, tests=False)
     size = principles.code_size(lines)
     d = principles.detect(project.root)
-    print(f"코드 {lines:,}줄 (테스트 · 문서 빼고) → {principles.table()['sizes']['code'][size]['label']} ({size})")
+    print(f"코드 {lines:,}줄 (테스트 · 문서 빼고) → {principles.table(project.profile.language)['sizes']['code'][size]['label']} ({size})")
     if not d.languages:
         print("언어: 알아본 것 없음 — 새 프로젝트면 사용자에게 묻고 --languages로 적는다")
     for lang in d.languages:
         print(f"언어: {lang} ({d.evidence[lang]}) · 실행기 '{d.runners[lang].strip() or '없음'}'")
         for role, (name, cmd, ev) in d.existing.get(lang, {}).items():
-            print(f"  이미 쓰는 {principles.ROLE_LABEL[role]}: {name} ({ev}) → `{cmd}`")
+            print(f"  이미 쓰는 {principles.role_label(role, project.profile.language)}: {name} ({ev}) → `{cmd}`")
     if not a.write:
         return 0
     path = project.root / pm.PROFILE_FILE

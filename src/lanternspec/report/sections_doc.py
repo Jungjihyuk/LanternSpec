@@ -4,7 +4,7 @@ Templates and documents carry no marks; this page is where a person (or the AI w
 looks up which sections lantern reads or writes before changing a template.
 
 Not here:
-    - the list of protected sections → resources/locales/<language>/names.yaml (sections)
+    - the list of protected sections → resources/names.yaml (sections)
     - asking about a missing section → check/check_docs.py
 """
 

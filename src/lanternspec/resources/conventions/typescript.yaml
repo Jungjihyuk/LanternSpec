@@ -1,0 +1,90 @@
+# TypeScript 코드 컨벤션 — 코드 크기(작음 · 중간 · 큼)에 따라 강도를 고른다. 문서 주석의 언어는 lantern.yaml의 project.comment_language(없으면 language)를 따른다.
+# 글(규칙 · 메모 · 문서 주석)은 언어마다 ko: · en: 아래에 둔다 — 나머지(찾기 · 명령 · 실행기)는 모든 언어가 함께 쓴다.
+
+language: typescript
+label: TypeScript
+detect: [tsconfig.json, package.json]
+
+tools:
+  package:
+    name: pnpm
+    note: {ko: "의존성은 pnpm으로 관리하고 pnpm-lock.yaml을 커밋한다."}
+  format: {name: Biome, command: biome format --write .}
+  lint: {name: Biome, command: biome check .}
+  typecheck: {name: tsc, command: tsc --noEmit}
+  test: {name: Vitest, command: vitest run}
+
+runners:                   # 명령 앞에 붙이는 실행기 — 기존 프로젝트는 lock 파일로 알아본다 (맞는 것이 없으면 처음 것)
+                           # ci: GitHub Actions에서 확인 명령을 돌리기 전에 도구 · 의존성을 준비하는 단계 (lantern install --ci)
+  - name: pnpm
+    lock: pnpm-lock.yaml
+    prefix: 'pnpm '
+    ci:
+      - {uses: actions/setup-node@v7, with: {node-version: lts/*}}
+      - {run: npm install -g pnpm && pnpm install}
+  - name: yarn
+    lock: yarn.lock
+    prefix: 'yarn '
+    ci:
+      - {uses: actions/setup-node@v7, with: {node-version: lts/*}}
+      - {run: npm install -g yarn && yarn install}
+  - name: bun
+    lock: [bun.lock, bun.lockb]
+    prefix: 'bunx '
+    ci:
+      - {uses: oven-sh/setup-bun@v2}
+      - {run: bun install}
+  - name: npm
+    lock: package-lock.json
+    prefix: 'npx '
+    ci:
+      - {uses: actions/setup-node@v7, with: {node-version: lts/*}}
+      - {run: npm ci}
+
+existing:                  # 기존 프로젝트에 이미 있는 설정 — 찾으면 이 명령을 기록만 하고 설정은 바꾸지 않는다
+  format:
+    - {name: Biome, find: [biome.json, biome.jsonc], command: biome format --write .}
+    - {name: Prettier, find: [.prettierrc*, prettier.config.*, 'package.json:"prettier"'], command: prettier --write .}
+  lint:
+    - {name: Biome, find: [biome.json, biome.jsonc], command: biome check .}
+    - {name: ESLint, find: [.eslintrc*, eslint.config.*, 'package.json:"eslintConfig"'], command: eslint .}
+  typecheck:
+    - {name: tsc, find: [tsconfig.json], command: tsc --noEmit}
+
+docs:                      # 문서 주석 — lantern.yaml project.comment_language(없으면 language)로 고른다
+  ko:
+    style: TSDoc (/** … */)
+    example: |
+      /**
+       * enums.yaml 글에서 값 하나의 이름을 바꾼다.
+       *
+       * @param text - enums.yaml 전체 글
+       * @param old - 지금 이름
+       * @param next - 새 이름
+       * @returns 이름을 바꾼 enums.yaml 글
+       * @throws {@link LookupError} 목록이나 값이 없을 때
+       */
+      export function renameInText(text: string, old: string, next: string): string {
+
+levels:                    # 코드 크기별 규칙 (글)
+  small:
+    ko:
+      lint: Biome 권장 규칙 (recommended)
+      typecheck: 'tsconfig "strict": true'
+      type_hints: 내보내는(export) 함수의 인자와 반환값
+      docs: 내보내는 함수 · 클래스에 무엇을 하는지 한 줄
+      tests: Vitest — 핵심 동작부터
+  medium:
+    ko:
+      lint: 권장 규칙 + any 금지(noExplicitAny) · 쓰지 않는 변수 · import 금지
+      typecheck: strict + noUncheckedIndexedAccess · noImplicitOverride
+      type_hints: 모든 함수의 인자와 반환값, any 대신 unknown
+      docs: 내보내는 모든 것에 TSDoc (@param · @returns · @throws)
+      tests: Vitest
+  large:
+    ko:
+      lint: 중간 + 복잡도 · 안전성 규칙을 오류로
+      typecheck: 중간 + exactOptionalPropertyTypes
+      type_hints: 중간과 같음
+      docs: 중간 + 공개 API마다 @example
+      tests: Vitest + 타입 테스트(expectTypeOf)

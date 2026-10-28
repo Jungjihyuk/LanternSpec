@@ -160,7 +160,7 @@ def ci_workflow(project: Project) -> str:
         if lang not in principles.language_names():
             continue
         runner = principles.find_runner(project.root, lang)
-        label = principles.conventions(lang)["label"]
+        label = principles.conventions(lang, project.profile.language)["label"]
         steps += [{"name": f"{label} 도구 준비 ({runner['name']})", **step} for step in runner["ci"]]
     if steps:
         prepare = "      # 프로젝트 도구 · 의존성 준비 — lantern.yaml project.languages와 lock 파일에서 (lantern upgrade가 맞춘다)\n"

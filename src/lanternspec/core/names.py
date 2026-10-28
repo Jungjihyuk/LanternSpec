@@ -1,7 +1,8 @@
 """Read names.yaml and provide every name the program reads and writes, looked up by role.
 
 Responsibilities:
-    - read `resources/locales/<language>/names.yaml` (folders · documents · task attributes · markers · protected sections)
+    - read `resources/names.yaml` (folders · documents · task attributes · markers · protected sections) in one language
+    - pick one language's text out of tables that keep it under language keys (localize)
     - apply the project's own decisions about protected sections (renamed · unused) from lantern.yaml
     - build the values skills and rules are filled with (`<<folder.current>>` · `<<file.plan>>` · `<<section.now>>`)
 
@@ -50,7 +51,7 @@ class Names:
 
     Attributes:
         language: Language code, e.g. "ko".
-        table: The parsed names.yaml.
+        table: names.yaml with this language's names picked out.
         renamed: Protected-section role → titles the project uses instead of the default, newest first.
         unused: Protected-section roles the project chose not to use.
 
@@ -334,7 +335,7 @@ class Names:
 
 
 def languages() -> list[str]:
-    """List the languages that have a names table.
+    """List the languages that have a language pack (`resources/locales/<language>/`).
 
     Returns:
         Language codes, sorted.
@@ -343,15 +344,56 @@ def languages() -> list[str]:
         >>> "ko" in languages()
         True
     """
-    return sorted(p.name for p in resources.path("locales").iterdir() if (p / "names.yaml").exists())
+    return sorted(p.name for p in resources.path("locales").iterdir() if p.is_dir() and not p.name.startswith("_"))
+
+
+def localize(node: Any, locale: str) -> Any:
+    """Pick one language's text out of a table where text sits under language keys (`ko:` · `en:`).
+
+    A mapping whose keys are all language codes becomes that language's value; a mapping that also has
+    other keys gets that language's mapping merged in. A missing language falls back to Korean.
+
+    Args:
+        node: Part of a table read from YAML.
+        locale: Language code (lantern.yaml project.language, or project.comment_language for doc comments).
+
+    Returns:
+        The same shape with every language block resolved.
+
+    Example:
+        >>> localize({"grows_with": "code", "ko": {"name": "단순함"}, "en": {"name": "Simplicity"}}, "en")
+        {'grows_with': 'code', 'name': 'Simplicity'}
+        >>> localize({"must": {"ko": "지킴"}}, "en")
+        {'must': '지킴'}
+    """
+    codes = set(languages()) | {"ko", "en"}
+    if isinstance(node, list):
+        return [localize(x, locale) for x in node]
+    if not isinstance(node, dict):
+        return node
+    langs = [k for k in node if k in codes]
+    if not langs:
+        return {k: localize(v, locale) for k, v in node.items()}
+    chosen = node.get(locale, node.get("ko"))
+    rest = {k: localize(v, locale) for k, v in node.items() if k not in codes}
+    if not rest:
+        return localize(chosen, locale)
+    rest.update(localize(chosen, locale) or {})
+    return rest
+
+
+@cache
+def _raw() -> dict[str, Any]:
+    """Read names.yaml once, with every language's names."""
+    return yaml.safe_load(resources.read_text("names.yaml")) or {}
 
 
 @cache
 def _table(language: str) -> dict[str, Any]:
-    """Read one language's names.yaml (once per process)."""
+    """One language's names (once per process)."""
     if language not in languages():
-        raise ValueError(f"언어 '{language}'의 이름표가 없습니다 (가능: {', '.join(languages())})")
-    return yaml.safe_load(resources.read_text(f"locales/{language}/names.yaml")) or {}
+        raise ValueError(f"언어 '{language}' 묶음이 없습니다 (가능: {', '.join(languages())})")
+    return localize(_raw(), language)
 
 
 def load(language: str = "ko", renamed: dict[str, Any] | None = None, unused: Any = None) -> Names:

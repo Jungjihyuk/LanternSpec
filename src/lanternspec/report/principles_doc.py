@@ -48,7 +48,7 @@ def render(sel: principles.Selection, profile_language: str = "ko") -> str:
         >>> print(render(principles.select(Profile(data))).split("\n")[0])
         # 🧭 개발 원칙
     """
-    t = principles.table()
+    t = principles.table(sel.locale)
     names = t["levels"]
     lines = [
         "# 🧭 개발 원칙",
@@ -84,13 +84,13 @@ def render(sel: principles.Selection, profile_language: str = "ko") -> str:
         lines += ["", f"### {name}"] + [f"- {r}" for r in rules]
     for c in sel.conventions:
         lines += ["", f"## 코드 컨벤션 — {c.label}", "| 할 일 | 도구 | 기본 명령 |", "|---|---|---|"]
-        lines += [f"| {principles.ROLE_LABEL.get(role, '패키지')} | {name} | {cmd} |" for role, (name, cmd) in c.tools.items()]
+        lines += [f"| {principles.role_label(role, sel.locale)} | {name} | {cmd} |" for role, (name, cmd) in c.tools.items()]
         lines += ["", "| 항목 | 규칙 |", "|---|---|"]
-        lines += [f"| {principles.RULE_LABEL[k]} | {v} |" for k, v in c.rules.items()]
+        lines += [f"| {principles.rule_label(k, sel.locale)} | {v} |" for k, v in c.rules.items()]
         lang = c.language if c.language != "typescript" else "ts"
         lines += [
             "",
-            f"문서 주석: {c.docs_style} · {principles.DOC_LANGUAGE.get(profile_language, profile_language)}",
+            f"문서 주석: {c.docs_style} · {principles.comment_languages(sel.locale).get(profile_language, profile_language)}",
             "",
             f"```{lang}",
             c.example.rstrip(),

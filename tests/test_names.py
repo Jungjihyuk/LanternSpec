@@ -58,7 +58,7 @@ def _roles_used_in_code():
 
 @pytest.mark.parametrize("language", LANGUAGES)
 def test_every_role_the_code_uses_has_a_name(language):
-    table = yaml.safe_load(resources.read_text(f"locales/{language}/names.yaml"))
+    table = names_mod.load(language).table
     used = _roles_used_in_code()
     assert used["folders"] and used["docs"] and used["sections"]
     for kind, roles in used.items():
@@ -66,12 +66,12 @@ def test_every_role_the_code_uses_has_a_name(language):
         assert not missing, f"{language} names.yaml {kind}: {missing}"
 
 
-def test_language_packs_have_the_same_keys():
-    tables = {lang: yaml.safe_load(resources.read_text(f"locales/{lang}/names.yaml")) for lang in LANGUAGES}
-    base = tables["ko"]
-    for lang, table in tables.items():
-        for kind in ("folders", "docs", "task_attrs", "markers", "acceptance", "sections"):
-            assert set(table[kind]) == set(base[kind]), f"{lang}: {kind}"
+def test_every_name_has_every_language():
+    raw = yaml.safe_load(resources.read_text("names.yaml"))
+    for kind in ("folders", "docs", "task_attrs", "markers", "acceptance", "sections"):
+        for key, value in raw[kind].items():
+            missing = [lang for lang in LANGUAGES if lang not in value]
+            assert not missing, f"names.yaml {kind}.{key}: {missing}"
 
 
 @pytest.mark.parametrize("language", LANGUAGES)
@@ -94,7 +94,7 @@ def test_templates_carry_their_protected_sections(language):
 
 
 def test_code_never_spells_a_name_from_names_yaml():
-    table = yaml.safe_load(resources.read_text("locales/ko/names.yaml"))
+    table = names_mod.load("ko").table
     literals = {f'"{v}"' for v in table["folders"].values()}
     literals |= {f"{v}.md" for v in table["docs"].values()}
     literals |= {f"[{v}::" for v in table["task_attrs"].values()}

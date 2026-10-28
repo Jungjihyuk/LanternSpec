@@ -114,7 +114,7 @@ def _code_size_row(project: Project) -> tuple[str, str]:
 
     lines = code_lines(project, tests=False)
     now, recorded = principles.code_size(lines), str(project.profile.get("project.code_size") or principles.SIZES[0])
-    label = principles.table()["sizes"]["code"]
+    label = principles.table(project.profile.language)["sizes"]["code"]
     if principles.SIZES.index(now) > principles.SIZES.index(recorded):
         return (
             WARN,

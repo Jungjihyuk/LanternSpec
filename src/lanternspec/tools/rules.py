@@ -89,22 +89,22 @@ def principles_section(profile: Profile) -> str:
     sel = principles.select(profile)
     if sel is None:
         return ""
-    names = principles.table()["levels"]
+    names = principles.table(profile.language)["levels"]
     doc = f"{profile.docs_root}/{profile.names.folder('rules')}/{profile.names.file('principles')}"
     lines = [f"### 개발 원칙 — {sel.summary()}", f"자세히: `{doc}` (자동 생성 · `lantern principles show`)"]
     for level in ("must", "should"):
         chosen = sel.at(level)
         if chosen:
             lines.append(f"- **{names[level]}:** " + " · ".join(p.name for p in chosen))
-    lines.append(f"- {principles.table()['priority']}")
+    lines.append(f"- {principles.table(profile.language)['priority']}")
     lines.append("- **작업 방식:** " + " · ".join(name for name, _ in sel.always))
     if sel.conventions:
         lines += ["", "### 코드 컨벤션 — " + " · ".join(c.label for c in sel.conventions)]
-        cmds = [(principles.ROLE_LABEL[r], profile.get(f"build.{r}")) for r in (*principles.COMMAND_ROLES, "test")]
+        cmds = [(principles.role_label(r, profile.language), profile.get(f"build.{r}")) for r in (*principles.COMMAND_ROLES, "test")]
         cmds = [f"{label} `{cmd}`" for label, cmd in cmds if cmd]
         if cmds:
             lines.append("- 고친 뒤 돌리고 모두 통과해야 끝: " + " · ".join(cmds) + " — 린트 · 타입 검사는 `lantern lint`로 한 번에")
-        language = principles.DOC_LANGUAGE.get(profile.comment_language, profile.comment_language)
+        language = principles.comment_languages(profile.language).get(profile.comment_language, profile.comment_language)
         for c in sel.conventions:
             prefix = f"{c.label} " if len(sel.conventions) > 1 else ""
             lines.append(f"- {prefix}타입 힌트: {c.rules['type_hints']}")
