@@ -15,6 +15,7 @@ import zipfile
 import zlib
 from pathlib import Path
 
+from ..core.messages import msg
 from ..core.project import Project, nfc
 from .epic_rules import MOCKUP_EXT
 
@@ -45,13 +46,13 @@ def import_files(project: Project, work_id: str, sources: list[Path]) -> list[st
     """
     folder = project.find_work(work_id, include_archive=False)
     if folder is None:
-        raise ValueError(f"진행 중인 작업 {work_id}를 찾지 못했습니다")
+        raise ValueError(msg("Work in progress {work_id} not found", work_id=work_id))
     dest = folder / project.names.folder("screens")
     dest.mkdir(exist_ok=True)
     out: list[str] = []
     for src in sources:
         if not src.exists():
-            raise FileNotFoundError(f"없습니다: {src}")
+            raise FileNotFoundError(msg("Not found: {src}", src=src))
         if src.suffix.lower() == ".zip":
             target = dest / src.stem
             with zipfile.ZipFile(src) as z:
@@ -76,7 +77,7 @@ def import_files(project: Project, work_id: str, sources: list[Path]) -> list[st
             out.append(project.rel(target) + "/")
         else:
             if src.suffix.lower() not in MOCKUP_EXT:
-                raise ValueError(f"시안으로 받는 형식이 아닙니다: {src.name} (이미지 · HTML · PDF · zip)")
+                raise ValueError(msg("Not a mockup format: {name} (image · HTML · PDF · zip)", name=src.name))
             target = dest / nfc(src.name)
             shutil.copy2(src, target)
             out.append(project.rel(target))
@@ -113,7 +114,7 @@ def read_png(path: Path) -> tuple[int, int, list[tuple[int, int, int]]]:
     """
     data = path.read_bytes()
     if data[:8] != b"\x89PNG\r\n\x1a\n":
-        raise ValueError(f"PNG가 아닙니다: {path.name} (자동 비교는 PNG 캡처끼리만)")
+        raise ValueError(msg("Not a PNG: {name} (automatic comparison works only between PNG captures)", name=path.name))
     pos, idat, palette = 8, b"", b""
     width = height = depth = color = interlace = 0
     while pos < len(data):
@@ -129,7 +130,7 @@ def read_png(path: Path) -> tuple[int, int, list[tuple[int, int, int]]]:
             break
         pos += 12 + length
     if depth != 8 or interlace or color not in (0, 2, 3, 4, 6):
-        raise ValueError(f"지원하지 않는 PNG 형식입니다: {path.name} (8비트 · 비인터레이스만)")
+        raise ValueError(msg("Unsupported PNG format: {name} (8-bit · non-interlaced only)", name=path.name))
     channels = {0: 1, 2: 3, 3: 1, 4: 2, 6: 4}[color]
     raw = zlib.decompress(idat)
     stride = width * channels
@@ -208,12 +209,12 @@ def compare(capture: Path, mockup: Path) -> tuple[float, list[str]]:
     a, b = _grid(capture), _grid(mockup)
     diffs = [sum(abs(x - y) for x, y in zip(ca, cb, strict=True)) / (3 * 255) for ca, cb in zip(a, b, strict=True)]
     score = round(100 * (1 - sum(diffs) / len(diffs)), 1)
-    regions = {"위": range(0, 11), "가운데": range(11, 21), "아래": range(21, 32)}
+    regions = {msg("top"): range(0, 11), msg("middle"): range(11, 21), msg("bottom"): range(21, 32)}
     hot = []
     for name, ys in regions.items():
-        for side, xs in (("왼쪽", range(0, 11)), ("가운데", range(11, 21)), ("오른쪽", range(21, 32))):
+        for side, xs in ((msg("left"), range(0, 11)), (msg("middle"), range(11, 21)), (msg("right"), range(21, 32))):
             cell = [diffs[y * 32 + x] for y in ys for x in xs]
             avg = sum(cell) / len(cell)
             if avg > 0.12:
-                hot.append(f"{name} {side} ({round(avg * 100)}% 다름)")
+                hot.append(msg("{name} {side} ({round}% different)", name=name, side=side, round=round(avg * 100)))
     return score, hot

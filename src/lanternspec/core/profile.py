@@ -25,6 +25,7 @@ import yaml
 
 from . import names as names_mod
 from . import principles
+from .messages import msg
 
 PROFILE_FILE = "lantern.yaml"
 PROFILE_VERSION = 1
@@ -275,7 +276,7 @@ def load(root: Path) -> Profile:
         return Profile(data=copy.deepcopy(DEFAULTS), path=path, exists=False)
     raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     if not isinstance(raw, dict):
-        raise ValueError(f"{PROFILE_FILE} 형식이 올바르지 않습니다 (키: 값 형태여야 함)")
+        raise ValueError(msg("{profile_file} is malformed (must be key: value)", profile_file=PROFILE_FILE))
     data = _deep_merge(DEFAULTS, raw)
     if "knowledge" in raw and not raw.get("knowledge"):
         data["knowledge"] = None
@@ -314,34 +315,34 @@ def validate(data: dict[str, Any]) -> list[str]:
             continue
         val = get_path(data, key)
         if val is not None and val not in allowed:
-            problems.append(f"{key}: '{val}' 는 허용되지 않는 값입니다 (가능: {' | '.join(allowed)})")
+            problems.append(msg("{key}: '{val}' is not allowed (available: {items})", key=key, val=val, items=" | ".join(allowed)))
     for key, allowed in LIST_CHOICES.items():
         val = get_path(data, key) or []
         if not isinstance(val, list):
-            problems.append(f"{key}: 목록이어야 합니다 (예: [{allowed[0]}])")
+            problems.append(msg("{key}: must be a list (e.g. [{allowed}])", key=key, allowed=allowed[0]))
             continue
         for item in val:
             if item not in allowed:
-                problems.append(f"{key}: '{item}' 는 허용되지 않는 값입니다 (가능: {', '.join(allowed)})")
+                problems.append(msg("{key}: '{item}' is not allowed (available: {items})", key=key, item=item, items=", ".join(allowed)))
     if not isinstance(get_path(data, "project.external", False), bool):
-        problems.append("project.external: true 또는 false여야 합니다")
+        problems.append(msg("project.external must be true or false"))
     for key, minimum in MIN_INTS.items():
         val = get_path(data, key)
         if val is None:
             continue
         if not isinstance(val, int) or isinstance(val, bool):
-            problems.append(f"{key}: 정수여야 합니다")
+            problems.append(msg("{key}: must be an integer", key=key))
         elif val < minimum:
-            problems.append(f"{key}: 최소 {minimum} 이상이어야 합니다 (지금 {val})")
+            problems.append(msg("{key}: must be at least {minimum} (now {val})", key=key, minimum=minimum, val=val))
     if data.get("knowledge"):
         k = data["knowledge"]
         if not isinstance(k, dict) or not k.get("path"):
-            problems.append("knowledge.path: 지식 저장소 경로가 비어 있습니다 (없으면 knowledge 블록을 지우세요)")
+            problems.append(msg("knowledge.path: the knowledge store path is empty (delete the knowledge block if there is none)"))
     problems += _section_problems(data)
     if get_path(data, "project.team") == "team" and not get_path(data, "project.members"):
-        problems.append("project.members: 2인 이상(team)이면 담당자 후보를 적어 주세요")
+        problems.append(msg("project.members: for a team (2 or more), list the owner candidates"))
     if get_path(data, "lantern") != PROFILE_VERSION:
-        problems.append(f"lantern: 파일 형식 버전은 {PROFILE_VERSION} 이어야 합니다")
+        problems.append(msg("lantern: the file format version must be {profile_version}", profile_version=PROFILE_VERSION))
     return problems
 
 
@@ -349,23 +350,35 @@ def _section_problems(data: dict[str, Any]) -> list[str]:
     """Check project.language and the protected-section decisions (docs.sections · docs.unused_sections)."""
     language = str(get_path(data, "project.language") or "ko")
     if language not in names_mod.languages():
-        return [f"project.language: '{language}' 언어 묶음이 없습니다 (가능: {', '.join(names_mod.languages())})"]
+        return [
+            msg(
+                "project.language: no language pack '{language}' (available: {items})",
+                language=language,
+                items=", ".join(names_mod.languages()),
+            )
+        ]
     roles = [s.role for s in names_mod.load(language).sections()]
     problems: list[str] = []
     renamed = get_path(data, "docs.sections") or {}
     if not isinstance(renamed, dict):
-        return ["docs.sections: 칸 → 새 이름 형태여야 합니다 (예: {now: 오늘 한 일})"]
+        return [msg("docs.sections: must map section → new name (e.g. {{now: Today}})")]
     for role, titles in renamed.items():
         if role not in roles:
-            problems.append(f"docs.sections: '{role}'는 보호 칸이 아닙니다 (가능: {', '.join(roles)})")
+            problems.append(
+                msg("docs.sections: '{role}' is not a protected section (available: {items})", role=role, items=", ".join(roles))
+            )
         elif not (isinstance(titles, str) and titles.strip()) and not (
             isinstance(titles, list) and titles and all(isinstance(x, str) and x.strip() for x in titles)
         ):
-            problems.append(f"docs.sections.{role}: 새 이름(글자)이나 이름 목록이어야 합니다")
+            problems.append(msg("docs.sections.{role}: must be a new name (text) or a list of names", role=role))
     unused = get_path(data, "docs.unused_sections") or []
     if not isinstance(unused, list):
-        return problems + ["docs.unused_sections: 목록이어야 합니다 (예: [schema])"]
-    problems += [f"docs.unused_sections: '{r}'는 보호 칸이 아닙니다 (가능: {', '.join(roles)})" for r in unused if r not in roles]
+        return problems + [msg("docs.unused_sections: must be a list (e.g. [schema])")]
+    problems += [
+        msg("docs.unused_sections: '{r}' is not a protected section (available: {items})", r=r, items=", ".join(roles))
+        for r in unused
+        if r not in roles
+    ]
     return problems
 
 
@@ -407,92 +420,152 @@ def render(data: dict[str, Any]) -> str:
     p, docs, k = d["project"], d["docs"], d.get("knowledge")
     s = _yaml_scalar
     lines = [
-        "# lantern.yaml — 이 프로젝트가 어떤 프로젝트인지 (/l-init의 답). 사람이 직접 고쳐도 된다.",
-        f"lantern: {PROFILE_VERSION}                  # 이 파일 형식의 버전",
+        msg("# lantern.yaml — what kind of project this is (the answers to /l-init). People may edit it by hand."),
+        msg("lantern: {profile_version}                  # version of this file's format", profile_version=PROFILE_VERSION),
         "",
         "project:",
         f"  name: {s(p.get('name', ''))}",
-        f"  origin: {s(p['origin'])}        # greenfield(새로) | brownfield(기존 코드 있음)",
-        f"  team: {s(p['team'])}              # solo(1인) | team(2인 이상)",
-        f"  members: {s(p.get('members') or [])}            # team일 때 담당자 후보",
-        f"  clients: {s(p.get('clients') or [])}          # web | desktop | mobile — 여러 개 가능",
-        f"  server: {s(p['server'])}            # none(서버 없음) | external(Supabase · Firebase 같은 백엔드 서비스)"
-        " | custom(서버 코드를 직접 작성 — 어디에 띄우든)",
-        f"  language: {s(p.get('language', 'ko'))}              # 문서 · 안내의 언어",
-        f"  comment_language: {s(p.get('comment_language'))}    # 코드 주석(docstring · 주석)의 언어 — ko | en, 비우면 language를 따름",
-        f"  kind: {s(p.get('kind'))}              # {' | '.join(principles.kind_names())} — 설계 원칙을 고르는 기준",
-        f"  external: {s(bool(p.get('external')))}         # 바깥 도구 · 서비스(AI 도구 · 결제 · 외부 API 등)에 붙나",
-        f"  languages: {s(p.get('languages') or [])}        # 코드 컨벤션을 고를 언어 ({', '.join(principles.language_names())})",
-        f"  code_size: {s(p.get('code_size'))}         # small | medium | large — 잰 값 (lantern principles detect)."
-        " 경계를 넘으면 lantern doctor가 올릴지 묻는다",
+        msg("  origin: {s}        # greenfield (new) | brownfield (existing code)", s=s(p["origin"])),
+        msg("  team: {s}              # solo (one person) | team (2 or more)", s=s(p["team"])),
+        msg("  members: {s}            # owner candidates for a team", s=s(p.get("members") or [])),
+        msg("  clients: {s}          # web | desktop | mobile — several allowed", s=s(p.get("clients") or [])),
+        msg(
+            "  server: {s}            # none (no server) | external (a backend service like Supabase · "
+            "Firebase) | custom (you write the server code — wherever it runs)",
+            s=s(p["server"]),
+        ),
+        msg("  language: {s}              # language of documents · guidance", s=s(p.get("language", "ko"))),
+        msg(
+            "  comment_language: {s}    # language of code comments (docstrings · comments) — ko | en, empty follows language",
+            s=s(p.get("comment_language")),
+        ),
+        msg(
+            "  kind: {s}              # {items} — what the design principles are chosen by",
+            s=s(p.get("kind")),
+            items=" | ".join(principles.kind_names()),
+        ),
+        msg(
+            "  external: {s}         # connects to outside tools · services (AI tools · payments · external APIs …)",
+            s=s(bool(p.get("external"))),
+        ),
+        msg(
+            "  languages: {s}        # languages to choose code conventions for ({items})",
+            s=s(p.get("languages") or []),
+            items=", ".join(principles.language_names()),
+        ),
+        msg(
+            "  code_size: {s}         # small | medium | large — measured (lantern principles detect). "
+            "When it crosses a boundary, lantern doctor asks whether to raise it",
+            s=s(p.get("code_size")),
+        ),
         "",
         "docs:",
         f"  root: {s(docs['root'])}",
-        f"  remote: {s(docs['remote'])}          # shared(같이 올림) | local(문서는 원격에 안 올림) — 바꿀 때는 lantern docs-mode",
+        msg(
+            "  remote: {s}          # shared (pushed together) | local (documents not pushed) — change it with lantern docs-mode",
+            s=s(docs["remote"]),
+        ),
     ]
     if docs.get("extra"):
-        lines.append(f"  extra: {s(docs['extra'])}           # '필요하면 켜짐' 문서 중 켠 것 (api)")
+        lines.append(msg("  extra: {s}           # optional documents turned on (api)", s=s(docs["extra"])))
     if docs.get("sections"):
-        lines.append("  sections:                  # 이름을 바꾼 보호 칸 (lantern sections rename) — 목록이면 앞이 지금 이름")
+        lines.append(
+            msg(
+                "  sections:                  # renamed protected sections (lantern sections rename) — in "
+                "a list, the first is the current name"
+            )
+        )
         lines += [f"    {role}: {s(title)}" for role, title in docs["sections"].items()]
     if docs.get("unused_sections"):
-        lines.append(f"  unused_sections: {s(docs['unused_sections'])}   # 쓰지 않는 보호 칸 (lantern sections off)")
+        lines.append(msg("  unused_sections: {s}   # protected sections not used (lantern sections off)", s=s(docs["unused_sections"])))
     lines.append("")
     if k:
         k = _deep_merge(KNOWLEDGE_DEFAULTS, k)
         lines += [
-            "knowledge:                  # 배우는 선로. 없으면 이 블록을 지운다",
-            f"  type: {s(k['type'])}            # obsidian | folder(아무 Markdown 폴더)",
+            msg("knowledge:                  # the learning track. Delete this block if there is none"),
+            msg("  type: {s}            # obsidian | folder (any Markdown folder)", s=s(k["type"])),
             f"  path: {s(k['path'])}",
         ]
         if k.get("token_env"):
-            lines.append(f"  token_env: {s(k['token_env'])}   # Notion 토큰을 담은 환경 변수")
+            lines.append(msg("  token_env: {s}   # environment variable holding the Notion token", s=s(k["token_env"])))
         if k.get("areas_from"):
-            lines.append(f"  areas_from: {s(k['areas_from'])}    # (선택) 이 폴더 분류를 읽어 부채 카드 주제 추가를 제안한다")
-        lines += [f"  write: {s(k['write'])}            # direct(승인 후 바로 씀) | propose_only(초안 파일만)", ""]
+            lines.append(
+                msg("  areas_from: {s}    # (optional) read this folder's categories to suggest debt-card topics", s=s(k["areas_from"]))
+            )
+        lines += [
+            msg("  write: {s}            # direct (write right after approval) | propose_only (draft files only)", s=s(k["write"])),
+            "",
+        ]
     else:
-        lines += ["# knowledge: 지식 저장소가 생기면 블록을 추가한다 (type · path · write)", ""]
+        lines += [msg("# knowledge: add this block once there is a knowledge store (type · path · write)"), ""]
     lines += [
         "design:",
-        f"  tool: {s(d['design']['tool'])}       # claude-design | figma | canva (각 도구의 MCP) | none",
-        f"  approval: {s(d['design']['approval'])}  # required(항상 승인) | auto(작은 설계는 건너뜀) | off",
+        msg("  tool: {s}       # claude-design | figma | canva (each tool's MCP) | none", s=s(d["design"]["tool"])),
+        msg("  approval: {s}  # required (always approve) | auto (skip small designs) | off", s=s(d["design"]["approval"])),
         "",
         "git:",
-        f"  hooks: {s(d['git']['hooks'])}              # warn(경고만) | block(막기) — 커밋 메시지 · 스키마 기록 · 문서 양식 검사에만 적용",
-        f"  base: {s(d['git']['base'])}                 # 작업 브랜치를 머지할 기준 브랜치 (main | dev …)",
+        msg(
+            "  hooks: {s}              # warn (warning only) | block — applies only to commit message "
+            "· schema log · document format checks",
+            s=s(d["git"]["hooks"]),
+        ),
+        msg("  base: {s}                 # the base branch work branches merge into (main | dev …)", s=s(d["git"]["base"])),
     ]
     if d["git"].get("schema_paths"):
-        lines.append(f"  schema_paths: {s(d['git']['schema_paths'])}  # 스키마 파일 위치 (스키마 기록 검사)")
+        lines.append(msg("  schema_paths: {s}  # where schema files are (schema log check)", s=s(d["git"]["schema_paths"])))
     lines += [
         "",
         "idea:",
-        f"  capture: {s(d['idea']['capture'])}           # manual(직접 부를 때만) | ask(알아채고 묻기) | auto(알아서 기록)",
+        msg(
+            "  capture: {s}           # manual (only when called) | ask (notice and ask) | auto (record on its own)",
+            s=s(d["idea"]["capture"]),
+        ),
         "plan:",
-        f"  max_questions: {s(d['plan']['max_questions'])}         # 한 번에 묻는 질문 수 (최소 1)",
-        f"  ac_format: {s(d['plan']['ac_format'])}           # gwt(상황·행동·결과) | simple(~하면 ~된다)",
-        f"  ui_reference: {s(d['plan']['ui_reference'])}         # off | required(화면 작업은 시안이 있어야 진행)",
+        msg("  max_questions: {s}         # questions asked at once (at least 1)", s=s(d["plan"]["max_questions"])),
+        msg("  ac_format: {s}           # gwt (situation·action·result) | simple (when … then …)", s=s(d["plan"]["ac_format"])),
+        msg("  ui_reference: {s}         # off | required (screen work needs a mockup to proceed)", s=s(d["plan"]["ui_reference"])),
         "learn:",
-        f"  detect: {s(d['learn']['detect'])}            # manual(불릴 때만) | ask(대화 중 질문마다 묻기)"
-        " | auto(새 기술은 제안, 카드 있으면 바로 셈)",
-        f"  max_candidates: {s(d['learn']['max_candidates'])}        # 한 번에 보여 줄 부채 후보 수 (최소 1)",
-        f"  verify: {s(d['learn']['verify'])}             # self(스스로 표시) | explain(한 줄 설명해 보기)",
+        msg(
+            "  detect: {s}            # manual (only when called) | ask (ask on each question in "
+            "conversation) | auto (suggest new tech, count right away if a card exists)",
+            s=s(d["learn"]["detect"]),
+        ),
+        msg("  max_candidates: {s}        # debt candidates shown at once (at least 1)", s=s(d["learn"]["max_candidates"])),
+        msg("  verify: {s}             # self (mark it yourself) | explain (try explaining it in one line)", s=s(d["learn"]["verify"])),
         "build:",
-        f"  report_cycle: {s(d['build']['report_cycle'])}        # work(작업마다) | criterion(수락 기준마다) | task(할 일마다)"
-        " — 문제가 생기면 언제든 바로 보고",
-        f"  merge_approval: {s(d['build']['merge_approval'])}  # required(반영 전 승인) | auto(반영 후 요약 보고)",
-        f"  loop: {s(d['build']['loop'])}                # off(할 일 안의 작은 반복만)"
-        " | on(수락 기준 테스트가 통과할 때까지 작업 전체를 다시) — lantern harness suggest",
-        f"  loop_limit: {s(d['build']['loop_limit'])}           # 큰 반복 최대 횟수",
+        msg(
+            "  report_cycle: {s}        # work (each work) | criterion (each acceptance criterion) | "
+            "task (each task) — problems are reported right away anytime",
+            s=s(d["build"]["report_cycle"]),
+        ),
+        msg(
+            "  merge_approval: {s}  # required (approve before merging) | auto (summary report after merging)",
+            s=s(d["build"]["merge_approval"]),
+        ),
+        msg(
+            "  loop: {s}                # off (only the small loop within a task) | on (rerun the "
+            "whole work until the acceptance tests pass) — lantern harness suggest",
+            s=s(d["build"]["loop"]),
+        ),
+        msg("  loop_limit: {s}           # max rounds of the big loop", s=s(d["build"]["loop_limit"])),
     ]
     if d["build"].get("test"):
-        lines.append(f"  test: {s(d['build']['test'])}   # 테스트 명령 (work finish · scan --tests)")
+        lines.append(msg("  test: {s}   # test command (work finish · scan --tests)", s=s(d["build"]["test"])))
     for role in principles.COMMAND_ROLES:
         if d["build"].get(role):
-            where = "고친 뒤 돌린다" if role == "format" else "lantern lint · /l-build · CI"
-            lines.append(f"  {role}: {s(d['build'][role])}   # {principles.role_label(role)} 명령 ({where})")
+            where = msg("run after editing") if role == "format" else "lantern lint · /l-build · CI"
+            lines.append(
+                msg(
+                    "  {role}: {s}   # {role_label} command ({where})",
+                    role=role,
+                    s=s(d["build"][role]),
+                    role_label=principles.role_label(role),
+                    where=where,
+                )
+            )
     lines += [
         "check:",
-        f"  max_lines: {s(d['check']['max_lines'])}            # 이보다 길면 나누자고 경고 (막지는 않음)",
+        msg("  max_lines: {s}            # warn to split when longer (doesn't block)", s=s(d["check"]["max_lines"])),
         "report:",
         f"  views: {s(d['report']['views'])}",
         "",
@@ -519,7 +592,7 @@ def save(root: Path, data: dict[str, Any]) -> Path:
     """
     problems = validate(_deep_merge(DEFAULTS, data))
     if problems:
-        raise ValueError("lantern.yaml 값이 올바르지 않습니다:\n- " + "\n- ".join(problems))
+        raise ValueError(msg("Invalid lantern.yaml values:\n- ") + "\n- ".join(problems))
     path = root / PROFILE_FILE
     path.write_text(render(data), encoding="utf-8")
     return path
@@ -606,8 +679,40 @@ class DocSpec:
     variant: str | None = None
 
 
-DATA_VARIANT = {"none": "기기 안 저장소", "external": "외부 DB", "custom": "서버 DB"}
-CLIENT_LABEL = {"web": "웹", "desktop": "데스크톱", "mobile": "모바일"}
+DATA_VARIANT = {"none": "on-device storage", "external": "external DB", "custom": "server DB"}
+CLIENT_LABEL = {"web": "web", "desktop": "desktop", "mobile": "mobile"}
+
+
+def data_variant(server: str) -> str:
+    """Name where the data lives for a server answer, in the project's language.
+
+    Args:
+        server: project.server (none · external · custom).
+
+    Returns:
+        The name, e.g. "서버 DB"; an unknown answer as it is.
+
+    Example:
+        >>> data_variant("custom"), data_variant("other")
+        ('서버 DB', 'other')
+    """
+    return msg(DATA_VARIANT[server]) if server in DATA_VARIANT else server
+
+
+def client_label(client: str) -> str:
+    """Name a client kind in the project's language.
+
+    Args:
+        client: One of project.clients (web · desktop · mobile).
+
+    Returns:
+        The name, e.g. "모바일"; an unknown kind as it is.
+
+    Example:
+        >>> client_label("mobile")
+        '모바일'
+    """
+    return msg(CLIENT_LABEL[client]) if client in CLIENT_LABEL else client
 
 
 def enabled_docs(profile: Profile) -> list[DocSpec]:
@@ -640,63 +745,65 @@ def enabled_docs(profile: Profile) -> list[DocSpec]:
 
     data_dir = f"{f('current')}/{f('data')}"
     out: list[DocSpec] = [
-        DocSpec("moc", n.file("moc"), n.doc("moc"), "항상"),
-        folder("templates", "항상"),
-        folder("ideas", "항상"),
-        folder("works", "항상"),
-        folder("archive", "항상"),
-        doc("project-definition", "current", "project_definition", "항상"),
-        doc("features", "current", "features", "항상"),
-        doc("architecture", "current", "architecture", "항상"),
+        DocSpec("moc", n.file("moc"), n.doc("moc"), msg("always")),
+        folder("templates", msg("always")),
+        folder("ideas", msg("always")),
+        folder("works", msg("always")),
+        folder("archive", msg("always")),
+        doc("project-definition", "current", "project_definition", msg("always")),
+        doc("features", "current", "features", msg("always")),
+        doc("architecture", "current", "architecture", msg("always")),
         DocSpec(
             "data",
             f"{data_dir}/{n.file('data')}",
             n.doc("data"),
-            f"항상 ({DATA_VARIANT.get(server, server)})",
-            variant=DATA_VARIANT.get(server),
+            msg("always ({get})", get=data_variant(server)),
+            variant=data_variant(server) if server in DATA_VARIANT else None,
         ),
-        DocSpec("schema", f"{data_dir}/schema.dbml", None, "데이터 원본 (DBML)"),
-        folder("rules", "항상"),
-        doc("unit-log", "rules", "unit_log", "항상"),
-        folder("reports", "항상", "past_reports"),
+        DocSpec("schema", f"{data_dir}/schema.dbml", None, msg("data source (DBML)")),
+        folder("rules", msg("always")),
+        doc("unit-log", "rules", "unit_log", msg("always")),
+        folder("reports", msg("always"), "past_reports"),
     ]
     if clients:
-        labels = ", ".join(CLIENT_LABEL[c] for c in clients if c in CLIENT_LABEL)
+        labels = ", ".join(client_label(c) for c in clients if c in CLIENT_LABEL)
         out += [
-            DocSpec("screens", f"{f('current')}/{f('screens')}/{n.file('screens')}", n.doc("screens"), f"화면 유형: {labels}"),
-            doc("platform", "current", "platform", f"화면 유형: {labels}", sections=list(clients)),
-            doc("deploy", "current", "deploy", f"화면 유형: {labels}", sections=list(clients)),
+            DocSpec(
+                "screens", f"{f('current')}/{f('screens')}/{n.file('screens')}", n.doc("screens"), msg("clients: {labels}", labels=labels)
+            ),
+            doc("platform", "current", "platform", msg("clients: {labels}", labels=labels), sections=list(clients)),
+            doc("deploy", "current", "deploy", msg("clients: {labels}", labels=labels), sections=list(clients)),
         ]
     if server == "custom" or (server == "external" and "api" in extra):
-        out.append(doc("api", "current", "api", "서버 직접 구축" if server == "custom" else "외부 서비스 + API 켬"))
+        out.append(doc("api", "current", "api", msg("custom server") if server == "custom" else msg("external service + API on")))
     if server == "custom":
-        out.append(doc("server-ops", "current", "server_ops", "서버 직접 구축"))
+        out.append(doc("server-ops", "current", "server_ops", msg("custom server")))
     if profile.team:
-        out += [doc("collab", "rules", "collab", "2인 이상"), folder("meetings", "2인 이상")]
+        out += [doc("collab", "rules", "collab", msg("2 or more people")), folder("meetings", msg("2 or more people"))]
     if profile.knowledge:
         out += [
-            folder("debt-cards", "지식 저장소 있음 (배우는 선로)", "debt_cards"),
-            DocSpec("debt-status", f"{f('debt')}/{n.file('debt_status')}", None, "지식 저장소 있음 (자동 생성)"),
-            doc("known-tech", "debt", "known_tech", "지식 저장소 있음"),
+            folder("debt-cards", msg("knowledge store (the learning track)"), "debt_cards"),
+            DocSpec("debt-status", f"{f('debt')}/{n.file('debt_status')}", None, msg("knowledge store (generated)")),
+            doc("known-tech", "debt", "known_tech", msg("knowledge store")),
         ]
     if profile.get("project.kind"):
-        out.append(DocSpec("principles", f"{f('rules')}/{n.file('principles')}", None, "프로젝트 종류를 정함 (자동 생성)"))
+        out.append(DocSpec("principles", f"{f('rules')}/{n.file('principles')}", None, msg("project kind set (generated)")))
     if profile.brownfield:
-        out += [folder("legacy", "브라운필드"), doc("legacy-map", "legacy", "legacy_map", "브라운필드")]
+        out += [folder("legacy", msg("brownfield")), doc("legacy-map", "legacy", "legacy_map", msg("brownfield"))]
     return out
 
 
 # Doc keys that may become "사용 안 함" (inactive) when answers change. Folders are never removed.
 OPTIONAL_DOC_KEYS = {"screens", "platform", "deploy", "api", "server-ops", "collab", "known-tech", "legacy-map"}
 
-# Which /l-init follow-up questions a newly enabled doc needs.
+# Which /l-init follow-up questions a newly enabled doc needs (English; msg() translates them).
 FOLLOW_UP_QUESTIONS = {
-    "deploy": "배포 방식 (호스팅 · 스토어 · 서명 등)",
-    "platform": "플랫폼 연동 (푸시 · 딥링크 · URL 스킴 등)",
-    "api": "API 형태 (REST · GraphQL 등)와 인증 방식",
-    "server-ops": "서버 배포 위치와 운영 방법",
-    "collab": "팀원 이름 (project.members)과 리뷰 · 브랜치 규칙",
-    "known-tech": "이미 잘 아는 기술 (부채 후보에서 뺄 것)",
+    "deploy": "How it's deployed (hosting · stores · signing …)",
+    "platform": "Platform integration (push · deep links · URL schemes …)",
+    "api": "API style (REST · GraphQL …) and authentication",
+    "server-ops": "Where the server is deployed and how it's run",
+    "collab": "Team member names (project.members) and review · branch rules",
+    "known-tech": "Technologies you already know well (left out of debt candidates)",
 }
 
 

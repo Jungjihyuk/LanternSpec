@@ -22,6 +22,7 @@ from typing import Any
 import yaml
 
 from .. import resources
+from .messages import msg
 
 # Roles the code relies on. A project's enums.yaml must give each of them to some value of its list.
 REQUIRED_ROLES: dict[str, list[str]] = {
@@ -107,7 +108,7 @@ class Enum:
             '되물음'
         """
         if role not in self.roles:
-            raise LookupError(f"enums.yaml {self.name}에 role '{role}'인 값이 없습니다")
+            raise LookupError(msg("enums.yaml {name} has no value with role '{role}'", name=self.name, role=role))
         return self.roles[role]
 
     def role_of(self, value: str) -> str:
@@ -355,13 +356,17 @@ class Enums:
             >>> load().problems()
             []
         """
-        out = [f"enums.yaml: role '{d}'가 두 값에 붙어 있습니다" for d in self._duplicate_roles]
+        out = [msg("enums.yaml: role '{d}' is on two values", d=d) for d in self._duplicate_roles]
         for name, roles in REQUIRED_ROLES.items():
             e = self.enums.get(name)
             if e is None:
-                out.append(f"enums.yaml: '{name}'이 없습니다")
+                out.append(msg("enums.yaml: '{name}' is missing", name=name))
                 continue
-            out += [f"enums.yaml {name}: role '{r}'인 값이 없습니다 (코드가 이 값을 찾지 못함)" for r in roles if r not in e.roles]
+            out += [
+                msg("enums.yaml {name}: no value with role '{r}' (the code can't find this value)", name=name, r=r)
+                for r in roles
+                if r not in e.roles
+            ]
         return out
 
 
@@ -419,11 +424,11 @@ def rename_in_text(text: str, enum: str, old: str, new: str) -> str:
     """
     block = re.search(r"^" + re.escape(enum) + r":[ \t]*$(.*?)(?=^\S|\Z)", text, re.M | re.S)
     if block is None:
-        raise LookupError(f"enums.yaml에 '{enum}'이 없습니다")
+        raise LookupError(msg("enums.yaml has no '{enum}'", enum=enum))
     body = block.group(1)
     pat = re.compile(rf"^(\s+)(['\"]?){re.escape(old)}\2:", re.M)
     if not pat.search(body):
-        raise LookupError(f"{enum}에 '{old}' 값이 없습니다")
+        raise LookupError(msg("{enum} has no value '{old}'", enum=enum, old=old))
     body = pat.sub(lambda m: f"{m.group(1)}{_yaml_key(new)}:", body, count=1)
     return text[: block.start(1)] + body + text[block.end(1) :]
 

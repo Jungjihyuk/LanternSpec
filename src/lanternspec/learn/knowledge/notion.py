@@ -19,6 +19,7 @@ import urllib.request
 from collections.abc import Callable
 from typing import Any
 
+from ...core.messages import msg
 from . import Adapter, Hit, KnowledgeError
 
 API = "https://api.notion.com/v1"
@@ -141,7 +142,7 @@ class NotionAdapter(Adapter):
             KnowledgeError: There is no token.
         """
         if not token:
-            raise KnowledgeError("Notion 토큰이 없습니다 — 환경 변수 NOTION_TOKEN (또는 knowledge.token_env)")
+            raise KnowledgeError(msg("No Notion token — environment variable NOTION_TOKEN (or knowledge.token_env)"))
         self.parent = parent_id.replace("-", "")
         self.token = token
         self._open = opener or urllib.request.urlopen
@@ -157,9 +158,11 @@ class NotionAdapter(Adapter):
             with self._open(req) as resp:
                 return json.loads(resp.read().decode("utf-8"))
         except urllib.error.HTTPError as e:  # pragma: no cover - needs the network
-            raise KnowledgeError(f"Notion API 오류 {e.code}: {e.read().decode('utf-8', 'replace')[:200]}") from e
+            raise KnowledgeError(
+                msg("Notion API error {code}: {value}", code=e.code, value=e.read().decode("utf-8", "replace")[:200])
+            ) from e
         except urllib.error.URLError as e:  # pragma: no cover
-            raise KnowledgeError(f"Notion에 연결하지 못했습니다: {e.reason}") from e
+            raise KnowledgeError(msg("Couldn't connect to Notion: {reason}", reason=e.reason)) from e
 
     def search(self, query: str, aliases: list[str] | None = None, limit: int = 5) -> list[Hit]:
         """Implement Adapter.search with Notion's page search, once per name.

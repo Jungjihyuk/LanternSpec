@@ -16,11 +16,12 @@ import json
 from pathlib import Path
 from typing import Any
 
+from .messages import msg
 from .project import Project
 
 INSTALLED = "installed.json"
 
-STATE_GITIGNORE = """# LanternSpec 로컬 상태 — 개인 기록은 올리지 않는다
+STATE_GITIGNORE = """# {note}
 runs.jsonl
 runs-state/
 hook-state/
@@ -79,7 +80,7 @@ def ensure_state_dir(project: Project) -> Path:
     project.state.mkdir(parents=True, exist_ok=True)
     gi = project.state / ".gitignore"
     if not gi.exists():
-        gi.write_text(STATE_GITIGNORE, encoding="utf-8")
+        gi.write_text(STATE_GITIGNORE.format(note=msg("LanternSpec local state — personal records are not committed")), encoding="utf-8")
     return project.state
 
 

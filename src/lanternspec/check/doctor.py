@@ -13,6 +13,7 @@ import shutil
 
 from ..core import profile as profile_mod
 from ..core import state
+from ..core.messages import msg
 from ..core.project import Project, git, git_version, read
 from ..tools.rules import AGENTS_START
 from ..tools.skills import SKILL_NAMES
@@ -37,39 +38,43 @@ def run(project: Project) -> list[tuple[str, str]]:
     out: list[tuple[str, str]] = []
     p = project.profile
     if not p.exists:
-        out.append((BAD, "lantern.yaml이 없습니다 — /l-init 으로 프로젝트를 준비하세요"))
+        out.append((BAD, msg("No lantern.yaml — set up the project with /l-init")))
     else:
         problems = profile_mod.validate(p.data)
-        out += [(BAD, f"lantern.yaml: {x}") for x in problems] or [(OK, "lantern.yaml 형식")]
+        out += [(BAD, f"lantern.yaml: {x}") for x in problems] or [(OK, msg("lantern.yaml format"))]
     if shutil.which("lantern"):
-        out.append((OK, "lantern 명령이 PATH에 있음"))
+        out.append((OK, msg("lantern command is on PATH")))
     else:
-        out.append((WARN, "lantern 명령이 PATH에 없습니다 — 에이전트 hook · git hook이 건너뜁니다 (uv tool install lanternspec)"))
+        out.append((WARN, msg("lantern command is not on PATH — agent hooks · git hooks are skipped (uv tool install lanternspec)")))
     is_git = git(["rev-parse", "--git-dir"], project.root).returncode == 0
     if not is_git:
-        out.append((WARN, "git 저장소가 아닙니다 — hook · 커밋 연결 · sync가 동작하지 않습니다"))
+        out.append((WARN, msg("Not a git repository — hooks · commit links · sync won't work")))
     else:
         ver = git_version(project.root)
         if p.remote == "local" and ver < (2, 42, 0):
-            out.append((BAD, f"local 방식은 git 2.42 이상 필요 (지금 {'.'.join(map(str, ver))})"))
+            out.append((BAD, msg("The local mode needs git 2.42 or later (now {items})", items=".".join(map(str, ver)))))
         structural = githooks.structure_problems(project)
-        out += [(BAD, f"문서 저장 방식({p.remote}): {x}") for x in structural] or [(OK, f"문서 저장 방식 {p.remote} — 구조가 맞음")]
+        out += [(BAD, msg("Document storage ({remote}): {x}", remote=p.remote, x=x)) for x in structural] or [
+            (OK, msg("Document storage {remote} — the layout is right", remote=p.remote))
+        ]
         hooks = githooks.status(project)
         missing = [n for n, ok in hooks if not ok]
         if missing:
             level = BAD if p.remote == "local" and "pre-push" in missing else WARN
-            out.append((level, f"git hook 미설치: {', '.join(missing)} — lantern hooks install"))
+            out.append((level, msg("git hooks not installed: {items} — lantern hooks install", items=", ".join(missing))))
         else:
-            out.append((OK, f"git hook 설치됨 (내용 검사: {p.get('git.hooks')})"))
+            out.append((OK, msg("git hooks installed (content check: {get})", get=p.get("git.hooks"))))
         if p.get("project.kind"):
             out.append(_code_size_row(project))
     if p.exists:
         out.append(
-            (OK, "docs/0. 템플릿 있음") if project.templates_dir.exists() else (BAD, "docs/0. 템플릿이 없습니다 — lantern scaffold init")
+            (OK, msg("Templates folder exists"))
+            if project.templates_dir.exists()
+            else (BAD, msg("No templates folder — lantern scaffold init"))
         )
-        out.append((OK, "enums.yaml 있음") if project.enums_file.exists() else (WARN, "enums.yaml이 없습니다 — 기본값을 씁니다"))
+        out.append((OK, msg("enums.yaml exists")) if project.enums_file.exists() else (WARN, msg("No enums.yaml — using the defaults")))
         out += [(BAD, x) for x in project.enums.problems()]
-        out.append((OK, "개발문서 MOC 있음") if project.moc.exists() else (WARN, "MOC가 없습니다 — lantern map"))
+        out.append((OK, msg("Docs MOC exists")) if project.moc.exists() else (WARN, msg("No MOC — lantern map")))
     k = p.knowledge
     if k:
         from pathlib import Path
@@ -78,32 +83,48 @@ def run(project: Project) -> list[tuple[str, str]]:
             import os
 
             env = str(k.get("token_env") or "NOTION_TOKEN")
-            out.append((OK, f"Notion 토큰 {env} 있음") if os.environ.get(env) else (WARN, f"Notion 토큰이 없습니다 — 환경 변수 {env}"))
+            out.append(
+                (OK, msg("Notion token {env} is set", env=env))
+                if os.environ.get(env)
+                else (WARN, msg("No Notion token — environment variable {env}", env=env))
+            )
         else:
             path = Path(str(k["path"])).expanduser()
-            out.append((OK, f"지식 저장소 {path} ({k['type']})") if path.exists() else (BAD, f"지식 저장소 경로가 없습니다: {path}"))
+            out.append(
+                (OK, msg("Knowledge store {path} ({type})", path=path, type=k["type"]))
+                if path.exists()
+                else (BAD, msg("Knowledge store path doesn't exist: {path}", path=path))
+            )
     st = state.load(project)
     if not st.get("version"):
-        out.append((WARN, "스킬이 설치되지 않았습니다 — lantern install"))
+        out.append((WARN, msg("Skills are not installed — lantern install")))
     else:
         from ..tools.install import drift
 
         d = drift(project)
         if d["missing"]:
-            out.append((WARN, f"빠진 스킬 파일 {len(d['missing'])}개 — lantern upgrade"))
+            out.append((WARN, msg("{count} skill files missing — lantern upgrade", count=len(d["missing"]))))
         if d["stale"]:
-            out.append((WARN, f"lantern.yaml 값(예: idea.capture)과 스킬이 다릅니다 {len(d['stale'])}개 — lantern upgrade"))
+            out.append(
+                (WARN, msg("{count} skills differ from lantern.yaml values (e.g. idea.capture) — lantern upgrade", count=len(d["stale"])))
+            )
         if d["modified"]:
-            out.append((WARN, f"사용자가 고친 스킬 {len(d['modified'])}개 (upgrade가 건너뜀): " + ", ".join(d["modified"][:3])))
+            out.append(
+                (
+                    WARN,
+                    msg("{count} skills edited by the user (upgrade skips them): ", count=len(d["modified"]))
+                    + ", ".join(d["modified"][:3]),
+                )
+            )
         if not any(d.values()):
-            out.append((OK, f"스킬 {len(SKILL_NAMES)}개 최신 ({', '.join(st.get('tools') or [])})"))
+            out.append((OK, msg("{count} skills up to date ({items})", count=len(SKILL_NAMES), items=", ".join(st.get("tools") or []))))
         agents = project.root / "AGENTS.md"
         if not agents.exists() or AGENTS_START not in read(agents):
-            out.append((WARN, "AGENTS.md에 LanternSpec 규칙이 없습니다 — lantern upgrade"))
+            out.append((WARN, msg("AGENTS.md has no LanternSpec rules — lantern upgrade")))
         if "claude" in (st.get("tools") or []):
             cm = project.root / "CLAUDE.md"
             if not cm.exists() or "@AGENTS.md" not in read(cm):
-                out.append((WARN, "CLAUDE.md가 @AGENTS.md를 불러오지 않습니다"))
+                out.append((WARN, msg("CLAUDE.md doesn't load @AGENTS.md")))
     return out
 
 
@@ -118,10 +139,16 @@ def _code_size_row(project: Project) -> tuple[str, str]:
     if principles.SIZES.index(now) > principles.SIZES.index(recorded):
         return (
             WARN,
-            f"코드가 {lines:,}줄로 자라 규모가 {label[recorded]['label']} → {label[now]['label']}이 됐습니다 — 원칙을 한 단계 올릴까요? "
-            f"→ lantern profile set project.code_size={now} && lantern upgrade",
+            msg(
+                "The code grew to {lines:,} lines, so its size went {label} → {label2} — raise the "
+                "principles a level? → lantern profile set project.code_size={now} && lantern upgrade",
+                lines=lines,
+                label=label[recorded]["label"],
+                label2=label[now]["label"],
+                now=now,
+            ),
         )
-    return OK, f"개발 원칙 규모: 코드 {label[recorded]['label']} ({lines:,}줄)"
+    return OK, msg("Principles size: code {label} ({lines:,} lines)", label=label[recorded]["label"], lines=lines)
 
 
 def format_result(rows: list[tuple[str, str]]) -> str:
@@ -141,6 +168,6 @@ def format_result(rows: list[tuple[str, str]]) -> str:
     """
     bad = sum(1 for r in rows if r[0] == BAD)
     warn = sum(1 for r in rows if r[0] == WARN)
-    lines = [f"{icon} {msg}" for icon, msg in rows]
-    lines.append("" if not rows else ("✔ 모두 정상" if not bad and not warn else f"✖ {bad}개 · ⚠ {warn}개"))
+    lines = [f"{icon} {text}" for icon, text in rows]
+    lines.append("" if not rows else (msg("✔ All good") if not bad and not warn else msg("✖ {bad} · ⚠ {warn}", bad=bad, warn=warn)))
     return "\n".join(lines).rstrip()

@@ -19,6 +19,7 @@ from pathlib import Path
 
 from ..core import frontmatter, templating
 from ..core.links import Resolver, iter_links
+from ..core.messages import msg
 from ..core.project import Project, git_out, nfc, read
 from ..core.taskfile import parse_criteria, parse_tasks
 
@@ -63,7 +64,7 @@ class Finding:
             '  ⚠ 빈 칸 2개'
         """
         loc = f":{self.line}" if self.line else ""
-        s = f"  {LEVEL_ICON[self.level]} {self.message}{f' (줄 {self.line})' if loc else ''}"
+        s = f"  {LEVEL_ICON[self.level]} {self.message}{msg(' (line {line})', line=self.line) if loc else ''}"
         if self.hint:
             s += f"\n      → {self.hint}"
         return s
@@ -135,16 +136,19 @@ class Report:
                 lines.append(f.format())
         c = self.counts()
         if not c["error"] and not c["warn"]:
-            lines.append(f"✔ 양식에 맞음 — 문서 {self.files}개" + (f" (참고 {c['info']}개)" if c["info"] else ""))
+            lines.append(
+                msg("✔ Formats are fine — {files} documents", files=self.files)
+                + (msg(" ({info} notes)", info=c["info"]) if c["info"] else "")
+            )
         else:
             parts = []
             if c["error"]:
-                parts.append(f"✖ 오류 {c['error']}개")
+                parts.append(msg("✖ {error} errors", error=c["error"]))
             if c["warn"]:
-                parts.append(f"⚠ 경고 {c['warn']}개")
+                parts.append(msg("⚠ {warn} warnings", warn=c["warn"]))
             if c["info"]:
-                parts.append(f"ℹ 참고 {c['info']}개")
-            lines.append(f"문서 {self.files}개 검사 — " + " · ".join(parts))
+                parts.append(msg("ℹ {info} notes", info=c["info"]))
+            lines.append(msg("Checked {files} documents — ", files=self.files) + " · ".join(parts))
         return "\n".join(lines)
 
     def to_json(self) -> str:
@@ -384,10 +388,20 @@ def section_question(project: Project, path: Path, role: str, template: str, rel
         "warn",
         rel,
         code,
-        f"'{n.title(role)}' 칸이 없습니다. 이 칸은 {s.feature}. 일부러 바꾸셨나요?",
+        msg(
+            "The '{title}' section is missing. This section {feature}. Did you change it on purpose?",
+            title=n.title(role),
+            feature=s.feature,
+        ),
         None,
-        f'제목을 바꿨다면 lantern sections rename {role} "새 제목" · 이 기능을 안 쓰면 lantern sections off {role} · '
-        f"실수였다면 {template_rel}의 '## {s.title}' 칸을 다시 넣기",
+        msg(
+            'If you renamed it, lantern sections rename {role} "new title" · if you don\'t use the '
+            "feature, lantern sections off {role} · if it was a mistake, put the '## {title}' section "
+            "from {template_rel} back",
+            role=role,
+            template_rel=template_rel,
+            title=s.title,
+        ),
     )
 
 
@@ -437,7 +451,7 @@ def check_file(project: Project, path: Path, text: str, ctx: _Ctx) -> list[Findi
     out: list[Finding] = []
     doc = frontmatter.parse(text)
     if doc.error:
-        return [Finding("error", rel, "frontmatter", doc.error, 1, "--- 사이의 YAML 문법을 고치세요")]
+        return [Finding("error", rel, "frontmatter", doc.error, 1, msg("Fix the YAML between the --- lines"))]
     meta = doc.meta
     if not doc.has_frontmatter:
         out.append(
@@ -445,8 +459,8 @@ def check_file(project: Project, path: Path, text: str, ctx: _Ctx) -> list[Findi
                 "warn",
                 rel,
                 "no-frontmatter",
-                "frontmatter가 없습니다 (양식 밖 문서)",
-                hint="템플릿에서 만든 문서인지 확인하세요 (lantern scaffold …)",
+                msg("No frontmatter (a document outside the templates)"),
+                hint=msg("Check that the document was made from a template (lantern scaffold …)"),
             )
         )
     generated = is_generated(meta)
@@ -457,7 +471,9 @@ def check_file(project: Project, path: Path, text: str, ctx: _Ctx) -> list[Findi
     if doc.has_frontmatter and meta.get("template") and not generated:
         missing = [k for k in COMMON_FIELDS if k not in meta]
         if missing:
-            out.append(Finding("error", rel, "common-fields", f"공통 frontmatter 칸이 없습니다: {', '.join(missing)}", 1))
+            out.append(
+                Finding("error", rel, "common-fields", msg("Missing common frontmatter fields: {items}", items=", ".join(missing)), 1)
+            )
 
     # enums
     if doc_type and not generated:
@@ -473,9 +489,9 @@ def check_file(project: Project, path: Path, text: str, ctx: _Ctx) -> list[Findi
                         "error",
                         rel,
                         "enum",
-                        f"{fieldname}: '{value}'는 {enum.label} 값이 아닙니다",
+                        msg("{fieldname}: '{value}' is not a {label} value", fieldname=fieldname, value=value, label=enum.label),
                         1,
-                        f"가능: {', '.join(enum.values)} (enums.yaml)",
+                        msg("Available: {items} (enums.yaml)", items=", ".join(enum.values)),
                     )
                 )
 
@@ -484,29 +500,52 @@ def check_file(project: Project, path: Path, text: str, ctx: _Ctx) -> list[Findi
         optional_lines: list[int] = []
         for name, required, line_no in templating.placeholders(text, project.names.marker("required")):
             if required:
-                out.append(Finding("warn", rel, "required-blank", f"필수 칸이 비어 있습니다: {{{{{name}}}}}", line_no))
+                out.append(Finding("warn", rel, "required-blank", msg("A required blank is empty: {{{{{name}}}}}", name=name), line_no))
             else:
                 optional_lines.append(line_no)
         if optional_lines:
             out.append(
-                Finding("info", rel, "blank", f"빈 칸 {len(optional_lines)}개", optional_lines[0], "채우거나, 해당 없으면 칸을 지우세요")
+                Finding(
+                    "info",
+                    rel,
+                    "blank",
+                    msg("{count} blanks", count=len(optional_lines)),
+                    optional_lines[0],
+                    msg("Fill them in, or delete the section if it doesn't apply"),
+                )
             )
         glance = project.names.marker("glance")
         if _glance_empty(doc.body, glance):
-            out.append(Finding("warn", rel, "glance-empty", f"'{glance}' 칸이 비어 있습니다"))
+            out.append(Finding("warn", rel, "glance-empty", msg("The '{glance}' section is empty", glance=glance)))
 
     # unknowns
     unknown = project.names.marker("unknown")
     unknown_lines = [i for i, l in enumerate(text.split("\n"), start=1) if unknown in l and "`" + unknown not in l and "[!guide]" not in l]
     if unknown_lines and not generated:
         out.append(
-            Finding("info", rel, "unknown", f"{unknown} {len(unknown_lines)}개", unknown_lines[0], "답을 받으면 해당 칸에 반영하세요")
+            Finding(
+                "info",
+                rel,
+                "unknown",
+                msg("{unknown} {count}", unknown=unknown, count=len(unknown_lines)),
+                unknown_lines[0],
+                msg("Once answered, put the answer in that section"),
+            )
         )
 
     # links
     for link in iter_links(text):
         if ctx.resolver.resolve(link, path) is None:
-            out.append(Finding("error", rel, "broken-link", f"깨진 링크: {link.raw}", link.line_no, "대상 문서 이름 · 경로를 확인하세요"))
+            out.append(
+                Finding(
+                    "error",
+                    rel,
+                    "broken-link",
+                    msg("Broken link: {raw}", raw=link.raw),
+                    link.line_no,
+                    msg("Check the target document's name · path"),
+                )
+            )
 
     # template version
     tname = nfc(str(meta.get("template") or ""))
@@ -519,9 +558,14 @@ def check_file(project: Project, path: Path, text: str, ctx: _Ctx) -> list[Findi
                         "warn",
                         rel,
                         "template-major",
-                        f"양식 '{tname}'이 {meta.get('template_version')} → {ctx.templates.versions[tname]}로 크게 바뀌었습니다",
+                        msg(
+                            "Template '{tname}' changed a lot: {get} → {value}",
+                            tname=tname,
+                            get=meta.get("template_version"),
+                            value=ctx.templates.versions[tname],
+                        ),
                         1,
-                        f'lantern template migrate "{project.docs_rel(path)}" 로 옮기세요 (/l-template migrate)',
+                        msg('Move it with lantern template migrate "{docs_rel}" (/l-template migrate)', docs_rel=project.docs_rel(path)),
                     )
                 )
             elif gap == "minor":
@@ -530,7 +574,12 @@ def check_file(project: Project, path: Path, text: str, ctx: _Ctx) -> list[Findi
                         "info",
                         rel,
                         "template-minor",
-                        f"양식 '{tname}'에 새 칸이 생겼습니다 ({meta.get('template_version')} → {ctx.templates.versions[tname]})",
+                        msg(
+                            "Template '{tname}' has new sections ({get} → {value})",
+                            tname=tname,
+                            get=meta.get("template_version"),
+                            value=ctx.templates.versions[tname],
+                        ),
                         1,
                     )
                 )
@@ -545,9 +594,9 @@ def check_file(project: Project, path: Path, text: str, ctx: _Ctx) -> list[Findi
                         "error",
                         rel,
                         "template-structure",
-                        f"양식 '{tname}'의 필수 칸 '## {heading}'이 사라졌습니다",
+                        msg("The required section '## {heading}' of template '{tname}' is gone", tname=tname, heading=heading),
                         None,
-                        "칸을 지우지 말고 내용을 채우세요. 해당 없으면 '없음'",
+                        msg("Don't delete the section; fill it in. If it doesn't apply, write 'none'"),
                     )
                 )
 
@@ -564,7 +613,7 @@ def check_file(project: Project, path: Path, text: str, ctx: _Ctx) -> list[Findi
         and meta.get("status") == project.enums.value("idea_status", "dropped")
         and not str(meta.get("dropped_reason") or "").strip()
     ):
-        out.append(Finding("warn", rel, "dropped-reason", "버린 아이디어에는 이유 한 줄이 필요합니다 (dropped_reason)", 1))
+        out.append(Finding("warn", rel, "dropped-reason", msg("A dropped idea needs a one-line reason (dropped_reason)"), 1))
 
     # tasks
     if doc_type == "tasks":
@@ -574,12 +623,21 @@ def check_file(project: Project, path: Path, text: str, ctx: _Ctx) -> list[Findi
     max_lines = int(project.profile.get("check.max_lines") or 300)
     n_lines = text.count("\n") + 1
     if not generated and n_lines > max_lines:
-        spans = [(h, e - s + 1) for h, s, e in _section_spans(text) if h != "변경 기록"]
-        hint = "섹션을 별도 문서로 나누고 링크하세요"
+        spans = [(h, e - s + 1) for h, s, e in _section_spans(text) if h != project.names.marker("changelog")]
+        hint = msg("Split sections into separate documents and link them")
         if spans:
             big = max(spans, key=lambda x: x[1])
-            hint = f"'## {big[0]}' 칸이 {big[1]}줄 → '{big[0]}.md'로 나누고 링크?"
-        out.append(Finding("warn", rel, "too-long", f"문서가 {n_lines}줄입니다 (기준 {max_lines}줄)", None, hint))
+            hint = msg("'## {big}' is {big2} lines → split it into '{big}.md' and link?", big=big[0], big2=big[1])
+        out.append(
+            Finding(
+                "warn",
+                rel,
+                "too-long",
+                msg("The document is {n_lines} lines (limit {max_lines})", n_lines=n_lines, max_lines=max_lines),
+                None,
+                hint,
+            )
+        )
 
     # remember ids
     if meta.get("id") and doc_type:
@@ -598,31 +656,50 @@ def _check_tasks(project: Project, path: Path, text: str, rel: str) -> list[Find
     for t in tasks:
         line = t.line_no + 1
         if ids[t.id] > 1:
-            out.append(Finding("error", rel, "task-dup", f"할 일 ID가 겹칩니다: {t.id}", line))
+            out.append(Finding("error", rel, "task-dup", msg("Duplicate task ID: {id}", id=t.id), line))
         if t.size and t.size not in ("S", "M", "L") and "{{" not in t.size:
-            out.append(Finding("warn", rel, "task-size", f"{t.id} 크기는 S · M · L 중 하나입니다 (지금 '{t.size}')", line))
+            out.append(Finding("warn", rel, "task-size", msg("{id} size is one of S · M · L (now '{size}')", id=t.id, size=t.size), line))
         if not t.size:
-            out.append(Finding("warn", rel, "task-size", f"{t.id}에 크기가 없습니다 [{project.names.attr('size')}:: S|M|L]", line))
+            out.append(
+                Finding("warn", rel, "task-size", msg("{id} has no size [{attr}:: S|M|L]", id=t.id, attr=project.names.attr("size")), line)
+            )
         for dep in t.deps:
             if dep not in known:
-                out.append(Finding("warn", rel, "task-dep", f"{t.id}: 먼저 끝나야 할 일 {dep}이 목록에 없습니다", line))
+                out.append(
+                    Finding("warn", rel, "task-dep", msg("{id}: the prerequisite task {dep} is not in the list", id=t.id, dep=dep), line)
+                )
             elif dep == t.id:
-                out.append(Finding("warn", rel, "task-dep", f"{t.id}: 자기 자신을 먼저로 지정했습니다", line))
+                out.append(Finding("warn", rel, "task-dep", msg("{id}: lists itself as a prerequisite", id=t.id), line))
         for ac in t.criteria:
             if acs and ac not in acs:
-                out.append(Finding("warn", rel, "task-ac", f"{t.id}: 수락 기준 {ac}이 {plan.name}에 없습니다", line))
+                out.append(
+                    Finding(
+                        "warn",
+                        rel,
+                        "task-ac",
+                        msg("{id}: acceptance criterion {ac} is not in {name}", id=t.id, ac=ac, name=plan.name),
+                        line,
+                    )
+                )
         if team and not t.attrs.get("owner") and not t.done:
             owner = project.names.attr("owner")
-            out.append(Finding("info", rel, "task-owner", f"{t.id}에 {owner}이 없습니다 [{owner}:: 이름]", line))
+            out.append(Finding("info", rel, "task-owner", msg("{id} has no {owner} [{owner}:: name]", id=t.id, owner=owner), line))
     covered = {ac for t in tasks for ac in t.criteria}
     real_tasks = [t for t in tasks if "{{" not in t.title]
     if real_tasks:
         for ac in sorted(acs - covered, key=lambda x: int(x.split("-")[1])):
             out.append(
-                Finding("warn", rel, "ac-uncovered", f"수락 기준 {ac}에 연결된 할 일이 없습니다", None, f"lantern task add … --ac {ac}")
+                Finding(
+                    "warn",
+                    rel,
+                    "ac-uncovered",
+                    msg("No task is linked to acceptance criterion {ac}", ac=ac),
+                    None,
+                    f"lantern task add … --ac {ac}",
+                )
             )
     if len(tasks) > 10:
-        out.append(Finding("info", rel, "task-many", f"할 일이 {len(tasks)}개입니다 — 작업을 나누는 것을 검토하세요"))
+        out.append(Finding("info", rel, "task-many", msg("{count} tasks — consider splitting the work", count=len(tasks))))
     # cycles
     graph: dict[str, list[str]] = {}
     for t in tasks:  # a duplicated ID keeps every line's dependencies
@@ -647,7 +724,7 @@ def _check_tasks(project: Project, path: Path, text: str, rel: str) -> list[Find
         if state.get(n) is None:
             cyc = visit(n, [])
             if cyc:
-                out.append(Finding("error", rel, "task-cycle", f"먼저 끝나야 할 일이 순환합니다: {' → '.join(cyc)}"))
+                out.append(Finding("error", rel, "task-cycle", msg("Prerequisite tasks form a cycle: {items}", items=" → ".join(cyc))))
                 break
     return out
 
@@ -731,7 +808,15 @@ def run(project: Project, paths: Iterable[Path] | None = None, templates: bool =
             for f in files:
                 if f in target_rels:
                     others = ", ".join(x for x in files if x != f)
-                    findings.append(Finding("error", f, "dup-id", f"ID {doc_id}가 다른 문서와 겹칩니다: {others}", 1))
+                    findings.append(
+                        Finding(
+                            "error",
+                            f,
+                            "dup-id",
+                            msg("ID {doc_id} is shared with other documents: {others}", doc_id=doc_id, others=others),
+                            1,
+                        )
+                    )
     # task ids across all task files
     seen: dict[str, str] = {}
     for p in all_docs:
@@ -740,7 +825,9 @@ def run(project: Project, paths: Iterable[Path] | None = None, templates: bool =
         for t in parse_tasks(read(p), project.names):
             r = project.rel(p)
             if t.id in seen and seen[t.id] != r and r in target_rels:
-                findings.append(Finding("error", r, "task-dup", f"할 일 ID {t.id}가 {seen[t.id]}에도 있습니다", t.line_no + 1))
+                findings.append(
+                    Finding("error", r, "task-dup", msg("Task ID {id} is also in {seen}", id=t.id, seen=seen[t.id]), t.line_no + 1)
+                )
             seen.setdefault(t.id, r)
     if templates:
         findings += template_findings(project)

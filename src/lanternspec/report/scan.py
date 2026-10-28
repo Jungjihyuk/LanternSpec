@@ -19,6 +19,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from ..core import frontmatter, sections
+from ..core.messages import msg
 from ..core.project import Project, git, git_out, nfc, read, today, write
 from ..work import dbml
 
@@ -257,32 +258,38 @@ class ScanResult:
         """
         lines = []
         if self.orphans:
-            lines.append(f"## 주인 없는 변경 ({len(self.orphans)}) — 어느 작업인지 묻기")
+            lines.append(msg("## Ownerless changes ({count}) — ask which work", count=len(self.orphans)))
             lines += [f"- `{c['short']}` {c['date']} {c['subject']}" for c in self.orphans]
         if self.stale:
-            lines.append(f"## 오래된 문서 ({len(self.stale)}) — 코드가 기준이면 문서 갱신")
+            lines.append(msg("## Stale documents ({count}) — if the code is right, update the documents", count=len(self.stale)))
             for s in self.stale:
                 lines.append(f"- {s['doc']} — {s['reason']}")
         if self.schema:
-            lines.append(f"## 기록 없는 스키마 변경 ({len(self.schema)}) — 작업 기록의 스키마 변경 칸")
+            lines.append(msg("## Unrecorded schema changes ({count}) — the schema-change section of the work log", count=len(self.schema)))
             lines += [
                 f"- `{s['short']}` {s['subject']} ({', '.join(s['files'])}){' · ' + s['work'] if s.get('work') else ''}"
                 for s in self.schema
             ]
         if self.dbml_drift:
-            lines.append(f"## DBML ↔ 마이그레이션 ({len(self.dbml_drift)}) — 데이터는 마이그레이션이 기준")
+            lines.append(msg("## DBML ↔ migrations ({count}) — migrations are the source of truth for data", count=len(self.dbml_drift)))
             lines += [f"- {d}" for d in self.dbml_drift]
         if self.tests is not None:
             ok = self.tests.get("ok")
-            lines.append(f"## 수락 기준 테스트 — {'✔ 통과' if ok else '✖ 실패'} (`{self.tests.get('command')}`)")
+            lines.append(
+                msg(
+                    "## Acceptance tests — {value} (`{get}`)",
+                    value=msg("✔ passed") if ok else msg("✖ failed"),
+                    get=self.tests.get("command"),
+                )
+            )
             if not ok:
                 lines.append("```\n" + self.tests.get("tail", "") + "\n```")
         if self.mixed:
-            lines.append(f"## 참고: 할 일 여러 개가 섞인 커밋 ({len(self.mixed)}) — 할 일 하나 = 커밋 하나")
+            lines.append(msg("## Note: commits mixing several tasks ({count}) — one task = one commit", count=len(self.mixed)))
             lines += [f"- `{c['short']}` {c['subject']} ({', '.join(c['ids'])})" for c in self.mixed]
         lines += [f"> {n}" for n in self.notes]
         if not lines or self.total == 0 and not self.mixed:
-            lines.insert(0, "✔ 문서와 코드가 맞습니다 — 어긋난 곳 없음")
+            lines.insert(0, msg("✔ Documents and code agree — nothing out of line"))
         return "\n".join(lines)
 
 
@@ -304,7 +311,7 @@ def run(project: Project, rev: str | None = None, limit: int = 200, tests: bool 
     """
     res = ScanResult()
     if git(["rev-parse", "--verify", "HEAD"], project.root).returncode != 0:
-        res.notes.append("아직 커밋이 없습니다")
+        res.notes.append(msg("No commits yet"))
         return res
     owned = _owned_hashes(project)
     for c in commits(project, rev=rev, limit=limit):
@@ -342,15 +349,20 @@ def run(project: Project, rev: str | None = None, limit: int = 200, tests: bool 
             checked = frontmatter.as_str(meta.get("checked_commit")).strip()
             rel = project.rel(p)
             if not checked:
-                res.stale.append({"doc": rel, "reason": "마지막 확인 커밋(checked_commit)이 비어 있습니다", "commits": []})
+                res.stale.append({"doc": rel, "reason": msg("The last checked commit (checked_commit) is empty"), "commits": []})
                 continue
             if git(["cat-file", "-e", f"{checked}^{{commit}}"], project.root).returncode != 0:
-                res.stale.append({"doc": rel, "reason": f"checked_commit {checked}를 찾지 못했습니다", "commits": []})
+                res.stale.append({"doc": rel, "reason": msg("checked_commit {checked} not found", checked=checked), "commits": []})
                 continue
             changed = git_out(["log", "--format=%h %s", f"{checked}..HEAD", "--", *code], project.root).splitlines()
             if changed:
                 res.stale.append(
-                    {"doc": rel, "reason": f"{checked} 이후 관련 코드 커밋 {len(changed)}개: " + "; ".join(changed[:3]), "commits": changed}
+                    {
+                        "doc": rel,
+                        "reason": msg("{count} related code commits since {checked}: ", checked=checked, count=len(changed))
+                        + "; ".join(changed[:3]),
+                        "commits": changed,
+                    }
                 )
     # DBML drift
     schema_path = current / project.names.folder("data") / "schema.dbml"
@@ -371,7 +383,7 @@ def run(project: Project, rev: str | None = None, limit: int = 200, tests: bool 
     if tests:
         cmd = project.profile.get("build.test")
         if not cmd:
-            res.notes.append("build.test가 없어 수락 기준 테스트를 건너뜀 (lantern.yaml build.test)")
+            res.notes.append(msg("No build.test, so acceptance tests were skipped (lantern.yaml build.test)"))
         else:
             res.tests = run_tests(project, str(cmd))
     return res
@@ -418,8 +430,9 @@ def record_no_work(project: Project, short: str, reason: str) -> Path:
     p = no_work_file(project)
     if not p.exists():
         body = (
-            "# 작업 없이 고친 것\n\n> [!abstract] 한눈에 보기\n> 작업(W-…)에 속하지 않는 코드 변경. `/l-sync`가 기록한다.\n\n"
-            "| 날짜 | 커밋 | 내용 | 이유 |\n|---|---|---|---|\n"
+            f"# {project.names.doc('no_work')}\n\n> [!abstract] {project.names.marker('glance')}\n"
+            + msg("> Code changes that belong to no work (W-…). `/l-sync` records them.\n\n")
+            + msg("| Date | Commit | What | Why |\n|---|---|---|---|\n")
         )
         write(
             p,
@@ -460,7 +473,7 @@ def adopt_into_work(project: Project, short: str, work_id: str) -> Path:
     """
     folder = project.find_work(work_id)
     if folder is None:
-        raise ValueError(f"작업 {work_id}를 찾지 못했습니다")
+        raise ValueError(msg("Work {work_id} not found", work_id=work_id))
     n = project.names
     rec = project.doc_path(folder, "record")
     if not rec.exists():
@@ -470,7 +483,9 @@ def adopt_into_work(project: Project, short: str, work_id: str) -> Path:
     if n.is_unused("past"):
         return rec
     subject = git_out(["log", "-1", "--format=%s", short], project.root)
-    line = f"- {today()} 주인 없는 변경 `{short}` ({subject})을 이 작업으로 연결 (/l-sync)"
+    line = msg(
+        "- {today} linked the ownerless change `{short}` ({subject}) to this work (/l-sync)", today=today(), short=short, subject=subject
+    )
     text = sections.append(read(rec), n.titles("past"), line)
     if text is None:
         raise sections.SectionMissing(n, "past", rec)

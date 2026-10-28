@@ -21,6 +21,7 @@ import re
 from collections.abc import Callable
 from pathlib import Path
 
+from ..core.messages import msg
 from ..core.project import Project
 from . import runlog
 from .base import HookInput, HookReply, HookResult, Tool, hook_state_dir
@@ -52,7 +53,7 @@ def run(project: Project, event: str, tool: Tool, raw: str) -> HookReply:
     except json.JSONDecodeError:
         data = {}
     if event not in HANDLERS:
-        raise ValueError(f"알 수 없는 hook: {event}")
+        raise ValueError(msg("Unknown hook: {event}", event=event))
     inp = tool.parse_hook(event, data if isinstance(data, dict) else {})
     return tool.respond(project, event, HANDLERS[event](project, tool, inp))
 
@@ -77,14 +78,14 @@ def session_start(project: Project, tool: Tool, inp: HookInput) -> HookResult:
     """
     runlog.session_start(project, inp.session, inp.model or None, inp.source)
     if not project.profile.exists:
-        return HookResult(context="[LanternSpec] 아직 프로젝트 준비 전입니다 — /l-init 으로 시작하세요.")
+        return HookResult(context=msg("[LanternSpec] The project isn't set up yet — start with /l-init."))
     from ..report.status import lines
 
     n = project.names
     out = [
-        "[LanternSpec 지금 상황]",
+        msg("[LanternSpec now]"),
         *lines(project),
-        f"(자세한 내용은 해당 작업 폴더의 {n.file('record')} · {n.file('tasks')}를 필요할 때만 연다)",
+        msg("(open {file} · {file2} in the work folder only when you need the details)", file=n.file("record"), file2=n.file("tasks")),
     ]
     if inp.source == "compact":
         out += _saved_progress(project, inp.session)
@@ -129,15 +130,15 @@ def _saved_progress(project: Project, session: str) -> list[str]:
     f = _compact_file(project, session)
     if not f.exists():
         return []
-    out = ["", "[LanternSpec 압축 전 진행 상황 — 문서에 저장됨]"]
+    out = ["", msg("[LanternSpec progress before compaction — saved to the documents]")]
     for item in json.loads(f.read_text(encoding="utf-8")):
         path = project.root / item["path"]
         if not path.exists():
             continue
         out += [f"{item['path']} · {now}:", sections.body(read(path), names.titles("now"))]
         if item.get("before"):
-            out += [f"(압축 직전에 적혀 있던 내용 — {past}으로 옮김)", item["before"]]
-    out.append(f"→ 필요하면 이 문서의 '## {now}'에 진행 맥락을 보탠다 (요약만).")
+            out += [msg("(what was written just before compaction — moved to {past})", past=past), item["before"]]
+    out.append(msg("→ If needed, add the context of the progress to '## {now}' in this document (a summary only).", now=now))
     return out
 
 
@@ -183,10 +184,14 @@ def post_tool(project: Project, tool: Tool, inp: HookInput) -> HookResult:
         soft = [f for f in findings if f not in hard and f.level == "warn"]
         rel = project.rel(path)
         if hard:
-            hard_msgs.append(f"LanternSpec 문서 양식: {rel} 양식이 깨졌습니다 — 지금 고치세요 (템플릿 구조는 바꾸지 않는다):")
-            hard_msgs += [f"- {f.message}" + (f" (줄 {f.line})" if f.line else "") + (f" → {f.hint}" if f.hint else "") for f in hard]
+            hard_msgs.append(
+                msg("LanternSpec document format: {rel} is broken — fix it now (don't change the template structure):", rel=rel)
+            )
+            hard_msgs += [
+                f"- {f.message}" + (msg(" (line {line})", line=f.line) if f.line else "") + (f" → {f.hint}" if f.hint else "") for f in hard
+            ]
         if soft:
-            soft_msgs.append(f"LanternSpec 참고 ({rel}): " + " · ".join(f.message for f in soft[:5]))
+            soft_msgs.append(msg("LanternSpec note ({rel}): ", rel=rel) + " · ".join(f.message for f in soft[:5]))
     return HookResult(block="\n".join(hard_msgs), context="" if hard_msgs else "\n".join(soft_msgs))
 
 
@@ -244,9 +249,13 @@ TECH_Q = [
     ),
     re.compile(r"^\s*(?P<t>[\w.+#/\- ]{1,40}?)\s*" + _PARTICLE + r"\s*(?:어떻게\s*동작|설명해\s*(?:줘|주세요))"),
     re.compile(r"(?i)^\s*what\s+(?:is|are)\s+(?:an?\s+|the\s+)?(?P<t>[\w.+#/\- ]{1,40}?)\s*\??\s*$"),
+    re.compile(r"(?i)^\s*how\s+(?:does|do)\s+(?:an?\s+|the\s+)?(?P<t>[\w.+#/\- ]{1,40}?)\s+work\s*\??\s*$"),
+    re.compile(r"(?i)^\s*(?:please\s+)?explain\s+(?:an?\s+|the\s+)?(?P<t>[\w.+#/\- ]{1,40}?)\s*[.?!]?\s*$"),
 ]
 IDEA_HINT = re.compile(
-    r"(?:(?:으)?면\s*좋겠|있으면\s*좋|하고\s*싶|나중에\s*\S+\s*(?:하자|해야|추가|넣)|아이디어가?\s*있|would be nice|it'd be nice)", re.I
+    r"(?:(?:으)?면\s*좋겠|있으면\s*좋|하고\s*싶|나중에\s*\S+\s*(?:하자|해야|추가|넣)|아이디어가?\s*있"
+    r"|would be nice|it'd be nice|i'd like to|we could (?:also )?add|maybe (?:we|later)|later we)",
+    re.I,
 )
 
 
@@ -319,24 +328,34 @@ def learn_detect(project: Project, session: str, text: str) -> str:
         return ""
     card = debt.find(project, term)
     if mode == "ask":
-        return (
-            f"LanternSpec 기술 질문: 사용자가 기술 '{term}'을(를) 물었습니다. 답한 뒤 한 줄로 \"📒 부채로 남길까요?\"라고 묻고, "
-            f"남기면 /l-learn {term}"
-            + (f" (카드 {card.id} 있음 — {project.enums.value('debt_status', 'asked_again')}으로 셈)" if card else "")
+        return msg(
+            "LanternSpec tech question: the user asked about the technology '{term}'. After answering, "
+            'ask in one line "📒 Save it as debt?", and if yes, /l-learn {term}',
+            term=term,
+        ) + (
+            msg(" (card {id} exists — counted as {value})", id=card.id, value=project.enums.value("debt_status", "asked_again"))
+            if card
+            else ""
         )
     if card:  # auto + card → count without asking
-        r = debt.ask(project, term, session=session, context="대화 중 질문 (자동 감지)")
+        r = debt.ask(project, term, session=session, context=msg("asked in conversation (detected automatically)"))
         if not r.counted:
             return ""
         return (
-            f"LanternSpec 기술 질문: '{term}'은(는) 부채 카드 {card.id}에 있어 물은 횟수를 셌습니다 ({r.ask_count}번째"
-            + (f", {project.enums.value('debt_status', 'resolved')} → 다시 열림" if r.reopened else "")
-            + "). 답할 때 지난 노트 · 카드를 링크해 복습을 돕는다."
+            msg(
+                "LanternSpec tech question: '{term}' has debt card {id}, so the ask was counted (#{ask_count}",
+                term=term,
+                id=card.id,
+                ask_count=r.ask_count,
+            )
+            + (msg(", {value} → reopened", value=project.enums.value("debt_status", "resolved")) if r.reopened else "")
+            + msg("). When answering, link the earlier notes · card to help review.")
         )
     if not _once(project, f"learn:{session}:{debt.norm(term)}"):
         return ""
-    return (
-        f"LanternSpec 기술 질문: '{term}' 카드가 없습니다. 답한 뒤 한 줄로 \"📒 부채 카드를 만들까요?\"라고 제안하세요 (/l-learn {term})."
+    return msg(
+        "LanternSpec tech question: no card for '{term}'. After answering, suggest in one line \"📒 Make a debt card?\" (/l-learn {term}).",
+        term=term,
     )
 
 
@@ -363,13 +382,14 @@ def idea_detect(project: Project, session: str, text: str) -> str:
     if mode == "ask":
         if not _once(project, f"idea:{session}"):
             return ""
-        return (
-            "LanternSpec 아이디어: 아이디어 같은 말이 있습니다. "
-            '하던 일을 마친 뒤 한 줄로 "💡 이거 아이디어로 남길까요?"라고 한 번만 묻는다 (남기면 /l-idea).'
+        return msg(
+            "LanternSpec idea: something sounds like an idea. After finishing the current work, ask "
+            'once in one line "💡 Save this as an idea?" (if yes, /l-idea).'
         )
-    return (
-        "LanternSpec 아이디어: 아이디어 같은 말이 있습니다. 하던 일은 멈추지 말고 /l-idea 규칙대로 바로 기록한다: "
-        'lantern scaffold idea "<제목>" --kind <유형> --raw "<원문>" --auto → 한 줄로만 알림.'
+    return msg(
+        "LanternSpec idea: something sounds like an idea. Without stopping the current work, "
+        'record it right away by the /l-idea rules: lantern scaffold idea "<title>" --kind <kind> '
+        '--raw "<original words>" --auto → mention it in one line only.'
     )
 
 
@@ -449,9 +469,12 @@ def sync_nudge(project: Project, session: str) -> str:
             continue
         seen[key] = True
         seen_file.write_text(json.dumps(seen, ensure_ascii=False), encoding="utf-8")
-        return (
-            f"LanternSpec: 코드 {len(code)}개 파일이 바뀌었는데 진행 중 작업 {wid}의 문서는 그대로예요. "
-            f"필요하면 /l-sync 로 맞추세요 (권유만 — 이 작업에서는 다시 묻지 않아요)."
+        return msg(
+            "LanternSpec: {count} code files changed, but the documents of work in progress {wid} "
+            "didn't. If needed, align them with /l-sync (just a suggestion — not asked again for this "
+            "work).",
+            count=len(code),
+            wid=wid,
         )
     return ""
 

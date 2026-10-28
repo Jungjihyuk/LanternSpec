@@ -1,0 +1,1021 @@
+# ============================================================================
+# messages.yaml — 프로그램이 말하는 글(메시지 · 만들어지는 문서의 글 · 도움말 · 파일 주석)의 번역
+# ============================================================================
+#
+# 코드는 모든 메시지를 영어로 쓴다: msg("Document not found: {target}", target=...)
+# 이 파일은 그 영어 문장을 열쇠로 언어별 번역을 둔다. 프로젝트 언어(lantern.yaml project.language)의 글이 나온다.
+#   "영어 문장 그대로": {ko: "한국어 번역"}
+# {name}은 프로그램이 채우는 자리다 — 번역에도 같은 자리가 있어야 한다. 글자 그대로의 중괄호는 {{ }}로 쓴다.
+# 언어를 더할 때는 항목마다 그 언어 칸을 더한다. 영어 문장을 바꾸면 이 열쇠도 바꾼다 (tests/test_messages.py가 확인한다).
+# ============================================================================
+
+# core/enums.py
+"enums.yaml: role '{d}' is on two values": {ko: "enums.yaml: role '{d}'가 두 값에 붙어 있습니다"}
+"enums.yaml has no '{enum}'": {ko: "enums.yaml에 '{enum}'이 없습니다"}
+"{enum} has no value '{old}'": {ko: "{enum}에 '{old}' 값이 없습니다"}
+"enums.yaml {name} has no value with role '{role}'": {ko: "enums.yaml {name}에 role '{role}'인 값이 없습니다"}
+"enums.yaml {name}: no value with role '{r}' (the code can't find this value)": {ko: "enums.yaml {name}: role '{r}'인 값이 없습니다 (코드가 이 값을 찾지 못함)"}
+"enums.yaml: '{name}' is missing": {ko: "enums.yaml: '{name}'이 없습니다"}
+
+# core/meta.py
+"Document not found: {target}": {ko: "문서를 찾지 못했습니다: {target}"}
+"{rel} doesn't exist — run lantern scaffold init first": {ko: "{rel}이 없습니다 — lantern scaffold init 먼저"}
+"enums.yaml has no '{enum}' (available: {items})": {ko: "enums.yaml에 '{enum}'이 없습니다 (가능: {items})"}
+"{enum} already has '{new}'": {ko: "{enum}에 '{new}'이 이미 있습니다"}
+"Must be key=value: {item}": {ko: "key=value 형식이어야 합니다: {item}"}
+"{k}: '{v}' is not a {label} value (available: {items})": {ko: "{k}: '{v}'는 {label} 값이 아닙니다 (가능: {items})"}
+
+# core/frontmatter.py
+"YAML error": {ko: "YAML 오류"}
+"frontmatter is not in key: value form": {ko: "frontmatter가 키: 값 형태가 아닙니다"}
+"frontmatter YAML error: {first}": {ko: "frontmatter YAML 오류: {first}"}
+
+# core/taskfile.py
+"already done": {ko: "이미 완료"}
+"{dep}, which must finish first, is not in the list": {ko: "먼저 끝나야 할 일 {dep}이 목록에 없음"}
+"{dep} first": {ko: "{dep} 먼저"}
+
+# core/new_id.py
+"Unknown ID kind: {kind} (available: {items} · task W-012)": {ko: "알 수 없는 ID 종류: {kind} (가능: {items} · task W-012)"}
+"Work folder {work_id} not found": {ko: "작업 {work_id} 폴더를 찾지 못했습니다"}
+
+# core/names.py
+"No language pack for '{language}' (available: {items})": {ko: "언어 '{language}' 묶음이 없습니다 (가능: {items})"}
+
+# core/principles.py
+"No conventions for '{language}' (available: {items})": {ko: "'{language}' 컨벤션이 없습니다 (가능: {items})"}
+
+# core/project.py
+"Untitled": {ko: "제목 없음"}
+
+# core/sections.py
+"Couldn't record it: {name} has no '{title}' section — this section {feature}. If you renamed it, lantern sections rename {role} \"new title\"; if you don't use it, lantern sections off {role}": {ko: "{name}에 '{title}' 칸이 없어 기록하지 못했습니다 — 이 칸은 {feature}. 제목을 바꿨다면 lantern sections rename {role} \"새 제목\", 쓰지 않으려면 lantern sections off {role}"}
+
+# work/stages.py
+"'{stage}' is not a work stage (available: {items})": {ko: "단계 '{stage}'는 작업 단계가 아닙니다 (가능: {items})"}
+"Work {work_id} not found": {ko: "작업 {work_id}를 찾지 못했습니다"}
+"{work_id} has no {file}": {ko: "{work_id}에 {file}이 없습니다"}
+
+# work/ideas.py
+"Idea {idea_id} not found": {ko: "아이디어 {idea_id}를 찾지 못했습니다"}
+"'{status}' is not an idea status (available: {items})": {ko: "상태 '{status}'는 아이디어 상태가 아닙니다 (가능: {items})"}
+"Dropping needs a one-line reason (--reason)": {ko: "버림에는 이유 한 줄이 필요합니다 (--reason)"}
+"In-work needs a work ID (--work W-012)": {ko: "작업됨에는 작업 ID가 필요합니다 (--work W-012)"}
+"Work {work} not found": {ko: "작업 {work}를 찾지 못했습니다"}
+
+# work/pack.py
+"# 📦 Work pack — {wid} {work_name_of}": {ko: "# 📦 작업 꾸러미 — {wid} {work_name_of}"}
+"> Generated {now_minute} · `lantern pack {wid}` · use once and throw away. Don't edit it; edit the source documents.": {ko: "> 자동 생성 {now_minute} · `lantern pack {wid}` · 한 번 쓰고 버린다. 고치지 말고 원본 문서를 고친다."}
+"## Rules": {ko: "## 규칙"}
+"- One task = one commit, `[task ID]` at the end of the message · start/finish with `lantern task start|done`": {ko: "- 할 일 하나 = 커밋 하나, 메시지 끝에 `[할 일 ID]` · 시작/완료는 `lantern task start|done`"}
+"- A big change not in the design · `{marker}` · a test failing 3 times · a real DB migration → report right away and stop": {ko: "- 설계에 없는 큰 변경 · `{marker}` · 테스트 3번 실패 · 실제 DB 마이그레이션 → 바로 보고하고 멈춘다"}
+"- Report cycle: {get} · merge approval: {get2}": {ko: "- 보고 주기: {get} · 반영 승인: {get2}"}
+"---\n## 📘 Current state (relevant parts only)": {ko: "---\n## 📘 현재 상태 (관련 부분만)"}
+"Work in progress {work_id} not found": {ko: "진행 중인 작업 {work_id}를 찾지 못했습니다"}
+"## ▶ Next task: {id} {title}": {ko: "## ▶ 다음 할 일: {id} {title}"}
+"- Size {value} · criteria {value2}": {ko: "- 크기 {value} · 기준 {value2}"}
+"## ✅ All tasks done — time to update the current state": {ko: "## ✅ 모든 할 일 완료 — 현재 상태 반영 단계"}
+"### Tasks that can't start yet": {ko: "### 지금 시작할 수 없는 할 일"}
+"(empty)": {ko: "(비어 있음)"}
+"### Data source (schema.dbml)": {ko: "### 데이터 원본 (schema.dbml)"}
+
+# work/progress.py
+"not started": {ko: "시작 전"}
+"- Progress: {summary}": {ko: "- 진행: {summary}"}
+"tasks {sum}/{count}": {ko: "할 일 {sum}/{count}"}
+"- Open questions: {marker} {unknowns}": {ko: "- 열린 질문: {marker} {unknowns}개"}
+"doing ": {ko: "하는 중 "}
+"- Next: {id} {title}": {ko: "- 다음: {id} {title}"}
+"- Next: all tasks done — update the current state": {ko: "- 다음: 모든 할 일 완료 — 현재 상태 반영"}
+"- Next: no task set": {ko: "- 다음: 정해진 할 일 없음"}
+"- Blocked: ": {ko: "- 막힌 것: "}
+" (doing)": {ko: " (하는 중)"}
+"- No work in progress": {ko: "- 진행 중 작업 없음"}
+
+# work/tasks.py
+"{work_id} {name} has no {ac_id}": {ko: "{work_id} {name}에 {ac_id}가 없습니다"}
+"{work_id} has no {name} — run /l-task first": {ko: "{work_id}에 {name}이 없습니다 — /l-task 먼저"}
+"Task {task_id} is not in {rel}": {ko: "할 일 {task_id}가 {rel}에 없습니다"}
+"{work_id_of}: {sum}/{count} done": {ko: "{work_id_of}: {sum}/{count} 완료"}
+"Size is one of S · M · L": {ko: "크기는 S · M · L 중 하나입니다"}
+" · {hours_per_day:g} hours a day": {ko: " · 하루 {hours_per_day:g}시간"}
+"✔ Wrote [{attr}] · [{attr2}] in {name}": {ko: "✔ {name}에 [{attr}] · [{attr2}]을 적었습니다"}
+"This is a suggestion — if the person agrees, --apply": {ko: "제안입니다 — 사람이 동의하면 --apply"}
+"No screen mockup — needs an image · HTML under the screens folder": {ko: "화면 시안 없음 — 화면/ 아래 이미지 · HTML 필요"}
+"{work_id_of}: no tasks": {ko: "{work_id_of}: 할 일 없음"}
+"Base hours by size: ": {ko: "크기별 기준 시간: "}
+"{k} {v:.1f}h": {ko: "{k} {v:.1f}시간"}
+" (median of {count} actual)": {ko: " (실제 {count}개 중간값)"}
+" (default)": {ko: " (기본값)"}
+
+# work/epic_rules.py
+"No acceptance criteria (- [ ] AC-1 …)": {ko: "수락 기준(- [ ] AC-1 …)이 없습니다"}
+"One per line in {name}": {ko: "{name}에 한 줄에 하나씩"}
+"{id} number is duplicated": {ko: "{id} 번호가 겹칩니다"}
+"{id}: numbers are out of order (expected AC-{i})": {ko: "{id}: 번호가 순서대로가 아닙니다 (기대 AC-{i})"}
+"{id}: blanks remain": {ko: "{id}: 빈칸이 남아 있습니다"}
+"{id}: the result is too short": {ko: "{id}: 결과가 너무 짧습니다"}
+"A screen work without a 'the screen matches the mockup' acceptance criterion": {ko: "화면 작업인데 '화면이 시안과 같다' 수락 기준이 없습니다"}
+"No screen mockup (an image · HTML under the screens folder)": {ko: "화면 시안이 없습니다 (화면/ 아래 이미지 · HTML)"}
+"{id}: not in the {situation} · {action} · {result_word} form": {ko: "{id}: {situation} · {action} · {result_word} 형식이 아닙니다"}
+"e.g. AC-1 Situation: on the sign-in screen · Action: pressing the Google button · Result: home opens within 2 seconds": {ko: "예: AC-1 상황: 로그인 화면에서 · 행동: 카카오 버튼을 누르면 · 결과: 2초 안에 홈이 열린다"}
+"{id}: not in the 'when … then …' form": {ko: "{id}: '~하면 ~된다' 형식이 아닙니다"}
+"{id}: hard-to-check word '{strip}'": {ko: "{id}: 확인하기 어려운 말 '{strip}'"}
+"Replace it with a number · something visible · a state (\"fast\" → \"within 2 seconds\")": {ko: "숫자 · 화면에 보이는 것 · 상태로 바꾸세요 (\"빠르게\" → \"2초 안에\")"}
+"{id}: the result can be read several ways ('{strip}')": {ko: "{id}: 결과가 여러 뜻으로 읽힙니다 ('{strip}')"}
+"Split it into two criteria": {ko: "기준을 둘로 나누세요"}
+"e.g. AC-n Result: the screen matches the mockup screens/sign-in.png": {ko: "예: AC-n 결과: 화면이 화면/로그인.png 시안과 같다"}
+"Export it as HTML from Claude Design and put it in the screens folder": {ko: "Claude Design에서 HTML로 내보내 화면/에 두세요"}
+
+# work/screen.py
+"top": {ko: "위"}
+"middle": {ko: "가운데"}
+"bottom": {ko: "아래"}
+"Not a PNG: {name} (automatic comparison works only between PNG captures)": {ko: "PNG가 아닙니다: {name} (자동 비교는 PNG 캡처끼리만)"}
+"Unsupported PNG format: {name} (8-bit · non-interlaced only)": {ko: "지원하지 않는 PNG 형식입니다: {name} (8비트 · 비인터레이스만)"}
+"Not found: {src}": {ko: "없습니다: {src}"}
+"left": {ko: "왼쪽"}
+"right": {ko: "오른쪽"}
+"{name} {side} ({round}% different)": {ko: "{name} {side} ({round}% 다름)"}
+"Not a mockup format: {name} (image · HTML · PDF · zip)": {ko: "시안으로 받는 형식이 아닙니다: {name} (이미지 · HTML · PDF · zip)"}
+
+# work/branches.py
+"Created branch {name}": {ko: "{name} 브랜치를 만들었습니다"}
+"{sum}/{count} done": {ko: "{sum}/{count} 완료"}
+"Already on branch {name}": {ko: "이미 {name} 브랜치입니다"}
+"Switched to branch {name}": {ko: "{name} 브랜치로 바꿨습니다"}
+"no tasks": {ko: "할 일 없음"}
+"✔ Merged {name} → {base}": {ko: "✔ {name} → {base} 머지"}
+"table {m}": {ko: "테이블 {m}"}
+"No commits yet, so a worktree can't be made — commit first": {ko: "커밋이 하나도 없어 worktree를 만들 수 없습니다 — 먼저 커밋하세요"}
+"    In a terminal: cd \"{path}\" && claude \"/l-build {wid}\"": {ko: "    터미널에서: cd \"{path}\" && claude \"/l-build {wid}\""}
+"  (uncommitted changes)": {ko: "  (커밋 안 된 변경 있음)"}
+"No parallel works in progress": {ko: "진행 중인 동시 작업이 없습니다"}
+"Branch {name} doesn't exist": {ko: "{name} 브랜치가 없습니다"}
+"{work_path} has uncommitted changes — commit and run again": {ko: "{work_path}에 커밋 안 된 변경이 있습니다 — 커밋하고 다시 실행하세요"}
+"Base branch {base} doesn't exist (lantern.yaml git.base)": {ko: "기준 브랜치 {base}가 없습니다 (lantern.yaml git.base)"}
+"{root} has uncommitted changes": {ko: "{root}에 커밋 안 된 변경이 있습니다"}
+"Merge conflict — resolve it yourself:\n{stdout}{stderr}": {ko: "머지 충돌 — 직접 해결하세요:\n{stdout}{stderr}"}
+"Next: summary of the current-state update → approval → update → lantern work archive ": {ko: "다음: 현재 상태 반영 요약 → 승인 → 반영 → lantern work archive "}
+"No work in progress {work_id}": {ko: "진행 중인 작업 {work_id}가 없습니다"}
+"file {m}": {ko: "파일 {m}"}
+"done": {ko: "완료"}
+"failed (check it yourself)": {ko: "실패 (직접 확인)"}
+"No folder for work {wid} — run /l-plan first": {ko: "작업 {wid} 폴더가 없습니다 — /l-plan 먼저"}
+"• {wid}: already in progress at {path}": {ko: "• {wid}: 이미 {path}에서 진행 중"}
+"{wid}: couldn't create the worktree — {strip}": {ko: "{wid}: worktree를 만들지 못했습니다 — {strip}"}
+"{wid}  {b}  (no worktree)  {progress}": {ko: "{wid}  {b}  (worktree 없음)  {progress}"}
+"✔ Tests passed (`{cmd}`)": {ko: "✔ 테스트 통과 (`{cmd}`)"}
+"ℹ No build.test, so tests were skipped": {ko: "ℹ build.test가 없어 테스트를 건너뜀"}
+"This folder ({root}) is not on branch {base} — run `git checkout {base}` and try again": {ko: "이 폴더({root})가 {base} 브랜치가 아닙니다 — `git checkout {base}` 후 다시 실행하세요"}
+"✔ Removed worktree: {path}": {ko: "✔ worktree 정리: {path}"}
+"✔ Deleted branch: {name}": {ko: "✔ 브랜치 삭제: {name}"}
+"⚠ Couldn't delete the branch: {strip}": {ko: "⚠ 브랜치를 지우지 못했습니다: {strip}"}
+"⚠ {a} · {b} change the same places: {items}": {ko: "⚠ {a} · {b}가 같은 곳을 고칩니다: {items}"}
+"⚠ {wid}: the work folder isn't committed yet, so it's not in the worktree — commit the documents first": {ko: "⚠ {wid}: 작업 폴더가 아직 커밋되지 않아 worktree에 없습니다 — 문서를 먼저 커밋하세요"}
+"Tests failed — not merging (`{cmd}`)\n{tail}": {ko: "테스트 실패 — 머지하지 않습니다 (`{cmd}`)\n{tail}"}
+"⚠ Keeping the worktree because it has new uncommitted files: {items} — clean up, then git worktree remove": {ko: "⚠ worktree에 커밋 안 된 새 파일이 있어 남겨 둡니다: {items} — 정리 후 git worktree remove"}
+"⚠ Couldn't remove the worktree: {strip}": {ko: "⚠ worktree를 정리하지 못했습니다: {strip}"}
+
+# work/dbml.py
+"| Table | Column | Type | Constraints | Meaning | Example |": {ko: "| 테이블 | 컬럼 | 타입 | 제약 | 뜻 | 예시 |"}
+"> ⚙️ Generated — source: {source_note}. Don't edit by hand (`lantern dbml render`).\n\n": {ko: "> ⚙️ 자동 생성 — 원본: {source_note}. 손으로 고치지 마세요 (`lantern dbml render`).\n\n"}
+"| (no tables yet) | | | | | |": {ko: "| (아직 테이블 없음) | | | | | |"}
+"Unbalanced braces {{ }}": {ko: "중괄호 {{ }} 짝이 맞지 않습니다"}
+"Table name is missing": {ko: "테이블 이름이 없습니다"}
+"Table '{name}' is defined twice": {ko: "테이블 '{name}'이 두 번 정의되었습니다"}
+"Table '{name}' has no columns": {ko: "테이블 '{name}'에 컬럼이 없습니다"}
+"✚ Table '{name}' is in the migrations but not in the DBML": {ko: "✚ 테이블 '{name}'이 마이그레이션에는 있는데 DBML에 없습니다"}
+"✖ Table '{name}' is only in the DBML": {ko: "✖ 테이블 '{name}'이 DBML에만 있습니다"}
+"Unknown statement: {bad}": {ko: "알 수 없는 문장: {bad}"}
+"{group} block has no {{": {ko: "{group} 블록에 {{ 가 없습니다"}
+"{group} block is not closed": {ko: "{group} 블록이 닫히지 않았습니다"}
+"Invalid Ref: {expr}": {ko: "Ref 형식이 올바르지 않습니다: {expr}"}
+"{name}: couldn't read the column: {raw}": {ko: "{name}: 컬럼을 읽지 못했습니다: {raw}"}
+"{name}.{cname}: no type": {ko: "{name}.{cname}: 타입이 없습니다"}
+"{name}.{cname}: column defined twice": {ko: "{name}.{cname}: 컬럼이 두 번 정의되었습니다"}
+"Table '{name}' has no primary key (pk)": {ko: "테이블 '{name}'에 기본 키(pk)가 없습니다"}
+"✚ Column '{name}.{name2}' is not in the DBML": {ko: "✚ 컬럼 '{name}.{name2}'이 DBML에 없습니다"}
+"✖ Column '{name}.{name2}' is only in the DBML": {ko: "✖ 컬럼 '{name}.{name2}'이 DBML에만 있습니다"}
+"Ref: table '{side}' doesn't exist": {ko: "Ref: 테이블 '{side}'이 없습니다"}
+"✎ Column '{name}.{name2}' type: DBML {type} ≠ migration {type2}": {ko: "✎ 컬럼 '{name}.{name2}' 타입: DBML {type} ≠ 마이그레이션 {type2}"}
+"Ref: column '{side}.{side2}' doesn't exist": {ko: "Ref: '{side}.{side2}' 컬럼이 없습니다"}
+"{name}.{cname}: invalid ref": {ko: "{name}.{cname}: ref 형식이 올바르지 않습니다"}
+
+# work/scaffold.py
+"// schema.dbml — {name} data source ({variant}). `lantern dbml render` makes the ERD and the data dictionary.\nProject \"{name}\" {{\n  Note: '{variant}'\n}}\n": {ko: "// schema.dbml — {name} 데이터 원본 ({variant}). ERD 그림과 데이터 사전은 `lantern dbml render`가 만든다.\nProject \"{name}\" {{\n  Note: '{variant}'\n}}\n"}
+"No base template '{name}'": {ko: "기본 양식 '{name}'이 없습니다"}
+"none": {ko: "없음"}
+"| Question | Answer |\n|---|---|\n": {ko: "| 질문 | 답 |\n|---|---|\n"}
+"| Name | Role |\n|---|---|\n| {{{{Name}}}} | {{{{Role}}}} |": {ko: "| 이름 | 역할 |\n|---|---|\n| {{{{이름}}}} | {{{{역할}}}} |"}
+"| Name | Role |\n|---|---|\n": {ko: "| 이름 | 역할 |\n|---|---|\n"}
+"| {{{{Document}}}} | {{{{What it says}}}} | {{{{Still true?}}}} | {{{{Absorb · Archive · Move}}}} | {{{{New place}}}} |": {ko: "| {{{{문서}}}} | {{{{무슨 내용}}}} | {{{{아직 맞나}}}} | {{{{흡수 · 보관 · 옮기기}}}} | {{{{새 위치}}}} |"}
+"Start": {ko: "시작"}
+"Team": {ko: "인원"}
+"Clients": {ko: "화면 유형"}
+"Server": {ko: "서버"}
+"Knowledge store": {ko: "지식 저장소"}
+"Design tool": {ko: "디자인 도구"}
+"Documents": {ko: "문서 저장"}
+"Already exists: {rel}": {ko: "이미 있습니다: {rel}"}
+"A work document is one of {items}": {ko: "작업 문서 종류는 {items} 중 하나입니다"}
+"# 💡 {idea_id} {safe_name}\n\n> [!info] 🤖 Recorded automatically": {ko: "# 💡 {idea_id} {safe_name}\n\n> [!info] 🤖 자동 기록"}
+"external service": {ko: "외부 서비스"}
+"built in-house": {ko: "직접 구축"}
+"🌱 Greenfield (new)": {ko: "🌱 그린필드 (새로)"}
+"🏠 Brownfield (existing code)": {ko: "🏠 브라운필드 (기존 코드 있음)"}
+"solo": {ko: "1인"}
+"2 or more ({items})": {ko: "2인 이상 ({items})"}
+"none (the learning track is off)": {ko: "없음 (배우는 선로 꺼짐)"}
+"shared (pushed with the code)": {ko: "shared (코드와 함께 올림)"}
+"local (docs-local branch, not pushed)": {ko: "local (docs-local 브랜치, 원격에 안 올림)"}
+"| {m} | {{{{Role}}}} |": {ko: "| {m} | {{{{역할}}}} |"}
+"📁 new folder": {ko: "📁 새 폴더"}
+"📄 new document": {ko: "📄 새 문서"}
+"mark {label}": {ko: "{label} 표시"}
+"back to {label}": {ko: "{label}으로 되돌림"}
+"· unchanged": {ko: "· 그대로"}
+" (in use again)": {ko: " (다시 사용)"}
+
+# learn/debt.py
+"asked directly": {ko: "직접 물음"}
+"↩️ asked again after {value} · ": {ko: "↩️ {value} 뒤 다시 물음 · "}
+"| Card | Kind | Topic | Status | Times asked | Note |": {ko: "| 카드 | 종류 | 주제 | 상태 | 물은 횟수 | 노트 |"}
+"Topic '{area}' is not an enums.yaml area value (available: {items})": {ko: "주제 '{area}'은 enums.yaml area 값이 아닙니다 (가능: {items})"}
+"A new card's kind is {items} (for competency debt, lantern debt promote D-NNN)": {ko: "새 카드의 종류는 {items} (역량 부채는 lantern debt promote D-NNN)"}
+"A card already exists: {id} {title} (lantern debt ask {id})": {ko: "이미 카드가 있습니다: {id} {title} (lantern debt ask {id})"}
+"No card for '{term}' — create one with lantern debt new": {ko: "'{term}' 카드가 없습니다 — lantern debt new 로 만드세요"}
+"No card for '{term}'": {ko: "'{term}' 카드가 없습니다"}
+"No understanding-debt card for '{term}'": {ko: "'{term}' 이해 부채 카드가 없습니다"}
+"{id} is not resolved yet — understanding first, competency after (lantern debt resolve {id})": {ko: "{id}는 아직 해결되지 않았습니다 — 이해가 먼저, 역량은 그다음 (lantern debt resolve {id})"}
+"Build {title} yourself": {ko: "{title} 직접 만들기"}
+"- {today} moved to {competency} debt → {wikilink}": {ko: "- {today} {competency} 부채로 넘김 → {wikilink}"}
+"No competency card for '{term}' (run lantern debt promote first)": {ko: "'{term}' 역량 카드가 없습니다 (lantern debt promote 먼저)"}
+" | Total |": {ko: " | 합계 |"}
+"| (no open debt) | | | | | |": {ko: "| (열린 부채 없음) | | | | | |"}
+"# 📒 Debt Status": {ko: "# 📒 부채 현황"}
+"> ⚙️ Generated — `lantern debt status` · as of {now_minute}. Don't edit by hand.": {ko: "> ⚙️ 자동 생성 — `lantern debt status` · 기준: {now_minute}. 손으로 고치지 마세요."}
+"> Open debt {open} ({open_counts}) · {label} {resolved}": {ko: "> 열린 부채 {open}개 ({open_counts}) · {label} {resolved}개"}
+"## Count by kind · topic": {ko: "## 종류별 · 주제별 개수"}
+"## Open cards (most asked first)": {ko: "## 열린 카드 (많이 물은 순)"}
+"A competency card already exists: {id} {title}": {ko: "이미 역량 카드가 있습니다: {id} {title}"}
+"| Debt (open) | ": {ko: "| 부채 (열린 것) | "}
+
+# learn/knowledge/__init__.py
+"No '{kind}' adapter (available: obsidian · folder · notion)": {ko: "'{kind}' 어댑터가 없습니다 (가능: obsidian · folder · notion)"}
+"No knowledge store is set up (the knowledge block in lantern.yaml)": {ko: "지식 저장소가 설정되지 않았습니다 (lantern.yaml의 knowledge 블록)"}
+
+# learn/knowledge/drafts.py
+"A draft already exists: {rel}": {ko: "이미 초안이 있습니다: {rel}"}
+"No knowledge store is set up": {ko: "지식 저장소가 설정되지 않았습니다"}
+"This store is propose_only — only the draft file is made; the user puts it in": {ko: "이 저장소는 propose_only — 초안 파일만 만들고, 넣는 것은 사용자가 합니다"}
+"No draft: {draft}": {ko: "초안이 없습니다: {draft}"}
+"The draft still has blanks {{{{…}}}} — fill them before writing": {ko: "초안에 빈칸 {{{{…}}}}이 남아 있습니다 — 채운 뒤 쓰세요"}
+"# {title}\n\n> [!abstract] Summary\n> {{{{One-line summary}}}}\n\n## What it is\n\n## Why use it\n\n## How it works\n\n## In this project\n": {ko: "# {title}\n\n> [!abstract] 한 줄 요약\n> {{{{한 줄 요약}}}}\n\n## 무엇인가\n\n## 왜 쓰나\n\n## 어떻게 동작하나\n\n## 이 프로젝트에서는\n"}
+
+# learn/knowledge/mcp_server.py
+"Unknown tool: {name}": {ko: "알 수 없는 도구: {name}"}
+"Is there a note on this term? → a list of titles · places · summaries · modified dates": {ko: "이 용어에 관한 노트가 있나? → 제목 · 위치 · 요약 · 수정일 목록"}
+"What does this note say? → its body": {ko: "이 노트 내용은? → 본문"}
+"May a note on this topic be made? → a draft (awaiting approval, in our debt note-drafts folder)": {ko: "이 주제로 노트를 만들어도 되나? → 초안 (승인 대기, 우리 쪽 📒 부채/노트 초안/)"}
+"(Only after a person approves) write the draft to the knowledge store → where it was made. A propose_only store refuses": {ko: "(사람이 승인한 뒤에만) 초안을 지식 저장소에 쓴다 → 만들어진 위치. propose_only 저장소는 거절"}
+
+# learn/knowledge/notion.py
+"No Notion token — environment variable NOTION_TOKEN (or knowledge.token_env)": {ko: "Notion 토큰이 없습니다 — 환경 변수 NOTION_TOKEN (또는 knowledge.token_env)"}
+"Notion API error {code}: {value}": {ko: "Notion API 오류 {code}: {value}"}
+"Couldn't connect to Notion: {reason}": {ko: "Notion에 연결하지 못했습니다: {reason}"}
+
+# learn/knowledge/obsidian.py
+"Knowledge store folder doesn't exist: {root}": {ko: "지식 저장소 폴더가 없습니다: {root}"}
+"Note not found: {path}": {ko: "노트를 찾지 못했습니다: {path}"}
+"Can't write outside the store": {ko: "저장소 밖에는 쓸 수 없습니다"}
+"A note with the same name already exists: {rel_path} (not overwritten)": {ko: "이미 같은 이름의 노트가 있습니다: {rel_path} (덮어쓰지 않음)"}
+
+# report/doc_map.py
+"> ⚙️ Generated — `lantern map` · as of {now_minute}": {ko: "> ⚙️ 자동 생성 — `lantern map` · 기준: {now_minute}"}
+"## Folders": {ko: "## 폴더"}
+"| Folder | Role | Documents | Template | Command |": {ko: "| 폴더 | 역할 | 문서 수 | 템플릿 | 명령 |"}
+"## 📦 Works in progress — by stage": {ko: "## 📦 진행 중 작업 — 단계별 보기"}
+"## Commands": {ko: "## 명령"}
+"| To do this | Command |": {ko: "| 하고 싶은 것 | 명령 |"}
+"| Capture a thought | `/l-idea` |": {ko: "| 생각 기록 | `/l-idea` |"}
+"| Plan → design → tasks → build | `/l-plan` → `/l-design` → `/l-task` → `/l-build` |": {ko: "| 기획 → 설계 → 할 일 → 구현 | `/l-plan` → `/l-design` → `/l-task` → `/l-build` |"}
+"| An unfamiliar technology | `/l-learn` |": {ko: "| 모르는 기술 | `/l-learn` |"}
+"| Where things stand | `/l-report` |": {ko: "| 현황 보기 | `/l-report` |"}
+"| Make · refine templates | `/l-template` |": {ko: "| 새 양식 · 양식 다듬기 | `/l-template` |"}
+"| Check formats | `/l-check` |": {ko: "| 양식 검사 | `/l-check` |"}
+"| Align docs ↔ code | `/l-sync` |": {ko: "| 문서 ↔ 코드 맞추기 | `/l-sync` |"}
+"| An important decision | `/l-adr` |": {ko: "| 중요한 결정 | `/l-adr` |"}
+"## 📘 Current state — how the system looks now": {ko: "## 📘 현재 상태 — 시스템이 지금 어떤 모습인가"}
+"- (nothing yet — start with `/l-plan`)": {ko: "- (아직 없음 — `/l-plan`으로 시작)"}
+"| Work | Stage | 📋 Plan | 📐 Design | ✅ Tasks | 🔨 Log |": {ko: "| 작업 | 단계 | 📋 기획 | 📐 설계 | ✅ 할 일 | 🔨 기록 |"}
+"## 🗄 Archived works": {ko: "## 🗄 보관된 작업"}
+"## 💡 Ideas": {ko: "## 💡 아이디어"}
+"| Idea | Kind | Status |": {ko: "| 아이디어 | 유형 | 상태 |"}
+"## 📝 Decisions": {ko: "## 📝 결정 기록"}
+"Status report": {ko: "현황 보고"}
+"## Shortcuts": {ko: "## 바로 가기"}
+" ✅ approved": {ko: " ✅ 승인"}
+" ⏳ awaiting approval": {ko: " ⏳ 승인 대기"}
+"> ⚙️ Generated": {ko: "> ⚙️ 자동 생성"}
+"The writing structure people set (templates)": {ko: "사람이 정한 글 구조 (양식)"}
+"Thoughts that came up. Not a work yet": {ko: "떠오른 생각. 아직 작업이 아님"}
+"One feature · change = one folder. The only place edited while working": {ko: "기능 · 변경 하나 = 폴더 하나. 일하는 동안 고치는 곳은 여기뿐"}
+"How the system looks now. Updated only when a work finishes": {ko: "지금 시스템의 모습. 작업이 끝날 때만 갱신"}
+"Retros · reports · meeting notes": {ko: "회고 · 보고 · 회의록"}
+"(Brownfield) the original legacy documents. Never edited": {ko: "(브라운필드) 기존 문서 원본 보관. 고치지 않음"}
+"Understanding-debt ledger. One card = one debt": {ko: "이해 부채 장부. 카드 1장 = 부채 1개"}
+"/l-build (update) · /l-sync": {ko: "/l-build (반영) · /l-sync"}
+"{name} and more": {ko: "{name} 외"}
+
+# report/evaluate.py
+"_No run records yet (.lantern/runs.jsonl) — they build up as skills are used._": {ko: "_실행 기록이 아직 없습니다 (.lantern/runs.jsonl) — 스킬을 쓰면 쌓인다._"}
+"Run records: {turns} conversation turns · {skill_runs} skill wrap-ups": {ko: "실행 기록: 대화 턴 {turns}개 · 스킬 마무리 {skill_runs}개"}
+"Cost by skill": {ko: "스킬별 비용"}
+"Cost by model": {ko: "모델별 비용"}
+"Wrap-up quality (format check at close)": {ko: "마무리 품질 (close 때 양식 검사)"}
+"Actual time by task size": {ko: "할 일 크기별 실제 시간"}
+"Skill": {ko: "스킬"}
+"Turns": {ko: "턴"}
+"Median time (min)": {ko: "중간 시간(분)"}
+"Avg tool calls": {ko: "평균 도구 호출"}
+"Model": {ko: "모델"}
+"Runs": {ko: "실행"}
+"Finished without errors (%)": {ko: "오류 없이 끝낸 비율(%)"}
+"Avg warnings": {ko: "평균 경고"}
+"Results by setup — which settings helped": {ko: "구성별 결과 — 어떤 설정이 도움이 됐나"}
+"Size": {ko: "크기"}
+"Tasks done": {ko: "끝낸 할 일"}
+"Median time (h)": {ko: "중간 시간(시간)"}
+"Setup": {ko: "구성"}
+"(no skill)": {ko: "(스킬 없음)"}
+
+# report/harness.py
+"{loc} lines of code · {active_works} works in progress — a small project": {ko: "코드 {loc}줄 · 진행 중 작업 {active_works}개 — 작은 프로젝트"}
+"Within one task, build → test → fix up to 3 times; the person checks often": {ko: "할 일 하나 안에서 구현 → 테스트 → 고치기 최대 3번, 사람이 자주 본다"}
+"Harness (small loop)": {ko: "하네스 (작은 반복)"}
+"Run independent works at once in separate worktrees with `lantern work start W-… W-…` (design conflicts are warned about first)": {ko: "서로 독립인 작업은 `lantern work start W-… W-…`로 worktree를 나눠 동시에 (설계 충돌은 미리 경고)"}
+"Graph (parallel)": {ko: "그래프 (병렬)"}
+"There is an acceptance-test command (build.test)": {ko: "수락 기준 테스트 명령이 있다 (build.test)"}
+"After all tasks are done, rerun the whole work until the acceptance tests pass (up to build.loop_limit times)": {ko: "할 일을 다 끝낸 뒤 수락 기준 테스트가 통과할 때까지 작업 전체를 다시 돈다 (최대 build.loop_limit번)"}
+"Loop (big loop)": {ko: "루프 (큰 반복)"}
+"No automatic tests for the acceptance criteria yet (build.test) — the big loop comes once tests are in place": {ko: "수락 기준 → 자동 테스트가 아직 없다 (build.test) — 큰 루프는 테스트가 자리 잡은 뒤"}
+"{clean_rate}% of the last {skill_runs} wrap-ups finished without errors": {ko: "지난 마무리 {skill_runs}번 중 오류 없이 끝낸 비율 {clean_rate}%"}
+"{active_works} works in progress": {ko: "진행 중 작업 {active_works}개"}
+" · {parallel_ready} [P] tasks can run at once now": {ko: " · 지금 동시에 할 수 있는 [P] 할 일 {parallel_ready}개"}
+" · 2 or more people": {ko: " · 2인 이상"}
+
+# report/obsidian.py
+"---\n{head}\n---\n> ⚙️ Generated — from enums.yaml (`lantern upgrade` · `lantern enums rename`). Don't edit by hand.\n": {ko: "---\n{head}\n---\n> ⚙️ 자동 생성 — enums.yaml에서 (`lantern upgrade` · `lantern enums rename`). 손으로 고치지 마세요.\n"}
+"/* LanternSpec — folder colors · callouts · quote style. Generated (lantern upgrade) — don't edit by hand. */": {ko: "/* LanternSpec — 폴더 색 · callout · 인용문 모양. 자동 생성 (lantern upgrade) — 손으로 고치지 마세요. */"}
+"/* folder colors by document stage */": {ko: "/* 문서 단계별 폴더 색 */"}
+"No docs/ — run lantern scaffold init first": {ko: "docs/가 없습니다 — 먼저 lantern scaffold init"}
+"Couldn't download {plugin_id} — install it yourself from Obsidian's community plugins": {ko: "{plugin_id}를 받지 못했습니다 — Obsidian의 커뮤니티 플러그인에서 직접 설치하세요"}
+"Download failed ({code}): {url}": {ko: "받기 실패 ({code}): {url}"}
+"Can't connect to the internet: {reason}": {ko: "인터넷에 연결할 수 없습니다: {reason}"}
+"Generated by LanternSpec — window layout · plugin code are not committed (get the plugins with lantern obsidian plugins)": {ko: "LanternSpec가 생성 — 창 배치 · 플러그인 코드는 git에 올리지 않는다 (플러그인은 lantern obsidian plugins로 받는다)"}
+"callouts (> [!abstract] and every other kind) — pale background · colored title · no border. Only variables Obsidian exposes": {ko: "callout(> [!abstract] 등 모든 종류) — 옅은 색 바탕 · 색 제목 · 테두리 없음. Obsidian이 열어 둔 변수만 쓴다"}
+"quotes (>) — flush left in reading mode too, the same width as callouts (no indent)": {ko: "인용문(>) — 읽기 모드에서도 왼쪽에 딱 붙고 callout과 같은 폭 (들여쓰기 없음)"}
+
+# report/principles_doc.py
+"# 🧭 Development Principles": {ko: "# 🧭 개발 원칙"}
+"> ⚙️ Generated — `lantern upgrade` · don't edit by hand.": {ko: "> ⚙️ 자동 생성 — `lantern upgrade` · 손으로 고치지 마세요."}
+"> To change it, edit project.kind · external · code_size · languages in lantern.yaml and run `lantern upgrade`.": {ko: "> 바꾸려면 lantern.yaml의 project.kind · external · code_size · languages를 고치고 `lantern upgrade`."}
+"> Write rules specific to this project outside the LanternSpec block in AGENTS.md.": {ko: "> 이 프로젝트만의 규칙은 AGENTS.md의 LanternSpec 블록 밖에 적는다."}
+"## Design principles": {ko: "## 설계 원칙"}
+"| Principle | Level | Why |": {ko: "| 원칙 | 단계 | 왜 |"}
+"## Ways of working (always)": {ko: "## 작업 방식 (늘)"}
+"## Code conventions — {label}": {ko: "## 코드 컨벤션 — {label}"}
+"| Task | Tool | Default command |": {ko: "| 할 일 | 도구 | 기본 명령 |"}
+"| Item | Rule |": {ko: "| 항목 | 규칙 |"}
+"Doc comments: {docs_style} · {get}": {ko: "문서 주석: {docs_style} · {get}"}
+" — left out for this kind · size.": {ko: " — 이 종류 · 규모에서는 넣지 않는다."}
+
+# report/scan.py
+"- {today} linked the ownerless change `{short}` ({subject}) to this work (/l-sync)": {ko: "- {today} 주인 없는 변경 `{short}` ({subject})을 이 작업으로 연결 (/l-sync)"}
+"No commits yet": {ko: "아직 커밋이 없습니다"}
+"| Date | Commit | What | Why |\n|---|---|---|---|\n": {ko: "| 날짜 | 커밋 | 내용 | 이유 |\n|---|---|---|---|\n"}
+"## Ownerless changes ({count}) — ask which work": {ko: "## 주인 없는 변경 ({count}) — 어느 작업인지 묻기"}
+"## Stale documents ({count}) — if the code is right, update the documents": {ko: "## 오래된 문서 ({count}) — 코드가 기준이면 문서 갱신"}
+"## Unrecorded schema changes ({count}) — the schema-change section of the work log": {ko: "## 기록 없는 스키마 변경 ({count}) — 작업 기록의 스키마 변경 칸"}
+"## DBML ↔ migrations ({count}) — migrations are the source of truth for data": {ko: "## DBML ↔ 마이그레이션 ({count}) — 데이터는 마이그레이션이 기준"}
+"## Acceptance tests — {value} (`{get}`)": {ko: "## 수락 기준 테스트 — {value} (`{get}`)"}
+"✔ passed": {ko: "✔ 통과"}
+"✖ failed": {ko: "✖ 실패"}
+"## Note: commits mixing several tasks ({count}) — one task = one commit": {ko: "## 참고: 할 일 여러 개가 섞인 커밋 ({count}) — 할 일 하나 = 커밋 하나"}
+"✔ Documents and code agree — nothing out of line": {ko: "✔ 문서와 코드가 맞습니다 — 어긋난 곳 없음"}
+"No build.test, so acceptance tests were skipped (lantern.yaml build.test)": {ko: "build.test가 없어 수락 기준 테스트를 건너뜀 (lantern.yaml build.test)"}
+"> Code changes that belong to no work (W-…). `/l-sync` records them.\n\n": {ko: "> 작업(W-…)에 속하지 않는 코드 변경. `/l-sync`가 기록한다.\n\n"}
+"The last checked commit (checked_commit) is empty": {ko: "마지막 확인 커밋(checked_commit)이 비어 있습니다"}
+"checked_commit {checked} not found": {ko: "checked_commit {checked}를 찾지 못했습니다"}
+"{count} related code commits since {checked}: ": {ko: "{checked} 이후 관련 코드 커밋 {count}개: "}
+
+# report/sections_doc.py
+"not used": {ko: "쓰지 않음"}
+"used": {ko: "사용"}
+"# 🔒 Protected Sections": {ko: "# 🔒 보호 칸"}
+"> ⚙️ Generated — `lantern upgrade` · `lantern sections` · don't edit by hand.": {ko: "> ⚙️ 자동 생성 — `lantern upgrade` · `lantern sections` · 손으로 고치지 마세요."}
+"> These are the sections lantern reads or writes. Templates and documents are yours to edit, but if you rename or delete one of these sections, the feature can't find it. Then `lantern check` asks whether you changed it on purpose and keeps working the way you answer.": {ko: "> lantern이 읽거나 써 넣는 칸입니다. 템플릿과 문서는 자유롭게 고쳐도 되지만, 이 칸의 제목을 바꾸거나 지우면 그 기능이 이 칸을 찾지 못합니다. 그때는 `lantern check`가 일부러 바꾼 것인지 묻고, 답한 대로 계속 동작합니다."}
+"| Document | Section | What it is for | This project | Key |": {ko: "| 문서 | 칸 | 이 칸으로 하는 일 | 이 프로젝트 | 키 |"}
+"## To change them": {ko: "## 바꾸고 싶을 때"}
+"- If you renamed it: `lantern sections rename <key> \"new title\"` — documents made with the old title are still recognized": {ko: "- 제목을 바꿨다면: `lantern sections rename <키> \"새 제목\"` — 예전 제목으로 만든 문서도 계속 알아본다"}
+"- To stop using the feature: `lantern sections off <key>` (to use it again, `lantern sections on <key>`)": {ko: "- 이 기능을 쓰지 않으려면: `lantern sections off <키>` (다시 쓰려면 `lantern sections on <키>`)"}
+"- The answers are kept in `docs.sections` · `docs.unused_sections` of `lantern.yaml`": {ko: "- 답은 `lantern.yaml`의 `docs.sections` · `docs.unused_sections`에 남는다"}
+" (old names: {items})": {ko: " (예전 이름: {items})"}
+
+# report/status.py
+"📦 In progress: none — start with /l-idea or /l-plan": {ko: "📦 진행 중: 없음 — /l-idea 또는 /l-plan으로 시작"}
+"{marker} {total}: {where}": {ko: "{marker} {total}개: {where}"}
+"{marker}: none": {ko: "{marker}: 없음"}
+" and {value} more": {ko: " 외 {value}개"}
+"▶ Next task: {id} {title}": {ko: "▶ 다음 할 일: {id} {title}"}
+"▶ Next task: all tasks done — update the current state (/l-build wrap-up)": {ko: "▶ 다음 할 일: 모든 할 일 완료 — 현재 상태 반영(/l-build 마무리)"}
+", ⏳ design awaiting approval": {ko: ", ⏳ 설계 승인 대기"}
+"📦 In progress: ": {ko: "📦 진행 중: "}
+"▶ Next task: none can start now ({tid}: {why})": {ko: "▶ 다음 할 일: 지금 시작할 수 있는 할 일 없음 ({tid}: {why})"}
+"▶ Next task: none": {ko: "▶ 다음 할 일: 없음"}
+", tasks {sum}/{count}": {ko: ", 할 일 {sum}/{count}"}
+
+# report/views.py
+"Since the last report ({date}): ✅ tasks done **{done:+d}** · 📒 new debt **{new_debt:+d}** · {label} debt **{resolved:+d}** · {works_active} works in progress": {ko: "지난 보고({date}) 대비: ✅ 완료한 할 일 **{done:+d}** · 📒 새 부채 **{new_debt:+d}** · {label} 부채 **{resolved:+d}** · 진행 중 작업 {works_active}개"}
+"_No tasks in progress._": {ko: "_진행 중인 할 일이 없습니다._"}
+"| 📥 To do ({count}) | ⛔ Blocked ({count2}) | ▶ Doing ({count3}) | ✅ Done ({count4}) |": {ko: "| 📥 할 일 ({count}) | ⛔ 막힘 ({count2}) | ▶ 진행 중 ({count3}) | ✅ 완료 ({count4}) |"}
+"_No works._": {ko: "_작업이 없습니다._"}
+"\n_No tasks yet, so only the start of each work is shown._": {ko: "\n_할 일이 아직 없어 작업 시작점만 보입니다._"}
+"| Domain | Work | Stage | Acceptance criteria | Tasks |": {ko: "| 도메인 | 작업 | 단계 | 수락 기준 | 할 일 |"}
+"| Idea | Status | Work | Commits | Last commit |": {ko: "| 아이디어 | 상태 | 작업 | 커밋 | 마지막 커밋 |"}
+"_No ideas._": {ko: "_아이디어가 없습니다._"}
+"_The learning track is off (lantern.yaml knowledge)._": {ko: "_배우는 선로가 꺼져 있습니다 (lantern.yaml knowledge)._"}
+"Open debt **{open}** · {label} {resolved} — details: {wikilink}\n\n": {ko: "열린 부채 **{open}개** · {label} {resolved}개 — 자세히: {wikilink}\n\n"}
+"_This is the first report — comparisons start with the next one._": {ko: "_첫 보고입니다 — 다음 보고부터 비교가 나옵니다._"}
+"# 📊 Status Report": {ko: "# 📊 현황 보고"}
+"> ⚙️ Generated — `lantern report` · **as of {now_minute}** · views: {items}": {ko: "> ⚙️ 자동 생성 — `lantern report` · **기준: {now_minute}** · 보기: {items}"}
+"## 3-line summary for the lead": {ko: "## 팀장 보고 3줄"}
+"## Compared with the last report": {ko: "## 지난 보고와 비교"}
+"\n\n> Without planned dates it is drawn from task order and size (S=1 day · M=2 days · L=3 days); once actual times exist, from those.": {ko: "\n\n> 예정일이 없으면 할 일 순서와 크기(S=1일 · M=2일 · L=3일)로, 실제 시간이 생기면 그 시간으로 그린다."}
+"(no domain)": {ko: "(도메인 없음)"}
+"Unknown view: {items} (available: {items2})": {ko: "알 수 없는 보기: {items} (가능: {items2})"}
+"> The AI fills in 3 lines: `lantern report --summary \"…\" \"…\" \"…\"`": {ko: "> AI가 3줄로 채운다: `lantern report --summary \"…\" \"…\" \"…\"`"}
+"  {gantt_name} plan :milestone, {replace}m, {created} 00:00, 0d": {ko: "  {gantt_name} 기획 :milestone, {replace}m, {created} 00:00, 0d"}
+"> {works_active} works in progress · tasks {tasks_done}/{tasks_total} done · {debt_open} open debts": {ko: "> 진행 중 작업 {works_active}개 · 할 일 {tasks_done}/{tasks_total} 완료 · 열린 부채 {debt_open}개"}
+" · 🔄 {sync_issues} doc-code mismatches (`/l-sync`)": {ko: " · 🔄 문서-코드 어긋남 {sync_issues}개 (`/l-sync`)"}
+"# 📊 {today} Report": {ko: "# 📊 {today} 보고"}
+" · ⏳ design awaiting approval {items}": {ko: " · ⏳ 설계 승인 대기 {items}"}
+"🗂 Kanban": {ko: "🗂 칸반"}
+"📅 Timeline (WBS)": {ko: "📅 타임라인 (WBS)"}
+"🧩 By domain · requirement": {ko: "🧩 도메인 · 요구사항별"}
+"🔗 Traceability": {ko: "🔗 추적"}
+"📒 Debt Status": {ko: "📒 부채 현황"}
+"🔄 Doc-code alignment": {ko: "🔄 문서-코드 일치"}
+"📊 AI work evaluation": {ko: "📊 AI 작업 평가"}
+
+# check/check_docs.py
+" (line {line})": {ko: " (줄 {line})"}
+"The '{title}' section is missing. This section {feature}. Did you change it on purpose?": {ko: "'{title}' 칸이 없습니다. 이 칸은 {feature}. 일부러 바꾸셨나요?"}
+"If you renamed it, lantern sections rename {role} \"new title\" · if you don't use the feature, lantern sections off {role} · if it was a mistake, put the '## {title}' section from {template_rel} back": {ko: "제목을 바꿨다면 lantern sections rename {role} \"새 제목\" · 이 기능을 안 쓰면 lantern sections off {role} · 실수였다면 {template_rel}의 '## {title}' 칸을 다시 넣기"}
+"Split sections into separate documents and link them": {ko: "섹션을 별도 문서로 나누고 링크하세요"}
+"'## {big}' is {big2} lines → split it into '{big}.md' and link?": {ko: "'## {big}' 칸이 {big2}줄 → '{big}.md'로 나누고 링크?"}
+"Fix the YAML between the --- lines": {ko: "--- 사이의 YAML 문법을 고치세요"}
+"No frontmatter (a document outside the templates)": {ko: "frontmatter가 없습니다 (양식 밖 문서)"}
+"{unknown} {count}": {ko: "{unknown} {count}개"}
+"Once answered, put the answer in that section": {ko: "답을 받으면 해당 칸에 반영하세요"}
+"A dropped idea needs a one-line reason (dropped_reason)": {ko: "버린 아이디어에는 이유 한 줄이 필요합니다 (dropped_reason)"}
+"The document is {n_lines} lines (limit {max_lines})": {ko: "문서가 {n_lines}줄입니다 (기준 {max_lines}줄)"}
+"{count} tasks — consider splitting the work": {ko: "할 일이 {count}개입니다 — 작업을 나누는 것을 검토하세요"}
+"✔ Formats are fine — {files} documents": {ko: "✔ 양식에 맞음 — 문서 {files}개"}
+"✖ {error} errors": {ko: "✖ 오류 {error}개"}
+"⚠ {warn} warnings": {ko: "⚠ 경고 {warn}개"}
+"ℹ {info} notes": {ko: "ℹ 참고 {info}개"}
+"Checked {files} documents — ": {ko: "문서 {files}개 검사 — "}
+"Check that the document was made from a template (lantern scaffold …)": {ko: "템플릿에서 만든 문서인지 확인하세요 (lantern scaffold …)"}
+"Missing common frontmatter fields: {items}": {ko: "공통 frontmatter 칸이 없습니다: {items}"}
+"{count} blanks": {ko: "빈 칸 {count}개"}
+"Fill them in, or delete the section if it doesn't apply": {ko: "채우거나, 해당 없으면 칸을 지우세요"}
+"The '{glance}' section is empty": {ko: "'{glance}' 칸이 비어 있습니다"}
+"Broken link: {raw}": {ko: "깨진 링크: {raw}"}
+"Check the target document's name · path": {ko: "대상 문서 이름 · 경로를 확인하세요"}
+"Duplicate task ID: {id}": {ko: "할 일 ID가 겹칩니다: {id}"}
+"{id} size is one of S · M · L (now '{size}')": {ko: "{id} 크기는 S · M · L 중 하나입니다 (지금 '{size}')"}
+"{id} has no size [{attr}:: S|M|L]": {ko: "{id}에 크기가 없습니다 [{attr}:: S|M|L]"}
+"{id} has no {owner} [{owner}:: name]": {ko: "{id}에 {owner}이 없습니다 [{owner}:: 이름]"}
+"No task is linked to acceptance criterion {ac}": {ko: "수락 기준 {ac}에 연결된 할 일이 없습니다"}
+" ({info} notes)": {ko: " (참고 {info}개)"}
+"{fieldname}: '{value}' is not a {label} value": {ko: "{fieldname}: '{value}'는 {label} 값이 아닙니다"}
+"Available: {items} (enums.yaml)": {ko: "가능: {items} (enums.yaml)"}
+"A required blank is empty: {{{{{name}}}}}": {ko: "필수 칸이 비어 있습니다: {{{{{name}}}}}"}
+"Template '{tname}' changed a lot: {get} → {value}": {ko: "양식 '{tname}'이 {get} → {value}로 크게 바뀌었습니다"}
+"Move it with lantern template migrate \"{docs_rel}\" (/l-template migrate)": {ko: "lantern template migrate \"{docs_rel}\" 로 옮기세요 (/l-template migrate)"}
+"The required section '## {heading}' of template '{tname}' is gone": {ko: "양식 '{tname}'의 필수 칸 '## {heading}'이 사라졌습니다"}
+"Don't delete the section; fill it in. If it doesn't apply, write 'none'": {ko: "칸을 지우지 말고 내용을 채우세요. 해당 없으면 '없음'"}
+"{id}: the prerequisite task {dep} is not in the list": {ko: "{id}: 먼저 끝나야 할 일 {dep}이 목록에 없습니다"}
+"{id}: acceptance criterion {ac} is not in {name}": {ko: "{id}: 수락 기준 {ac}이 {name}에 없습니다"}
+"Prerequisite tasks form a cycle: {items}": {ko: "먼저 끝나야 할 일이 순환합니다: {items}"}
+"Task ID {id} is also in {seen}": {ko: "할 일 ID {id}가 {seen}에도 있습니다"}
+"Template '{tname}' has new sections ({get} → {value})": {ko: "양식 '{tname}'에 새 칸이 생겼습니다 ({get} → {value})"}
+"{id}: lists itself as a prerequisite": {ko: "{id}: 자기 자신을 먼저로 지정했습니다"}
+"ID {doc_id} is shared with other documents: {others}": {ko: "ID {doc_id}가 다른 문서와 겹칩니다: {others}"}
+
+# check/doctor.py
+"Principles size: code {label} ({lines:,} lines)": {ko: "개발 원칙 규모: 코드 {label} ({lines:,}줄)"}
+"The code grew to {lines:,} lines, so its size went {label} → {label2} — raise the principles a level? → lantern profile set project.code_size={now} && lantern upgrade": {ko: "코드가 {lines:,}줄로 자라 규모가 {label} → {label2}이 됐습니다 — 원칙을 한 단계 올릴까요? → lantern profile set project.code_size={now} && lantern upgrade"}
+"No lantern.yaml — set up the project with /l-init": {ko: "lantern.yaml이 없습니다 — /l-init 으로 프로젝트를 준비하세요"}
+"lantern command is on PATH": {ko: "lantern 명령이 PATH에 있음"}
+"lantern command is not on PATH — agent hooks · git hooks are skipped (uv tool install lanternspec)": {ko: "lantern 명령이 PATH에 없습니다 — 에이전트 hook · git hook이 건너뜁니다 (uv tool install lanternspec)"}
+"Not a git repository — hooks · commit links · sync won't work": {ko: "git 저장소가 아닙니다 — hook · 커밋 연결 · sync가 동작하지 않습니다"}
+"Skills are not installed — lantern install": {ko: "스킬이 설치되지 않았습니다 — lantern install"}
+"✔ All good": {ko: "✔ 모두 정상"}
+"✖ {bad} · ⚠ {warn}": {ko: "✖ {bad}개 · ⚠ {warn}개"}
+"lantern.yaml format": {ko: "lantern.yaml 형식"}
+"The local mode needs git 2.42 or later (now {items})": {ko: "local 방식은 git 2.42 이상 필요 (지금 {items})"}
+"Document storage ({remote}): {x}": {ko: "문서 저장 방식({remote}): {x}"}
+"Document storage {remote} — the layout is right": {ko: "문서 저장 방식 {remote} — 구조가 맞음"}
+"git hooks not installed: {items} — lantern hooks install": {ko: "git hook 미설치: {items} — lantern hooks install"}
+"git hooks installed (content check: {get})": {ko: "git hook 설치됨 (내용 검사: {get})"}
+"Templates folder exists": {ko: "docs/0. 템플릿 있음"}
+"No templates folder — lantern scaffold init": {ko: "docs/0. 템플릿이 없습니다 — lantern scaffold init"}
+"enums.yaml exists": {ko: "enums.yaml 있음"}
+"No enums.yaml — using the defaults": {ko: "enums.yaml이 없습니다 — 기본값을 씁니다"}
+"Docs MOC exists": {ko: "개발문서 MOC 있음"}
+"No MOC — lantern map": {ko: "MOC가 없습니다 — lantern map"}
+"{count} skill files missing — lantern upgrade": {ko: "빠진 스킬 파일 {count}개 — lantern upgrade"}
+"{count} skills differ from lantern.yaml values (e.g. idea.capture) — lantern upgrade": {ko: "lantern.yaml 값(예: idea.capture)과 스킬이 다릅니다 {count}개 — lantern upgrade"}
+"{count} skills up to date ({items})": {ko: "스킬 {count}개 최신 ({items})"}
+"AGENTS.md has no LanternSpec rules — lantern upgrade": {ko: "AGENTS.md에 LanternSpec 규칙이 없습니다 — lantern upgrade"}
+"Notion token {env} is set": {ko: "Notion 토큰 {env} 있음"}
+"No Notion token — environment variable {env}": {ko: "Notion 토큰이 없습니다 — 환경 변수 {env}"}
+"Knowledge store {path} ({type})": {ko: "지식 저장소 {path} ({type})"}
+"Knowledge store path doesn't exist: {path}": {ko: "지식 저장소 경로가 없습니다: {path}"}
+"{count} skills edited by the user (upgrade skips them): ": {ko: "사용자가 고친 스킬 {count}개 (upgrade가 건너뜀): "}
+"CLAUDE.md doesn't load @AGENTS.md": {ko: "CLAUDE.md가 @AGENTS.md를 불러오지 않습니다"}
+
+# check/githooks.py
+"✔ git hooks installed: {items} ({d})": {ko: "✔ git hook 설치: {items} ({d})"}
+"commit message check": {ko: "커밋 메시지 검사"}
+"pre-commit check": {ko: "커밋 전 검사"}
+"Not a git repository": {ko: "git 저장소가 아닙니다"}
+"No LanternSpec hooks installed": {ko: "설치된 LanternSpec hook이 없습니다"}
+"   (warning only — the commit goes ahead. To block, lantern.yaml git.hooks: block)": {ko: "   (경고만 — 커밋은 진행됩니다. 막으려면 lantern.yaml git.hooks: block)"}
+"the docs branch": {ko: "문서 브랜치"}
+"code commit": {ko: "코드 커밋"}
+"Commit message: the {where} message has no task ID — add one at the end, like [W-001-T02]": {ko: "커밋 메시지: {where} 메시지에 할 일 번호가 없습니다 — 끝에 [W-001-T02] 처럼 붙이세요"}
+"Commit message: several tasks in one commit ({items}) — one task = one commit": {ko: "커밋 메시지: 할 일 여러 개가 한 커밋에 섞였습니다 ({items}) — 할 일 하나 = 커밋 하나"}
+"✔ Removed {name}": {ko: "✔ {name} 제거"}
+"   (git.hooks: block — fix it and commit again. In a hurry, git commit --no-verify)": {ko: "   (git.hooks: block — 고친 뒤 다시 커밋. 급하면 git commit --no-verify)"}
+"docs/ has a .git (it shouldn't in the shared mode) — lantern doctor": {ko: "docs/ 안에 .git이 있습니다 (shared 방식에서는 없어야 함) — lantern doctor"}
+".gitignore ignores docs/ (remove it in the shared mode)": {ko: ".gitignore가 docs/를 무시합니다 (shared 방식이면 지워야 함)"}
+"docs/.git is a folder — it must be a pointer file to the docs-local branch (lantern docs-mode)": {ko: "docs/.git이 폴더입니다 — docs-local 브랜치를 가리키는 표지판 파일이어야 합니다 (lantern docs-mode)"}
+".gitignore doesn't have docs/": {ko: ".gitignore에 docs/가 없습니다"}
+".ignore doesn't have !docs/ — AI search can't find the documents": {ko: ".ignore에 !docs/가 없습니다 — AI 검색이 문서를 못 찾습니다"}
+"Document format: {path}: {message}": {ko: "문서 양식: {path}: {message}"}
+"• Kept the existing {name} hook as {name}.local (runs first)": {ko: "• 기존 {name} hook을 {name}.local로 보존 (먼저 실행됨)"}
+"• Restored {name}.local to its original name": {ko: "• {name}.local을 원래 이름으로 되돌림"}
+"docs/ is not the docs-local worktree — make it with lantern docs-mode local": {ko: "docs/가 docs-local worktree가 아닙니다 — lantern docs-mode local 로 만드세요"}
+"docs/ files are mixed into a code commit: {items} — commit documents separately in docs-local": {ko: "코드 커밋에 docs/ 파일이 섞였습니다: {items} — 문서는 docs-local에 따로 커밋"}
+"✖ LanternSpec structure check — blocked the commit (structure mistakes are always blocked)": {ko: "✖ LanternSpec 구조 검사 — 커밋을 막았습니다 (구조 실수는 항상 막음)"}
+"Schema log: schema files changed but {file} didn't: {items} — record it under '## {title}' in the work's {file}": {ko: "스키마 기록: 스키마 파일이 바뀌었는데 {file} 변경이 없습니다: {items} — 작업 {file} '## {title}'에 남기세요"}
+"⚠ LanternSpec document format note: {path}: {message}": {ko: "⚠ LanternSpec 문서 양식 참고: {path}: {message}"}
+"✖ LanternSpec: the {docs_branch} branch is not pushed to a remote ({remote}) (docs.remote: local)": {ko: "✖ LanternSpec: {docs_branch} 브랜치는 원격({remote})에 올리지 않습니다 (docs.remote: local)"}
+"   To allow a private remote: git config --add lantern.allowDocsRemote {remote}": {ko: "   개인 원격을 허용하려면: git config --add lantern.allowDocsRemote {remote}"}
+"remove with `lantern hooks uninstall`. Don't edit.": {ko: "`lantern hooks uninstall`로 지운다. 고치지 말 것."}
+"lantern command not found, so the check is skipped": {ko: "lantern 명령을 찾지 못해 검사를 건너뜁니다"}
+
+# check/legacy.py
+"| [[{target}\\|{nfc}]] | {{{{What it says}}}} | {{{{Still true?}}}} | {{{{Absorb · Archive · Move}}}} | {{{{New place}}}} |": {ko: "| [[{target}\\|{nfc}]] | {{{{무슨 내용}}}} | {{{{아직 맞나}}}} | {{{{흡수 · 보관 · 옮기기}}}} | {{{{새 위치}}}} |"}
+"Not found: {source}": {ko: "없습니다: {source}"}
+
+# check/templates.py
+"\n\n{template_only}\n## {marker}\n| Version | Date | What changed |\n|---|---|---|\n| 1.0.0 | {today} | Made from the draft {name} |\n": {ko: "\n\n{template_only}\n## {marker}\n| 버전 | 날짜 | 무엇이 바뀌었나 |\n|---|---|---|\n| 1.0.0 | {today} | {name} 시안에서 만듦 |\n"}
+"Template '{name}' is not in {rel} (lantern template list)": {ko: "양식 '{name}'이 {rel}에 없습니다 (lantern template list)"}
+"Same as the base template": {ko: "기본 양식과 같습니다"}
+"{count} documents from template '{name}' — documents still empty in each section:": {ko: "'{name}' 양식 문서 {count}개 — 칸마다 아직 비어 있는 문서 수:"}
+"base template": {ko: "기본 양식"}
+"custom template": {ko: "직접 만든 양식"}
+", refined": {ko: ", 다듬음"}
+"level is one of patch · minor · major · auto": {ko: "level은 patch · minor · major · auto 중 하나"}
+"\n\n{template_only}\n## {changelog}\n| Version | Date | What changed |\n|---|---|---|\n{row}\n": {ko: "\n\n{template_only}\n## {changelog}\n| 버전 | 날짜 | 무엇이 바뀌었나 |\n|---|---|---|\n{row}\n"}
+"No documents made from template '{name}' yet": {ko: "'{name}' 양식으로 만든 문서가 아직 없습니다"}
+"  ← always empty (a candidate to delete or to reword its guide)": {ko: "  ← 늘 비어 있음 (지우거나 안내를 고칠 후보)"}
+"> [!guide] Content with no place in the new template, gathered here rather than deleted — move it to the right section or tidy it up, then delete this section.": {ko: "> [!guide] 새 양식에 자리가 없는 내용. 지우지 않고 모았다 — 맞는 칸으로 옮기거나 정리한 뒤 이 칸을 지운다."}
+"Neither a document nor a template: {target}": {ko: "문서도 양식도 아닙니다: {target}"}
+"📄 {rel} → {rel2} (template '{to}', the original stays)": {ko: "📄 {rel} → {rel2} (양식 '{to}', 원본은 그대로)"}
+"Nothing to migrate (no active documents on an old template version)": {ko: "옮길 문서가 없습니다 (아직 쓰는 문서 중 옛 양식 버전 없음)"}
+"📄 {rel} — template '{tname}'": {ko: "📄 {rel} — 양식 '{tname}'"}
+"This is a preview. Once approved, --apply": {ko: "미리보기입니다. 승인되면 --apply"}
+" · base template {bv} is out": {ko: " · 기본 양식 {bv} 나옴"}
+"base template/{name}.md": {ko: "기본 양식/{name}.md"}
+"template: '{template}' differs from the file name '{stem}'": {ko: "template: '{template}'가 파일 이름 '{stem}'과 다릅니다"}
+"template_version must look like 1.2.0": {ko: "template_version은 1.2.0 형식이어야 합니다"}
+"No based_on (for a custom template, the same as template_version)": {ko: "based_on이 없습니다 (직접 만든 양식이면 template_version과 같게)"}
+"type '{type}' is not in enums.yaml doc_type": {ko: "type '{type}'가 enums.yaml doc_type에 없습니다"}
+"The '> [!abstract] {glance}' section at the top is missing": {ko: "맨 위 '> [!abstract] {glance}' 칸이 없습니다"}
+"{template_only} + '## {changelog}' at the bottom is missing": {ko: "맨 아래 {template_only} + '## {changelog}'이 없습니다"}
+"No '> [!guide]' writing notes at all": {ko: "작성 안내 '> [!guide]'가 하나도 없습니다"}
+"No earlier version to compare with (never committed)": {ko: "비교할 이전 버전이 없습니다 (커밋된 적 없음)"}
+"Nothing changed — the version stays": {ko: "바뀐 내용이 없습니다 — 버전을 올리지 않습니다"}
+"> [!guide] 🟦 Original section · one line on what goes in '{current}'": {ko: "> [!guide] 🟦 원본 칸 · '{current}'에 무엇을 쓰는지 한 줄 안내"}
+"--to also needs --dest (the new document's path)": {ko: "--to를 쓰면 --dest(새 문서 경로)도 필요합니다"}
+"✔ Created": {ko: "✔ 만들었습니다"}
+"⚠ {rel}: a document without template — migrate it with --to <template> --dest <path>": {ko: "⚠ {rel}: template이 없는 문서 — --to <양식> --dest <경로>로 옮기세요"}
+"No frontmatter": {ko: "frontmatter가 없습니다"}
+"Common frontmatter '{key}' is missing": {ko: "공통 frontmatter '{key}'가 없습니다"}
+"The blank name '{pname}' can't be used (no date · time · title)": {ko: "칸 이름 '{pname}'은 쓸 수 없습니다 (date · time · title 금지)"}
+"The blank name has '|' — mark required ones with '{mark}'": {ko: "칸 이름에 '|'가 있습니다 — 필수는 '{mark}'로 표시"}
+"A value the script doesn't know: ${{{group}}}": {ko: "스크립트가 모르는 값 ${{{group}}}"}
+"{changelog} last version {rows} ≠ template_version {get}": {ko: "{changelog} 마지막 버전 {rows} ≠ template_version {get}"}
+"✔ Migrated": {ko: "✔ 옮겼습니다"}
+"(no changes)": {ko: "(바뀌는 내용 없음)"}
+" (new template)": {ko: " (새 양식)"}
+" — tidy up the '{bin_title}' section": {ko: " — '{bin_title}' 칸을 정리하세요"}
+"value": {ko: "값"}
+
+# tools/__init__.py
+"Unsupported tool: {name}{hint} (available: {items})": {ko: "지원하지 않는 도구: {name}{hint} (가능: {items})"}
+"antigravity (Gemini CLI became Antigravity CLI)": {ko: "antigravity (Gemini CLI는 Antigravity CLI로 바뀌었습니다)"}
+
+# tools/agent_hooks.py
+"LanternSpec tech question: no card for '{term}'. After answering, suggest in one line \"📒 Make a debt card?\" (/l-learn {term}).": {ko: "LanternSpec 기술 질문: '{term}' 카드가 없습니다. 답한 뒤 한 줄로 \"📒 부채 카드를 만들까요?\"라고 제안하세요 (/l-learn {term})."}
+"LanternSpec idea: something sounds like an idea. Without stopping the current work, record it right away by the /l-idea rules: lantern scaffold idea \"<title>\" --kind <kind> --raw \"<original words>\" --auto → mention it in one line only.": {ko: "LanternSpec 아이디어: 아이디어 같은 말이 있습니다. 하던 일은 멈추지 말고 /l-idea 규칙대로 바로 기록한다: lantern scaffold idea \"<제목>\" --kind <유형> --raw \"<원문>\" --auto → 한 줄로만 알림."}
+"[LanternSpec now]": {ko: "[LanternSpec 지금 상황]"}
+"(open {file} · {file2} in the work folder only when you need the details)": {ko: "(자세한 내용은 해당 작업 폴더의 {file} · {file2}를 필요할 때만 연다)"}
+"[LanternSpec progress before compaction — saved to the documents]": {ko: "[LanternSpec 압축 전 진행 상황 — 문서에 저장됨]"}
+"→ If needed, add the context of the progress to '## {now}' in this document (a summary only).": {ko: "→ 필요하면 이 문서의 '## {now}'에 진행 맥락을 보탠다 (요약만)."}
+"LanternSpec idea: something sounds like an idea. After finishing the current work, ask once in one line \"💡 Save this as an idea?\" (if yes, /l-idea).": {ko: "LanternSpec 아이디어: 아이디어 같은 말이 있습니다. 하던 일을 마친 뒤 한 줄로 \"💡 이거 아이디어로 남길까요?\"라고 한 번만 묻는다 (남기면 /l-idea)."}
+"LanternSpec: {count} code files changed, but the documents of work in progress {wid} didn't. If needed, align them with /l-sync (just a suggestion — not asked again for this work).": {ko: "LanternSpec: 코드 {count}개 파일이 바뀌었는데 진행 중 작업 {wid}의 문서는 그대로예요. 필요하면 /l-sync 로 맞추세요 (권유만 — 이 작업에서는 다시 묻지 않아요)."}
+"Unknown hook: {event}": {ko: "알 수 없는 hook: {event}"}
+"LanternSpec tech question: the user asked about the technology '{term}'. After answering, ask in one line \"📒 Save it as debt?\", and if yes, /l-learn {term}": {ko: "LanternSpec 기술 질문: 사용자가 기술 '{term}'을(를) 물었습니다. 답한 뒤 한 줄로 \"📒 부채로 남길까요?\"라고 묻고, 남기면 /l-learn {term}"}
+"). When answering, link the earlier notes · card to help review.": {ko: "). 답할 때 지난 노트 · 카드를 링크해 복습을 돕는다."}
+"[LanternSpec] The project isn't set up yet — start with /l-init.": {ko: "[LanternSpec] 아직 프로젝트 준비 전입니다 — /l-init 으로 시작하세요."}
+"(what was written just before compaction — moved to {past})": {ko: "(압축 직전에 적혀 있던 내용 — {past}으로 옮김)"}
+"LanternSpec document format: {rel} is broken — fix it now (don't change the template structure):": {ko: "LanternSpec 문서 양식: {rel} 양식이 깨졌습니다 — 지금 고치세요 (템플릿 구조는 바꾸지 않는다):"}
+" (card {id} exists — counted as {value})": {ko: " (카드 {id} 있음 — {value}으로 셈)"}
+"asked in conversation (detected automatically)": {ko: "대화 중 질문 (자동 감지)"}
+"LanternSpec tech question: '{term}' has debt card {id}, so the ask was counted (#{ask_count}": {ko: "LanternSpec 기술 질문: '{term}'은(는) 부채 카드 {id}에 있어 물은 횟수를 셌습니다 ({ask_count}번째"}
+"LanternSpec note ({rel}): ": {ko: "LanternSpec 참고 ({rel}): "}
+", {value} → reopened": {ko: ", {value} → 다시 열림"}
+
+# tools/antigravity.py
+".agents/hooks.json (agent hooks — no compaction hook, so saving before compaction is left out)": {ko: ".agents/hooks.json (에이전트 hook — 압축 hook이 없어 압축 전 저장은 빠짐)"}
+" — pass this suggestion to the user in one line and finish.": {ko: " — 이 권유를 사용자에게 한 줄로 전하고 마친다."}
+
+# tools/claude.py
+".claude/settings.json (agent hooks)": {ko: ".claude/settings.json (에이전트 hook)"}
+
+# tools/close.py
+"✔ Run recorded — {skill}{value} (.lantern/runs.jsonl)": {ko: "✔ 실행 기록 — {skill}{value} (.lantern/runs.jsonl)"}
+"✔ map — MOC updated": {ko: "✔ map — MOC 갱신"}
+"✔ check — {files} documents are well-formed": {ko: "✔ check — 문서 {files}개 양식에 맞음"}
+
+# tools/codex.py
+".codex/hooks.json (agent hooks — Codex asks whether to trust them on first run)": {ko: ".codex/hooks.json (에이전트 hook — Codex가 처음 실행할 때 신뢰 여부를 묻는다)"}
+
+# tools/docs_mode.py
+"✔ Regenerated skills · AGENTS.md ({count}, with docs.remote)": {ko: "✔ 스킬 · AGENTS.md 다시 생성 ({count}개, docs.remote 반영)"}
+"✔ Checked out the empty {docs_branch} branch at docs/ (still one repository)": {ko: "✔ {docs_branch} 빈 브랜치를 docs/에 펼침 (저장소는 하나)"}
+"✔ Moved the documents into docs/ on the code branch (the {docs_branch} branch is kept as history)": {ko: "✔ 문서를 코드 브랜치의 docs/로 옮김 ({docs_branch} 브랜치는 기록으로 남겨 둠)"}
+"The local mode needs git {items} or later (git worktree --orphan)": {ko: "local 방식은 git {items} 이상이 필요합니다 (git worktree --orphan)"}
+"docs/ already has a .git — check it with lantern doctor": {ko: "이미 docs/ 안에 .git이 있습니다 — lantern doctor로 점검하세요"}
+"The {docs_branch} branch already exists — to check it out again: git worktree add {name} {docs_branch}": {ko: "{docs_branch} 브랜치가 이미 있습니다 — 다시 펼치려면: git worktree add {name} {docs_branch}"}
+"ℹ There are staged changes already, so the layout change is only staged, not committed": {ko: "ℹ 이미 스테이징된 변경이 있어 구조 변경은 커밋하지 않고 스테이징만 합니다"}
+"✔ First commit of the existing documents to docs-local": {ko: "✔ 기존 문서를 docs-local에 첫 커밋"}
+"✔ Added docs/ to .gitignore": {ko: "✔ .gitignore에 docs/ 추가"}
+"✔ Added !docs/ to .ignore — so AI search finds the documents": {ko: "✔ .ignore에 !docs/ 추가 — AI 검색이 문서를 찾게"}
+"docs/ is not the docs-local worktree — check with lantern doctor whether it's shared already": {ko: "docs/가 docs-local worktree가 아닙니다 — 이미 shared인지 lantern doctor로 확인하세요"}
+"✔ Committed the remaining changes in docs-local": {ko: "✔ docs-local의 남은 변경을 커밋"}
+"✔ Removed docs/ from .gitignore": {ko: "✔ .gitignore에서 docs/ 제거"}
+"✔ Removed !docs/ from .ignore": {ko: "✔ .ignore에서 !docs/ 제거"}
+"Couldn't create the docs-local branch: {strip}": {ko: "docs-local 브랜치를 만들지 못했습니다: {strip}"}
+"docs: move documents to the docs-local branch [lantern]": {ko: "docs: 문서를 docs-local 브랜치로 옮김 [lantern]"}
+"chore: split documents into the docs-local branch [lantern]": {ko: "chore: 문서를 docs-local 브랜치로 분리 [lantern]"}
+"✔ Committed the layout change on the code branch": {ko: "✔ 코드 브랜치에 구조 변경 커밋"}
+"docs: save before merging into shared [lantern]": {ko: "docs: shared로 합치기 전 저장 [lantern]"}
+"Couldn't remove the docs worktree: {strip}": {ko: "docs worktree를 정리하지 못했습니다: {strip}"}
+"chore: merge documents into the code branch [lantern]": {ko: "chore: 문서를 코드 브랜치로 합침 [lantern]"}
+"✔ Committed the documents on the code branch": {ko: "✔ 코드 브랜치에 문서 커밋"}
+
+# tools/install.py
+"      # Project tools · dependencies — from lantern.yaml project.languages and the lock files (kept in step by lantern upgrade)\n": {ko: "      # 프로젝트 도구 · 의존성 준비 — lantern.yaml project.languages와 lock 파일에서 (lantern upgrade가 맞춘다)\n"}
+"      # Once the languages (lantern.yaml project.languages) are set, lantern upgrade puts the project tool setup steps here\n": {ko: "      # 언어(lantern.yaml project.languages)가 정해지면 lantern upgrade가 프로젝트 도구 준비 단계를 여기에 넣는다\n"}
+"No language pack '{language}' (available: {items})": {ko: "언어 '{language}' 묶음이 없습니다 (가능: {items})"}
+"✔ Created · updated {count}": {ko: "✔ 생성 · 갱신 {count}개"}
+"· Unchanged {count}": {ko: "· 그대로 {count}개"}
+"⚠ Left {count} files alone because the user edited them (to overwrite, --force):": {ko: "⚠ 사용자가 고친 파일이라 건드리지 않음 {count}개 (덮어쓰려면 --force):"}
+"{label} tool setup ({name})": {ko: "{label} 도구 준비 ({name})"}
+"{rel} (removed)": {ko: "{rel} (지움)"}
+"This project's language is set to '{fixed}' in lantern.yaml — it doesn't change once set": {ko: "이 프로젝트의 언어는 lantern.yaml에서 '{fixed}'로 정해졌습니다 — 처음 정한 뒤에는 바꾸지 않습니다"}
+"✔ Template '{name}' {get} → {base_ver}": {ko: "✔ 양식 '{name}' {get} → {base_ver}"}
+"ℹ Template '{name}': the base template went {get} → {base_ver}, but this one was refined, so it stays (compare: lantern template diff \"{name}\")": {ko: "ℹ 양식 '{name}': 기본 양식이 {get} → {base_ver}로 바뀌었지만 다듬은 양식이라 그대로 둠 (비교: lantern template diff \"{name}\")"}
+"   … and {value} more": {ko: "   … 외 {value}개"}
+"✔ Merged settings: ": {ko: "✔ 설정 합침: "}
+"{rel} (no longer used, but kept because the user edited it)": {ko: "{rel} (더 쓰지 않지만 사용자가 고친 파일이라 지우지 않음)"}
+"Generated by lanternspec — CI also checks formats · lint · types · acceptance tests · doc-code mismatches": {ko: "lanternspec가 생성 — 양식 · 린트 · 타입 검사 · 수락 기준 테스트 · 문서-코드 어긋남을 CI에서도 본다"}
+"Check formats (lantern check)": {ko: "양식 검사 (lantern check)"}
+"Lint · type check (lantern lint — build.lint · build.typecheck)": {ko: "린트 · 타입 검사 (lantern lint — build.lint · build.typecheck)"}
+"Doc-code mismatches + acceptance tests (lantern scan --tests)": {ko: "문서-코드 어긋남 + 수락 기준 테스트 (lantern scan --tests)"}
+
+# tools/skills.py
+"(none)": {ko: "(없음)"}
+"Skill name breaks the rules: {name} (lowercase · digits · hyphens, 1–64 chars, no leading/trailing hyphen · no --)": {ko: "스킬 이름 규칙 위반: {name} (소문자 · 숫자 · 하이픈, 1~64자, 하이픈으로 시작/끝 · -- 금지)"}
+"No ':' in skill names": {ko: "스킬 이름에 ':'는 넣지 않는다"}
+"The name in {name}/SKILL.md differs from the folder name": {ko: "{name}/SKILL.md의 name이 폴더 이름과 다릅니다"}
+"{rel}: tools sharing the same folder make different content": {ko: "{rel}: 같은 폴더를 쓰는 도구들이 서로 다른 내용을 만듭니다"}
+
+# cli/__init__.py
+"LanternSpec — bring what you don't know to light, and show the path you've walked.": {ko: "LanternSpec — 모르는 것은 밝히고, 걸어온 길은 보여 준다."}
+"<command>": {ko: "<명령>"}
+
+# cli/check.py
+"Check document formats": {ko: "양식 검사"}
+"Code lint · type check (lantern.yaml build.lint · build.typecheck)": {ko: "코드 린트 · 타입 검사 (lantern.yaml build.lint · build.typecheck)"}
+"Templates: list · lint · level · bump · outdated · diff · usage · new · migrate": {ko: "양식: list · lint · level · bump · outdated · diff · usage · new · migrate"}
+"Brownfield legacy documents: adopt · todos": {ko: "브라운필드 기존 문서: adopt · todos"}
+"Install · remove · show git hooks": {ko: "git hook 설치 · 제거 · 상태"}
+"Check that the layout matches lantern.yaml": {ko: "구조가 lantern.yaml과 맞는지 점검"}
+"ℹ No build.lint · build.typecheck, so skipped (lantern principles detect --write)": {ko: "ℹ build.lint · build.typecheck가 없어 건너뜀 (lantern principles detect --write)"}
+"Check acceptance-criteria rules [W-012]": {ko: "수락 기준 규칙 검사 [W-012]"}
+"Hide notes (ℹ)": {ko: "참고(ℹ) 숨김"}
+"Treat warnings as failures": {ko: "경고도 실패로"}
+"outdated: include finished documents": {ko: "outdated: 끝난 문서도"}
+"No TODOs · later items in the legacy documents": {ko: "기존 문서에 TODO · 나중에 할 것이 없습니다"}
+"No templates — lantern scaffold init": {ko: "양식이 없습니다 — lantern scaffold init"}
+"{name}: {value} (compared with: {source})": {ko: "{name}: {value} (비교: {source})"}
+"no changes": {ko: "바뀐 것 없음"}
+"No legacy documents to move": {ko: "옮길 기존 문서가 없습니다"}
+"Not found: {raw}": {ko: "없습니다: {raw}"}
+"No documents on an old template version": {ko: "옛 양식 버전으로 쓴 문서가 없습니다"}
+"→ suggest migrate": {ko: "→ migrate 제안"}
+" · finished": {ko: " · 끝난 문서"}
+"refined": {ko: "다듬음"}
+"ℹ new sections": {ko: "ℹ 새 칸"}
+"unchanged": {ko: "그대로"}
+"lantern template new <name> --from <draft file>": {ko: "lantern template new <이름> --from <시안 파일>"}
+"\n(preview — once approved, --apply)": {ko: "\n(미리보기 — 승인되면 --apply)"}
+"--map \"old section=new section\"": {ko: "--map \"옛 칸=새 칸\""}
+
+# cli/core.py
+"{lines:,} lines of code (without tests · docs) → {label} ({size})": {ko: "코드 {lines:,}줄 (테스트 · 문서 빼고) → {label} ({size})"}
+"Next: lantern principles show → lantern upgrade (into AGENTS.md · the principles document)": {ko: "다음: lantern principles show → lantern upgrade (AGENTS.md · 개발 원칙 문서에 반영)"}
+"Show · write · edit lantern.yaml · documents to turn on": {ko: "lantern.yaml 보기 · 쓰기 · 고치기 · 켜질 문서"}
+"Design principles · code conventions — show the choice · detect languages and tools in use": {ko: "개발 원칙 · 코드 컨벤션 — 고른 것 보기 · 언어와 이미 쓰는 도구 알아보기"}
+"Issue the next ID": {ko: "다음 ID 발급"}
+"Read · write frontmatter": {ko: "frontmatter 읽기 · 쓰기"}
+"Protected sections (read and written by lantern): show · report a new title · stop using": {ko: "보호 칸(lantern이 읽고 쓰는 칸) 보기 · 바꾼 제목 알리기 · 쓰지 않기"}
+"Show status · kind lists · rename values (enums.yaml and document values together)": {ko: "상태 · 유형 목록 보기 · 이름 바꾸기 (enums.yaml과 문서 값을 함께)"}
+"✔ Saved {name}": {ko: "✔ {name} 저장"}
+"Next: lantern scaffold init --plan": {ko: "다음: lantern scaffold init --plan"}
+"Languages: none detected — for a new project, ask the user and write them with --languages": {ko: "언어: 알아본 것 없음 — 새 프로젝트면 사용자에게 묻고 --languages로 적는다"}
+"Language: {lang} ({value}) · runner '{value2}'": {ko: "언어: {lang} ({value}) · 실행기 '{value2}'"}
+"No lantern.yaml — run lantern profile write first": {ko: "lantern.yaml이 없습니다 — lantern profile write 먼저"}
+"lantern enums rename <list> <old name> <new name>  (e.g. debt_status \"Asked Again\" \"Asked Twice\")": {ko: "lantern enums rename <목록> <옛 이름> <새 이름>  (예: debt_status 되물음 \"다시 물음\")"}
+"✔ Also changed the value in {count} documents": {ko: "✔ 문서 {count}개의 값도 바꿈"}
+"✔ Regenerated skills ({count})": {ko: "✔ 스킬 다시 생성 ({count}개)"}
+"A protected-section key is one of {items} (lantern sections list)": {ko: "보호 칸 키는 {items} 중 하나입니다 (lantern sections list)"}
+"✔ The '{title}' section is now recognized as '## {title2}' — documents with the old title are still recognized": {ko: "✔ '{title}' 칸을 이제 '## {title2}'(으)로 알아봅니다 — 예전 제목으로 만든 문서도 계속 알아봅니다"}
+"turned off — won't ask again": {ko: "쓰지 않습니다 — 더 묻지 않습니다"}
+"turned back on": {ko: "다시 씁니다"}
+"✔ The '{title}' section is {state_word} ({feature})": {ko: "✔ '{title}' 칸을 {state_word} ({feature})"}
+"Connects to outside tools · services": {ko: "바깥 도구 · 서비스에 붙나"}
+"detect: write code size · languages · check commands to lantern.yaml": {ko: "detect: 코드 규모 · 언어 · 확인 명령을 lantern.yaml에 기록"}
+"Protected-section key (lantern sections list)": {ko: "보호 칸 키 (lantern sections list)"}
+"rename: new title": {ko: "rename: 새 제목"}
+"List name (e.g. debt_status)": {ko: "목록 이름 (예: debt_status)"}
+"No lantern.yaml — /l-init": {ko: "lantern.yaml이 없습니다 — /l-init"}
+"No lantern.yaml": {ko: "lantern.yaml이 없습니다"}
+"Document storage changes only with lantern docs-mode local|shared": {ko: "문서 저장 방식은 lantern docs-mode local|shared 로만 바꿉니다"}
+"ℹ This value changes how skills work → lantern upgrade": {ko: "ℹ 스킬 동작이 바뀌는 값입니다 → lantern upgrade"}
+"ℹ The documents to turn on may change → lantern scaffold init --plan": {ko: "ℹ 켜질 문서가 바뀔 수 있습니다 → lantern scaffold init --plan"}
+"ℹ The principles change → lantern upgrade (AGENTS.md · the principles document)": {ko: "ℹ 개발 원칙이 바뀝니다 → lantern upgrade (AGENTS.md · 개발 원칙 문서)"}
+"lantern.yaml has no project.kind — /l-init (or lantern profile set project.kind=cli)": {ko: "lantern.yaml에 project.kind가 없습니다 — /l-init (또는 lantern profile set project.kind=cli)"}
+"  Ways of working: ": {ko: "  작업 방식: "}
+"■ {label} (code {label2})": {ko: "■ {label} (코드 {label2})"}
+"  {role_label} in use: {name} ({ev}) → `{cmd}`": {ko: "  이미 쓰는 {role_label}: {name} ({ev}) → `{cmd}`"}
+" (not used)": {ko: " (쓰지 않음)"}
+"lantern sections rename {role} \"new title\"": {ko: "lantern sections rename {role} \"새 제목\""}
+"  · old names: {items}": {ko: "  · 예전 이름: {items}"}
+
+# cli/learn.py
+"Knowledge connector: search · read · propose · write · areas": {ko: "지식 연결기: search · read · propose · write · areas"}
+"Debt ledger: find · new · ask · resolve · promote · practice · known · status · list": {ko: "부채 장부: find · new · ask · resolve · promote · practice · known · status · list"}
+"Knowledge connector MCP server (stdio)": {ko: "지식 연결기 MCP 서버 (stdio)"}
+"✔ Draft {draft} (awaiting approval) → suggested place in the store: {target}": {ko: "✔ 초안 {draft} (승인 대기) → 저장소 위치 제안: {target}"}
+"✔ Wrote to the knowledge store: {path}": {ko: "✔ 지식 저장소에 씀: {path}"}
+"new: understanding (default) | tech": {ko: "new: 이해(기본) | 기술"}
+"ℹ propose_only — once approved, the user moves it into the store": {ko: "ℹ propose_only — 승인되면 사용자가 직접 저장소로 옮깁니다"}
+"No knowledge.areas_from (lantern knowledge areas \"2. Study\")": {ko: "knowledge.areas_from이 없습니다 (lantern knowledge areas \"2. Study\")"}
+"· exists": {ko: "· 있음"}
+"✚ suggested": {ko: "✚ 제안"}
+"🧠 '{arg}' is known tech — left out of debt candidates": {ko: "🧠 '{arg}'는 아는 기술 — 부채 후보에서 뺀다"}
+"{status_label} {id} {title} · asked {get} · note {value}": {ko: "{status_label} {id} {title} · 물은 횟수 {get} · 노트 {value}"}
+"No card: '{arg}'": {ko: "카드 없음: '{arg}'"}
+"lantern debt practice D-002 \"what you built · link · one-line takeaway\"": {ko: "lantern debt practice D-002 \"만든 것 · 링크 · 한 줄 소감\""}
+"· Already counted in this conversation ({ask_count})": {ko: "· 같은 대화에서 이미 셌습니다 ({ask_count}번)"}
+" ({value} → reopened)": {ko: " ({value} → 다시 열림)"}
+"{status_label} {rel} — asked {ask_count}{reopened}": {ko: "{status_label} {rel} — 물은 횟수 {ask_count}{reopened}"}
+"🔴 No note for '{arg}'": {ko: "🔴 '{arg}' 노트 없음"}
+"lantern debt known add \"tech\"": {ko: "lantern debt known add \"기술\""}
+"🟢 {title}  ({path} · {updated} · score {score})\n   {summary}": {ko: "🟢 {title}  ({path} · {updated} · 점수 {score})\n   {summary}"}
+
+# cli/report.py
+"Suggested: {mode}": {ko: "추천: {mode}"}
+"  (based on: {code_files} code files · {loc} lines · works in progress {active_works} · tasks {tasks} · [P] ready now {parallel_ready} · tests {value})": {ko: "  (근거: 코드 {code_files}개 파일 · {loc}줄 · 진행 중 작업 {active_works} · 할 일 {tasks} · [P] 지금 가능 {parallel_ready} · 테스트 {value})"}
+"yes": {ko: "있음"}
+"no": {ko: "없음"}
+"Next: open the docs/ folder as a vault in Obsidian, and turn community plugins on when asked (turn off restricted mode)": {ko: "다음: Obsidian에서 docs/ 폴더를 볼트로 열고, 커뮤니티 플러그인을 켜 달라고 물으면 켭니다 (제한 모드 해제)"}
+"Make the status report": {ko: "현황 보고 생성"}
+"Where things stand in 3 lines": {ko: "지금 상황 3줄"}
+"Download the recommended Obsidian plugins (Dataview · Metadata Menu)": {ko: "Obsidian 권장 플러그인(Dataview · Metadata Menu) 받기"}
+"Find doc-code mismatches": {ko: "문서-코드 어긋남 찾기"}
+"Record the result of aligning": {ko: "맞추기 결과 기록"}
+"Update the MOC": {ko: "MOC 갱신"}
+"Evaluate AI work — which setups helped (run records)": {ko: "AI 작업 평가 — 어떤 구성이 결과에 도움이 됐나 (실행 기록)"}
+"Suggest an AI work mode for the project's size (harness · loop · graph)": {ko: "프로젝트 크기에 맞는 AI 작업 방식 추천 (하네스 · 루프 · 그래프)"}
+"Next: 3-line summary for the lead → lantern report --summary \"…\" \"…\" \"…\"": {ko: "다음: 팀장 보고 3줄 → lantern report --summary \"…\" \"…\" \"…\""}
+"✔ Written to lantern.yaml → lantern upgrade (into the skills)": {ko: "✔ lantern.yaml에 적었습니다 → lantern upgrade (스킬에 반영)"}
+"3-line summary for the lead": {ko: "팀장 보고 3줄"}
+"git range (e.g. main..HEAD)": {ko: "git 범위 (예: main..HEAD)"}
+"Run acceptance tests with build.test": {ko: "build.test로 수락 기준 테스트"}
+"Why it was changed without a work": {ko: "작업 없이 고친 이유"}
+"One of --work W-012 or --none \"reason\"": {ko: "--work W-012 또는 --none \"이유\" 중 하나"}
+"  Settings: ": {ko: "  설정: "}
+
+# cli/tools.py
+"open {label} — type `{launch}` in a terminal": {ko: "{label}를 엽니다 — 터미널에 `{launch}` 입력"}
+"in {label}, `{command_prefix}l-init`": {ko: "{label}는 `{command_prefix}l-init`"}
+"Next steps": {ko: "다음 단계"}
+"  1. In this folder, {opens}": {ko: "  1. 이 폴더에서 {opens}"}
+"✔ Created {count} files in {out} (install with lantern install)": {ko: "✔ {count}개 파일을 {out}에 생성 (설치는 lantern install)"}
+"Install skills · rules · agent hooks into the AI tool folders (before /l-init)": {ko: "스킬 · 규칙 · 에이전트 hook을 AI 도구 폴더에 설치 (/l-init 전에)"}
+"Regenerate for a new version · a changed lantern.yaml (edited files are skipped)": {ko: "새 버전 · 바뀐 lantern.yaml로 다시 생성 (고친 파일은 건너뜀)"}
+"Only write each tool's skill files to a folder (preview)": {ko: "도구별 스킬 파일을 폴더에 생성만 (미리보기)"}
+"Change document storage (shared ↔ local)": {ko: "문서 저장 방식 바꾸기 (shared ↔ local)"}
+"Common skill wrap-up: check → map → run record": {ko: "스킬 공통 마무리: check → map → 실행 기록"}
+"ℹ This computer also has {items}. To use them too: lantern install --tools {items2}": {ko: "ℹ 이 컴퓨터에 {items}도 있습니다. 함께 쓰려면: lantern install --tools {items2}"}
+"Next: carry on in the AI tool (where things stand: lantern status)": {ko: "다음 단계: AI 도구에서 하던 작업을 이어 갑니다 (지금 상황은 lantern status)"}
+"Open the AI tool — ": {ko: "AI 도구를 엽니다 — "}
+" — answer a few questions and the document layout and settings are made": {ko: " — 몇 가지 질문에 답하면 문서 구조와 설정이 만들어집니다"}
+"Unknown hook: {name}": {ko: "알 수 없는 hook: {name}"}
+"claude,codex,antigravity (default claude)": {ko: "claude,codex,antigravity (기본 claude)"}
+"Overwrite files the user edited too": {ko: "사용자가 고친 파일도 덮어쓰기"}
+"Also register the knowledge connector MCP server (lantern mcp)": {ko: "지식 연결기 MCP 서버도 등록 (lantern mcp)"}
+"Language of skills · rules · documents (first install only, default ko)": {ko: "스킬 · 규칙 · 문서의 언어 (처음 설치할 때만, 기본 ko)"}
+"Also check in GitHub Actions: formats · lint · type check · acceptance tests (with project tool setup)": {ko: "GitHub Actions에서도 검사: 양식 · 린트 · 타입 검사 · 수락 기준 테스트 (프로젝트 도구 준비 포함)"}
+"Turn off the GitHub Actions check (removes the workflow file if unedited)": {ko: "GitHub Actions 검사 끄기 (고치지 않은 workflow 파일은 지움)"}
+"  2. Type `/l-init` in the prompt": {ko: "  2. 입력창에 `/l-init`을 입력합니다"}
+"LanternSpec hook {name} error: {e}": {ko: "LanternSpec hook {name} 오류: {e}"}
+"{label}: `{launch}`": {ko: "{label}는 `{launch}`"}
+
+# cli/work.py
+"✔ Recorded approval in {rel}": {ko: "✔ {rel} 승인 기록"}
+"{value} {score}% like the mockup (threshold {threshold:g}%)": {ko: "{value} 시안과 {score}% 비슷함 (기준 {threshold:g}%)"}
+"→ The automatic comparison is for reference — show them side by side and ask the person \"Does it match the mockup?\"": {ko: "→ 자동 비교는 참고용 — 나란히 보여 주고 사람에게 \"시안과 같나요?\"를 묻는다"}
+"Make folders · documents from templates": {ko: "템플릿으로 폴더 · 문서 만들기"}
+"Ideas: find (overlaps) · status": {ko: "아이디어: find(겹침) · status"}
+"Record design approval": {ko: "설계 승인 기록"}
+"Record why the person changed the suggested work unit": {ko: "작업 단위 추천을 사람이 바꾼 이유 기록"}
+"Tasks: next · start · done (inside /l-build)": {ko: "할 일 다음 · 시작 · 완료 (/l-build 안에서)"}
+"Work branches · parallel works · finish · archive · stage": {ko: "작업 브랜치 · 동시 작업 · 마치기 · 보관 · 단계"}
+"Work pack (a one-off summary for the AI)": {ko: "작업 꾸러미 (AI용 한 번 쓰는 요약)"}
+"Screen mockups: import (files · bundles → screens folder) · compare (capture ↔ mockup)": {ko: "화면 시안: import(파일 · 묶음 → 화면/) · compare(캡처 ↔ 시안)"}
+"DBML → ERD · data dictionary, SQL → DBML, drift": {ko: "DBML → ERD · 데이터 사전, SQL → DBML, 어긋남"}
+"Check DBML (.dbml or the dbml block in a design document)": {ko: "DBML 검사 (.dbml 또는 설계 문서의 dbml 블록)"}
+"▶ Started {id} [{attr}:: {started}]": {ko: "▶ {id} 시작 [{attr}:: {started}]"}
+"✔ Finished {id} [{attr}:: {finished}]": {ko: "✔ {id} 완료 [{attr}:: {finished}]"}
+"↩ Reopened {id}": {ko: "↩ {id} 다시 열림"}
+"✔ Checked {upper} in {rel}": {ko: "✔ {rel} {upper} 체크"}
+"lantern screen compare <build capture.png> <mockup.png>": {ko: "lantern screen compare <구현 캡처.png> <시안.png>"}
+"  · differs: {h}": {ko: "  · 다른 곳: {h}"}
+"Not found: {path}": {ko: "없습니다: {path}"}
+"✔ ERD · data dictionary → {rel} ({count} tables)": {ko: "✔ ERD · 데이터 사전 → {rel} (테이블 {count}개)"}
+"Needs SQL migration files (.sql)": {ko: "SQL 마이그레이션 파일(.sql)이 필요합니다"}
+"{value} DBML {count} tables · {count2} relations": {ko: "{value} DBML 테이블 {count}개 · 관계 {count2}개"}
+"Folders · templates · MOC as lantern.yaml says": {ko: "lantern.yaml대로 폴더 · 템플릿 · MOC"}
+"Only show what would be made": {ko: "만들 것만 보여 주기"}
+"Work folder + plan document": {ko: "작업 폴더 + 기획 문서"}
+"A work that changes screens": {ko: "화면이 바뀌는 작업"}
+"Work document (design · tasks · log)": {ko: "작업 문서 (설계 · 할 일 · 기록)"}
+"Idea card": {ko: "아이디어 카드"}
+"Idea kind (default: the first value of enums.yaml idea_kind)": {ko: "아이디어 유형 (기본: enums.yaml idea_kind의 첫 값)"}
+"Default: new in enums.yaml idea_status": {ko: "기본: enums.yaml idea_status의 new"}
+"Mark as 🤖 recorded automatically": {ko: "🤖 자동 기록 표시"}
+"Decision record": {ko: "결정 기록"}
+"Meeting notes (2 or more people)": {ko: "회의록 (2인 이상)"}
+"A document from a custom template": {ko: "직접 만든 양식으로 문서"}
+"path in docs.md": {ko: "docs 안 경로.md"}
+"next: every task that can start now ([P] ones go to parallel agents)": {ko: "next: 지금 시작할 수 있는 할 일 전부 ([P]는 병렬 에이전트로)"}
+"estimate: start date": {ko: "estimate: 시작 날짜"}
+"estimate: working hours a day": {ko: "estimate: 하루 작업 시간"}
+"estimate: write the suggestion into the tasks document": {ko: "estimate: 제안을 할 일 문서에 적기"}
+"[P] can run at the same time as other [P] tasks": {ko: "[P] 다른 [P] 할 일과 동시에 할 수 있음"}
+"from-sql: migration files · folders": {ko: "from-sql: 마이그레이션 파일 · 폴더"}
+"diff: migration files · folders": {ko: "diff: 마이그레이션 파일 · 폴더"}
+"No overlapping ideas": {ko: "겹치는 아이디어 없음"}
+" — dropped because: {dropped_reason}": {ko: " — 버린 이유: {dropped_reason}"}
+"{id} {title} ({kind} · {status}) score {score}{extra}": {ko: "{id} {title} ({kind} · {status}) 점수 {score}{extra}"}
+"lantern idea status IDEA-014 <status>": {ko: "lantern idea status IDEA-014 <상태>"}
+"No task can start now": {ko: "지금 시작할 수 있는 할 일이 없습니다"}
+"ℹ {count} [P] tasks can each go to a parallel agent (one task = one commit)": {ko: "ℹ [P] {count}개는 병렬 에이전트에 하나씩 맡길 수 있습니다 (할 일 하나 = 커밋 하나)"}
+"  · skipped {tid}: {why}": {ko: "  · 건너뜀 {tid}: {why}"}
+"🔎 AC checkpoint: {ac} — all linked tasks are done. Check just this criterion, then lantern task ac {work_id} {ac}": {ko: "🔎 AC 체크포인트: {ac} — 연결된 할 일이 모두 끝났습니다. 이 기준만 확인하고 lantern task ac {work_id} {ac}"}
+"✅ All tasks of this work are done — update the current state": {ko: "✅ 이 작업의 할 일을 모두 끝냈습니다 — 현재 상태 반영"}
+"lantern screen import W-012 <file · folder · zip> …": {ko: "lantern screen import W-012 <파일 · 폴더 · zip> …"}
+"No DBML: {rel}": {ko: "DBML이 없습니다: {rel}"}
+"Fix the DBML errors first (lantern check-dbml)": {ko: "DBML 오류를 먼저 고치세요 (lantern check-dbml)"}
+"// generated back from {count} migrations — lantern dbml from-sql (migrations are the source of truth)": {ko: "// 마이그레이션 {count}개에서 역생성 — lantern dbml from-sql (마이그레이션이 기준)"}
+"✔ {rel} ({count} tables)": {ko: "✔ {rel} (테이블 {count}개)"}
+"✔ DBML and migrations match": {ko: "✔ DBML과 마이그레이션이 같습니다"}
+" — {count} errors": {ko: " — 오류 {count}개"}
+"· Nothing to change (every document exists already)": {ko: "· 바뀔 것이 없습니다 (모든 문서가 이미 있음)"}
+"· Nothing new to make": {ko: "· 새로 만들 것이 없습니다"}
+"✅ All tasks done — on to updating the current state": {ko: "✅ 모든 할 일 완료 — 현재 상태 반영 단계로"}
+"To ask: ": {ko: "물을 것: "}
+"✔ Archived: {rel}": {ko: "✔ 보관: {rel}"}
+"✔ {value} → {value2} ({count} documents)": {ko: "✔ {value} → {value2} ({count}개 문서)"}
+"lantern work stage W-012 <stage>": {ko: "lantern work stage W-012 <단계>"}
+
+# core/profile.py
+"docs.unused_sections: '{r}' is not a protected section (available: {items})": {ko: "docs.unused_sections: '{r}'는 보호 칸이 아닙니다 (가능: {items})"}
+"# lantern.yaml — what kind of project this is (the answers to /l-init). People may edit it by hand.": {ko: "# lantern.yaml — 이 프로젝트가 어떤 프로젝트인지 (/l-init의 답). 사람이 직접 고쳐도 된다."}
+"lantern: {profile_version}                  # version of this file's format": {ko: "lantern: {profile_version}                  # 이 파일 형식의 버전"}
+"  origin: {s}        # greenfield (new) | brownfield (existing code)": {ko: "  origin: {s}        # greenfield(새로) | brownfield(기존 코드 있음)"}
+"  team: {s}              # solo (one person) | team (2 or more)": {ko: "  team: {s}              # solo(1인) | team(2인 이상)"}
+"  members: {s}            # owner candidates for a team": {ko: "  members: {s}            # team일 때 담당자 후보"}
+"  clients: {s}          # web | desktop | mobile — several allowed": {ko: "  clients: {s}          # web | desktop | mobile — 여러 개 가능"}
+"  server: {s}            # none (no server) | external (a backend service like Supabase · Firebase) | custom (you write the server code — wherever it runs)": {ko: "  server: {s}            # none(서버 없음) | external(Supabase · Firebase 같은 백엔드 서비스) | custom(서버 코드를 직접 작성 — 어디에 띄우든)"}
+"  language: {s}              # language of documents · guidance": {ko: "  language: {s}              # 문서 · 안내의 언어"}
+"  comment_language: {s}    # language of code comments (docstrings · comments) — ko | en, empty follows language": {ko: "  comment_language: {s}    # 코드 주석(docstring · 주석)의 언어 — ko | en, 비우면 language를 따름"}
+"  kind: {s}              # {items} — what the design principles are chosen by": {ko: "  kind: {s}              # {items} — 설계 원칙을 고르는 기준"}
+"  external: {s}         # connects to outside tools · services (AI tools · payments · external APIs …)": {ko: "  external: {s}         # 바깥 도구 · 서비스(AI 도구 · 결제 · 외부 API 등)에 붙나"}
+"  languages: {s}        # languages to choose code conventions for ({items})": {ko: "  languages: {s}        # 코드 컨벤션을 고를 언어 ({items})"}
+"  code_size: {s}         # small | medium | large — measured (lantern principles detect). When it crosses a boundary, lantern doctor asks whether to raise it": {ko: "  code_size: {s}         # small | medium | large — 잰 값 (lantern principles detect). 경계를 넘으면 lantern doctor가 올릴지 묻는다"}
+"  remote: {s}          # shared (pushed together) | local (documents not pushed) — change it with lantern docs-mode": {ko: "  remote: {s}          # shared(같이 올림) | local(문서는 원격에 안 올림) — 바꿀 때는 lantern docs-mode"}
+"  tool: {s}       # claude-design | figma | canva (each tool's MCP) | none": {ko: "  tool: {s}       # claude-design | figma | canva (각 도구의 MCP) | none"}
+"  approval: {s}  # required (always approve) | auto (skip small designs) | off": {ko: "  approval: {s}  # required(항상 승인) | auto(작은 설계는 건너뜀) | off"}
+"  hooks: {s}              # warn (warning only) | block — applies only to commit message · schema log · document format checks": {ko: "  hooks: {s}              # warn(경고만) | block(막기) — 커밋 메시지 · 스키마 기록 · 문서 양식 검사에만 적용"}
+"  base: {s}                 # the base branch work branches merge into (main | dev …)": {ko: "  base: {s}                 # 작업 브랜치를 머지할 기준 브랜치 (main | dev …)"}
+"  capture: {s}           # manual (only when called) | ask (notice and ask) | auto (record on its own)": {ko: "  capture: {s}           # manual(직접 부를 때만) | ask(알아채고 묻기) | auto(알아서 기록)"}
+"  max_questions: {s}         # questions asked at once (at least 1)": {ko: "  max_questions: {s}         # 한 번에 묻는 질문 수 (최소 1)"}
+"  ac_format: {s}           # gwt (situation·action·result) | simple (when … then …)": {ko: "  ac_format: {s}           # gwt(상황·행동·결과) | simple(~하면 ~된다)"}
+"  ui_reference: {s}         # off | required (screen work needs a mockup to proceed)": {ko: "  ui_reference: {s}         # off | required(화면 작업은 시안이 있어야 진행)"}
+"  detect: {s}            # manual (only when called) | ask (ask on each question in conversation) | auto (suggest new tech, count right away if a card exists)": {ko: "  detect: {s}            # manual(불릴 때만) | ask(대화 중 질문마다 묻기) | auto(새 기술은 제안, 카드 있으면 바로 셈)"}
+"  max_candidates: {s}        # debt candidates shown at once (at least 1)": {ko: "  max_candidates: {s}        # 한 번에 보여 줄 부채 후보 수 (최소 1)"}
+"  verify: {s}             # self (mark it yourself) | explain (try explaining it in one line)": {ko: "  verify: {s}             # self(스스로 표시) | explain(한 줄 설명해 보기)"}
+"  report_cycle: {s}        # work (each work) | criterion (each acceptance criterion) | task (each task) — problems are reported right away anytime": {ko: "  report_cycle: {s}        # work(작업마다) | criterion(수락 기준마다) | task(할 일마다) — 문제가 생기면 언제든 바로 보고"}
+"  merge_approval: {s}  # required (approve before merging) | auto (summary report after merging)": {ko: "  merge_approval: {s}  # required(반영 전 승인) | auto(반영 후 요약 보고)"}
+"  loop: {s}                # off (only the small loop within a task) | on (rerun the whole work until the acceptance tests pass) — lantern harness suggest": {ko: "  loop: {s}                # off(할 일 안의 작은 반복만) | on(수락 기준 테스트가 통과할 때까지 작업 전체를 다시) — lantern harness suggest"}
+"  loop_limit: {s}           # max rounds of the big loop": {ko: "  loop_limit: {s}           # 큰 반복 최대 횟수"}
+"  max_lines: {s}            # warn to split when longer (doesn't block)": {ko: "  max_lines: {s}            # 이보다 길면 나누자고 경고 (막지는 않음)"}
+"{profile_file} is malformed (must be key: value)": {ko: "{profile_file} 형식이 올바르지 않습니다 (키: 값 형태여야 함)"}
+"project.external must be true or false": {ko: "project.external: true 또는 false여야 합니다"}
+"project.members: for a team (2 or more), list the owner candidates": {ko: "project.members: 2인 이상(team)이면 담당자 후보를 적어 주세요"}
+"lantern: the file format version must be {profile_version}": {ko: "lantern: 파일 형식 버전은 {profile_version} 이어야 합니다"}
+"project.language: no language pack '{language}' (available: {items})": {ko: "project.language: '{language}' 언어 묶음이 없습니다 (가능: {items})"}
+"docs.sections: must map section → new name (e.g. {{now: Today}})": {ko: "docs.sections: 칸 → 새 이름 형태여야 합니다 (예: {{now: 오늘 한 일}})"}
+"  extra: {s}           # optional documents turned on (api)": {ko: "  extra: {s}           # '필요하면 켜짐' 문서 중 켠 것 (api)"}
+"  sections:                  # renamed protected sections (lantern sections rename) — in a list, the first is the current name": {ko: "  sections:                  # 이름을 바꾼 보호 칸 (lantern sections rename) — 목록이면 앞이 지금 이름"}
+"  unused_sections: {s}   # protected sections not used (lantern sections off)": {ko: "  unused_sections: {s}   # 쓰지 않는 보호 칸 (lantern sections off)"}
+"knowledge:                  # the learning track. Delete this block if there is none": {ko: "knowledge:                  # 배우는 선로. 없으면 이 블록을 지운다"}
+"  type: {s}            # obsidian | folder (any Markdown folder)": {ko: "  type: {s}            # obsidian | folder(아무 Markdown 폴더)"}
+"  write: {s}            # direct (write right after approval) | propose_only (draft files only)": {ko: "  write: {s}            # direct(승인 후 바로 씀) | propose_only(초안 파일만)"}
+"# knowledge: add this block once there is a knowledge store (type · path · write)": {ko: "# knowledge: 지식 저장소가 생기면 블록을 추가한다 (type · path · write)"}
+"  schema_paths: {s}  # where schema files are (schema log check)": {ko: "  schema_paths: {s}  # 스키마 파일 위치 (스키마 기록 검사)"}
+"  test: {s}   # test command (work finish · scan --tests)": {ko: "  test: {s}   # 테스트 명령 (work finish · scan --tests)"}
+"always": {ko: "항상"}
+"always ({get})": {ko: "항상 ({get})"}
+"data source (DBML)": {ko: "데이터 원본 (DBML)"}
+"{key}: '{val}' is not allowed (available: {items})": {ko: "{key}: '{val}' 는 허용되지 않는 값입니다 (가능: {items})"}
+"{key}: must be a list (e.g. [{allowed}])": {ko: "{key}: 목록이어야 합니다 (예: [{allowed}])"}
+"{key}: must be an integer": {ko: "{key}: 정수여야 합니다"}
+"knowledge.path: the knowledge store path is empty (delete the knowledge block if there is none)": {ko: "knowledge.path: 지식 저장소 경로가 비어 있습니다 (없으면 knowledge 블록을 지우세요)"}
+"docs.sections: '{role}' is not a protected section (available: {items})": {ko: "docs.sections: '{role}'는 보호 칸이 아닙니다 (가능: {items})"}
+"docs.unused_sections: must be a list (e.g. [schema])": {ko: "docs.unused_sections: 목록이어야 합니다 (예: [schema])"}
+"  token_env: {s}   # environment variable holding the Notion token": {ko: "  token_env: {s}   # Notion 토큰을 담은 환경 변수"}
+"  areas_from: {s}    # (optional) read this folder's categories to suggest debt-card topics": {ko: "  areas_from: {s}    # (선택) 이 폴더 분류를 읽어 부채 카드 주제 추가를 제안한다"}
+"run after editing": {ko: "고친 뒤 돌린다"}
+"  {role}: {s}   # {role_label} command ({where})": {ko: "  {role}: {s}   # {role_label} 명령 ({where})"}
+"Invalid lantern.yaml values:\n- ": {ko: "lantern.yaml 값이 올바르지 않습니다:\n- "}
+"clients: {labels}": {ko: "화면 유형: {labels}"}
+"custom server": {ko: "서버 직접 구축"}
+"2 or more people": {ko: "2인 이상"}
+"knowledge store (the learning track)": {ko: "지식 저장소 있음 (배우는 선로)"}
+"knowledge store (generated)": {ko: "지식 저장소 있음 (자동 생성)"}
+"knowledge store": {ko: "지식 저장소 있음"}
+"project kind set (generated)": {ko: "프로젝트 종류를 정함 (자동 생성)"}
+"brownfield": {ko: "브라운필드"}
+"{key}: '{item}' is not allowed (available: {items})": {ko: "{key}: '{item}' 는 허용되지 않는 값입니다 (가능: {items})"}
+"{key}: must be at least {minimum} (now {val})": {ko: "{key}: 최소 {minimum} 이상이어야 합니다 (지금 {val})"}
+"docs.sections.{role}: must be a new name (text) or a list of names": {ko: "docs.sections.{role}: 새 이름(글자)이나 이름 목록이어야 합니다"}
+"external service + API on": {ko: "외부 서비스 + API 켬"}
+"on-device storage": {ko: "기기 안 저장소"}
+"external DB": {ko: "외부 DB"}
+"server DB": {ko: "서버 DB"}
+"web": {ko: "웹"}
+"desktop": {ko: "데스크톱"}
+"mobile": {ko: "모바일"}
+"How it's deployed (hosting · stores · signing …)": {ko: "배포 방식 (호스팅 · 스토어 · 서명 등)"}
+"Platform integration (push · deep links · URL schemes …)": {ko: "플랫폼 연동 (푸시 · 딥링크 · URL 스킴 등)"}
+"API style (REST · GraphQL …) and authentication": {ko: "API 형태 (REST · GraphQL 등)와 인증 방식"}
+"Where the server is deployed and how it's run": {ko: "서버 배포 위치와 운영 방법"}
+"Team member names (project.members) and review · branch rules": {ko: "팀원 이름 (project.members)과 리뷰 · 브랜치 규칙"}
+"Technologies you already know well (left out of debt candidates)": {ko: "이미 잘 아는 기술 (부채 후보에서 뺄 것)"}
+
+# core/state.py
+"LanternSpec local state — personal records are not committed": {ko: "LanternSpec 로컬 상태 — 개인 기록은 올리지 않는다"}

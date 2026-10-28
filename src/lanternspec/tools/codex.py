@@ -9,6 +9,7 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Any
 
+from ..core.messages import msg
 from ..core.project import Project, read, write
 from .base import MCP_NAME, HookInput, HookReply, Tool, merge_json_file, replace_hook_entries
 from .claude import ClaudeHooks, hook_specific_output
@@ -128,7 +129,7 @@ class Codex(ClaudeHooks, Tool):
             '.codex/hooks.json (에이전트 hook — Codex가 처음 실행할 때 신뢰 여부를 묻는다)'
         """
         merge_json_file(project.root / ".codex" / "hooks.json", lambda d: replace_hook_entries(d, self.hooks()))
-        merged = [".codex/hooks.json (에이전트 hook — Codex가 처음 실행할 때 신뢰 여부를 묻는다)"]
+        merged = [msg(".codex/hooks.json (agent hooks — Codex asks whether to trust them on first run)")]
         if mcp:
             path = project.root / ".codex" / "config.toml"
             write(path, add_mcp_server_toml(read(path) if path.exists() else ""))

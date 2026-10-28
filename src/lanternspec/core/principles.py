@@ -25,6 +25,7 @@ from typing import TYPE_CHECKING, Any
 import yaml
 
 from .. import resources
+from .messages import msg
 from .names import localize
 
 if TYPE_CHECKING:
@@ -61,7 +62,7 @@ def table(locale: str = "ko") -> dict[str, Any]:
 def _raw_conventions(language: str) -> dict[str, Any]:
     """Read conventions/<language>.yaml once, with every language's text."""
     if language not in language_names():
-        raise LookupError(f"'{language}' 컨벤션이 없습니다 (가능: {', '.join(language_names())})")
+        raise LookupError(msg("No conventions for '{language}' (available: {items})", language=language, items=", ".join(language_names())))
     return yaml.safe_load(resources.read_text(f"conventions/{language}.yaml"))
 
 

@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Any
 from .. import resources
 from ..core import enums as enums_mod
 from ..core import frontmatter, templating
+from ..core.messages import msg
 from ..core.profile import Profile
 
 if TYPE_CHECKING:
@@ -108,9 +109,14 @@ def validate_name(name: str) -> None:
         ValueError: 스킬 이름 규칙 위반: L_Build (소문자 · 숫자 · 하이픈, 1~64자, 하이픈으로 시작/끝 · -- 금지)
     """
     if not NAME_RE.match(name):
-        raise ValueError(f"스킬 이름 규칙 위반: {name} (소문자 · 숫자 · 하이픈, 1~64자, 하이픈으로 시작/끝 · -- 금지)")
+        raise ValueError(
+            msg(
+                "Skill name breaks the rules: {name} (lowercase · digits · hyphens, 1–64 chars, no leading/trailing hyphen · no --)",
+                name=name,
+            )
+        )
     if ":" in name:
-        raise ValueError("스킬 이름에 ':'는 넣지 않는다")
+        raise ValueError(msg("No ':' in skill names"))
 
 
 def load_sources(language: str = "ko") -> list[SkillSource]:
@@ -136,7 +142,7 @@ def load_sources(language: str = "ko") -> list[SkillSource]:
         text = (base / "SKILL.md").read_text(encoding="utf-8")
         doc = frontmatter.parse(text)
         if doc.meta.get("name") != name:
-            raise ValueError(f"{name}/SKILL.md의 name이 폴더 이름과 다릅니다")
+            raise ValueError(msg("The name in {name}/SKILL.md differs from the folder name", name=name))
         extra = {}
         for p in sorted(base.rglob("*")):
             if p.is_file() and p.name != "SKILL.md":
@@ -260,11 +266,11 @@ def fill_tokens(text: str, ctx: dict[str, Any]) -> str:
 
 def _token_value(value: Any) -> str:
     if value is None or value == "":
-        return "(없음)"
+        return msg("(none)")
     if isinstance(value, bool):
         return "true" if value else "false"
     if isinstance(value, list):
-        return ", ".join(str(v) for v in value) or "(없음)"
+        return ", ".join(str(v) for v in value) or msg("(none)")
     return str(value)
 
 
@@ -319,6 +325,6 @@ def generate(profile: Profile, tools: list[Tool], enums: enums_mod.Enums | None 
             for t in group:
                 for rel, text in t.skill_files(src, profile, prefix, enums).items():
                     if rel in files and files[rel] != text:
-                        raise ValueError(f"{rel}: 같은 폴더를 쓰는 도구들이 서로 다른 내용을 만듭니다")
+                        raise ValueError(msg("{rel}: tools sharing the same folder make different content", rel=rel))
                     files[rel] = text
     return files

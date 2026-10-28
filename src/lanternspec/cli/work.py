@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from ..core.messages import msg
 from ..core.project import Project
 from .common import Add, CliError, _csv, _p, _print
 
@@ -22,23 +23,23 @@ def cmd_scaffold(a: argparse.Namespace) -> int:
     project = _p()
     if a.kind == "init":
         if not project.profile.exists:
-            raise CliError("lantern.yaml이 없습니다 — lantern profile write 먼저")
+            raise CliError(msg("No lantern.yaml — run lantern profile write first"))
         if a.plan:
             actions = scaffold.init_plan(project)
             todo = [x for x in actions if x.kind != "keep"]
             if not todo:
-                print("· 바뀔 것이 없습니다 (모든 문서가 이미 있음)")
+                print(msg("· Nothing to change (every document exists already)"))
             for x in todo:
                 print(x.describe(project))
-            asks = [FOLLOW_UP_QUESTIONS[x.spec.key] for x in todo if x.kind == "create-doc" and x.spec.key in FOLLOW_UP_QUESTIONS]
+            asks = [msg(FOLLOW_UP_QUESTIONS[x.spec.key]) for x in todo if x.kind == "create-doc" and x.spec.key in FOLLOW_UP_QUESTIONS]
             if asks and project.docs.exists() and any(project.docs.iterdir()):
-                print("물을 것: " + " · ".join(asks))
+                print(msg("To ask: ") + " · ".join(asks))
             return 0
         done = scaffold.init_apply(project)
         from ..report import doc_map
 
         doc_map.run(project)
-        _print([f"✔ {d}" for d in done] or ["· 새로 만들 것이 없습니다"])
+        _print([f"✔ {d}" for d in done] or [msg("· Nothing new to make")])
         return 0
     if a.kind == "work":
         folder = scaffold.new_work(project, a.name, idea_id=a.idea, ui=a.ui)
@@ -74,14 +75,28 @@ def cmd_idea(a: argparse.Namespace) -> int:
     if a.action == "find":
         hits = ideas.idea_find(project, a.arg)
         if not hits:
-            print("겹치는 아이디어 없음")
+            print(msg("No overlapping ideas"))
         for h in hits:
-            extra = f" — 버린 이유: {h['dropped_reason']}" if h["status"] == project.enums.value("idea_status", "dropped") else ""
-            print(f"{h['id']} {h['title']} ({h['kind']} · {h['status']}) 점수 {h['score']}{extra}")
+            extra = (
+                msg(" — dropped because: {dropped_reason}", dropped_reason=h["dropped_reason"])
+                if h["status"] == project.enums.value("idea_status", "dropped")
+                else ""
+            )
+            print(
+                msg(
+                    "{id} {title} ({kind} · {status}) score {score}{extra}",
+                    id=h["id"],
+                    title=h["title"],
+                    kind=h["kind"],
+                    status=h["status"],
+                    score=h["score"],
+                    extra=extra,
+                )
+            )
         return 0
     if a.action == "status":
         if not a.status:
-            raise CliError("lantern idea status IDEA-014 <상태>")
+            raise CliError(msg("lantern idea status IDEA-014 <status>"))
         p = ideas.idea_status(project, a.arg, a.status, work=a.work, reason=a.reason, note=a.note)
         print(f"✔ {project.rel(p)} → {a.status}")
         return 0
@@ -104,12 +119,12 @@ def cmd_task(a: argparse.Namespace) -> int:
             print(json.dumps([{"id": t.id, "title": t.title, "parallel": t.parallel} for t in tasks], ensure_ascii=False))
             return 0
         if not tasks:
-            print("지금 시작할 수 있는 할 일이 없습니다")
+            print(msg("No task can start now"))
         for t in tasks:
             print(f"▶ {t.id}{' [P]' if t.parallel else ''} {t.title} [{project.names.attr('size')}:: {t.size or '?'}]")
         par = [t for t in tasks if t.parallel]
         if len(par) > 1:
-            print(f"ℹ [P] {len(par)}개는 병렬 에이전트에 하나씩 맡길 수 있습니다 (할 일 하나 = 커밋 하나)")
+            print(msg("ℹ {count} [P] tasks can each go to a parallel agent (one task = one commit)", count=len(par)))
         return 0
     if a.action == "next":
         res = task_cmd.next_task(project, a.target)
@@ -132,32 +147,38 @@ def cmd_task(a: argparse.Namespace) -> int:
             n = project.names
             print(f"▶ {t.id} {t.title} [{n.attr('size')}:: {t.size or '?'}] [{n.attr('criteria')}:: {', '.join(t.criteria) or '—'}]")
         elif res.all_done:
-            print("✅ 모든 할 일 완료 — 현재 상태 반영 단계로")
+            print(msg("✅ All tasks done — on to updating the current state"))
         else:
-            print("지금 시작할 수 있는 할 일이 없습니다")
+            print(msg("No task can start now"))
         for tid, why in res.skipped:
-            print(f"  · 건너뜀 {tid}: {why}")
+            print(msg("  · skipped {tid}: {why}", tid=tid, why=why))
         return 0
     if a.action == "start":
         t = task_cmd.start(project, a.target)
-        print(f"▶ {t.id} 시작 [{project.names.attr('start')}:: {t.started}]")
+        print(msg("▶ Started {id} [{attr}:: {started}]", id=t.id, attr=project.names.attr("start"), started=t.started))
         return 0
     if a.action == "done":
         res = task_cmd.done(project, a.target)
-        print(f"✔ {res.task.id} 완료 [{project.names.attr('finish')}:: {res.task.finished}]")
+        print(msg("✔ Finished {id} [{attr}:: {finished}]", id=res.task.id, attr=project.names.attr("finish"), finished=res.task.finished))
         for ac in res.checkpoints:
-            print(f"🔎 AC 체크포인트: {ac} — 연결된 할 일이 모두 끝났습니다. 이 기준만 확인하고 lantern task ac {res.task.work_id} {ac}")
+            print(
+                msg(
+                    "🔎 AC checkpoint: {ac} — all linked tasks are done. Check just this criterion, then lantern task ac {work_id} {ac}",
+                    ac=ac,
+                    work_id=res.task.work_id,
+                )
+            )
         if res.work_done:
-            print("✅ 이 작업의 할 일을 모두 끝냈습니다 — 현재 상태 반영")
+            print(msg("✅ All tasks of this work are done — update the current state"))
         return 0
     if a.action == "reopen":
         t = task_cmd.reopen(project, a.target)
-        print(f"↩ {t.id} 다시 열림")
+        print(msg("↩ Reopened {id}", id=t.id))
         return 0
     if a.action == "ac":
         if not a.extra:
             raise CliError("lantern task ac W-012 AC-1")
-        print(f"✔ {project.rel(task_cmd.check_ac(project, a.target, a.extra))} {a.extra.upper()} 체크")
+        print(msg("✔ Checked {upper} in {rel}", rel=project.rel(task_cmd.check_ac(project, a.target, a.extra)), upper=a.extra.upper()))
         return 0
     if a.action == "list":
         _print(task_cmd.summary(project, a.target))
@@ -192,7 +213,7 @@ def cmd_design(a: argparse.Namespace) -> int:
     from ..work import stages
 
     project = _p()
-    print(f"✔ {project.rel(stages.design_approve(project, a.work, a.by))} 승인 기록")
+    print(msg("✔ Recorded approval in {rel}", rel=project.rel(stages.design_approve(project, a.work, a.by))))
     return 0
 
 
@@ -221,12 +242,12 @@ def cmd_work(a: argparse.Namespace) -> int:
         _print(work.finish(project, a.ids[0], test=not a.no_test, keep=a.keep))
     elif a.action == "archive":
         dest = work.archive(project, a.ids[0])
-        print(f"✔ 보관: {project.rel(dest)}")
+        print(msg("✔ Archived: {rel}", rel=project.rel(dest)))
     elif a.action == "stage":
         if len(a.ids) < 2:
-            raise CliError("lantern work stage W-012 <단계>")
+            raise CliError(msg("lantern work stage W-012 <stage>"))
         changed = stages.work_stage(project, a.ids[0], a.ids[1])
-        print(f"✔ {a.ids[0]} → {a.ids[1]} ({len(changed)}개 문서)")
+        print(msg("✔ {value} → {value2} ({count} documents)", value=a.ids[0], value2=a.ids[1], count=len(changed)))
     return 0
 
 
@@ -246,17 +267,17 @@ def cmd_screen(a: argparse.Namespace) -> int:
     project = _p()
     if a.action == "import":
         if len(a.args) < 2:
-            raise CliError("lantern screen import W-012 <파일 · 폴더 · zip> …")
+            raise CliError(msg("lantern screen import W-012 <file · folder · zip> …"))
         _print([f"✔ {x}" for x in screen.import_files(project, a.args[0], [Path(x) for x in a.args[1:]])])
         return 0
     if len(a.args) != 2:
-        raise CliError("lantern screen compare <구현 캡처.png> <시안.png>")
+        raise CliError(msg("lantern screen compare <build capture.png> <mockup.png>"))
     score, hot = screen.compare(Path(a.args[0]), Path(a.args[1]))
     ok = score >= a.threshold
-    print(f"{'✔' if ok else '⚠'} 시안과 {score}% 비슷함 (기준 {a.threshold:g}%)")
+    print(msg("{value} {score}% like the mockup (threshold {threshold:g}%)", value="✔" if ok else "⚠", score=score, threshold=a.threshold))
     for h in hot:
-        print(f"  · 다른 곳: {h}")
-    print('→ 자동 비교는 참고용 — 나란히 보여 주고 사람에게 "시안과 같나요?"를 묻는다')
+        print(msg("  · differs: {h}", h=h))
+    print(msg('→ The automatic comparison is for reference — show them side by side and ask the person "Does it match the mockup?"'))
     return 0 if ok else 1
 
 
@@ -276,7 +297,7 @@ def _dbml_source(project: Project, path: str | None) -> tuple[Path, dbml.Schema]
             p = c
             break
     else:
-        raise CliError(f"없습니다: {path}")
+        raise CliError(msg("Not found: {path}", path=path))
     if p.suffix == ".md":
         blocks = re.findall(r"```dbml\n(.*?)```", read(p), re.S)
         base = read(schema_file) if schema_file.exists() else ""
@@ -302,20 +323,20 @@ def cmd_dbml(a: argparse.Namespace) -> int:
         schema_file = Path(a.schema) if a.schema else data_dir / "schema.dbml"
         doc = Path(a.doc) if a.doc else data_dir / project.names.file("data")
         if not schema_file.exists():
-            raise CliError(f"DBML이 없습니다: {project.rel(schema_file)}")
+            raise CliError(msg("No DBML: {rel}", rel=project.rel(schema_file)))
         schema = dbml.parse(read(schema_file))
         errors = [x for x in dbml.check(schema) if x[0] == "error"]
         if errors:
-            for _, line, msg in errors:
-                print(f"✖ {line}: {msg}")
-            raise CliError("DBML 오류를 먼저 고치세요 (lantern check-dbml)")
+            for _, line, text in errors:
+                print(f"✖ {line}: {text}")
+            raise CliError(msg("Fix the DBML errors first (lantern check-dbml)"))
         from ..core import frontmatter
 
         text = read(doc) if doc.exists() else ""
         new = dbml.render_into(text, schema, f"`{project.docs_rel(schema_file)}`")
         new = frontmatter.set_fields(new, {}) if new.startswith("---") else new
         write(doc, new)
-        print(f"✔ ERD · 데이터 사전 → {project.rel(doc)} (테이블 {len(schema.tables)}개)")
+        print(msg("✔ ERD · data dictionary → {rel} ({count} tables)", rel=project.rel(doc), count=len(schema.tables)))
         return 0
     files: list[Path] = []
     for raw in a.sql or []:
@@ -324,15 +345,20 @@ def cmd_dbml(a: argparse.Namespace) -> int:
             p = project.root / raw
         files += sorted(p.rglob("*.sql")) if p.is_dir() else [p]
     if not files:
-        raise CliError("SQL 마이그레이션 파일(.sql)이 필요합니다")
+        raise CliError(msg("Needs SQL migration files (.sql)"))
     real = dbml.from_sql(files)
     if a.action == "from-sql":
-        text = dbml.to_dbml(real, header=f"// 마이그레이션 {len(files)}개에서 역생성 — lantern dbml from-sql (마이그레이션이 기준)")
+        text = dbml.to_dbml(
+            real,
+            header=msg(
+                "// generated back from {count} migrations — lantern dbml from-sql (migrations are the source of truth)", count=len(files)
+            ),
+        )
         if a.out:
             out = Path(a.out)
             out = out if out.is_absolute() else project.root / out
             write(out, text)
-            print(f"✔ {project.rel(out)} (테이블 {len(real.tables)}개)")
+            print(msg("✔ {rel} ({count} tables)", rel=project.rel(out), count=len(real.tables)))
         else:
             print(text)
         return 0
@@ -340,7 +366,7 @@ def cmd_dbml(a: argparse.Namespace) -> int:
     schema_file = Path(a.schema) if a.schema else data_dir / "schema.dbml"
     doc_schema = dbml.parse(read(schema_file)) if schema_file.exists() else dbml.Schema()
     diffs = dbml.diff(doc_schema, real)
-    _print(diffs or ["✔ DBML과 마이그레이션이 같습니다"])
+    _print(diffs or [msg("✔ DBML and migrations match")])
     return 1 if diffs else 0
 
 
@@ -352,69 +378,74 @@ def cmd_check_dbml(a: argparse.Namespace) -> int:
     path, schema = _dbml_source(project, a.path)
     problems = dbml.check(schema)
     icon = {"error": "✖", "warn": "⚠", "info": "ℹ"}
-    for level, line, msg in problems:
-        print(f"{icon[level]} {project.rel(path)}{':' + str(line) if line else ''} {msg}")
+    for level, line, text in problems:
+        print(f"{icon[level]} {project.rel(path)}{':' + str(line) if line else ''} {text}")
     errors = [x for x in problems if x[0] == "error"]
     print(
-        f"{'✔' if not errors else '✖'} DBML 테이블 {len(schema.tables)}개 · 관계 {len(schema.refs)}개"
-        + (f" — 오류 {len(errors)}개" if errors else "")
+        msg(
+            "{value} DBML {count} tables · {count2} relations",
+            value="✔" if not errors else "✖",
+            count=len(schema.tables),
+            count2=len(schema.refs),
+        )
+        + (msg(" — {count} errors", count=len(errors)) if errors else "")
     )
     return 1 if errors else 0
 
 
 def register(add: Add) -> None:
     """Register the work-line commands."""
-    p = add("scaffold", cmd_scaffold, "템플릿으로 폴더 · 문서 만들기")
+    p = add("scaffold", cmd_scaffold, msg("Make folders · documents from templates"))
     ss = p.add_subparsers(dest="kind", required=True)
-    s = ss.add_parser("init", help="lantern.yaml대로 폴더 · 템플릿 · MOC")
-    s.add_argument("--plan", action="store_true", help="만들 것만 보여 주기")
-    s = ss.add_parser("work", help="작업 폴더 + 기획 문서")
+    s = ss.add_parser("init", help=msg("Folders · templates · MOC as lantern.yaml says"))
+    s.add_argument("--plan", action="store_true", help=msg("Only show what would be made"))
+    s = ss.add_parser("work", help=msg("Work folder + plan document"))
     s.add_argument("name")
     s.add_argument("--idea")
-    s.add_argument("--ui", action="store_true", help="화면이 바뀌는 작업")
-    s = ss.add_parser("doc", help="작업 문서 (설계 · 할 일 · 기록)")
+    s.add_argument("--ui", action="store_true", help=msg("A work that changes screens"))
+    s = ss.add_parser("doc", help=msg("Work document (design · tasks · log)"))
     s.add_argument("work")
     s.add_argument("doc")
-    s = ss.add_parser("idea", help="아이디어 카드")
+    s = ss.add_parser("idea", help=msg("Idea card"))
     s.add_argument("name")
-    s.add_argument("--kind", dest="kind_of", help="아이디어 유형 (기본: enums.yaml idea_kind의 첫 값)")
+    s.add_argument("--kind", dest="kind_of", help=msg("Idea kind (default: the first value of enums.yaml idea_kind)"))
     s.add_argument("--raw")
-    s.add_argument("--status", help="기본: enums.yaml idea_status의 new")
-    s.add_argument("--auto", action="store_true", help="🤖 자동 기록 표시")
-    s = ss.add_parser("adr", help="결정 기록")
+    s.add_argument("--status", help=msg("Default: new in enums.yaml idea_status"))
+    s.add_argument("--auto", action="store_true", help=msg("Mark as 🤖 recorded automatically"))
+    s = ss.add_parser("adr", help=msg("Decision record"))
     s.add_argument("name")
     s.add_argument("--work")
-    s = ss.add_parser("meeting", help="회의록 (2인 이상)")
+    s = ss.add_parser("meeting", help=msg("Meeting notes (2 or more people)"))
     s.add_argument("name")
-    s = ss.add_parser("custom", help="직접 만든 양식으로 문서")
+    s = ss.add_parser("custom", help=msg("A document from a custom template"))
     s.add_argument("template")
-    s.add_argument("dest", help="docs 안 경로.md")
-    p = add("idea", cmd_idea, "아이디어: find(겹침) · status")
+    s.add_argument("dest", help=msg("path in docs.md"))
+    p = add("idea", cmd_idea, msg("Ideas: find (overlaps) · status"))
     p.add_argument("action", choices=["find", "status"])
     p.add_argument("arg")
     p.add_argument("status", nargs="?")
     p.add_argument("--work")
     p.add_argument("--reason")
     p.add_argument("--note")
-    p = add("design", cmd_design, "설계 승인 기록")
+    p = add("design", cmd_design, msg("Record design approval"))
     p.add_argument("action", choices=["approve"])
     p.add_argument("work")
     p.add_argument("--by", required=True)
-    p = add("unit-log", cmd_unit_log, "작업 단위 추천을 사람이 바꾼 이유 기록")
+    p = add("unit-log", cmd_unit_log, msg("Record why the person changed the suggested work unit"))
     p.add_argument("action", choices=["add"])
     p.add_argument("--what", required=True)
     p.add_argument("--recommended", required=True)
     p.add_argument("--chosen", required=True)
     p.add_argument("--reason", required=True)
-    p = add("task", cmd_task, "할 일 다음 · 시작 · 완료 (/l-build 안에서)")
+    p = add("task", cmd_task, msg("Tasks: next · start · done (inside /l-build)"))
     p.add_argument("action", choices=["next", "start", "done", "reopen", "list", "ac", "estimate"])
     p.add_argument("target", nargs="?")
     p.add_argument("extra", nargs="?")
     p.add_argument("--json", action="store_true")
-    p.add_argument("--all", action="store_true", help="next: 지금 시작할 수 있는 할 일 전부 ([P]는 병렬 에이전트로)")
-    p.add_argument("--from", dest="from_date", help="estimate: 시작 날짜")
-    p.add_argument("--hours", type=float, default=6.0, help="estimate: 하루 작업 시간")
-    p.add_argument("--apply", action="store_true", help="estimate: 제안을 할 일 문서에 적기")
+    p.add_argument("--all", action="store_true", help=msg("next: every task that can start now ([P] ones go to parallel agents)"))
+    p.add_argument("--from", dest="from_date", help=msg("estimate: start date"))
+    p.add_argument("--hours", type=float, default=6.0, help=msg("estimate: working hours a day"))
+    p.add_argument("--apply", action="store_true", help=msg("estimate: write the suggestion into the tasks document"))
     p = add("task-add", cmd_task_add, argparse.SUPPRESS)
     p.add_argument("work")
     p.add_argument("what")
@@ -429,26 +460,26 @@ def register(add: Add) -> None:
     ):
         p.add_argument(f"--{flag}", default=default)
     p.add_argument("--unknown", action="store_true")
-    p.add_argument("--parallel", action="store_true", help="[P] 다른 [P] 할 일과 동시에 할 수 있음")
-    p = add("work", cmd_work, "작업 브랜치 · 동시 작업 · 마치기 · 보관 · 단계")
+    p.add_argument("--parallel", action="store_true", help=msg("[P] can run at the same time as other [P] tasks"))
+    p = add("work", cmd_work, msg("Work branches · parallel works · finish · archive · stage"))
     p.add_argument("action", choices=["branch", "start", "list", "finish", "archive", "stage"])
     p.add_argument("ids", nargs="*")
     p.add_argument("--no-install", action="store_true")
     p.add_argument("--no-test", action="store_true")
     p.add_argument("--keep", action="store_true")
-    p = add("pack", cmd_pack, "작업 꾸러미 (AI용 한 번 쓰는 요약)")
+    p = add("pack", cmd_pack, msg("Work pack (a one-off summary for the AI)"))
     p.add_argument("work")
     p.add_argument("--out")
-    p = add("screen", cmd_screen, "화면 시안: import(파일 · 묶음 → 화면/) · compare(캡처 ↔ 시안)")
+    p = add("screen", cmd_screen, msg("Screen mockups: import (files · bundles → screens folder) · compare (capture ↔ mockup)"))
     p.add_argument("action", choices=["import", "compare"])
     p.add_argument("args", nargs="*")
     p.add_argument("--threshold", type=float, default=90.0)
-    p = add("dbml", cmd_dbml, "DBML → ERD · 데이터 사전, SQL → DBML, 어긋남")
+    p = add("dbml", cmd_dbml, msg("DBML → ERD · data dictionary, SQL → DBML, drift"))
     p.add_argument("action", choices=["render", "from-sql", "diff"])
-    p.add_argument("sql", nargs="*", help="from-sql: 마이그레이션 파일 · 폴더")
-    p.add_argument("--sql", dest="sql_opt", action="append", help="diff: 마이그레이션 파일 · 폴더")
+    p.add_argument("sql", nargs="*", help=msg("from-sql: migration files · folders"))
+    p.add_argument("--sql", dest="sql_opt", action="append", help=msg("diff: migration files · folders"))
     p.add_argument("--schema")
     p.add_argument("--doc")
     p.add_argument("--out")
-    p = add("check-dbml", cmd_check_dbml, "DBML 검사 (.dbml 또는 설계 문서의 dbml 블록)")
+    p = add("check-dbml", cmd_check_dbml, msg("Check DBML (.dbml or the dbml block in a design document)"))
     p.add_argument("path", nargs="?")

@@ -16,6 +16,7 @@ import fnmatch
 from dataclasses import dataclass, field
 from typing import Any
 
+from ..core.messages import msg
 from ..core.project import Project, git_out, read
 from ..core.taskfile import TaskGraph, parse_tasks
 from . import evaluate
@@ -158,23 +159,36 @@ def suggest(project: Project) -> Suggestion:
     reasons: list[str] = []
     if f["active_works"] >= 2 and (f["team"] or f["parallel_ready"] >= 2 or f["loc"] > 20000):
         reasons.append(
-            f"진행 중 작업 {f['active_works']}개"
-            + (" · 2인 이상" if f["team"] else "")
-            + (f" · 지금 동시에 할 수 있는 [P] 할 일 {f['parallel_ready']}개" if f["parallel_ready"] else "")
+            msg("{active_works} works in progress", active_works=f["active_works"])
+            + (msg(" · 2 or more people") if f["team"] else "")
+            + (msg(" · {parallel_ready} [P] tasks can run at once now", parallel_ready=f["parallel_ready"]) if f["parallel_ready"] else "")
         )
-        reasons.append("서로 독립인 작업은 `lantern work start W-… W-…`로 worktree를 나눠 동시에 (설계 충돌은 미리 경고)")
+        reasons.append(
+            msg(
+                "Run independent works at once in separate worktrees with `lantern work start W-… W-…` "
+                "(design conflicts are warned about first)"
+            )
+        )
         settings: dict[str, Any] = {"build.report_cycle": "criterion"}
         if f["has_test"]:
             settings.update({"build.loop": "on", "build.loop_limit": 3})
-        return Suggestion("그래프 (병렬)", reasons, settings, f)
+        return Suggestion(msg("Graph (parallel)"), reasons, settings, f)
     if f["has_test"] and (f["skill_runs"] >= 5 and (f["clean_rate"] or 0) >= 70 or f["loc"] > 3000):
-        reasons.append("수락 기준 테스트 명령이 있다 (build.test)")
+        reasons.append(msg("There is an acceptance-test command (build.test)"))
         if f["skill_runs"]:
-            reasons.append(f"지난 마무리 {f['skill_runs']}번 중 오류 없이 끝낸 비율 {f['clean_rate']}%")
-        reasons.append("할 일을 다 끝낸 뒤 수락 기준 테스트가 통과할 때까지 작업 전체를 다시 돈다 (최대 build.loop_limit번)")
-        return Suggestion("루프 (큰 반복)", reasons, {"build.loop": "on", "build.loop_limit": 3, "build.report_cycle": "work"}, f)
-    reasons.append(f"코드 {f['loc']}줄 · 진행 중 작업 {f['active_works']}개 — 작은 프로젝트")
+            reasons.append(
+                msg(
+                    "{clean_rate}% of the last {skill_runs} wrap-ups finished without errors",
+                    skill_runs=f["skill_runs"],
+                    clean_rate=f["clean_rate"],
+                )
+            )
+        reasons.append(msg("After all tasks are done, rerun the whole work until the acceptance tests pass (up to build.loop_limit times)"))
+        return Suggestion(msg("Loop (big loop)"), reasons, {"build.loop": "on", "build.loop_limit": 3, "build.report_cycle": "work"}, f)
+    reasons.append(
+        msg("{loc} lines of code · {active_works} works in progress — a small project", loc=f["loc"], active_works=f["active_works"])
+    )
     if not f["has_test"]:
-        reasons.append("수락 기준 → 자동 테스트가 아직 없다 (build.test) — 큰 루프는 테스트가 자리 잡은 뒤")
-    reasons.append("할 일 하나 안에서 구현 → 테스트 → 고치기 최대 3번, 사람이 자주 본다")
-    return Suggestion("하네스 (작은 반복)", reasons, {"build.loop": "off", "build.report_cycle": "criterion"}, f)
+        reasons.append(msg("No automatic tests for the acceptance criteria yet (build.test) — the big loop comes once tests are in place"))
+    reasons.append(msg("Within one task, build → test → fix up to 3 times; the person checks often"))
+    return Suggestion(msg("Harness (small loop)"), reasons, {"build.loop": "off", "build.report_cycle": "criterion"}, f)

@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from ..core import frontmatter, sections, templating
+from ..core.messages import msg
 from ..core.new_id import next_id
 from ..core.project import Project, nfc, now_minute, read, safe_name, today, wikilink, write
 
@@ -321,12 +322,14 @@ def new_card(
     allowed = [enums.value("debt_kind", "understanding"), enums.value("debt_kind", "tech")]
     kind = kind or allowed[0]
     if area not in enums.values("area"):
-        raise ValueError(f"주제 '{area}'은 enums.yaml area 값이 아닙니다 (가능: {', '.join(enums.values('area'))})")
+        raise ValueError(
+            msg("Topic '{area}' is not an enums.yaml area value (available: {items})", area=area, items=", ".join(enums.values("area")))
+        )
     if kind not in allowed:
-        raise ValueError(f"새 카드의 종류는 {' · '.join(allowed)} (역량 부채는 lantern debt promote D-NNN)")
+        raise ValueError(msg("A new card's kind is {items} (for competency debt, lantern debt promote D-NNN)", items=" · ".join(allowed)))
     existing = find(project, name, kind=enums["debt_kind"].role_of(kind))
     if existing:
-        raise FileExistsError(f"이미 카드가 있습니다: {existing.id} {existing.title} (lantern debt ask {existing.id})")
+        raise FileExistsError(msg("A card already exists: {id} {title} (lantern debt ask {id})", id=existing.id, title=existing.title))
     debt_id = next_id(project, "debt")
     dest = project.folder("debt_cards") / f"{debt_id} {safe_name(name)}.md"
     owner = (project.profile.get("project.members") or [""])[0] if project.profile.team else ""
@@ -350,7 +353,7 @@ def new_card(
             "work": templating.yaml_list([work_link] if work_link else []),
             "session": templating.yaml_str(session),
             "links": templating.yaml_list([work_link] if work_link else []),
-            "work_text": " · ".join(x for x in [work_link or "직접 물음", context] if x),
+            "work_text": " · ".join(x for x in [work_link or msg("asked directly"), context] if x),
         },
     )
     return dest
@@ -416,7 +419,7 @@ def ask(project: Project, term: str, work: str | None = None, session: str = "",
     """
     card = find(project, term, kind="understanding")
     if card is None:
-        raise LookupError(f"'{term}' 카드가 없습니다 — lantern debt new 로 만드세요")
+        raise LookupError(msg("No card for '{term}' — create one with lantern debt new", term=term))
     st = project.enums["debt_status"]
     meta = card.meta
     count = int(meta.get("ask_count") or 0)
@@ -439,8 +442,8 @@ def ask(project: Project, term: str, work: str | None = None, session: str = "",
             if wl not in all_links:
                 updates["links"] = all_links + [wl]
     text = frontmatter.set_fields(read(card.path), updates)
-    again = f"↩️ {st.value('resolved')} 뒤 다시 물음 · " if reopened else ""
-    origin = f"- {today()} {again}{_work_link(project, work) if work else '직접 물음'}"
+    again = msg("↩️ asked again after {value} · ", value=st.value("resolved")) if reopened else ""
+    origin = f"- {today()} {again}{_work_link(project, work) if work else msg('asked directly')}"
     if context:
         origin += f" · {context}"
     write(card.path, _append_origin(project, text, origin))
@@ -467,7 +470,7 @@ def resolve(project: Project, term: str, note: str | None = None) -> Path:
     """
     card = find(project, term)
     if card is None:
-        raise LookupError(f"'{term}' 카드가 없습니다")
+        raise LookupError(msg("No card for '{term}'", term=term))
     updates: dict = {"status": project.enums.value("debt_status", "resolved"), "resolved": today()}
     if note:
         updates["note"] = note
@@ -500,14 +503,14 @@ def promote(project: Project, term: str, name: str | None = None) -> Path:
     """
     src = find(project, term, kind="understanding")
     if src is None:
-        raise LookupError(f"'{term}' 이해 부채 카드가 없습니다")
+        raise LookupError(msg("No understanding-debt card for '{term}'", term=term))
     if src.meta.get("status") != project.enums.value("debt_status", "resolved"):
-        raise ValueError(f"{src.id}는 아직 해결되지 않았습니다 — 이해가 먼저, 역량은 그다음 (lantern debt resolve {src.id})")
+        raise ValueError(msg("{id} is not resolved yet — understanding first, competency after (lantern debt resolve {id})", id=src.id))
     for c in cards(project):
         if kind_of(project, c) == project.enums.value("debt_kind", "competency") and str(c.meta.get("from") or "") == src.id:
-            raise FileExistsError(f"이미 역량 카드가 있습니다: {c.id} {c.title}")
+            raise FileExistsError(msg("A competency card already exists: {id} {title}", id=c.id, title=c.title))
     debt_id = next_id(project, "debt")
-    title = safe_name(name or f"{src.title} 직접 만들기")
+    title = safe_name(name or msg("Build {title} yourself", title=src.title))
     dest = project.folder("debt_cards") / f"{debt_id} {title}.md"
     from ..work.scaffold import create_from_template
 
@@ -530,7 +533,19 @@ def promote(project: Project, term: str, name: str | None = None) -> Path:
         },
     )
     competency = project.enums.label("debt_kind", "competency")
-    write(src.path, _append_origin(project, read(src.path), f"- {today()} {competency} 부채로 넘김 → {wikilink(project, dest, debt_id)}"))
+    write(
+        src.path,
+        _append_origin(
+            project,
+            read(src.path),
+            msg(
+                "- {today} moved to {competency} debt → {wikilink}",
+                today=today(),
+                competency=competency,
+                wikilink=wikilink(project, dest, debt_id),
+            ),
+        ),
+    )
     return dest
 
 
@@ -557,7 +572,7 @@ def practice(project: Project, term: str, result: str) -> Path:
         (c for c in cards(project) if kind_of(project, c) == competency and (c.id.upper() == term.upper() or c.matches(term))), None
     )
     if card is None:
-        raise LookupError(f"'{term}' 역량 카드가 없습니다 (lantern debt promote 먼저)")
+        raise LookupError(msg("No competency card for '{term}' (run lantern debt promote first)", term=term))
     text = frontmatter.set_fields(read(card.path), {"status": project.enums.value("debt_status", "practicing")})
     n = project.names
     if not n.is_unused("practice"):  # a missing section only loses the log line; check asks about it
@@ -619,7 +634,7 @@ def status_markdown(project: Project) -> str:
     areas = enums.values("area")
     kinds = enums.values("debt_kind")
     s = stats(project)
-    lines = ["| 부채 (열린 것) | " + " | ".join(areas) + " | 합계 |", "|---|" + ":-:|" * (len(areas) + 1)]
+    lines = [msg("| Debt (open) | ") + " | ".join(areas) + msg(" | Total |"), "|---|" + ":-:|" * (len(areas) + 1)]
     for k in kinds:
         row = s["table"].get(k, {})
         icon = enums["debt_kind"].icon(k) if enums.get("debt_kind") else ""
@@ -647,7 +662,7 @@ def write_status(project: Project) -> Path:
     resolved = project.enums.value("debt_status", "resolved")
     open_cards = [c for c in cs if c.meta.get("status") != resolved]
     open_cards.sort(key=lambda c: (-int(c.meta.get("ask_count") or 0), c.id))
-    rows = ["| 카드 | 종류 | 주제 | 상태 | 물은 횟수 | 노트 |", "|---|---|---|---|---|---|"]
+    rows = [msg("| Card | Kind | Topic | Status | Times asked | Note |"), "|---|---|---|---|---|---|"]
     for c in open_cards:
         st = str(c.meta.get("status") or "")
         note = str(c.meta.get("note") or "")
@@ -656,23 +671,29 @@ def write_status(project: Project) -> Path:
             f"{status_label(project, st)} | {c.meta.get('ask_count', 0)} | {note.replace('|', chr(92) + '|')} |"
         )
     if len(rows) == 2:
-        rows.append("| (열린 부채 없음) | | | | | |")
+        rows.append(msg("| (no open debt) | | | | | |"))
     open_counts = " · ".join(
         f"{status_label(project, v)} {s['by_status'].get(v, 0)}" for v in project.enums.values("debt_status") if v != resolved
     )
     body = "\n".join(
         [
-            "# 📒 부채 현황",
+            msg("# 📒 Debt Status"),
             "",
-            f"> ⚙️ 자동 생성 — `lantern debt status` · 기준: {now_minute()}. 손으로 고치지 마세요.",
+            msg("> ⚙️ Generated — `lantern debt status` · as of {now_minute}. Don't edit by hand.", now_minute=now_minute()),
             "",
             f"> [!abstract] {project.names.marker('glance')}",
-            f"> 열린 부채 {s['open']}개 ({open_counts}) · {project.enums.label('debt_status', 'resolved')} {s['resolved']}개",
+            msg(
+                "> Open debt {open} ({open_counts}) · {label} {resolved}",
+                open=s["open"],
+                open_counts=open_counts,
+                label=project.enums.label("debt_status", "resolved"),
+                resolved=s["resolved"],
+            ),
             "",
-            "## 종류별 · 주제별 개수",
+            msg("## Count by kind · topic"),
             status_markdown(project),
             "",
-            "## 열린 카드 (많이 물은 순)",
+            msg("## Open cards (most asked first)"),
             *rows,
             "",
         ]

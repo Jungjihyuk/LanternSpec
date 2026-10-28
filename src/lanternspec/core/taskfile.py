@@ -20,6 +20,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
+from .messages import msg
 from .names import Names
 
 TASK_LINE = re.compile(r"^(\s*)- \[( |x|X)\] (W-\d{3,}-T\d{2,})\b\s*(.*)$")
@@ -346,14 +347,14 @@ class TaskGraph:
             True
         """
         if task.done:
-            return "이미 완료"
+            return msg("already done")
         if task.unknown:
             return task.unknown
         index = self.by_id()
         for dep in task.deps:
             d = index.get(dep)
             if d is None:
-                return f"먼저 끝나야 할 일 {dep}이 목록에 없음"
+                return msg("{dep}, which must finish first, is not in the list", dep=dep)
             if not d.done:
-                return f"{dep} 먼저"
+                return msg("{dep} first", dep=dep)
         return None

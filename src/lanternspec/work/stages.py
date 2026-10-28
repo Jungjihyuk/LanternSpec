@@ -9,6 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from ..core import frontmatter, sections
+from ..core.messages import msg
 from ..core.names import WORK_DOCS
 from ..core.project import Project, read, today, write
 
@@ -73,10 +74,12 @@ def work_stage(project: Project, work_id: str, stage: str) -> list[Path]:
     """
     enums = project.enums
     if stage not in enums.values("work_status"):
-        raise ValueError(f"단계 '{stage}'는 작업 단계가 아닙니다 (가능: {', '.join(enums.values('work_status'))})")
+        raise ValueError(
+            msg("'{stage}' is not a work stage (available: {items})", stage=stage, items=", ".join(enums.values("work_status")))
+        )
     folder = project.find_work(work_id)
     if folder is None:
-        raise ValueError(f"작업 {work_id}를 찾지 못했습니다")
+        raise ValueError(msg("Work {work_id} not found", work_id=work_id))
     changed = []
     for role in WORK_DOCS:
         p = project.doc_path(folder, role)
@@ -107,7 +110,7 @@ def design_approve(project: Project, work_id: str, by: str) -> Path:
     folder = project.find_work(work_id, include_archive=False)
     p = project.doc_path(folder, "design") if folder else None
     if p is None or not p.exists():
-        raise ValueError(f"{work_id}에 {project.names.file('design')}이 없습니다")
+        raise ValueError(msg("{work_id} has no {file}", work_id=work_id, file=project.names.file("design")))
     value = f"{today()} {by}".strip()
     write(p, frontmatter.set_fields(read(p), {"approved": value}))
     return p

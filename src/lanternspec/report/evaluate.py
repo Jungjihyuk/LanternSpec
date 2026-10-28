@@ -16,6 +16,7 @@ from collections import defaultdict
 from statistics import mean, median
 from typing import Any
 
+from ..core.messages import msg
 from ..core.project import Project, read
 from ..core.taskfile import parse_tasks
 
@@ -140,7 +141,7 @@ def summary(project: Project) -> dict[str, Any]:
     skills = [r for r in runs if r.get("kind") == "skill"]
     by_skill: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for r in turns:
-        by_skill[str(r.get("skill") or "(스킬 없음)")].append(r)
+        by_skill[str(r.get("skill") or msg("(no skill)"))].append(r)
     by_model: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for r in turns:
         by_model[str(r.get("model") or "?")].append(r)
@@ -198,8 +199,8 @@ def markdown(project: Project) -> str:
     """
     s = summary(project)
     if not s["turns"] and not s["skill_runs"]:
-        return "_실행 기록이 아직 없습니다 (.lantern/runs.jsonl) — 스킬을 쓰면 쌓인다._"
-    out = [f"실행 기록: 대화 턴 {s['turns']}개 · 스킬 마무리 {s['skill_runs']}개", ""]
+        return msg("_No run records yet (.lantern/runs.jsonl) — they build up as skills are used._")
+    out = [msg("Run records: {turns} conversation turns · {skill_runs} skill wrap-ups", turns=s["turns"], skill_runs=s["skill_runs"]), ""]
 
     def table(title: str, head: tuple[str, ...], rows: list[tuple[Any, ...]]) -> None:
         if not rows:
@@ -209,32 +210,32 @@ def markdown(project: Project) -> str:
         out.append("")
 
     table(
-        "스킬별 비용",
-        ("스킬", "턴", "중간 시간(분)", "평균 도구 호출"),
+        msg("Cost by skill"),
+        (msg("Skill"), msg("Turns"), msg("Median time (min)"), msg("Avg tool calls")),
         [(k, v["n"], v["median_min"], v["avg_tools"]) for k, v in s["by_skill"].items()],
     )
     table(
-        "모델별 비용",
-        ("모델", "턴", "중간 시간(분)", "평균 도구 호출"),
+        msg("Cost by model"),
+        (msg("Model"), msg("Turns"), msg("Median time (min)"), msg("Avg tool calls")),
         [(k, v["n"], v["median_min"], v["avg_tools"]) for k, v in s["by_model"].items()],
     )
     table(
-        "마무리 품질 (close 때 양식 검사)",
-        ("스킬", "실행", "오류 없이 끝낸 비율(%)", "평균 경고"),
+        msg("Wrap-up quality (format check at close)"),
+        (msg("Skill"), msg("Runs"), msg("Finished without errors (%)"), msg("Avg warnings")),
         [(k, v["n"], v["clean_rate"], v["avg_warn"]) for k, v in s["close_quality"].items()],
     )
     if len(s["by_config"]) > 1:
         table(
-            "구성별 결과 — 어떤 설정이 도움이 됐나",
-            ("구성", "실행", "오류 없이 끝낸 비율(%)", "평균 경고"),
+            msg("Results by setup — which settings helped"),
+            (msg("Setup"), msg("Runs"), msg("Finished without errors (%)"), msg("Avg warnings")),
             [
                 (", ".join(f"{k}={v}" for k, v in json.loads(c).items() if v is not None), v["n"], v["clean_rate"], v["avg_warn"])
                 for c, v in s["by_config"].items()
             ],
         )
     table(
-        "할 일 크기별 실제 시간",
-        ("크기", "끝낸 할 일", "중간 시간(시간)"),
+        msg("Actual time by task size"),
+        (msg("Size"), msg("Tasks done"), msg("Median time (h)")),
         [(k, v["n"], v["median_h"]) for k, v in s["task_hours"].items()],
     )
     return "\n".join(out).rstrip()

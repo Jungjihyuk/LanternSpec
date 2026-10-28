@@ -10,6 +10,7 @@ import argparse
 import sys
 
 from .. import __version__
+from ..core.messages import msg
 from . import check, core, learn, report, tools, work
 from .common import CliError, Handler
 
@@ -26,9 +27,11 @@ def build_parser() -> argparse.ArgumentParser:
         >>> build_parser().prog
         'lantern'
     """
-    ap = argparse.ArgumentParser(prog="lantern", description="LanternSpec — 모르는 것은 밝히고, 걸어온 길은 보여 준다.")
+    ap = argparse.ArgumentParser(
+        prog="lantern", description=msg("LanternSpec — bring what you don't know to light, and show the path you've walked.")
+    )
     ap.add_argument("--version", action="version", version=f"lanternspec {__version__}")
-    sub = ap.add_subparsers(dest="command", metavar="<명령>")
+    sub = ap.add_subparsers(dest="command", metavar=msg("<command>"))
 
     def add(name: str, fn: Handler, help_: str) -> argparse.ArgumentParser:
         # internal commands (hook · task-add) stay out of the help list
@@ -60,6 +63,7 @@ def main(argv: list[str] | None = None) -> int:
     # `lantern task add …` reads better than a separate command name
     if len(argv) >= 2 and argv[0] == "task" and argv[1] == "add":
         argv = ["task-add", *argv[2:]]
+    _use_project_language()
     parser = build_parser()
     a = parser.parse_args(argv)
     if not getattr(a, "fn", None):
@@ -70,6 +74,17 @@ def main(argv: list[str] | None = None) -> int:
     except (CliError, ValueError, FileNotFoundError, FileExistsError, LookupError, RuntimeError) as e:
         print(f"✖ {e}", file=sys.stderr)
         return 1
+
+
+def _use_project_language() -> None:
+    """Give help and messages in the language of the project in the current folder (Korean outside a project)."""
+    from ..core import messages
+    from ..core.project import Project
+
+    try:
+        Project.load()
+    except (OSError, ValueError):
+        messages.use("ko")
 
 
 if __name__ == "__main__":  # pragma: no cover

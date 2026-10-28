@@ -11,6 +11,7 @@ from collections.abc import Iterator
 from pathlib import Path
 
 from ...core import frontmatter
+from ...core.messages import msg
 from ...core.project import nfc
 from . import Adapter, Hit, KnowledgeError
 
@@ -62,7 +63,7 @@ class ObsidianAdapter(Adapter):
         """
         self.root = root.resolve()
         if not self.root.exists():
-            raise KnowledgeError(f"지식 저장소 폴더가 없습니다: {root}")
+            raise KnowledgeError(msg("Knowledge store folder doesn't exist: {root}", root=root))
 
     def _files(self) -> Iterator[Path]:
         for p in self.root.rglob("*.md"):
@@ -152,7 +153,7 @@ class ObsidianAdapter(Adapter):
         """
         p = (self.root / path).resolve()
         if self.root not in p.parents or not p.exists():
-            raise KnowledgeError(f"노트를 찾지 못했습니다: {path}")
+            raise KnowledgeError(msg("Note not found: {path}", path=path))
         return p.read_text(encoding="utf-8")
 
     def write(self, rel_path: str, content: str) -> str:
@@ -174,9 +175,9 @@ class ObsidianAdapter(Adapter):
         """
         p = (self.root / rel_path).resolve()
         if self.root not in p.parents:
-            raise KnowledgeError("저장소 밖에는 쓸 수 없습니다")
+            raise KnowledgeError(msg("Can't write outside the store"))
         if p.exists():
-            raise KnowledgeError(f"이미 같은 이름의 노트가 있습니다: {rel_path} (덮어쓰지 않음)")
+            raise KnowledgeError(msg("A note with the same name already exists: {rel_path} (not overwritten)", rel_path=rel_path))
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(content, encoding="utf-8")
         return nfc(str(p.relative_to(self.root)))

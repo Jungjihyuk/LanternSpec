@@ -11,9 +11,12 @@ import shutil
 from pathlib import Path
 
 from ..core import sections
+from ..core.messages import msg
 from ..core.project import Project, git, git_out, nfc, read, write
 
-TODO_RE = re.compile(r"(TODO|FIXME|나중에|추후|언젠가|해야 할|할 것|아이디어|개선 필요|- \[ \])", re.I)
+TODO_RE = re.compile(
+    r"(TODO|FIXME|later|someday|to do|idea|needs? improv|나중에|추후|언젠가|해야 할|할 것|아이디어|개선 필요|- \[ \])", re.I
+)
 
 
 def _ours(project: Project) -> set:
@@ -63,7 +66,7 @@ def adopt(project: Project, source: Path | None = None) -> list[str]:
     else:
         src = source if source.is_absolute() else project.root / source
         if not src.exists():
-            raise FileNotFoundError(f"없습니다: {source}")
+            raise FileNotFoundError(msg("Not found: {source}", source=source))
         dest = legacy / src.name
         _move(project, src, dest)
         moved.append(project.rel(dest))
@@ -116,9 +119,16 @@ def map_rows(project: Project, files: list[Path]) -> str:
         rel = project.docs_rel(p)
         target = rel[:-3] if rel.endswith(".md") else rel
         rows.append(
-            f"| [[{target}\\|{nfc(p.stem)}]] | {{{{무슨 내용}}}} | {{{{아직 맞나}}}} | {{{{흡수 · 보관 · 옮기기}}}} | {{{{새 위치}}}} |"
+            msg(
+                "| [[{target}\\|{nfc}]] | {{{{What it says}}}} | {{{{Still true?}}}} | {{{{Absorb · Archive "
+                "· Move}}}} | {{{{New place}}}} |",
+                target=target,
+                nfc=nfc(p.stem),
+            )
         )
-    return "\n".join(rows) or "| {{문서}} | {{무슨 내용}} | {{아직 맞나}} | {{흡수 · 보관 · 옮기기}} | {{새 위치}} |"
+    return "\n".join(rows) or msg(
+        "| {{{{Document}}}} | {{{{What it says}}}} | {{{{Still true?}}}} | {{{{Absorb · Archive · Move}}}} | {{{{New place}}}} |"
+    )
 
 
 def add_map_rows(project: Project) -> Path | None:

@@ -13,6 +13,7 @@ from pathlib import Path
 
 from ..core import frontmatter
 from ..core.links import Resolver, iter_links
+from ..core.messages import msg
 from ..core.names import WORK_DOCS
 from ..core.project import Project, now_minute, read, work_id_of, work_name_of, write
 from .tasks import next_task
@@ -63,28 +64,39 @@ def build(project: Project, work_id: str) -> str:
     """
     folder = project.find_work(work_id, include_archive=False)
     if folder is None:
-        raise ValueError(f"진행 중인 작업 {work_id}를 찾지 못했습니다")
+        raise ValueError(msg("Work in progress {work_id} not found", work_id=work_id))
     wid = work_id_of(folder)
     parts: list[str] = [
-        f"# 📦 작업 꾸러미 — {wid} {work_name_of(folder)}",
-        f"> 자동 생성 {now_minute()} · `lantern pack {wid}` · 한 번 쓰고 버린다. 고치지 말고 원본 문서를 고친다.",
+        msg("# 📦 Work pack — {wid} {work_name_of}", wid=wid, work_name_of=work_name_of(folder)),
+        msg(
+            "> Generated {now_minute} · `lantern pack {wid}` · use once and throw away. Don't edit it; edit the source documents.",
+            now_minute=now_minute(),
+            wid=wid,
+        ),
         "",
-        "## 규칙",
-        "- 할 일 하나 = 커밋 하나, 메시지 끝에 `[할 일 ID]` · 시작/완료는 `lantern task start|done`",
-        f"- 설계에 없는 큰 변경 · `{project.names.marker('unknown')}` · 테스트 3번 실패 · 실제 DB 마이그레이션 → 바로 보고하고 멈춘다",
-        f"- 보고 주기: {project.profile.get('build.report_cycle')} · 반영 승인: {project.profile.get('build.merge_approval')}",
+        msg("## Rules"),
+        msg("- One task = one commit, `[task ID]` at the end of the message · start/finish with `lantern task start|done`"),
+        msg(
+            "- A big change not in the design · `{marker}` · a test failing 3 times · a real DB migration → report right away and stop",
+            marker=project.names.marker("unknown"),
+        ),
+        msg(
+            "- Report cycle: {get} · merge approval: {get2}",
+            get=project.profile.get("build.report_cycle"),
+            get2=project.profile.get("build.merge_approval"),
+        ),
     ]
     nxt = next_task(project, wid)
     if nxt.task:
         parts += [
             "",
-            f"## ▶ 다음 할 일: {nxt.task.id} {nxt.task.title}",
-            f"- 크기 {nxt.task.size or '?'} · 기준 {', '.join(nxt.task.criteria) or '—'}",
+            msg("## ▶ Next task: {id} {title}", id=nxt.task.id, title=nxt.task.title),
+            msg("- Size {value} · criteria {value2}", value=nxt.task.size or "?", value2=", ".join(nxt.task.criteria) or "—"),
         ]
     elif nxt.all_done:
-        parts += ["", "## ✅ 모든 할 일 완료 — 현재 상태 반영 단계"]
+        parts += ["", msg("## ✅ All tasks done — time to update the current state")]
     if nxt.skipped:
-        parts += ["", "### 지금 시작할 수 없는 할 일"] + [f"- {tid}: {why}" for tid, why in nxt.skipped]
+        parts += ["", msg("### Tasks that can't start yet")] + [f"- {tid}: {why}" for tid, why in nxt.skipped]
 
     linked: list[Path] = []
     resolver = Resolver(project.docs)
@@ -102,14 +114,14 @@ def build(project: Project, work_id: str) -> str:
     # current state: project definition glance always, linked docs in full (data doc if the design touches data)
     current = project.folder("current")
     definition = current / n.file("project_definition")
-    parts += ["", "---\n## 📘 현재 상태 (관련 부분만)"]
+    parts += ["", msg("---\n## 📘 Current state (relevant parts only)")]
     if definition.exists():
-        parts += [f"### {n.doc('project_definition')} — {n.marker('glance')}", _glance(read(definition)) or "(비어 있음)"]
+        parts += [f"### {n.doc('project_definition')} — {n.marker('glance')}", _glance(read(definition)) or msg("(empty)")]
     design = project.doc_path(folder, "design")
     if design.exists() and "```dbml" in read(design):
         schema = current / n.folder("data") / "schema.dbml"
         if schema.exists():
-            parts += ["### 데이터 원본 (schema.dbml)", "```dbml", read(schema).strip(), "```"]
+            parts += [msg("### Data source (schema.dbml)"), "```dbml", read(schema).strip(), "```"]
     for p in linked:
         if p == definition:
             continue

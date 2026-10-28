@@ -6,6 +6,7 @@ Shown at session start, by `lantern status` and at the top of reports.
 from __future__ import annotations
 
 from ..core import frontmatter
+from ..core.messages import msg
 from ..core.project import Project, read, work_id_of, work_name_of
 from ..core.taskfile import parse_tasks
 from ..work.tasks import next_task
@@ -70,34 +71,34 @@ def lines(project: Project) -> list[str]:
             if tf.exists():
                 ts = parse_tasks(read(tf), project.names)
                 if ts:
-                    extra = f", 할 일 {sum(t.done for t in ts)}/{len(ts)}"
+                    extra = msg(", tasks {sum}/{count}", sum=sum(t.done for t in ts), count=len(ts))
             design = project.doc_path(w, "design")
             if (
                 design.exists()
                 and not frontmatter.parse(read(design)).meta.get("approved")
                 and stage == project.enums.value("work_status", "design")
             ):
-                extra += ", ⏳ 설계 승인 대기"
+                extra += msg(", ⏳ design awaiting approval")
             parts.append(f"{work_id_of(w)} {work_name_of(w)} ({stage}{extra})")
-        more = f" 외 {len(works) - 3}개" if len(works) > 3 else ""
-        first = "📦 진행 중: " + " · ".join(parts) + more
+        more = msg(" and {value} more", value=len(works) - 3) if len(works) > 3 else ""
+        first = msg("📦 In progress: ") + " · ".join(parts) + more
     else:
-        first = "📦 진행 중: 없음 — /l-idea 또는 /l-plan으로 시작"
+        first = msg("📦 In progress: none — start with /l-idea or /l-plan")
     nxt = next_task(project) if works else None
     if nxt and nxt.task:
-        second = f"▶ 다음 할 일: {nxt.task.id} {nxt.task.title}" + (f" [{nxt.task.size}]" if nxt.task.size else "")
+        second = msg("▶ Next task: {id} {title}", id=nxt.task.id, title=nxt.task.title) + (f" [{nxt.task.size}]" if nxt.task.size else "")
     elif nxt and nxt.all_done:
-        second = "▶ 다음 할 일: 모든 할 일 완료 — 현재 상태 반영(/l-build 마무리)"
+        second = msg("▶ Next task: all tasks done — update the current state (/l-build wrap-up)")
     elif nxt and nxt.skipped:
         tid, why = nxt.skipped[0]
-        second = f"▶ 다음 할 일: 지금 시작할 수 있는 할 일 없음 ({tid}: {why})"
+        second = msg("▶ Next task: none can start now ({tid}: {why})", tid=tid, why=why)
     else:
-        second = "▶ 다음 할 일: 없음"
+        second = msg("▶ Next task: none")
     unknowns = open_unknowns(project)
     if unknowns:
         total = sum(n for _, n in unknowns)
         where = ", ".join(f"{d} ({n})" for d, n in unknowns[:3])
-        third = f"{project.names.marker('unknown')} {total}개: {where}"
+        third = msg("{marker} {total}: {where}", marker=project.names.marker("unknown"), total=total, where=where)
     else:
-        third = f"{project.names.marker('unknown')}: 없음"
+        third = msg("{marker}: none", marker=project.names.marker("unknown"))
     return [first, second, third]

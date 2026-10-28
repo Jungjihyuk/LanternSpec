@@ -15,6 +15,7 @@ import re
 from collections.abc import Iterable
 from pathlib import Path
 
+from .messages import msg
 from .names import Names
 
 TEMPLATE_ONLY = "<!-- lantern:template-only -->"
@@ -46,8 +47,14 @@ class SectionMissing(LookupError):
         self.role, self.path = role, path
         s = names.section(role)
         super().__init__(
-            f"{path.name}에 '{names.title(role)}' 칸이 없어 기록하지 못했습니다 — 이 칸은 {s.feature}. "
-            f'제목을 바꿨다면 lantern sections rename {role} "새 제목", 쓰지 않으려면 lantern sections off {role}'
+            msg(
+                "Couldn't record it: {name} has no '{title}' section — this section {feature}. "
+                'If you renamed it, lantern sections rename {role} "new title"; if you don\'t use it, lantern sections off {role}',
+                name=path.name,
+                title=names.title(role),
+                feature=s.feature,
+                role=role,
+            )
         )
 
 

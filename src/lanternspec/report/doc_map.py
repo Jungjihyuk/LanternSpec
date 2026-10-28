@@ -9,26 +9,34 @@ from __future__ import annotations
 from pathlib import Path
 
 from ..core import frontmatter
+from ..core.messages import msg
 from ..core.names import WORK_DOCS
 from ..core.project import Project, nfc, now_minute, read, wikilink, work_id_of, work_name_of, write
 from ..core.taskfile import parse_criteria, parse_tasks
 
 START, END = "<!-- l-map:start -->", "<!-- l-map:end -->"
 
-# (folder key, role, template, command)
-FOLDER_ROLES: list[tuple[str, str, str, str]] = [
-    ("templates", "사람이 정한 글 구조 (양식)", "—", "/l-template"),
-    ("ideas", "떠오른 생각. 아직 작업이 아님", "아이디어", "/l-idea"),
+# (folder key, role, template doc names, more templates than listed, command) — English text; msg() translates it
+FOLDER_ROLES: list[tuple[str, str, tuple[str, ...], bool, str]] = [
+    ("templates", "The writing structure people set (templates)", (), False, "/l-template"),
+    ("ideas", "Thoughts that came up. Not a work yet", ("idea",), False, "/l-idea"),
     (
         "works",
-        "기능 · 변경 하나 = 폴더 하나. 일하는 동안 고치는 곳은 여기뿐",
-        "기획 · 설계 · 할 일 · 기록",
+        "One feature · change = one folder. The only place edited while working",
+        ("plan", "design", "tasks", "record"),
+        False,
         "/l-plan → /l-design → /l-task → /l-build",
     ),
-    ("current", "지금 시스템의 모습. 작업이 끝날 때만 갱신", "프로젝트 정의서 외", "/l-build (반영) · /l-sync"),
-    ("ops", "회고 · 보고 · 회의록", "회의록", "/l-report"),
-    ("legacy", "(브라운필드) 기존 문서 원본 보관. 고치지 않음", "기존 문서 지도", "/l-init · /l-template migrate"),
-    ("debt", "이해 부채 장부. 카드 1장 = 부채 1개", "부채 카드", "/l-learn"),
+    (
+        "current",
+        "How the system looks now. Updated only when a work finishes",
+        ("project_definition",),
+        True,
+        "/l-build (update) · /l-sync",
+    ),
+    ("ops", "Retros · reports · meeting notes", ("meeting",), False, "/l-report"),
+    ("legacy", "(Brownfield) the original legacy documents. Never edited", ("legacy_map",), False, "/l-init · /l-template migrate"),
+    ("debt", "Understanding-debt ledger. One card = one debt", ("debt_card",), False, "/l-learn"),
 ]
 
 
@@ -62,21 +70,24 @@ def build_block(project: Project) -> str:
         >>> build_block(project).splitlines()[2]  # doctest: +SKIP
         '## 폴더'
     """
-    lines: list[str] = [f"> ⚙️ 자동 생성 — `lantern map` · 기준: {now_minute()}", ""]
+    lines: list[str] = [msg("> ⚙️ Generated — `lantern map` · as of {now_minute}", now_minute=now_minute()), ""]
     # folder table
-    lines += ["## 폴더", "| 폴더 | 역할 | 문서 수 | 템플릿 | 명령 |", "|---|---|---|---|---|"]
-    for key, role, tmpl, cmd in FOLDER_ROLES:
+    lines += [msg("## Folders"), msg("| Folder | Role | Documents | Template | Command |"), "|---|---|---|---|---|"]
+    for key, role, docs, more, cmd in FOLDER_ROLES:
         folder = project.folder(key)
         if not folder.exists():
             continue
         count = len(_md_files(folder, recursive=True))
-        lines.append(f"| {project.names.folder(key)} | {role} | {count} | {tmpl} | `{cmd}` |")
+        tmpl = " · ".join(project.names.doc(d) for d in docs) or "—"
+        if more:
+            tmpl = msg("{name} and more", name=tmpl)
+        lines.append(f"| {project.names.folder(key)} | {msg(role)} | {count} | {tmpl} | `{msg(cmd)}` |")
     lines.append("")
 
     # current state
     current = project.folder("current")
     if current.exists():
-        lines += ["## 📘 현재 상태 — 시스템이 지금 어떤 모습인가"]
+        lines += [msg("## 📘 Current state — how the system looks now")]
         for p in _md_files(current, recursive=True):
             st = _status_of(p)
             inactive = project.enums.value("current_status", "inactive")
@@ -86,11 +97,11 @@ def build_block(project: Project) -> str:
 
     # works — view by stage
     works = project.work_dirs()
-    lines += ["## 📦 진행 중 작업 — 단계별 보기"]
+    lines += [msg("## 📦 Works in progress — by stage")]
     if not works:
-        lines.append("- (아직 없음 — `/l-plan`으로 시작)")
+        lines.append(msg("- (nothing yet — start with `/l-plan`)"))
     else:
-        lines += ["| 작업 | 단계 | 📋 기획 | 📐 설계 | ✅ 할 일 | 🔨 기록 |", "|---|---|---|---|---|---|"]
+        lines += [msg("| Work | Stage | 📋 Plan | 📐 Design | ✅ Tasks | 🔨 Log |"), "|---|---|---|---|---|---|"]
         for w in works:
             wid, name = work_id_of(w), work_name_of(w)
             plan = project.doc_path(w, "plan")
@@ -112,7 +123,7 @@ def build_block(project: Project) -> str:
                         extra = f" ({sum(t.done for t in ts)}/{len(ts)})"
                 if role == "design":
                     approved = frontmatter.parse(read(p)).meta.get("approved")
-                    extra = " ✅ 승인" if approved else " ⏳ 승인 대기"
+                    extra = msg(" ✅ approved") if approved else msg(" ⏳ awaiting approval")
                 cells.append(wikilink(project, p, p.stem, table=True) + extra)
             lines.append(f"| {wid} {name} | {project.enums['work_status'].labelled(stage) if stage else ''} | " + " | ".join(cells) + " |")
     lines.append("")
@@ -120,7 +131,7 @@ def build_block(project: Project) -> str:
     archive = project.work_dirs(include_archive=True)
     done = [w for w in archive if w not in works]
     if done:
-        lines += ["## 🗄 보관된 작업"]
+        lines += [msg("## 🗄 Archived works")]
         for w in done:
             lines.append(f"- {wikilink(project, project.doc_path(w, 'plan'), work_id_of(w) + ' ' + work_name_of(w))}")
         lines.append("")
@@ -128,7 +139,7 @@ def build_block(project: Project) -> str:
     # ideas
     ideas = _md_files(project.folder("ideas"))
     if ideas:
-        lines += ["## 💡 아이디어", "| 아이디어 | 유형 | 상태 |", "|---|---|---|"]
+        lines += [msg("## 💡 Ideas"), msg("| Idea | Kind | Status |"), "|---|---|---|"]
         for p in ideas:
             meta = frontmatter.parse(read(p)).meta
             lines.append(f"| {wikilink(project, p, nfc(p.stem), table=True)} | {meta.get('kind', '')} | {meta.get('status', '')} |")
@@ -137,7 +148,7 @@ def build_block(project: Project) -> str:
     # decisions
     adrs = [p for p in _md_files(project.folder("rules")) if nfc(p.name).startswith("ADR-")]
     if adrs:
-        lines += ["## 📝 결정 기록"]
+        lines += [msg("## 📝 Decisions")]
         for p in adrs:
             lines.append(f"- {wikilink(project, p, nfc(p.stem))} — {_status_of(p)}")
         lines.append("")
@@ -146,28 +157,28 @@ def build_block(project: Project) -> str:
     extras = []
     status = project.folder("debt") / project.names.file("debt_status")
     if status.exists():
-        extras.append(f"- 📒 {wikilink(project, status, '부채 현황')}")
+        extras.append(f"- 📒 {wikilink(project, status, project.names.doc('debt_status'))}")
     report = project.folder("reports") / project.names.file("report")
     if report.exists():
-        extras.append(f"- 📊 {wikilink(project, report, '현황 보고')}")
+        extras.append(f"- 📊 {wikilink(project, report, msg('Status report'))}")
     legacy_map = project.folder("legacy") / project.names.file("legacy_map")
     if legacy_map.exists():
-        extras.append(f"- 🗂 {wikilink(project, legacy_map, '기존 문서 지도')}")
+        extras.append(f"- 🗂 {wikilink(project, legacy_map, project.names.doc('legacy_map'))}")
     if extras:
-        lines += ["## 바로 가기", *extras, ""]
+        lines += [msg("## Shortcuts"), *extras, ""]
 
     lines += [
-        "## 명령",
-        "| 하고 싶은 것 | 명령 |",
+        msg("## Commands"),
+        msg("| To do this | Command |"),
         "|---|---|",
-        "| 생각 기록 | `/l-idea` |",
-        "| 기획 → 설계 → 할 일 → 구현 | `/l-plan` → `/l-design` → `/l-task` → `/l-build` |",
-        "| 모르는 기술 | `/l-learn` |",
-        "| 현황 보기 | `/l-report` |",
-        "| 새 양식 · 양식 다듬기 | `/l-template` |",
-        "| 양식 검사 | `/l-check` |",
-        "| 문서 ↔ 코드 맞추기 | `/l-sync` |",
-        "| 중요한 결정 | `/l-adr` |",
+        msg("| Capture a thought | `/l-idea` |"),
+        msg("| Plan → design → tasks → build | `/l-plan` → `/l-design` → `/l-task` → `/l-build` |"),
+        msg("| An unfamiliar technology | `/l-learn` |"),
+        msg("| Where things stand | `/l-report` |"),
+        msg("| Make · refine templates | `/l-template` |"),
+        msg("| Check formats | `/l-check` |"),
+        msg("| Align docs ↔ code | `/l-sync` |"),
+        msg("| An important decision | `/l-adr` |"),
     ]
     return "\n".join(lines).rstrip()
 
@@ -207,4 +218,4 @@ def run(project: Project) -> Path:
 
 
 def _without_stamp(block: str) -> str:
-    return "\n".join(l for l in block.split("\n") if not l.startswith("> ⚙️ 자동 생성"))
+    return "\n".join(l for l in block.split("\n") if not l.startswith(msg("> ⚙️ Generated")))

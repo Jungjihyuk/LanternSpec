@@ -20,6 +20,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from ..core import frontmatter, sections
+from ..core.messages import msg
 from ..core.names import Names
 from ..core.project import Project, now_minute, read, today, work_id_of, write
 from ..core.taskfile import parse_tasks
@@ -77,25 +78,26 @@ def work_state(project: Project, work: Path) -> str:
     doing = [t.id for t in tasks if not t.done and t.started]
     progress = [stage] if stage else []
     if tasks:
-        progress.append(f"할 일 {sum(t.done for t in tasks)}/{len(tasks)}")
+        progress.append(msg("tasks {sum}/{count}", sum=sum(t.done for t in tasks), count=len(tasks)))
     if doing:
-        progress.append("하는 중 " + ", ".join(doing))
-    lines = [f"- 진행: {' · '.join(progress) or '시작 전'}"]
+        progress.append(msg("doing ") + ", ".join(doing))
+    summary = " · ".join(progress) or msg("not started")
+    lines = [msg("- Progress: {summary}", summary=summary)]
     nxt = next_task(project, wid)
     if nxt.task:
-        lines.append(f"- 다음: {nxt.task.id} {nxt.task.title}" + (" (하는 중)" if nxt.task.id in doing else ""))
+        lines.append(msg("- Next: {id} {title}", id=nxt.task.id, title=nxt.task.title) + (msg(" (doing)") if nxt.task.id in doing else ""))
     elif nxt.all_done:
-        lines.append("- 다음: 모든 할 일 완료 — 현재 상태 반영")
+        lines.append(msg("- Next: all tasks done — update the current state"))
     else:
-        lines.append("- 다음: 정해진 할 일 없음")
+        lines.append(msg("- Next: no task set"))
     if nxt.skipped:
-        lines.append("- 막힌 것: " + " · ".join(f"{tid} ({why})" for tid, why in nxt.skipped[:3]))
+        lines.append(msg("- Blocked: ") + " · ".join(f"{tid} ({why})" for tid, why in nxt.skipped[:3]))
     from ..report.status import open_unknowns  # mentions inside guide text don't count
 
     folder = project.docs_rel(work)
     unknowns = sum(n for doc, n in open_unknowns(project) if doc.startswith(folder + "/"))
     if unknowns:
-        lines.append(f"- 열린 질문: {project.names.marker('unknown')} {unknowns}개")
+        lines.append(msg("- Open questions: {marker} {unknowns}", marker=project.names.marker("unknown"), unknowns=unknowns))
     return "\n".join(lines)
 
 
@@ -131,7 +133,7 @@ def save_before_compact(project: Project) -> dict[Path, str]:
         if not session.exists():
             create_from_template(project, names.doc("session"), session, {"id": f"SESSION-{today()}"})
         states = [f"**{work_id_of(w)}**\n{work_state(project, w)}" for w in project.work_dirs()]
-        saved = {session: _overwrite_now(session, "\n\n".join(states) or "- 진행 중 작업 없음", stamp, names)}
+        saved = {session: _overwrite_now(session, "\n\n".join(states) or msg("- No work in progress"), stamp, names)}
     return {path: old for path, old in saved.items() if old is not None}
 
 

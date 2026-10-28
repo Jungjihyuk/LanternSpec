@@ -24,9 +24,10 @@ from functools import cached_property
 from pathlib import Path
 
 from . import enums as enums_mod
-from . import frontmatter
+from . import frontmatter, messages
 from . import names as names_mod
 from . import profile as profile_mod
+from .messages import msg
 from .profile import Profile
 
 STATE_DIR = ".lantern"
@@ -111,7 +112,7 @@ def safe_name(name: str) -> str:
     """
     cleaned = _UNSAFE.sub(" ", nfc(name)).strip()
     cleaned = re.sub(r"\s+", " ", cleaned)
-    return cleaned[:80].strip() or "제목 없음"
+    return cleaned[:80].strip() or msg("Untitled")
 
 
 def git(args: list[str], cwd: Path, check: bool = False, env: dict | None = None) -> subprocess.CompletedProcess:
@@ -227,6 +228,8 @@ class Project:
         root: Project root folder.
         profile: The settings read from lantern.yaml.
 
+    Loading a project switches messages (core/messages.py) to its language.
+
     Example:
         >>> project = Project.load()  # doctest: +SKIP
         >>> project.rel(project.folder("works"))  # doctest: +SKIP
@@ -251,7 +254,9 @@ class Project:
             'my-app'
         """
         r = find_root(root) if root is None else Path(root).resolve()
-        return cls(root=r, profile=profile_mod.load(r))
+        project = cls(root=r, profile=profile_mod.load(r))
+        messages.use(project.language)  # messages follow the project's language from here on
+        return project
 
     # ---- folders
     @property
@@ -312,6 +317,19 @@ class Project:
             '기획.md'
         """
         return folder / self.names.file(role)
+
+    @property
+    def language(self) -> str:
+        """The project's language: lantern.yaml project.language, else the one chosen at `lantern install --language`."""
+        if self.profile.exists:
+            return self.profile.language
+        import json
+
+        installed = self.root / STATE_DIR / "installed.json"
+        try:
+            return str(json.loads(installed.read_text(encoding="utf-8")).get("language") or self.profile.language)
+        except (OSError, ValueError):
+            return self.profile.language
 
     def reload_enums(self) -> None:
         """Forget the cached choice lists so the next access reads enums.yaml again.

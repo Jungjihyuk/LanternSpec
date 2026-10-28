@@ -6,6 +6,7 @@ A new tool needs one file implementing base.Tool and one line in REGISTRY below.
 
 from __future__ import annotations
 
+from ..core.messages import msg
 from .antigravity import Antigravity
 from .base import Tool
 from .claude import ClaudeCode
@@ -13,7 +14,7 @@ from .codex import Codex
 
 REGISTRY: dict[str, Tool] = {t.name: t for t in (ClaudeCode(), Codex(), Antigravity())}
 NAMES = list(REGISTRY)
-RENAMED = {"gemini": "antigravity (Gemini CLI는 Antigravity CLI로 바뀌었습니다)"}
+RENAMED = {"gemini": "antigravity (Gemini CLI became Antigravity CLI)"}  # English; msg() translates it
 COMMON_PATHS = ("lantern.yaml", "AGENTS.md", ".lantern/")
 
 
@@ -35,8 +36,8 @@ def get(name: str) -> Tool:
     """
     if name in REGISTRY:
         return REGISTRY[name]
-    hint = f" → {RENAMED[name]}" if name in RENAMED else ""
-    raise ValueError(f"지원하지 않는 도구: {name}{hint} (가능: {', '.join(NAMES)})")
+    hint = f" → {msg(RENAMED[name])}" if name in RENAMED else ""
+    raise ValueError(msg("Unsupported tool: {name}{hint} (available: {items})", name=name, hint=hint, items=", ".join(NAMES)))
 
 
 def resolve(names: list[str]) -> list[Tool]:

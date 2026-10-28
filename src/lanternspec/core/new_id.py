@@ -18,6 +18,7 @@ from collections.abc import Iterable
 from pathlib import Path
 
 from . import frontmatter
+from .messages import msg
 from .project import Project, nfc, read
 
 KINDS: dict[str, dict[str, object]] = {
@@ -60,7 +61,7 @@ def next_id(project: Project, kind: str) -> str:
     """
     kind = ALIASES.get(kind, kind)
     if kind not in KINDS:
-        raise ValueError(f"알 수 없는 ID 종류: {kind} (가능: {', '.join(KINDS)} · task W-012)")
+        raise ValueError(msg("Unknown ID kind: {kind} (available: {items} · task W-012)", kind=kind, items=", ".join(KINDS)))
     spec = KINDS[kind]
     prefix = str(spec["prefix"])
     width = int(spec["width"])  # type: ignore[arg-type]
@@ -106,7 +107,7 @@ def next_task_id(project: Project, work_id: str, tasks_file: Path | None = None)
     if tasks_file is None:
         work = project.find_work(work_id)
         if work is None:
-            raise ValueError(f"작업 {work_id} 폴더를 찾지 못했습니다")
+            raise ValueError(msg("Work folder {work_id} not found", work_id=work_id))
         tasks_file = project.doc_path(work, "tasks")
     n = 0
     if tasks_file.exists():

@@ -13,6 +13,7 @@ from pathlib import Path
 
 from ..check.check_docs import Finding
 from ..core import frontmatter
+from ..core.messages import msg
 from ..core.names import Names
 from ..core.project import Project, read
 from ..core.taskfile import parse_criteria
@@ -45,18 +46,22 @@ def check_criteria(project: Project, plan: Path) -> list[Finding]:
     situation, action, result_word = n.acceptance("situation"), n.acceptance("action"), n.acceptance("result")
     out: list[Finding] = []
     if not acs:
-        return [Finding("warn", rel, "ac-none", "수락 기준(- [ ] AC-1 …)이 없습니다", hint=f"{plan.name}에 한 줄에 하나씩")]
+        return [
+            Finding(
+                "warn", rel, "ac-none", msg("No acceptance criteria (- [ ] AC-1 …)"), hint=msg("One per line in {name}", name=plan.name)
+            )
+        ]
     seen = set()
     for i, ac in enumerate(acs, start=1):
         line = ac.line_no + 1
         if ac.id in seen:
-            out.append(Finding("error", rel, "ac-dup", f"{ac.id} 번호가 겹칩니다", line))
+            out.append(Finding("error", rel, "ac-dup", msg("{id} number is duplicated", id=ac.id), line))
         seen.add(ac.id)
         if int(ac.id.split("-")[1]) != i:
-            out.append(Finding("info", rel, "ac-order", f"{ac.id}: 번호가 순서대로가 아닙니다 (기대 AC-{i})", line))
+            out.append(Finding("info", rel, "ac-order", msg("{id}: numbers are out of order (expected AC-{i})", id=ac.id, i=i), line))
         body = ac.text
         if "{{" in body:
-            out.append(Finding("warn", rel, "ac-blank", f"{ac.id}: 빈칸이 남아 있습니다", line))
+            out.append(Finding("warn", rel, "ac-blank", msg("{id}: blanks remain", id=ac.id), line))
             continue
         if fmt == "gwt":
             if not re.search(rf"{action}\s*:", body) or not re.search(rf"{result_word}\s*:", body):
@@ -65,15 +70,24 @@ def check_criteria(project: Project, plan: Path) -> list[Finding]:
                         "warn",
                         rel,
                         "ac-format",
-                        f"{ac.id}: {situation} · {action} · {result_word} 형식이 아닙니다",
+                        msg(
+                            "{id}: not in the {situation} · {action} · {result_word} form",
+                            id=ac.id,
+                            situation=situation,
+                            action=action,
+                            result_word=result_word,
+                        ),
                         line,
-                        "예: AC-1 상황: 로그인 화면에서 · 행동: 카카오 버튼을 누르면 · 결과: 2초 안에 홈이 열린다",
+                        msg(
+                            "e.g. AC-1 Situation: on the sign-in screen · Action: pressing the Google button · Result: "
+                            "home opens within 2 seconds"
+                        ),
                     )
                 )
             result = re.split(rf"{result_word}\s*:", body, maxsplit=1)[-1]
         else:
             if n.acceptance("simple_mark") not in body:
-                out.append(Finding("warn", rel, "ac-format", f"{ac.id}: '~하면 ~된다' 형식이 아닙니다", line))
+                out.append(Finding("warn", rel, "ac-format", msg("{id}: not in the 'when … then …' form", id=ac.id), line))
             result = body.split(n.acceptance("simple_mark"), 1)[-1]
         for word in n.acceptance("vague"):
             if word in body:
@@ -82,9 +96,9 @@ def check_criteria(project: Project, plan: Path) -> list[Finding]:
                         "warn",
                         rel,
                         "ac-vague",
-                        f"{ac.id}: 확인하기 어려운 말 '{word.strip()}'",
+                        msg("{id}: hard-to-check word '{strip}'", id=ac.id, strip=word.strip()),
                         line,
-                        '숫자 · 화면에 보이는 것 · 상태로 바꾸세요 ("빠르게" → "2초 안에")',
+                        msg('Replace it with a number · something visible · a state ("fast" → "within 2 seconds")'),
                     )
                 )
                 break
@@ -95,14 +109,14 @@ def check_criteria(project: Project, plan: Path) -> list[Finding]:
                         "warn",
                         rel,
                         "ac-ambiguous",
-                        f"{ac.id}: 결과가 여러 뜻으로 읽힙니다 ('{word.strip()}')",
+                        msg("{id}: the result can be read several ways ('{strip}')", id=ac.id, strip=word.strip()),
                         line,
-                        "기준을 둘로 나누세요",
+                        msg("Split it into two criteria"),
                     )
                 )
                 break
         if len(result.strip()) < 4:
-            out.append(Finding("warn", rel, "ac-result", f"{ac.id}: 결과가 너무 짧습니다", line))
+            out.append(Finding("warn", rel, "ac-result", msg("{id}: the result is too short", id=ac.id), line))
     # screen work under ui_reference=required needs a "matches the mockup" criterion
     if project.profile.get("plan.ui_reference") == "required" and meta.get("ui") is True:
         if not any(n.acceptance("mockup") in ac.text.lower() for ac in acs):
@@ -111,8 +125,8 @@ def check_criteria(project: Project, plan: Path) -> list[Finding]:
                     "warn",
                     rel,
                     "ac-mockup",
-                    "화면 작업인데 '화면이 시안과 같다' 수락 기준이 없습니다",
-                    hint="예: AC-n 결과: 화면이 화면/로그인.png 시안과 같다",
+                    msg("A screen work without a 'the screen matches the mockup' acceptance criterion"),
+                    hint=msg("e.g. AC-n Result: the screen matches the mockup screens/sign-in.png"),
                 )
             )
         if not has_mockup(plan.parent, n):
@@ -121,8 +135,8 @@ def check_criteria(project: Project, plan: Path) -> list[Finding]:
                     "warn",
                     rel,
                     "mockup-missing",
-                    "화면 시안이 없습니다 (화면/ 아래 이미지 · HTML)",
-                    hint="Claude Design에서 HTML로 내보내 화면/에 두세요",
+                    msg("No screen mockup (an image · HTML under the screens folder)"),
+                    hint=msg("Export it as HTML from Claude Design and put it in the screens folder"),
                 )
             )
     return out
@@ -171,7 +185,7 @@ def run(project: Project, work_id: str | None = None) -> list[Finding]:
     works = [project.find_work(work_id)] if work_id else project.work_dirs()
     for w in works:
         if w is None:
-            raise ValueError(f"작업 {work_id}를 찾지 못했습니다")
+            raise ValueError(msg("Work {work_id} not found", work_id=work_id))
         plan = project.doc_path(w, "plan")
         if plan.exists():
             out += check_criteria(project, plan)

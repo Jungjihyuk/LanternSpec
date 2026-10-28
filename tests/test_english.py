@@ -90,6 +90,16 @@ def test_an_english_project_end_to_end(repo):
     _, out = repo("check", str(work / "Plan.md"))
     assert "At a glance (required)" in out
 
+    # what lantern says and writes is English too
+    outputs = {"check": out, "status": repo("status")[1], "map": repo("map")[1]}
+    with pytest.raises(SystemExit):
+        repo("task", "--help")
+    outputs["help"] = repo.capsys.readouterr().out
+    outputs |= {p.name: p.read_text(encoding="utf-8") for p in (repo.root / "lantern.yaml", docs / "Docs MOC.md", work / "Tasks.md")}
+    for name, text in outputs.items():
+        found = [l for l in text.split("\n") if HANGUL.search(l)]
+        assert not found, f"{name}: {found[:3]}"
+
     # protected sections are found by their English titles
     from lanternspec.core.project import Project
     from lanternspec.work.progress import save_before_compact

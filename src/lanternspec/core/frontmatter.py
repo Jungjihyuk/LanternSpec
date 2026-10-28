@@ -19,6 +19,8 @@ from typing import Any
 
 import yaml
 
+from .messages import msg
+
 _FM_RE = re.compile(r"\A---[ \t]*\r?\n(.*?)\r?\n---[ \t]*(?:\r?\n|\Z)", re.S)
 _KEY_RE = re.compile(r"^([A-Za-z0-9_\-가-힣]+)\s*:")
 
@@ -79,10 +81,10 @@ def parse(text: str) -> Doc:
     try:
         meta = yaml.safe_load(raw) or {}
         if not isinstance(meta, dict):
-            return Doc(meta={}, body=body, raw_meta=raw, error="frontmatter가 키: 값 형태가 아닙니다", body_offset=offset)
+            return Doc(meta={}, body=body, raw_meta=raw, error=msg("frontmatter is not in key: value form"), body_offset=offset)
     except yaml.YAMLError as e:  # pragma: no cover - message varies
-        first = str(e).splitlines()[0] if str(e) else "YAML 오류"
-        return Doc(meta={}, body=body, raw_meta=raw, error=f"frontmatter YAML 오류: {first}", body_offset=offset)
+        first = str(e).splitlines()[0] if str(e) else msg("YAML error")
+        return Doc(meta={}, body=body, raw_meta=raw, error=msg("frontmatter YAML error: {first}", first=first), body_offset=offset)
     return Doc(meta=meta, body=body, raw_meta=raw, body_offset=offset)
 
 

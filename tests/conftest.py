@@ -11,6 +11,16 @@ from lanternspec.cli import main
 
 
 @pytest.fixture(autouse=True)
+def _korean_messages():
+    """Every test starts with Korean messages; loading an English project switches them."""
+    from lanternspec.core import messages
+
+    messages.use("ko")
+    yield
+    messages.use("ko")
+
+
+@pytest.fixture(autouse=True)
 def _isolated_git(monkeypatch, tmp_path_factory):
     """Tests never read the developer's git config (hooksPath, signing …)."""
     home = tmp_path_factory.mktemp("home")

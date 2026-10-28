@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from ..core import frontmatter
+from ..core.messages import msg
 from ..core.names import WORK_DOCS
 from ..core.project import Project, git, git_out, nfc, read, work_name_of, write
 from ..core.taskfile import parse_tasks
@@ -107,16 +108,16 @@ def ensure_branch(project: Project, work_id: str) -> str:
     """
     name = branch_name(work_id)
     if current_branch(project.root) == name:
-        return f"이미 {name} 브랜치입니다"
+        return msg("Already on branch {name}", name=name)
     if _branch_exists(project, name):
         r = git(["checkout", name], project.root)
         if r.returncode != 0:
             raise WorkError(r.stderr.strip())
-        return f"{name} 브랜치로 바꿨습니다"
+        return msg("Switched to branch {name}", name=name)
     r = git(["checkout", "-b", name], project.root)
     if r.returncode != 0:
         raise WorkError(r.stderr.strip())
-    return f"{name} 브랜치를 만들었습니다"
+    return msg("Created branch {name}", name=name)
 
 
 # --------------------------------------------------------------------------- worktrees
@@ -198,10 +199,10 @@ def _touch_points(project: Project, work_id: str) -> set[str]:
     text = frontmatter.parse(read(design)).body
     points: set[str] = set()
     for block in re.findall(r"```dbml\n(.*?)```", text, re.S):
-        points |= {f"테이블 {m}" for m in re.findall(r"(?im)^\s*Table\s+\"?([\w.]+)\"?", block)}
+        points |= {msg("table {m}", m=m) for m in re.findall(r"(?im)^\s*Table\s+\"?([\w.]+)\"?", block)}
     for m in re.findall(r"`([\w./\-]+\.[A-Za-z0-9]{1,6})`", text):
         if "/" in m and not m.startswith(project.names.folder("screens") + "/"):
-            points.add(f"파일 {m}")
+            points.add(msg("file {m}", m=m))
     return points
 
 
@@ -232,7 +233,7 @@ def conflicts(project: Project, work_ids: list[str]) -> list[str]:
                 continue
             common = points[a] & points[b]
             if common:
-                warnings.append(f"⚠ {a} · {b}가 같은 곳을 고칩니다: {', '.join(sorted(common))}")
+                warnings.append(msg("⚠ {a} · {b} change the same places: {items}", a=a, b=b, items=", ".join(sorted(common))))
     return warnings
 
 
@@ -240,7 +241,8 @@ def _install(path: Path) -> str | None:
     for lock, cmd in LOCKFILES:
         if (path / lock).exists():
             r = subprocess.run(cmd, shell=True, cwd=str(path), capture_output=True, text=True)
-            return f"{cmd} → {'완료' if r.returncode == 0 else '실패 (직접 확인)'}"
+            result = msg("done") if r.returncode == 0 else msg("failed (check it yourself)")
+            return f"{cmd} → {result}"
     return None
 
 
@@ -267,7 +269,7 @@ def start(project: Project, work_ids: list[str], install: bool = True, parent: P
         '• W-012: /Users/me/app-W-012 (work/W-012)'
     """
     if git(["rev-parse", "--verify", "HEAD"], project.root).returncode != 0:
-        raise WorkError("커밋이 하나도 없어 worktree를 만들 수 없습니다 — 먼저 커밋하세요")
+        raise WorkError(msg("No commits yet, so a worktree can't be made — commit first"))
     msgs: list[str] = []
     msgs += conflicts(project, work_ids)
     parent = parent or project.root.parent
@@ -276,17 +278,17 @@ def start(project: Project, work_ids: list[str], install: bool = True, parent: P
         wid = wid.upper()
         folder = project.find_work(wid, include_archive=False)
         if folder is None:
-            raise WorkError(f"작업 {wid} 폴더가 없습니다 — /l-plan 먼저")
+            raise WorkError(msg("No folder for work {wid} — run /l-plan first", wid=wid))
         existing = work_worktree(project, wid)
         if existing:
-            msgs.append(f"• {wid}: 이미 {existing.path}에서 진행 중")
+            msgs.append(msg("• {wid}: already in progress at {path}", wid=wid, path=existing.path))
             continue
         path = parent / f"{project.root.name}-{wid}"
         name = branch_name(wid)
         args = ["worktree", "add", str(path), name] if _branch_exists(project, name) else ["worktree", "add", "-b", name, str(path), base]
         r = git(args, project.root)
         if r.returncode != 0:
-            raise WorkError(f"{wid}: worktree를 만들지 못했습니다 — {r.stderr.strip()}")
+            raise WorkError(msg("{wid}: couldn't create the worktree — {strip}", wid=wid, strip=r.stderr.strip()))
         # .env* files are untracked by design: copy them over
         for env in project.root.glob(".env*"):
             if env.is_file():
@@ -297,10 +299,12 @@ def start(project: Project, work_ids: list[str], install: bool = True, parent: P
             if not link.exists():
                 link.symlink_to(project.docs, target_is_directory=True)
         elif not (path / docs_rel / project.docs_rel(folder)).exists():
-            msgs.append(f"⚠ {wid}: 작업 폴더가 아직 커밋되지 않아 worktree에 없습니다 — 문서를 먼저 커밋하세요")
+            msgs.append(
+                msg("⚠ {wid}: the work folder isn't committed yet, so it's not in the worktree — commit the documents first", wid=wid)
+            )
         note = _install(path) if install else None
         msgs.append(f"• {wid}: {path} ({name})" + (f" · {note}" if note else ""))
-        msgs.append(f'    터미널에서: cd "{path}" && claude "/l-build {wid}"')
+        msgs.append(msg('    In a terminal: cd "{path}" && claude "/l-build {wid}"', path=path, wid=wid))
     return msgs
 
 
@@ -310,9 +314,9 @@ def _progress(project: Project, wid: str, root: Path | None = None) -> str:
     if folder is None:
         folder = project.find_work(wid, include_archive=False)
     if folder is None or not project.doc_path(folder, "tasks").exists():
-        return "할 일 없음"
+        return msg("no tasks")
     ts = parse_tasks(read(project.doc_path(folder, "tasks")), project.names)
-    return f"{sum(t.done for t in ts)}/{len(ts)} 완료"
+    return msg("{sum}/{count} done", sum=sum(t.done for t in ts), count=len(ts))
 
 
 def list_works(project: Project) -> list[str]:
@@ -334,12 +338,13 @@ def list_works(project: Project) -> list[str]:
             continue
         wid = wt.branch.split("/", 1)[1]
         dirty = bool(git_out(["status", "--porcelain", "--untracked-files=no"], wt.path))
-        out.append(f"{wid}  {wt.branch}  {wt.path}  {_progress(project, wid, wt.path)}{'  (커밋 안 된 변경 있음)' if dirty else ''}")
+        note = msg("  (uncommitted changes)") if dirty else ""
+        out.append(f"{wid}  {wt.branch}  {wt.path}  {_progress(project, wid, wt.path)}{note}")
     for b in git_out(["branch", "--list", "work/*", "--format=%(refname:short)"], project.root).splitlines():
         if not any(wt.branch == b for wt in worktrees(project)):
             wid = b.split("/", 1)[1]
-            out.append(f"{wid}  {b}  (worktree 없음)  {_progress(project, wid)}")
-    return out or ["진행 중인 동시 작업이 없습니다"]
+            out.append(msg("{wid}  {b}  (no worktree)  {progress}", wid=wid, b=b, progress=_progress(project, wid)))
+    return out or [msg("No parallel works in progress")]
 
 
 def finish(project: Project, work_id: str, test: bool = True, keep: bool = False) -> list[str]:
@@ -365,13 +370,13 @@ def finish(project: Project, work_id: str, test: bool = True, keep: bool = False
     wid = work_id.upper()
     name = branch_name(wid)
     if not _branch_exists(project, name):
-        raise WorkError(f"{name} 브랜치가 없습니다")
+        raise WorkError(msg("Branch {name} doesn't exist", name=name))
     msgs: list[str] = []
     wt = work_worktree(project, wid)
     in_place = wt is not None and wt.path.resolve() == project.root.resolve()
     work_path = wt.path if wt else project.root
     if git_out(["status", "--porcelain", "--untracked-files=no"], work_path):
-        raise WorkError(f"{work_path}에 커밋 안 된 변경이 있습니다 — 커밋하고 다시 실행하세요")
+        raise WorkError(msg("{work_path} has uncommitted changes — commit and run again", work_path=work_path))
     if test:
         cmd = project.profile.get("build.test")
         if cmd:
@@ -379,21 +384,23 @@ def finish(project: Project, work_id: str, test: bool = True, keep: bool = False
 
             res = run_tests(project, str(cmd), cwd=work_path)
             if not res["ok"]:
-                raise WorkError(f"테스트 실패 — 머지하지 않습니다 (`{cmd}`)\n{res['tail']}")
-            msgs.append(f"✔ 테스트 통과 (`{cmd}`)")
+                raise WorkError(msg("Tests failed — not merging (`{cmd}`)\n{tail}", cmd=cmd, tail=res["tail"]))
+            msgs.append(msg("✔ Tests passed (`{cmd}`)", cmd=cmd))
         else:
-            msgs.append("ℹ build.test가 없어 테스트를 건너뜀")
+            msgs.append(msg("ℹ No build.test, so tests were skipped"))
     base = str(project.profile.get("git.base") or "main")
     if not _branch_exists(project, base):
-        raise WorkError(f"기준 브랜치 {base}가 없습니다 (lantern.yaml git.base)")
+        raise WorkError(msg("Base branch {base} doesn't exist (lantern.yaml git.base)", base=base))
     if in_place:
         r = git(["checkout", base], project.root)
         if r.returncode != 0:
             raise WorkError(r.stderr.strip())
     elif current_branch(project.root) != base:
-        raise WorkError(f"이 폴더({project.root})가 {base} 브랜치가 아닙니다 — `git checkout {base}` 후 다시 실행하세요")
+        raise WorkError(
+            msg("This folder ({root}) is not on branch {base} — run `git checkout {base}` and try again", root=project.root, base=base)
+        )
     if git_out(["status", "--porcelain", "--untracked-files=no"], project.root):
-        raise WorkError(f"{project.root}에 커밋 안 된 변경이 있습니다")
+        raise WorkError(msg("{root} has uncommitted changes", root=project.root))
     folder = project.find_work(wid)
     title = work_name_of(folder) if folder else ""
     r = git(
@@ -401,8 +408,8 @@ def finish(project: Project, work_id: str, test: bool = True, keep: bool = False
     )
     if r.returncode != 0:
         git(["merge", "--abort"], project.root)
-        raise WorkError(f"머지 충돌 — 직접 해결하세요:\n{r.stdout}{r.stderr}")
-    msgs.append(f"✔ {name} → {base} 머지")
+        raise WorkError(msg("Merge conflict — resolve it yourself:\n{stdout}{stderr}", stdout=r.stdout, stderr=r.stderr))
+    msgs.append(msg("✔ Merged {name} → {base}", name=name, base=base))
     if not keep:
         if wt and not in_place:
             # only the .env* copies made by `work start` may be thrown away with the folder
@@ -412,16 +419,25 @@ def finish(project: Project, work_id: str, test: bool = True, keep: bool = False
                 if l.startswith("??") and not Path(l[3:].strip('"')).name.startswith(".env")
             ]
             if stray:
-                msgs.append(f"⚠ worktree에 커밋 안 된 새 파일이 있어 남겨 둡니다: {', '.join(stray[:3])} — 정리 후 git worktree remove")
+                msgs.append(
+                    msg(
+                        "⚠ Keeping the worktree because it has new uncommitted files: {items} — clean up, then git worktree remove",
+                        items=", ".join(stray[:3]),
+                    )
+                )
                 return msgs
             r = git(["worktree", "remove", "--force", str(wt.path)], project.root)
             if r.returncode != 0:
-                msgs.append(f"⚠ worktree를 정리하지 못했습니다: {r.stderr.strip()}")
+                msgs.append(msg("⚠ Couldn't remove the worktree: {strip}", strip=r.stderr.strip()))
                 return msgs
-            msgs.append(f"✔ worktree 정리: {wt.path}")
+            msgs.append(msg("✔ Removed worktree: {path}", path=wt.path))
         r = git(["branch", "-d", name], project.root)
-        msgs.append(f"✔ 브랜치 삭제: {name}" if r.returncode == 0 else f"⚠ 브랜치를 지우지 못했습니다: {r.stderr.strip()}")
-    msgs.append("다음: 현재 상태 반영 요약 → 승인 → 반영 → lantern work archive " + wid)
+        msgs.append(
+            msg("✔ Deleted branch: {name}", name=name)
+            if r.returncode == 0
+            else msg("⚠ Couldn't delete the branch: {strip}", strip=r.stderr.strip())
+        )
+    msgs.append(msg("Next: summary of the current-state update → approval → update → lantern work archive ") + wid)
     return msgs
 
 
@@ -447,7 +463,7 @@ def archive(project: Project, work_id: str) -> Path:
     """
     folder = project.find_work(work_id, include_archive=False)
     if folder is None:
-        raise WorkError(f"진행 중인 작업 {work_id}가 없습니다")
+        raise WorkError(msg("No work in progress {work_id}", work_id=work_id))
     for role in WORK_DOCS:
         p = project.doc_path(folder, role)
         if p.exists():

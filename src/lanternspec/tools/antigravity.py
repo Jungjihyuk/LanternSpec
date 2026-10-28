@@ -16,6 +16,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from ..core.messages import msg
 from ..core.project import Project, write
 from .base import MCP_NAME, MCP_SERVER, HookInput, HookReply, HookResult, Tool, hook_state_dir, merge_json_file
 
@@ -86,7 +87,7 @@ class Antigravity(Tool):
             return data
 
         merge_json_file(project.root / ".agents" / "hooks.json", merge)
-        merged = [".agents/hooks.json (에이전트 hook — 압축 hook이 없어 압축 전 저장은 빠짐)"]
+        merged = [msg(".agents/hooks.json (agent hooks — no compaction hook, so saving before compaction is left out)")]
         if mcp:
             write(project.root / PLUGIN_DIR / "plugin.json", json.dumps({"name": "lanternspec"}, indent=2) + "\n")
             merge_json_file(
@@ -171,7 +172,8 @@ class Antigravity(Tool):
         if event == "stop" and result.notice:
             return HookReply(
                 stdout=json.dumps(
-                    {"decision": "continue", "reason": result.notice + " — 이 권유를 사용자에게 한 줄로 전하고 마친다."}, ensure_ascii=False
+                    {"decision": "continue", "reason": result.notice + msg(" — pass this suggestion to the user in one line and finish.")},
+                    ensure_ascii=False,
                 )
             )
         return _inject(result.context)

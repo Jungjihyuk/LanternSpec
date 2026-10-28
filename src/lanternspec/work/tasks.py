@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from ..core import frontmatter
+from ..core.messages import msg
 from ..core.project import Project, now_minute, read, work_id_of, write
 from ..core.taskfile import Task, TaskGraph, drop_attr, find_task, parse_criteria, parse_tasks, set_attr, set_checked
 from .epic_rules import has_mockup
@@ -47,10 +48,10 @@ class NextResult:
 def _tasks_file(project: Project, work_id: str) -> Path:
     folder = project.find_work(work_id, include_archive=False)
     if folder is None:
-        raise ValueError(f"진행 중인 작업 {work_id}를 찾지 못했습니다")
+        raise ValueError(msg("Work in progress {work_id} not found", work_id=work_id))
     p = project.doc_path(folder, "tasks")
     if not p.exists():
-        raise ValueError(f"{work_id}에 {p.name}이 없습니다 — /l-task 먼저")
+        raise ValueError(msg("{work_id} has no {name} — run /l-task first", work_id=work_id, name=p.name))
     return p
 
 
@@ -84,7 +85,7 @@ def next_task(project: Project, work_id: str | None = None) -> NextResult:
     any_tasks = False
     for w in works:
         if w is None:
-            raise ValueError(f"진행 중인 작업 {work_id}를 찾지 못했습니다")
+            raise ValueError(msg("Work in progress {work_id} not found", work_id=work_id))
         tf = project.doc_path(w, "tasks")
         if not tf.exists():
             continue
@@ -95,7 +96,7 @@ def next_task(project: Project, work_id: str | None = None) -> NextResult:
                 continue
             reason = graph.blocked_reason(t)
             if reason is None and ui_required and t.screen and not has_mockup(w, project.names):
-                reason = "화면 시안 없음 — 화면/ 아래 이미지 · HTML 필요"
+                reason = msg("No screen mockup — needs an image · HTML under the screens folder")
             if reason:
                 skipped.append((t.id, reason))
                 continue
@@ -123,7 +124,7 @@ def _edit_task(project: Project, task_id: str, edit: Callable[[str, Task], str])
     tasks = parse_tasks("\n".join(lines), project.names)
     t = find_task(tasks, task_id)
     if t is None:
-        raise ValueError(f"할 일 {task_id}가 {project.rel(tf)}에 없습니다")
+        raise ValueError(msg("Task {task_id} is not in {rel}", task_id=task_id, rel=project.rel(tf)))
     lines[t.line_no] = edit(lines[t.line_no], t)
     text = frontmatter.set_fields("\n".join(lines), {})
     write(tf, text)
@@ -255,7 +256,7 @@ def check_ac(project: Project, work_id: str, ac_id: str) -> Path:
     """
     folder = project.find_work(work_id, include_archive=False)
     if folder is None:
-        raise ValueError(f"작업 {work_id}를 찾지 못했습니다")
+        raise ValueError(msg("Work {work_id} not found", work_id=work_id))
     plan = project.doc_path(folder, "plan")
     lines = read(plan).split("\n")
     for c in parse_criteria("\n".join(lines)):
@@ -263,7 +264,7 @@ def check_ac(project: Project, work_id: str, ac_id: str) -> Path:
             lines[c.line_no] = set_checked(lines[c.line_no], True)
             write(plan, frontmatter.set_fields("\n".join(lines), {}))
             return plan
-    raise ValueError(f"{work_id} {plan.name}에 {ac_id}가 없습니다")
+    raise ValueError(msg("{work_id} {name} has no {ac_id}", work_id=work_id, name=plan.name, ac_id=ac_id))
 
 
 def summary(project: Project, work_id: str | None = None) -> list[str]:
@@ -287,11 +288,11 @@ def summary(project: Project, work_id: str | None = None) -> list[str]:
             continue
         tf = project.doc_path(w, "tasks")
         if not tf.exists():
-            out.append(f"{work_id_of(w)}: 할 일 없음")
+            out.append(msg("{work_id_of}: no tasks", work_id_of=work_id_of(w)))
             continue
         tasks = parse_tasks(read(tf), project.names)
         graph = TaskGraph(tasks)
-        out.append(f"{work_id_of(w)}: {sum(t.done for t in tasks)}/{len(tasks)} 완료")
+        out.append(msg("{work_id_of}: {sum}/{count} done", work_id_of=work_id_of(w), sum=sum(t.done for t in tasks), count=len(tasks)))
         for t in tasks:
             mark = "x" if t.done else ("▶" if t.started else " ")
             reason = "" if t.done else (graph.blocked_reason(t) or "")
@@ -342,7 +343,7 @@ def add(
     import re
 
     if size not in ("S", "M", "L"):
-        raise ValueError("크기는 S · M · L 중 하나입니다")
+        raise ValueError(msg("Size is one of S · M · L"))
     wid = work_id.upper()
     tf = _tasks_file(project, wid)
     n = project.names
@@ -446,12 +447,13 @@ def estimate(project: Project, work_id: str, start: str | None = None, hours_per
     day = dt.date.fromisoformat(start) if start else dt.date.today()
     used = 0.0
     out = [
-        "크기별 기준 시간: "
+        msg("Base hours by size: ")
         + " · ".join(
-            f"{k} {v:.1f}시간" + (f" (실제 {len(hist[k])}개 중간값)" if len(hist.get(k, [])) >= 2 else " (기본값)")
+            msg("{k} {v:.1f}h", k=k, v=v)
+            + (msg(" (median of {count} actual)", count=len(hist[k])) if len(hist.get(k, [])) >= 2 else msg(" (default)"))
             for k, v in per_size.items()
         )
-        + f" · 하루 {hours_per_day:g}시간"
+        + msg(" · {hours_per_day:g} hours a day", hours_per_day=hours_per_day)
     ]
     for t in tasks:
         if t.done:
@@ -472,7 +474,7 @@ def estimate(project: Project, work_id: str, start: str | None = None, hours_per
     if apply:
         write(tf, frontmatter.set_fields("\n".join(lines), {}))
         n = project.names
-        out.append(f"✔ {tf.name}에 [{n.attr('start_plan')}] · [{n.attr('due_plan')}]을 적었습니다")
+        out.append(msg("✔ Wrote [{attr}] · [{attr2}] in {name}", name=tf.name, attr=n.attr("start_plan"), attr2=n.attr("due_plan")))
     else:
-        out.append("제안입니다 — 사람이 동의하면 --apply")
+        out.append(msg("This is a suggestion — if the person agrees, --apply"))
     return out

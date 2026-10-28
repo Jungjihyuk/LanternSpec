@@ -10,22 +10,23 @@ from pathlib import Path
 from typing import Any
 
 from ...core import frontmatter
+from ...core.messages import msg
 from ...core.project import Project, read, safe_name, today, write
 from . import KnowledgeError, adapter_for
 
 DRAFT_SKELETON = """# {title}
 
-> [!abstract] 한 줄 요약
-> {{{{한 줄 요약}}}}
+> [!abstract] Summary
+> {{{{One-line summary}}}}
 
-## 무엇인가
+## What it is
 
-## 왜 쓰나
+## Why use it
 
-## 어떻게 동작하나
+## How it works
 
-## 이 프로젝트에서는
-"""
+## In this project
+"""  # English; msg() translates it
 
 
 def propose(project: Project, title: str, content: str | None = None, area: str = "", target: str = "") -> dict:
@@ -51,7 +52,7 @@ def propose(project: Project, title: str, content: str | None = None, area: str 
     folder = project.folder("note_drafts")
     dest = folder / f"{safe_name(title)}.md"
     if dest.exists():
-        raise KnowledgeError(f"이미 초안이 있습니다: {project.rel(dest)}")
+        raise KnowledgeError(msg("A draft already exists: {rel}", rel=project.rel(dest)))
     k = project.profile.knowledge or {}
     if not target:
         base = str(k.get("areas_from") or "").strip("/")
@@ -65,7 +66,7 @@ def propose(project: Project, title: str, content: str | None = None, area: str 
         "area": area,
         "target": target,
     }
-    body = content if content and content.strip() else DRAFT_SKELETON.format(title=safe_name(title))
+    body = content if content and content.strip() else msg(DRAFT_SKELETON, title=safe_name(title))
     write(dest, frontmatter.render(meta, "\n" + body.lstrip("\n")))
     return {
         "draft": project.rel(dest),
@@ -96,14 +97,14 @@ def write_draft(project: Project, draft: Path, target: str | None = None) -> dic
     """
     k = project.profile.knowledge
     if not k:
-        raise KnowledgeError("지식 저장소가 설정되지 않았습니다")
+        raise KnowledgeError(msg("No knowledge store is set up"))
     if k.get("write") == "propose_only":
-        raise KnowledgeError("이 저장소는 propose_only — 초안 파일만 만들고, 넣는 것은 사용자가 합니다")
+        raise KnowledgeError(msg("This store is propose_only — only the draft file is made; the user puts it in"))
     if not draft.exists():
-        raise KnowledgeError(f"초안이 없습니다: {draft}")
+        raise KnowledgeError(msg("No draft: {draft}", draft=draft))
     doc = frontmatter.parse(read(draft))
     if "{{" in doc.body:
-        raise KnowledgeError("초안에 빈칸 {{…}}이 남아 있습니다 — 채운 뒤 쓰세요")
+        raise KnowledgeError(msg("The draft still has blanks {{{{…}}}} — fill them before writing"))
     rel = target or str(doc.meta.get("target") or draft.name)
     adapter = adapter_for(project)
     note_meta: dict[str, Any] = {"created": today()}

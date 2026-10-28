@@ -5,6 +5,7 @@ Works for every tool, with or without agent hooks.
 
 from __future__ import annotations
 
+from ..core.messages import msg
 from ..core.project import Project
 
 
@@ -49,10 +50,13 @@ def close(
         if shown:
             lines.append(check_docs.Report(shown, rep.files).format(show_info=False))
         else:
-            lines.append(f"✔ check — 문서 {rep.files}개 양식에 맞음" + (f" (참고 {counts['info']}개)" if counts["info"] else ""))
+            lines.append(
+                msg("✔ check — {files} documents are well-formed", files=rep.files)
+                + (msg(" ({info} notes)", info=counts["info"]) if counts["info"] else "")
+            )
     if do_map and project.docs.exists():
         doc_map.run(project)
-        lines.append("✔ map — MOC 갱신")
+        lines.append(msg("✔ map — MOC updated"))
     if project.folder("debt").exists():
         from ..learn.debt import write_status
 
@@ -60,5 +64,5 @@ def close(
     from ..report.evaluate import config_snapshot
 
     runlog.skill_run(project, skill, start, model, {"work": work, "check": counts, "config": config_snapshot(project)})
-    lines.append(f"✔ 실행 기록 — {skill}{' · ' + work if work else ''} (.lantern/runs.jsonl)")
+    lines.append(msg("✔ Run recorded — {skill}{value} (.lantern/runs.jsonl)", skill=skill, value=" · " + work if work else ""))
     return lines

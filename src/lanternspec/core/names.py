@@ -20,6 +20,7 @@ from typing import Any
 import yaml
 
 from .. import resources
+from .messages import msg
 
 WORK_DOCS = ("plan", "design", "tasks", "record")  # the four documents of a work folder, in order
 
@@ -392,7 +393,7 @@ def _raw() -> dict[str, Any]:
 def _table(language: str) -> dict[str, Any]:
     """One language's names (once per process)."""
     if language not in languages():
-        raise ValueError(f"언어 '{language}' 묶음이 없습니다 (가능: {', '.join(languages())})")
+        raise ValueError(msg("No language pack for '{language}' (available: {items})", language=language, items=", ".join(languages())))
     return localize(_raw(), language)
 
 

@@ -13,6 +13,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from ..core import frontmatter
+from ..core.messages import msg
 from ..core.project import Project, read, today, write
 
 
@@ -51,27 +52,33 @@ def render(project: Project) -> str:
         docs = ", ".join(f"`{n.file(d)}`" for d in s.docs)
         title = n.title(s.role)
         older = [t for t in n.titles(s.role) if t != title]
-        name = f"`## {title}`" + (f" (예전 이름: {', '.join(older)})" if older else "")
-        state = "쓰지 않음" if n.is_unused(s.role) else "사용"
+        name = f"`## {title}`" + (msg(" (old names: {items})", items=", ".join(older)) if older else "")
+        state = msg("not used") if n.is_unused(s.role) else msg("used")
         rows.append(f"| {docs} | {name} | {s.feature} | {state} | `{s.role}` |")
     return "\n".join(
         [
-            "# 🔒 보호 칸",
+            msg("# 🔒 Protected Sections"),
             "",
-            "> ⚙️ 자동 생성 — `lantern upgrade` · `lantern sections` · 손으로 고치지 마세요.",
+            msg("> ⚙️ Generated — `lantern upgrade` · `lantern sections` · don't edit by hand."),
             "",
             f"> [!abstract] {n.marker('glance')}",
-            "> lantern이 읽거나 써 넣는 칸입니다. 템플릿과 문서는 자유롭게 고쳐도 되지만, 이 칸의 제목을 바꾸거나 지우면 "
-            "그 기능이 이 칸을 찾지 못합니다. 그때는 `lantern check`가 일부러 바꾼 것인지 묻고, 답한 대로 계속 동작합니다.",
+            msg(
+                "> These are the sections lantern reads or writes. Templates and documents are yours to "
+                "edit, but if you rename or delete one of these sections, the feature can't find it. Then "
+                "`lantern check` asks whether you changed it on purpose and keeps working the way you "
+                "answer."
+            ),
             "",
-            "| 문서 | 칸 | 이 칸으로 하는 일 | 이 프로젝트 | 키 |",
+            msg("| Document | Section | What it is for | This project | Key |"),
             "|---|---|---|---|---|",
             *rows,
             "",
-            "## 바꾸고 싶을 때",
-            '- 제목을 바꿨다면: `lantern sections rename <키> "새 제목"` — 예전 제목으로 만든 문서도 계속 알아본다',
-            "- 이 기능을 쓰지 않으려면: `lantern sections off <키>` (다시 쓰려면 `lantern sections on <키>`)",
-            "- 답은 `lantern.yaml`의 `docs.sections` · `docs.unused_sections`에 남는다",
+            msg("## To change them"),
+            msg(
+                '- If you renamed it: `lantern sections rename <key> "new title"` — documents made with the old title are still recognized'
+            ),
+            msg("- To stop using the feature: `lantern sections off <key>` (to use it again, `lantern sections on <key>`)"),
+            msg("- The answers are kept in `docs.sections` · `docs.unused_sections` of `lantern.yaml`"),
             "",
         ]
     )

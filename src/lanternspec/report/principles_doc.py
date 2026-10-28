@@ -13,6 +13,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from ..core import frontmatter, principles
+from ..core import names as names_mod
+from ..core.messages import msg
 from ..core.project import Project, read, today, write
 
 
@@ -51,18 +53,18 @@ def render(sel: principles.Selection, profile_language: str = "ko") -> str:
     t = principles.table(sel.locale)
     names = t["levels"]
     lines = [
-        "# 🧭 개발 원칙",
+        msg("# 🧭 Development Principles"),
         "",
-        "> ⚙️ 자동 생성 — `lantern upgrade` · 손으로 고치지 마세요.",
-        "> 바꾸려면 lantern.yaml의 project.kind · external · code_size · languages를 고치고 `lantern upgrade`.",
-        "> 이 프로젝트만의 규칙은 AGENTS.md의 LanternSpec 블록 밖에 적는다.",
+        msg("> ⚙️ Generated — `lantern upgrade` · don't edit by hand."),
+        msg("> To change it, edit project.kind · external · code_size · languages in lantern.yaml and run `lantern upgrade`."),
+        msg("> Write rules specific to this project outside the LanternSpec block in AGENTS.md."),
         "",
-        "> [!abstract] 한눈에 보기",
+        f"> [!abstract] {names_mod.load(profile_language).marker('glance')}",
         f"> {sel.summary()}" + (" · " + " · ".join(c.label for c in sel.conventions) if sel.conventions else ""),
         f"> {t['priority']}",
         "",
-        "## 설계 원칙",
-        "| 원칙 | 단계 | 왜 |",
+        msg("## Design principles"),
+        msg("| Principle | Level | Why |"),
         "|---|---|---|",
     ]
     lines += [f"| {p.name} | {names[p.level]} | {p.reason} |" for p in sel.principles]
@@ -77,20 +79,24 @@ def render(sel: principles.Selection, profile_language: str = "ko") -> str:
     if skipped:
         lines += [
             "",
-            f"> {names['skip']}: " + " · ".join(p.name for p in skipped) + " — 이 종류 · 규모에서는 넣지 않는다.",
+            f"> {names['skip']}: " + " · ".join(p.name for p in skipped) + msg(" — left out for this kind · size."),
         ]
-    lines += ["", "## 작업 방식 (늘)"]
+    lines += ["", msg("## Ways of working (always)")]
     for name, rules in sel.always:
         lines += ["", f"### {name}"] + [f"- {r}" for r in rules]
     for c in sel.conventions:
-        lines += ["", f"## 코드 컨벤션 — {c.label}", "| 할 일 | 도구 | 기본 명령 |", "|---|---|---|"]
+        lines += ["", msg("## Code conventions — {label}", label=c.label), msg("| Task | Tool | Default command |"), "|---|---|---|"]
         lines += [f"| {principles.role_label(role, sel.locale)} | {name} | {cmd} |" for role, (name, cmd) in c.tools.items()]
-        lines += ["", "| 항목 | 규칙 |", "|---|---|"]
+        lines += ["", msg("| Item | Rule |"), "|---|---|"]
         lines += [f"| {principles.rule_label(k, sel.locale)} | {v} |" for k, v in c.rules.items()]
         lang = c.language if c.language != "typescript" else "ts"
         lines += [
             "",
-            f"문서 주석: {c.docs_style} · {principles.comment_languages(sel.locale).get(profile_language, profile_language)}",
+            msg(
+                "Doc comments: {docs_style} · {get}",
+                docs_style=c.docs_style,
+                get=principles.comment_languages(sel.locale).get(profile_language, profile_language),
+            ),
             "",
             f"```{lang}",
             c.example.rstrip(),

@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 
+from ..core.messages import msg
 from .common import Add, CliError, _csv, _p, _print
 
 
@@ -16,7 +17,7 @@ def cmd_report(a: argparse.Namespace) -> int:
     cur, past = report.run(project, _csv(a.views) or None, a.summary)
     print(f"✔ {project.rel(cur)}\n✔ {project.rel(past)}")
     if not a.summary:
-        print('다음: 팀장 보고 3줄 → lantern report --summary "…" "…" "…"')
+        print(msg('Next: 3-line summary for the lead → lantern report --summary "…" "…" "…"'))
     return 0
 
 
@@ -47,7 +48,7 @@ def cmd_sync(a: argparse.Namespace) -> int:
     elif a.none:
         print(f"✔ {project.rel(scan.record_no_work(project, a.commit, a.none))}")
     else:
-        raise CliError('--work W-012 또는 --none "이유" 중 하나')
+        raise CliError(msg('One of --work W-012 or --none "reason"'))
     return 0
 
 
@@ -81,15 +82,23 @@ def cmd_harness(a: argparse.Namespace) -> int:
     project = _p()
     s = harness.suggest(project)
     f = s.facts
-    print(f"추천: {s.mode}")
+    print(msg("Suggested: {mode}", mode=s.mode))
     for r in s.reasons:
         print(f"  · {r}")
     print(
-        f"  (근거: 코드 {f['code_files']}개 파일 · {f['loc']}줄 · 진행 중 작업 {f['active_works']} · 할 일 {f['tasks']}"
-        f" · [P] 지금 가능 {f['parallel_ready']} · 테스트 {'있음' if f['has_test'] else '없음'})"
+        msg(
+            "  (based on: {code_files} code files · {loc} lines · works in progress {active_works} · "
+            "tasks {tasks} · [P] ready now {parallel_ready} · tests {value})",
+            code_files=f["code_files"],
+            loc=f["loc"],
+            active_works=f["active_works"],
+            tasks=f["tasks"],
+            parallel_ready=f["parallel_ready"],
+            value=msg("yes") if f["has_test"] else msg("no"),
+        )
     )
     if s.settings:
-        print("  설정: " + ", ".join(f"{k}={v}" for k, v in s.settings.items()))
+        print(msg("  Settings: ") + ", ".join(f"{k}={v}" for k, v in s.settings.items()))
     if a.apply and s.settings:
         path = project.root / pm.PROFILE_FILE
         text = read(path)
@@ -104,7 +113,7 @@ def cmd_harness(a: argparse.Namespace) -> int:
                 break
             text = new
         write(path, text)
-        print("✔ lantern.yaml에 적었습니다 → lantern upgrade (스킬에 반영)")
+        print(msg("✔ Written to lantern.yaml → lantern upgrade (into the skills)"))
     return 0
 
 
@@ -116,31 +125,31 @@ def cmd_obsidian(a: argparse.Namespace) -> int:
     write_vault(project)  # plugin settings and .gitignore must exist first
     for plugin_id, version in install_plugins(project):
         print(f"✔ {plugin_id} {version}")
-    print("다음: Obsidian에서 docs/ 폴더를 볼트로 열고, 커뮤니티 플러그인을 켜 달라고 물으면 켭니다 (제한 모드 해제)")
+    print(msg("Next: open the docs/ folder as a vault in Obsidian, and turn community plugins on when asked (turn off restricted mode)"))
     return 0
 
 
 def register(add: Add) -> None:
     """Register the report and sync commands."""
-    p = add("report", cmd_report, "현황 보고 생성")
+    p = add("report", cmd_report, msg("Make the status report"))
     p.add_argument("--views")
-    p.add_argument("--summary", nargs="+", help="팀장 보고 3줄")
-    add("status", cmd_status, "지금 상황 3줄")
-    p = add("obsidian", cmd_obsidian, "Obsidian 권장 플러그인(Dataview · Metadata Menu) 받기")
+    p.add_argument("--summary", nargs="+", help=msg("3-line summary for the lead"))
+    add("status", cmd_status, msg("Where things stand in 3 lines"))
+    p = add("obsidian", cmd_obsidian, msg("Download the recommended Obsidian plugins (Dataview · Metadata Menu)"))
     p.add_argument("action", choices=["plugins"])
-    p = add("scan", cmd_scan, "문서-코드 어긋남 찾기")
-    p.add_argument("--range", help="git 범위 (예: main..HEAD)")
+    p = add("scan", cmd_scan, msg("Find doc-code mismatches"))
+    p.add_argument("--range", help=msg("git range (e.g. main..HEAD)"))
     p.add_argument("--limit", type=int, default=200)
-    p.add_argument("--tests", action="store_true", help="build.test로 수락 기준 테스트")
+    p.add_argument("--tests", action="store_true", help=msg("Run acceptance tests with build.test"))
     p.add_argument("--json", action="store_true")
-    p = add("sync", cmd_sync, "맞추기 결과 기록")
+    p = add("sync", cmd_sync, msg("Record the result of aligning"))
     p.add_argument("action", choices=["adopt"])
     p.add_argument("commit")
     p.add_argument("--work")
-    p.add_argument("--none", help="작업 없이 고친 이유")
-    add("map", cmd_map, "MOC 갱신")
-    p = add("eval", cmd_eval, "AI 작업 평가 — 어떤 구성이 결과에 도움이 됐나 (실행 기록)")
+    p.add_argument("--none", help=msg("Why it was changed without a work"))
+    add("map", cmd_map, msg("Update the MOC"))
+    p = add("eval", cmd_eval, msg("Evaluate AI work — which setups helped (run records)"))
     p.add_argument("--json", action="store_true")
-    p = add("harness", cmd_harness, "프로젝트 크기에 맞는 AI 작업 방식 추천 (하네스 · 루프 · 그래프)")
+    p = add("harness", cmd_harness, msg("Suggest an AI work mode for the project's size (harness · loop · graph)"))
     p.add_argument("action", choices=["suggest"])
     p.add_argument("--apply", action="store_true")

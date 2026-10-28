@@ -19,6 +19,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from ..core import frontmatter, state, templating
+from ..core.messages import msg
 from ..core.project import Project, git, nfc, read, today, write
 from ..work.scaffold import base_template_names, base_template_text, base_values, condition_context, template_version
 from .check_docs import Finding, _active_doc, semver, version_gap
@@ -73,7 +74,9 @@ def template_path(project: Project, name: str) -> Path:
     for cand in project.templates_dir.glob("*.md"):
         if nfc(cand.stem) == nfc(name):
             return cand
-    raise FileNotFoundError(f"양식 '{name}'이 {project.rel(project.templates_dir)}에 없습니다 (lantern template list)")
+    raise FileNotFoundError(
+        msg("Template '{name}' is not in {rel} (lantern template list)", name=name, rel=project.rel(project.templates_dir))
+    )
 
 
 def names(project: Project) -> list[str]:
@@ -123,9 +126,9 @@ def list_rows(project: Project) -> list[str]:
         if name in base_names:
             bv = template_version(base_template_text(name, language))
             if version_gap(info.get("based_on") or ver, bv):
-                base = f" · 기본 양식 {bv} 나옴"
-        origin = "기본 양식" if name in base_names else "직접 만든 양식"
-        rows.append(f"{name}  v{ver}  ({origin}{', 다듬음' if modified else ''}{base})")
+                base = msg(" · base template {bv} is out", bv=bv)
+        origin = msg("base template") if name in base_names else msg("custom template")
+        rows.append(f"{name}  v{ver}  ({origin}{msg(', refined') if modified else ''}{base})")
     return rows
 
 
@@ -149,8 +152,8 @@ def diff_base(project: Project, name: str) -> str:
     mine = read(template_path(project, name)).splitlines(keepends=True)
     base = base_template_text(name, project.profile.language).splitlines(keepends=True)
     folder = project.names.folder("templates")
-    out = "".join(difflib.unified_diff(base, mine, fromfile=f"기본 양식/{name}.md", tofile=f"{folder}/{name}.md"))
-    return out or "기본 양식과 같습니다"
+    out = "".join(difflib.unified_diff(base, mine, fromfile=msg("base template/{name}.md", name=name), tofile=f"{folder}/{name}.md"))
+    return out or msg("Same as the base template")
 
 
 # --------------------------------------------------------------------------- lint
@@ -182,37 +185,63 @@ def lint(project: Project, name: str) -> list[Finding]:
     out: list[Finding] = []
     doc = frontmatter.parse(text)
     if doc.error or not doc.has_frontmatter:
-        return [Finding("error", rel, "frontmatter", doc.error or "frontmatter가 없습니다")]
+        return [Finding("error", rel, "frontmatter", doc.error or msg("No frontmatter"))]
     meta = doc.meta
     for key in ("id", "type", "status", "created", "updated", "links", "template", "template_version"):
         if key not in meta:
-            out.append(Finding("error", rel, "common-fields", f"공통 frontmatter '{key}'가 없습니다"))
+            out.append(Finding("error", rel, "common-fields", msg("Common frontmatter '{key}' is missing", key=key)))
     if meta.get("template") and nfc(str(meta["template"])) != nfc(p.stem):
-        out.append(Finding("warn", rel, "template-name", f"template: '{meta['template']}'가 파일 이름 '{p.stem}'과 다릅니다"))
+        out.append(
+            Finding(
+                "warn",
+                rel,
+                "template-name",
+                msg("template: '{template}' differs from the file name '{stem}'", template=meta["template"], stem=p.stem),
+            )
+        )
     if not re.match(r"^\d+\.\d+\.\d+$", frontmatter.as_str(meta.get("template_version"))):
-        out.append(Finding("error", rel, "version", "template_version은 1.2.0 형식이어야 합니다"))
+        out.append(Finding("error", rel, "version", msg("template_version must look like 1.2.0")))
     if "based_on" not in meta:
-        out.append(Finding("info", rel, "based-on", "based_on이 없습니다 (직접 만든 양식이면 template_version과 같게)"))
+        out.append(Finding("info", rel, "based-on", msg("No based_on (for a custom template, the same as template_version)")))
     enums = project.enums
     if meta.get("type") and str(meta["type"]) not in enums.values("doc_type"):
-        out.append(Finding("error", rel, "enum", f"type '{meta['type']}'가 enums.yaml doc_type에 없습니다"))
+        out.append(Finding("error", rel, "enum", msg("type '{type}' is not in enums.yaml doc_type", type=meta["type"])))
     n = project.names
     mark = n.marker("required")
     for pname, _req, line in templating.placeholders(text, mark):
         base = templating.field_base_name(pname, mark).lower()
         if base in templating.FORBIDDEN_FIELD_NAMES:
-            out.append(Finding("error", rel, "forbidden-name", f"칸 이름 '{pname}'은 쓸 수 없습니다 (date · time · title 금지)", line))
+            out.append(
+                Finding(
+                    "error",
+                    rel,
+                    "forbidden-name",
+                    msg("The blank name '{pname}' can't be used (no date · time · title)", pname=pname),
+                    line,
+                )
+            )
         if "|" in pname:
-            out.append(Finding("error", rel, "pipe", f"칸 이름에 '|'가 있습니다 — 필수는 '{mark}'로 표시", line))
+            out.append(Finding("error", rel, "pipe", msg("The blank name has '|' — mark required ones with '{mark}'", mark=mark), line))
     enum_keys = project.enums.context()  # ${work_status.plan} · ${debt_status.new.label} …
     for m in _SYS_RE.finditer(text):
         if m.group(1) not in SYSTEM_KEYS and m.group(1) not in enum_keys:
-            out.append(Finding("warn", rel, "system-key", f"스크립트가 모르는 값 ${{{m.group(1)}}}"))
+            out.append(Finding("warn", rel, "system-key", msg("A value the script doesn't know: ${{{group}}}", group=m.group(1))))
     glance, changelog = n.marker("glance"), n.marker("changelog")
     if not re.search(rf"^>\s*\[!abstract\][^\n]*{re.escape(glance)}\s*\n>\s*\S", text, re.M):
-        out.append(Finding("warn", rel, "glance", f"맨 위 '> [!abstract] {glance}' 칸이 없습니다"))
+        out.append(Finding("warn", rel, "glance", msg("The '> [!abstract] {glance}' section at the top is missing", glance=glance)))
     if templating.TEMPLATE_ONLY not in text or f"## {changelog}" not in text:
-        out.append(Finding("warn", rel, "changelog", f"맨 아래 {templating.TEMPLATE_ONLY} + '## {changelog}'이 없습니다"))
+        out.append(
+            Finding(
+                "warn",
+                rel,
+                "changelog",
+                msg(
+                    "{template_only} + '## {changelog}' at the bottom is missing",
+                    template_only=templating.TEMPLATE_ONLY,
+                    changelog=changelog,
+                ),
+            )
+        )
     else:
         rows = re.findall(r"^\|\s*(\d+\.\d+\.\d+)\s*\|", text.split(templating.TEMPLATE_ONLY, 1)[1], re.M)
         if rows and rows[-1] != frontmatter.as_str(meta.get("template_version")):
@@ -221,11 +250,16 @@ def lint(project: Project, name: str) -> list[Finding]:
                     "warn",
                     rel,
                     "changelog-version",
-                    f"{changelog} 마지막 버전 {rows[-1]} ≠ template_version {meta.get('template_version')}",
+                    msg(
+                        "{changelog} last version {rows} ≠ template_version {get}",
+                        changelog=changelog,
+                        rows=rows[-1],
+                        get=meta.get("template_version"),
+                    ),
                 )
             )
     if "> [!guide]" not in text:
-        out.append(Finding("info", rel, "guide", "작성 안내 '> [!guide]'가 하나도 없습니다"))
+        out.append(Finding("info", rel, "guide", msg("No '> [!guide]' writing notes at all")))
     return out
 
 
@@ -342,9 +376,9 @@ def level(project: Project, name: str, rev: str = "HEAD") -> tuple[str | None, s
     if old is None:
         language = project.profile.language
         if name in base_template_names(language):
-            old, source = base_template_text(name, language), "기본 양식"
+            old, source = base_template_text(name, language), msg("base template")
         else:
-            return None, "비교할 이전 버전이 없습니다 (커밋된 적 없음)"
+            return None, msg("No earlier version to compare with (never committed)")
     return change_level(old, read(p), project.names.marker("required")), source
 
 
@@ -395,10 +429,10 @@ def bump(project: Project, name: str, lvl: str, note: str) -> str:
     if lvl == "auto":
         detected, _ = level(project, name)
         if detected is None:
-            raise ValueError("바뀐 내용이 없습니다 — 버전을 올리지 않습니다")
+            raise ValueError(msg("Nothing changed — the version stays"))
         lvl = detected
     if lvl not in ("patch", "minor", "major"):
-        raise ValueError("level은 patch · minor · major · auto 중 하나")
+        raise ValueError(msg("level is one of patch · minor · major · auto"))
     new_ver = bump_version(template_version(text), lvl)
     text = frontmatter.set_fields(text, {"template_version": new_ver}, touch=False)
     row = f"| {new_ver} | {today()} | {note} |"
@@ -406,8 +440,11 @@ def bump(project: Project, name: str, lvl: str, note: str) -> str:
     if templating.TEMPLATE_ONLY in text and f"## {changelog}" in text:
         text = text.rstrip("\n") + "\n" + row + "\n"
     else:
-        text = (
-            text.rstrip("\n") + f"\n\n{templating.TEMPLATE_ONLY}\n## {changelog}\n| 버전 | 날짜 | 무엇이 바뀌었나 |\n|---|---|---|\n{row}\n"
+        text = text.rstrip("\n") + msg(
+            "\n\n{template_only}\n## {changelog}\n| Version | Date | What changed |\n|---|---|---|\n{row}\n",
+            template_only=templating.TEMPLATE_ONLY,
+            changelog=changelog,
+            row=row,
         )
     write(p, text)
     return f"{name}: {lvl} → v{new_ver}"
@@ -494,11 +531,11 @@ def usage(project: Project, name: str) -> list[str]:
     _, fields = structure(tmpl, mark)
     docs = [p for p in project.iter_docs() if nfc(str(frontmatter.parse(read(p)).meta.get("template") or "")) == nfc(name)]
     if not docs:
-        return [f"'{name}' 양식으로 만든 문서가 아직 없습니다"]
-    rows = [f"'{name}' 양식 문서 {len(docs)}개 — 칸마다 아직 비어 있는 문서 수:"]
+        return [msg("No documents made from template '{name}' yet", name=name)]
+    rows = [msg("{count} documents from template '{name}' — documents still empty in each section:", name=name, count=len(docs))]
     for f in fields:
         blank = sum(1 for p in docs if re.search(r"\{\{\s*" + re.escape(f) + rf"(\s*{re.escape(mark)})?\s*\}}\}}", read(p)))
-        mark = "  ← 늘 비어 있음 (지우거나 안내를 고칠 후보)" if blank == len(docs) and len(docs) >= 2 else ""
+        mark = msg("  ← always empty (a candidate to delete or to reword its guide)") if blank == len(docs) and len(docs) >= 2 else ""
         rows.append(f"  {blank}/{len(docs)}  {{{{{f}}}}}{mark}")
     return rows
 
@@ -545,7 +582,12 @@ def skeleton_from(project: Project, name: str, source: Path) -> str:
         m = re.match(r"^(#{2,4})\s+(.+)$", s)
         if m:
             current = re.sub(r"[{}|]", "", m.group(2)).strip()
-            out += ["", f"{m.group(1)} {current}", f"> [!guide] 🟦 원본 칸 · '{current}'에 무엇을 쓰는지 한 줄 안내", ""]
+            out += [
+                "",
+                f"{m.group(1)} {current}",
+                msg("> [!guide] 🟦 Original section · one line on what goes in '{current}'", current=current),
+                "",
+            ]
             filled, table_state = False, ""
             continue
         if s.startswith("|"):
@@ -556,7 +598,7 @@ def skeleton_from(project: Project, name: str, source: Path) -> str:
             elif table_state == "header" and re.match(r"^\|[\s\-:|]+\|$", s):
                 out.append(line)
             elif table_state == "header":
-                out.append("| " + " | ".join("{{" + f"{current or '값'} {i + 1}" + "}}" for i in range(len(cells))) + " |")
+                out.append("| " + " | ".join("{{" + f"{current or msg('value')} {i + 1}" + "}}" for i in range(len(cells))) + " |")
                 table_state = "body"
             continue
         table_state = ""
@@ -567,9 +609,13 @@ def skeleton_from(project: Project, name: str, source: Path) -> str:
         "---\nid: ${id}\ntype: current\nstatus: ${current_status.active}\ncreated: ${today}\nupdated: ${today}\nlinks: []\n"
         f"template: {name}\ntemplate_version: 1.0.0\nbased_on: 1.0.0\n---\n"
     )
-    tail = (
-        f"\n\n{templating.TEMPLATE_ONLY}\n## {n.marker('changelog')}\n| 버전 | 날짜 | 무엇이 바뀌었나 |\n|---|---|---|\n"
-        f"| 1.0.0 | {today()} | {source.name} 시안에서 만듦 |\n"
+    tail = msg(
+        "\n\n{template_only}\n## {marker}\n| Version | Date | What changed |\n|---|---|---|\n| 1.0.0 | "
+        "{today} | Made from the draft {name} |\n",
+        template_only=templating.TEMPLATE_ONLY,
+        marker=n.marker("changelog"),
+        today=today(),
+        name=source.name,
     )
     return meta + re.sub(r"\n{3,}", "\n\n", "\n".join(out)).strip() + tail
 
@@ -715,7 +761,10 @@ def migrate_text(
     if leftovers or bin_existing:
         parts += [
             f"## {bin_title}",
-            "> [!guide] 새 양식에 자리가 없는 내용. 지우지 않고 모았다 — 맞는 칸으로 옮기거나 정리한 뒤 이 칸을 지운다.",
+            msg(
+                "> [!guide] Content with no place in the new template, gathered here rather than deleted — "
+                "move it to the right section or tidy it up, then delete this section."
+            ),
             "",
         ]
         for c in bin_existing:
@@ -768,7 +817,7 @@ def migrate_targets(project: Project, target: str | None) -> list[tuple[Path, st
         cand = [project.docs / target, project.root / target]
         p = next((c for c in cand if c.exists()), cand[0])
     if not p.exists():
-        raise FileNotFoundError(f"문서도 양식도 아닙니다: {target}")
+        raise FileNotFoundError(msg("Neither a document nor a template: {target}", target=target))
     meta = frontmatter.parse(read(p)).meta
     return [(p, nfc(str(meta.get("template") or "")))]
 
@@ -802,26 +851,26 @@ def migrate(
     if to:  # legacy doc → a new document in our template
         src = migrate_targets(project, target)[0][0]
         if not dest:
-            raise ValueError("--to를 쓰면 --dest(새 문서 경로)도 필요합니다")
+            raise ValueError(msg("--to also needs --dest (the new document's path)"))
         dest_path = project.docs / dest
         if dest_path.exists():
-            raise FileExistsError(f"이미 있습니다: {project.rel(dest_path)}")
+            raise FileExistsError(msg("Already exists: {rel}", rel=project.rel(dest_path)))
         wid = re.match(r"^(W-\d{3,})\b", nfc(dest_path.parent.name))
         doc_id = wid.group(1) if wid else f"DOC-{dest_path.stem}"
         new_text = migrate_text(project, read(src), to, maps, legacy=True, values={"name": dest_path.stem, "id": doc_id, "work_id": doc_id})
-        out.append(f"📄 {project.rel(src)} → {project.rel(dest_path)} (양식 '{to}', 원본은 그대로)")
+        out.append(msg("📄 {rel} → {rel2} (template '{to}', the original stays)", rel=project.rel(src), rel2=project.rel(dest_path), to=to))
         if apply:
             write(dest_path, new_text)
-            out.append("✔ 만들었습니다")
+            out.append(msg("✔ Created"))
         else:
             out.append(new_text)
         return out
     targets = migrate_targets(project, target)
     if not targets:
-        return ["옮길 문서가 없습니다 (아직 쓰는 문서 중 옛 양식 버전 없음)"]
+        return [msg("Nothing to migrate (no active documents on an old template version)")]
     for path, tname in targets:
         if not tname:
-            out.append(f"⚠ {project.rel(path)}: template이 없는 문서 — --to <양식> --dest <경로>로 옮기세요")
+            out.append(msg("⚠ {rel}: a document without template — migrate it with --to <template> --dest <path>", rel=project.rel(path)))
             continue
         old = read(path)
         new = migrate_text(project, old, tname, maps)
@@ -830,16 +879,16 @@ def migrate(
                 old.splitlines(keepends=True),
                 new.splitlines(keepends=True),
                 fromfile=project.rel(path),
-                tofile=project.rel(path) + " (새 양식)",
+                tofile=project.rel(path) + msg(" (new template)"),
             )
         )
-        out.append(f"📄 {project.rel(path)} — 양식 '{tname}'")
+        out.append(msg("📄 {rel} — template '{tname}'", rel=project.rel(path), tname=tname))
         if apply:
             write(path, new)
             bin_title = project.names.marker("migrate_bin")
-            out.append("✔ 옮겼습니다" + (f" — '{bin_title}' 칸을 정리하세요" if bin_title in new else ""))
+            out.append(msg("✔ Migrated") + (msg(" — tidy up the '{bin_title}' section", bin_title=bin_title) if bin_title in new else ""))
         else:
-            out.append(diff or "(바뀌는 내용 없음)")
+            out.append(diff or msg("(no changes)"))
     if not apply:
-        out.append("미리보기입니다. 승인되면 --apply")
+        out.append(msg("This is a preview. Once approved, --apply"))
     return out

@@ -12,15 +12,16 @@ import sys
 from typing import Any
 
 from ... import __version__
+from ...core.messages import msg
 from ...core.project import Project
 from . import KnowledgeError, adapter_for, drafts
 
 PROTOCOL = "2025-06-18"
 
-TOOLS = [
+TOOLS = [  # descriptions in English; msg() translates them
     {
         "name": "search",
-        "description": "이 용어에 관한 노트가 있나? → 제목 · 위치 · 요약 · 수정일 목록",
+        "description": "Is there a note on this term? → a list of titles · places · summaries · modified dates",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -33,12 +34,12 @@ TOOLS = [
     },
     {
         "name": "read",
-        "description": "이 노트 내용은? → 본문",
+        "description": "What does this note say? → its body",
         "inputSchema": {"type": "object", "properties": {"path": {"type": "string"}}, "required": ["path"]},
     },
     {
         "name": "propose",
-        "description": "이 주제로 노트를 만들어도 되나? → 초안 (승인 대기, 우리 쪽 📒 부채/노트 초안/)",
+        "description": "May a note on this topic be made? → a draft (awaiting approval, in our debt note-drafts folder)",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -52,7 +53,9 @@ TOOLS = [
     },
     {
         "name": "write",
-        "description": "(사람이 승인한 뒤에만) 초안을 지식 저장소에 쓴다 → 만들어진 위치. propose_only 저장소는 거절",
+        "description": (
+            "(Only after a person approves) write the draft to the knowledge store → where it was made. A propose_only store refuses"
+        ),
         "inputSchema": {"type": "object", "properties": {"draft": {"type": "string"}, "target": {"type": "string"}}, "required": ["draft"]},
     },
 ]
@@ -91,15 +94,15 @@ def call(project: Project, name: str, args: dict[str, Any]) -> Any:
         if not draft.exists():
             draft = project.docs / str(args["draft"])
         return drafts.write_draft(project, draft, args.get("target"))
-    raise KnowledgeError(f"알 수 없는 도구: {name}")
+    raise KnowledgeError(msg("Unknown tool: {name}", name=name))
 
 
-def handle(project: Project, msg: dict[str, Any]) -> dict[str, Any] | None:
+def handle(project: Project, request: dict[str, Any]) -> dict[str, Any] | None:
     """Answer one JSON-RPC message.
 
     Args:
         project: The project.
-        msg: The parsed message.
+        request: The parsed message.
 
     Returns:
         The response; None for notifications. Tool failures come back as results with isError.
@@ -108,23 +111,23 @@ def handle(project: Project, msg: dict[str, Any]) -> dict[str, Any] | None:
         >>> handle(None, {"jsonrpc": "2.0", "id": 1, "method": "ping"})
         {'jsonrpc': '2.0', 'id': 1, 'result': {}}
     """
-    method = msg.get("method")
-    mid = msg.get("id")
+    method = request.get("method")
+    mid = request.get("id")
     if mid is None:  # notification
         return None
     try:
         if method == "initialize":
             result: Any = {
-                "protocolVersion": msg.get("params", {}).get("protocolVersion") or PROTOCOL,
+                "protocolVersion": request.get("params", {}).get("protocolVersion") or PROTOCOL,
                 "capabilities": {"tools": {}},
                 "serverInfo": {"name": "lantern-knowledge", "version": __version__},
             }
         elif method == "ping":
             result = {}
         elif method == "tools/list":
-            result = {"tools": TOOLS}
+            result = {"tools": [{**t, "description": msg(t["description"])} for t in TOOLS]}
         elif method == "tools/call":
-            params = msg.get("params") or {}
+            params = request.get("params") or {}
             try:
                 data = call(project, str(params.get("name")), params.get("arguments") or {})
                 result = {"content": [{"type": "text", "text": json.dumps(data, ensure_ascii=False, indent=2)}]}
@@ -155,11 +158,11 @@ def serve(project: Project) -> int:
         if not line:
             continue
         try:
-            msg = json.loads(line)
+            request = json.loads(line)
         except json.JSONDecodeError:
             out = {"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": "parse error"}}
         else:
-            out = handle(project, msg)
+            out = handle(project, request)
         if out is not None:
             sys.stdout.write(json.dumps(out, ensure_ascii=False) + "\n")
             sys.stdout.flush()

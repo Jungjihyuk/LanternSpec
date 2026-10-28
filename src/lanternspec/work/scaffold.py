@@ -21,9 +21,10 @@ from typing import Any
 
 from .. import resources
 from ..core import frontmatter, state, templating
+from ..core.messages import msg
 from ..core.names import WORK_DOCS
 from ..core.new_id import next_id
-from ..core.profile import CLIENT_LABEL, DATA_VARIANT, OPTIONAL_DOC_KEYS, DocSpec, enabled_docs
+from ..core.profile import OPTIONAL_DOC_KEYS, DocSpec, client_label, data_variant, enabled_docs
 from ..core.project import Project, nfc, read, safe_name, today, wikilink, write
 
 # --------------------------------------------------------------------------- templates
@@ -70,7 +71,7 @@ def base_template_text(name: str, language: str = "ko") -> str:
     for _, p in resources.iter_files(_base_dir(language)):
         if p.suffix == ".md" and nfc(p.stem) == nfc(name):
             return p.read_text(encoding="utf-8")
-    raise FileNotFoundError(f"기본 양식 '{name}'이 없습니다")
+    raise FileNotFoundError(msg("No base template '{name}'", name=name))
 
 
 def template_version(text: str) -> str:
@@ -201,29 +202,29 @@ def condition_context(project: Project) -> dict[str, Any]:
 
 def _profile_table(project: Project) -> str:
     p = project.profile
-    clients = ", ".join(CLIENT_LABEL.get(c, c) for c in p.clients) or "없음"
-    server = {"none": "없음", "external": "외부 서비스", "custom": "직접 구축"}.get(p.server, p.server)
+    clients = ", ".join(client_label(c) for c in p.clients) or msg("none")
+    server = {"none": msg("none"), "external": msg("external service"), "custom": msg("built in-house")}.get(p.server, p.server)
     k = p.knowledge
     rows = [
-        ("시작", "🌱 그린필드 (새로)" if not p.brownfield else "🏠 브라운필드 (기존 코드 있음)"),
-        ("인원", "1인" if not p.team else f"2인 이상 ({', '.join(p.get('project.members') or [])})"),
-        ("화면 유형", clients),
-        ("서버", server),
-        ("지식 저장소", f"{k['type']} · `{k['path']}`" if k else "없음 (배우는 선로 꺼짐)"),
+        (msg("Start"), msg("🌱 Greenfield (new)") if not p.brownfield else msg("🏠 Brownfield (existing code)")),
+        (msg("Team"), msg("solo") if not p.team else msg("2 or more ({items})", items=", ".join(p.get("project.members") or []))),
+        (msg("Clients"), clients),
+        (msg("Server"), server),
+        (msg("Knowledge store"), f"{k['type']} · `{k['path']}`" if k else msg("none (the learning track is off)")),
         (
-            "디자인 도구",
-            {"claude-design": "Claude Design", "figma": "Figma (MCP)", "canva": "Canva (MCP)"}.get(p.get("design.tool"), "없음"),
+            msg("Design tool"),
+            {"claude-design": "Claude Design", "figma": "Figma (MCP)", "canva": "Canva (MCP)"}.get(p.get("design.tool"), msg("none")),
         ),
-        ("문서 저장", "shared (코드와 함께 올림)" if p.remote == "shared" else "local (docs-local 브랜치, 원격에 안 올림)"),
+        (msg("Documents"), msg("shared (pushed with the code)") if p.remote == "shared" else msg("local (docs-local branch, not pushed)")),
     ]
-    return "| 질문 | 답 |\n|---|---|\n" + "\n".join(f"| {a} | {b} |" for a, b in rows)
+    return msg("| Question | Answer |\n|---|---|\n") + "\n".join(f"| {a} | {b} |" for a, b in rows)
 
 
 def _members_table(project: Project) -> str:
     members = project.profile.get("project.members") or []
     if not members:
-        return "| 이름 | 역할 |\n|---|---|\n| {{이름}} | {{역할}} |"
-    return "| 이름 | 역할 |\n|---|---|\n" + "\n".join(f"| {m} | {{{{역할}}}} |" for m in members)
+        return msg("| Name | Role |\n|---|---|\n| {{{{Name}}}} | {{{{Role}}}} |")
+    return msg("| Name | Role |\n|---|---|\n") + "\n".join(msg("| {m} | {{{{Role}}}} |", m=m) for m in members)
 
 
 def base_values(project: Project) -> dict[str, Any]:
@@ -247,11 +248,13 @@ def base_values(project: Project) -> dict[str, Any]:
         "project": p.get("project.name") or project.root.name,
         "links": "[]",
         "owner": templating.yaml_str(members[0] if (p.team and members) else ""),
-        "variant": DATA_VARIANT.get(p.server, p.server),
+        "variant": data_variant(p.server),
         "base": p.get("git.base"),
         "profile_table": _profile_table(project),
         "members_table": _members_table(project),
-        "legacy_rows": "| {{문서}} | {{무슨 내용}} | {{아직 맞나}} | {{흡수 · 보관 · 옮기기}} | {{새 위치}} |",
+        "legacy_rows": msg(
+            "| {{{{Document}}}} | {{{{What it says}}}} | {{{{Still true?}}}} | {{{{Absorb · Archive · Move}}}} | {{{{New place}}}} |"
+        ),
     }
 
 
@@ -276,7 +279,7 @@ def create_from_template(project: Project, template: str, dest: Path, values: di
         '회의.md'
     """
     if dest.exists():
-        raise FileExistsError(f"이미 있습니다: {project.rel(dest)}")
+        raise FileExistsError(msg("Already exists: {rel}", rel=project.rel(dest)))
     vals = base_values(project)
     vals.update(values or {})
     text = templating.render(template_text(project, template), vals, condition_context(project))
@@ -319,11 +322,11 @@ class Action:
             '📄 새 문서  docs/개발문서 MOC.md  (항상)'
         """
         label = {
-            "create-folder": "📁 새 폴더",
-            "create-doc": "📄 새 문서",
-            "disable": project.enums.label("current_status", "inactive") + " 표시",
-            "enable": project.enums.label("current_status", "active") + "으로 되돌림",
-            "keep": "· 그대로",
+            "create-folder": msg("📁 new folder"),
+            "create-doc": msg("📄 new document"),
+            "disable": msg("mark {label}", label=project.enums.label("current_status", "inactive")),
+            "enable": msg("back to {label}", label=project.enums.label("current_status", "active")),
+            "keep": msg("· unchanged"),
         }[self.kind]
         return f"{label}  {project.rel(self.path)}  ({self.spec.reason})"
 
@@ -442,18 +445,20 @@ def init_apply(project: Project) -> list[str]:
             done.append(project.rel(path) + f" ({inactive})")
         elif action.kind == "enable":
             write(path, frontmatter.set_fields(read(path), {"status": project.enums.value("current_status", "active")}))
-            done.append(project.rel(path) + " (다시 사용)")
+            done.append(project.rel(path) + msg(" (in use again)"))
     if project.profile.clients:
         (project.folder("current") / project.names.folder("screens")).mkdir(parents=True, exist_ok=True)
     return done
 
 
 def _schema_stub(project: Project) -> str:
-    variant = DATA_VARIANT.get(project.profile.server, project.profile.server)
+    variant = data_variant(project.profile.server)
     name = project.profile.get("project.name") or project.root.name
-    return (
-        f"// schema.dbml — {name} 데이터 원본 ({variant}). ERD 그림과 데이터 사전은 `lantern dbml render`가 만든다.\n"
-        f"Project \"{name}\" {{\n  Note: '{variant}'\n}}\n"
+    return msg(
+        "// schema.dbml — {name} data source ({variant}). `lantern dbml render` makes the ERD and "
+        "the data dictionary.\nProject \"{name}\" {{\n  Note: '{variant}'\n}}\n",
+        name=name,
+        variant=variant,
     )
 
 
@@ -503,7 +508,7 @@ def new_work(project: Project, name: str, idea_id: str | None = None, ui: bool =
     if idea_id:
         idea = project.find_by_id(idea_id)
         if idea is None:
-            raise ValueError(f"아이디어 {idea_id}를 찾지 못했습니다")
+            raise ValueError(msg("Idea {idea_id} not found", idea_id=idea_id))
         links.append(wikilink(project, idea))
     plan = project.doc_path(folder, "plan")
     create_from_template(
@@ -566,10 +571,10 @@ def work_doc(project: Project, work_id: str, kind: str) -> Path:
     n = project.names
     role = work_doc_role(project, kind)
     if role is None:
-        raise ValueError(f"작업 문서 종류는 {', '.join(n.doc(r) for r in WORK_DOCS)} 중 하나입니다")
+        raise ValueError(msg("A work document is one of {items}", items=", ".join(n.doc(r) for r in WORK_DOCS)))
     folder = project.find_work(work_id, include_archive=False)
     if folder is None:
-        raise ValueError(f"진행 중인 작업 {work_id}를 찾지 못했습니다")
+        raise ValueError(msg("Work in progress {work_id} not found", work_id=work_id))
     dest = project.doc_path(folder, role)
     plan = project.doc_path(folder, "plan")
     links = [wikilink(project, plan, f"{work_id} {n.doc('plan')}")] if plan.exists() and role != "plan" else []
@@ -635,7 +640,11 @@ def new_idea(
         },
     )
     if auto:
-        text = read(dest).replace(f"# 💡 {idea_id} {safe_name(name)}", f"# 💡 {idea_id} {safe_name(name)}\n\n> [!info] 🤖 자동 기록", 1)
+        text = read(dest).replace(
+            f"# 💡 {idea_id} {safe_name(name)}",
+            msg("# 💡 {idea_id} {safe_name}\n\n> [!info] 🤖 Recorded automatically", idea_id=idea_id, safe_name=safe_name(name)),
+            1,
+        )
         write(dest, text)
     return dest
 
@@ -664,7 +673,7 @@ def new_adr(project: Project, name: str, work_id: str | None = None) -> Path:
     if work_id:
         folder = project.find_work(work_id)
         if folder is None:
-            raise ValueError(f"작업 {work_id}를 찾지 못했습니다")
+            raise ValueError(msg("Work {work_id} not found", work_id=work_id))
         links.append(wikilink(project, project.doc_path(folder, "plan"), f"{work_id.upper()} {project.names.doc('plan')}"))
     create_from_template(
         project, project.names.doc("adr"), dest, {"id": adr_id, "name": safe_name(name), "links": templating.yaml_list(links)}

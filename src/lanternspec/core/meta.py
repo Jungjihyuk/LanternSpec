@@ -18,6 +18,7 @@ from typing import Any
 from . import enums as enums_mod
 from . import frontmatter
 from . import profile as profile_mod
+from .messages import msg
 from .project import Project, read, write
 
 
@@ -48,7 +49,7 @@ def resolve_doc(project: Project, target: str) -> Path:
     found = project.find_by_id(target)
     if found:
         return found
-    raise FileNotFoundError(f"문서를 찾지 못했습니다: {target}")
+    raise FileNotFoundError(msg("Document not found: {target}", target=target))
 
 
 def parse_assignments(items: list[str]) -> dict[str, Any]:
@@ -72,7 +73,7 @@ def parse_assignments(items: list[str]) -> dict[str, Any]:
     out: dict[str, Any] = {}
     for item in items:
         if "=" not in item:
-            raise ValueError(f"key=value 형식이어야 합니다: {item}")
+            raise ValueError(msg("Must be key=value: {item}", item=item))
         k, v = item.split("=", 1)
         val = profile_mod.parse_value(v)
         out[k.strip()] = "" if val is None else val
@@ -106,7 +107,15 @@ def meta_set(project: Project, target: str, items: list[str]) -> tuple[Path, dic
     rules = enums.rules_for(str(updates.get("type") or meta.get("type") or ""))
     for k, v in updates.items():
         if k in rules and str(v) not in rules[k].values:
-            raise ValueError(f"{k}: '{v}'는 {rules[k].label} 값이 아닙니다 (가능: {', '.join(rules[k].values)})")
+            raise ValueError(
+                msg(
+                    "{k}: '{v}' is not a {label} value (available: {items})",
+                    k=k,
+                    v=v,
+                    label=rules[k].label,
+                    items=", ".join(rules[k].values),
+                )
+            )
     write(path, frontmatter.set_fields(text, updates))
     return path, updates
 
@@ -159,12 +168,12 @@ def rename_enum_value(project: Project, enum: str, old: str, new: str) -> list[P
     """
     path = project.enums_file
     if not path.exists():
-        raise FileNotFoundError(f"{project.rel(path)}이 없습니다 — lantern scaffold init 먼저")
+        raise FileNotFoundError(msg("{rel} doesn't exist — run lantern scaffold init first", rel=project.rel(path)))
     current = project.enums
     if enum not in current.enums:
-        raise LookupError(f"enums.yaml에 '{enum}'이 없습니다 (가능: {', '.join(current.enums)})")
+        raise LookupError(msg("enums.yaml has no '{enum}' (available: {items})", enum=enum, items=", ".join(current.enums)))
     if new in current[enum].values:
-        raise ValueError(f"{enum}에 '{new}'이 이미 있습니다")
+        raise ValueError(msg("{enum} already has '{new}'", enum=enum, new=new))
     text = enums_mod.rename_in_text(read(path), enum, old, new)
     write(path, text)
     project.reload_enums()

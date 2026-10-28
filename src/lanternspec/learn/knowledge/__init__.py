@@ -19,6 +19,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+from ...core.messages import msg
 from ...core.project import Project
 
 
@@ -175,7 +176,7 @@ def adapter_for(project: Project) -> Adapter:
     """
     k = project.profile.knowledge
     if not k:
-        raise KnowledgeError("지식 저장소가 설정되지 않았습니다 (lantern.yaml의 knowledge 블록)")
+        raise KnowledgeError(msg("No knowledge store is set up (the knowledge block in lantern.yaml)"))
     kind = k["type"]
     if kind in ("obsidian", "folder"):  # folder = any Markdown folder (other stores)
         from .obsidian import ObsidianAdapter
@@ -185,4 +186,4 @@ def adapter_for(project: Project) -> Adapter:
         from .notion import from_config
 
         return from_config(k)
-    raise KnowledgeError(f"'{kind}' 어댑터가 없습니다 (가능: obsidian · folder · notion)")
+    raise KnowledgeError(msg("No '{kind}' adapter (available: obsidian · folder · notion)", kind=kind))

@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from ..core import frontmatter, sections
+from ..core.messages import msg
 from ..core.project import Project, nfc, read, today, wikilink, write
 
 
@@ -98,24 +99,24 @@ def idea_status(
     """
     path = project.find_by_id(idea_id)
     if path is None or nfc(path.parent.name) != nfc(project.folder("ideas").name):
-        raise ValueError(f"아이디어 {idea_id}를 찾지 못했습니다")
+        raise ValueError(msg("Idea {idea_id} not found", idea_id=idea_id))
     enums = project.enums
     allowed = enums.values("idea_status")
     if status not in allowed:
-        raise ValueError(f"상태 '{status}'는 아이디어 상태가 아닙니다 (가능: {', '.join(allowed)})")
+        raise ValueError(msg("'{status}' is not an idea status (available: {items})", status=status, items=", ".join(allowed)))
     roles = project.enums["idea_status"]
     if status == roles.value("dropped") and not (reason or "").strip():
-        raise ValueError("버림에는 이유 한 줄이 필요합니다 (--reason)")
+        raise ValueError(msg("Dropping needs a one-line reason (--reason)"))
     text = read(path)
     meta = frontmatter.parse(text).meta
     updates: dict[str, Any] = {"status": status}
     detail = ""
     if status == roles.value("worked"):
         if not work:
-            raise ValueError("작업됨에는 작업 ID가 필요합니다 (--work W-012)")
+            raise ValueError(msg("In-work needs a work ID (--work W-012)"))
         folder = project.find_work(work)
         if folder is None:
-            raise ValueError(f"작업 {work}를 찾지 못했습니다")
+            raise ValueError(msg("Work {work} not found", work=work))
         link = wikilink(project, project.doc_path(folder, "plan"), work.upper())
         links = frontmatter.as_list(meta.get("links"))
         if link not in links:

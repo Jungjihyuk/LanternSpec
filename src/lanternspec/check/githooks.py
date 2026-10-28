@@ -18,6 +18,7 @@ import stat
 import sys
 from pathlib import Path
 
+from ..core.messages import msg
 from ..core.project import Project, git_out, nfc
 
 MARK = "# lanternspec hook"
@@ -28,7 +29,7 @@ TASK_RE = re.compile(r"\bW-\d{3,}-T\d{2,}\b")
 SKIP_MSG = re.compile(r"^(Merge |Revert |fixup! |squash! |amend! )|\[lantern\]")
 
 SHIM = """#!/bin/sh
-{mark} — `lantern hooks uninstall`로 지운다. 고치지 말 것.
+{mark} — {remove_note}
 HOOK_DIR=$(cd "$(dirname "$0")" && pwd)
 {prelude}if [ -x "$HOOK_DIR/{name}.local" ]; then
   {local_call} || exit $?
@@ -40,7 +41,7 @@ elif python3 -c "import lanternspec" >/dev/null 2>&1; then
   {feed}python3 -m lanternspec hook {handler} "$@"
   exit $?
 fi
-echo "lanternspec: lantern 명령을 찾지 못해 검사를 건너뜁니다" >&2
+echo "lanternspec: {not_found}" >&2
 exit 0
 """
 
@@ -67,13 +68,18 @@ def hooks_dir(project: Project) -> Path:
         return p if p.is_absolute() else project.root / p
     common = git_out(["rev-parse", "--path-format=absolute", "--git-common-dir"], project.root)
     if not common:
-        raise RuntimeError("git 저장소가 아닙니다")
+        raise RuntimeError(msg("Not a git repository"))
     return Path(common) / "hooks"
 
 
 def _shim(name: str) -> str:
+    text = {
+        "remove_note": msg("remove with `lantern hooks uninstall`. Don't edit."),
+        "not_found": msg("lantern command not found, so the check is skipped"),
+    }
     if name == "pre-push":  # stdin must reach both the local hook and ours
         return SHIM.format(
+            **text,
             mark=MARK,
             name=name,
             handler=HOOKS[name],
@@ -81,7 +87,7 @@ def _shim(name: str) -> str:
             local_call=f'printf "%s\\n" "$INPUT" | "$HOOK_DIR/{name}.local" "$@"',
             feed='printf "%s\\n" "$INPUT" | ',
         )
-    return SHIM.format(mark=MARK, name=name, handler=HOOKS[name], prelude="", local_call=f'"$HOOK_DIR/{name}.local" "$@"', feed="")
+    return SHIM.format(**text, mark=MARK, name=name, handler=HOOKS[name], prelude="", local_call=f'"$HOOK_DIR/{name}.local" "$@"', feed="")
 
 
 def install(project: Project) -> list[str]:
@@ -109,10 +115,10 @@ def install(project: Project) -> list[str]:
             local = d / f"{name}.local"
             if not local.exists():
                 p.rename(local)
-                msgs.append(f"• 기존 {name} hook을 {name}.local로 보존 (먼저 실행됨)")
+                msgs.append(msg("• Kept the existing {name} hook as {name}.local (runs first)", name=name))
         p.write_text(_shim(name), encoding="utf-8")
         p.chmod(p.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-    msgs.append(f"✔ git hook 설치: {', '.join(HOOKS)} ({d})")
+    msgs.append(msg("✔ git hooks installed: {items} ({d})", items=", ".join(HOOKS), d=d))
     return msgs
 
 
@@ -141,9 +147,9 @@ def uninstall(project: Project) -> list[str]:
             local = d / f"{name}.local"
             if local.exists():
                 local.rename(p)
-                msgs.append(f"• {name}.local을 원래 이름으로 되돌림")
-            msgs.append(f"✔ {name} 제거")
-    return msgs or ["설치된 LanternSpec hook이 없습니다"]
+                msgs.append(msg("• Restored {name}.local to its original name", name=name))
+            msgs.append(msg("✔ Removed {name}", name=name))
+    return msgs or [msg("No LanternSpec hooks installed")]
 
 
 def status(project: Project) -> list[tuple[str, bool]]:
@@ -202,9 +208,9 @@ def _content_result(project: Project, problems: list[str], label: str) -> int:
     block = _mode(project) == "block"
     _say([f"{'✖' if block else '⚠'} LanternSpec {label}"] + [f"   {p}" for p in problems])
     if block:
-        _say(["   (git.hooks: block — 고친 뒤 다시 커밋. 급하면 git commit --no-verify)"])
+        _say([msg("   (git.hooks: block — fix it and commit again. In a hurry, git commit --no-verify)")])
         return 1
-    _say(["   (경고만 — 커밋은 진행됩니다. 막으려면 lantern.yaml git.hooks: block)"])
+    _say([msg("   (warning only — the commit goes ahead. To block, lantern.yaml git.hooks: block)")])
     return 0
 
 
@@ -225,8 +231,8 @@ def commit_msg(project: Project, msg_file: str) -> int:
     if _skip():
         return 0
     text = Path(msg_file).read_text(encoding="utf-8", errors="replace")
-    msg = "\n".join(l for l in text.split("\n") if not l.startswith("#")).strip()
-    if not msg or SKIP_MSG.search(msg):
+    message = "\n".join(l for l in text.split("\n") if not l.startswith("#")).strip()
+    if not message or SKIP_MSG.search(message):
         return 0
     top = _toplevel()
     branch = _branch(top)
@@ -236,13 +242,13 @@ def commit_msg(project: Project, msg_file: str) -> int:
 
     code = staged if docs_branch else [f for f in staged if not is_doc_path(project, f)]
     problems: list[str] = []
-    if code and not ID_RE.search(msg):
-        where = "문서 브랜치" if docs_branch else "코드 커밋"
-        problems.append(f"커밋 메시지: {where} 메시지에 할 일 번호가 없습니다 — 끝에 [W-001-T02] 처럼 붙이세요")
-    tasks = sorted(set(TASK_RE.findall(msg)))
+    if code and not ID_RE.search(message):
+        where = msg("the docs branch") if docs_branch else msg("code commit")
+        problems.append(msg("Commit message: the {where} message has no task ID — add one at the end, like [W-001-T02]", where=where))
+    tasks = sorted(set(TASK_RE.findall(message)))
     if len(tasks) > 1:
-        problems.append(f"커밋 메시지: 할 일 여러 개가 한 커밋에 섞였습니다 ({', '.join(tasks)}) — 할 일 하나 = 커밋 하나")
-    return _content_result(project, problems, "커밋 메시지 검사")
+        problems.append(msg("Commit message: several tasks in one commit ({items}) — one task = one commit", items=", ".join(tasks)))
+    return _content_result(project, problems, msg("commit message check"))
 
 
 def structure_problems(project: Project, cwd: Path | None = None, staged: list[str] | None = None) -> list[str]:
@@ -277,23 +283,28 @@ def structure_problems(project: Project, cwd: Path | None = None, staged: list[s
     out: list[str] = []
     if project.profile.remote == "shared":
         if (docs / ".git").exists():
-            out.append("docs/ 안에 .git이 있습니다 (shared 방식에서는 없어야 함) — lantern doctor")
+            out.append(msg("docs/ has a .git (it shouldn't in the shared mode) — lantern doctor"))
         if gi_has:
-            out.append(".gitignore가 docs/를 무시합니다 (shared 방식이면 지워야 함)")
+            out.append(msg(".gitignore ignores docs/ (remove it in the shared mode)"))
     else:
         g = docs / ".git"
         if g.is_dir():
-            out.append("docs/.git이 폴더입니다 — docs-local 브랜치를 가리키는 표지판 파일이어야 합니다 (lantern docs-mode)")
+            out.append(msg("docs/.git is a folder — it must be a pointer file to the docs-local branch (lantern docs-mode)"))
         elif not g.exists():
-            out.append("docs/가 docs-local worktree가 아닙니다 — lantern docs-mode local 로 만드세요")
+            out.append(msg("docs/ is not the docs-local worktree — make it with lantern docs-mode local"))
         if not gi_has:
-            out.append(".gitignore에 docs/가 없습니다")
+            out.append(msg(".gitignore doesn't have docs/"))
         if not ig_has:
-            out.append(".ignore에 !docs/가 없습니다 — AI 검색이 문서를 못 찾습니다")
+            out.append(msg(".ignore doesn't have !docs/ — AI search can't find the documents"))
         if branch != DOCS_BRANCH and staged is not None:
             mixed = [f for f in staged if f.startswith(pattern)]
             if mixed:
-                out.append(f"코드 커밋에 docs/ 파일이 섞였습니다: {', '.join(mixed[:3])} — 문서는 docs-local에 따로 커밋")
+                out.append(
+                    msg(
+                        "docs/ files are mixed into a code commit: {items} — commit documents separately in docs-local",
+                        items=", ".join(mixed[:3]),
+                    )
+                )
     return out
 
 
@@ -318,7 +329,10 @@ def pre_commit(project: Project) -> int:
     docs_branch = branch == DOCS_BRANCH
     structural = structure_problems(project, cwd=top, staged=staged)
     if structural:
-        _say(["✖ LanternSpec 구조 검사 — 커밋을 막았습니다 (구조 실수는 항상 막음)"] + [f"   {p}" for p in structural])
+        _say(
+            [msg("✖ LanternSpec structure check — blocked the commit (structure mistakes are always blocked)")]
+            + [f"   {p}" for p in structural]
+        )
         return 1
     problems: list[str] = []
     # schema change without a record
@@ -336,8 +350,12 @@ def pre_commit(project: Project) -> int:
                 recorded = nfc(n.file("record")) in nfc(docs_status) or nfc(n.file("record")) in nfc(recent)
             if not recorded:
                 problems.append(
-                    f"스키마 기록: 스키마 파일이 바뀌었는데 {n.file('record')} 변경이 없습니다: {', '.join(sfiles[:3])}"
-                    f" — 작업 {n.file('record')} '## {n.title('schema')}'에 남기세요"
+                    msg(
+                        "Schema log: schema files changed but {file} didn't: {items} — record it under '## {title}' in the work's {file}",
+                        file=n.file("record"),
+                        items=", ".join(sfiles[:3]),
+                        title=n.title("schema"),
+                    )
                 )
     # lantern check on the documents in this commit
     from . import check_docs
@@ -356,10 +374,10 @@ def pre_commit(project: Project) -> int:
         bad = [f for f in rep.findings if f.level == "error"]
         warn = [f for f in rep.findings if f.level == "warn"]
         for f in bad:
-            problems.append(f"문서 양식: {f.path}: {f.message}")
+            problems.append(msg("Document format: {path}: {message}", path=f.path, message=f.message))
         if warn and not bad:
-            _say([f"⚠ LanternSpec 문서 양식 참고: {f.path}: {f.message}" for f in warn[:5]])
-    return _content_result(project, problems, "커밋 전 검사")
+            _say([msg("⚠ LanternSpec document format note: {path}: {message}", path=f.path, message=f.message) for f in warn[:5]])
+    return _content_result(project, problems, msg("pre-commit check"))
 
 
 def pre_push(project: Project, remote: str, url: str, stdin_text: str) -> int:
@@ -391,8 +409,12 @@ def pre_push(project: Project, remote: str, url: str, stdin_text: str) -> int:
                 return 0
             _say(
                 [
-                    f"✖ LanternSpec: {DOCS_BRANCH} 브랜치는 원격({remote})에 올리지 않습니다 (docs.remote: local)",
-                    f"   개인 원격을 허용하려면: git config --add lantern.allowDocsRemote {remote}",
+                    msg(
+                        "✖ LanternSpec: the {docs_branch} branch is not pushed to a remote ({remote}) (docs.remote: local)",
+                        docs_branch=DOCS_BRANCH,
+                        remote=remote,
+                    ),
+                    msg("   To allow a private remote: git config --add lantern.allowDocsRemote {remote}", remote=remote),
                 ]
             )
             return 1

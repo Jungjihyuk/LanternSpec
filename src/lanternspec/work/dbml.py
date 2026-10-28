@@ -14,6 +14,8 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from ..core.messages import msg
+
 ERD_START, ERD_END = "<!-- lantern:erd:start -->", "<!-- lantern:erd:end -->"
 DICT_START, DICT_END = "<!-- lantern:dictionary:start -->", "<!-- lantern:dictionary:end -->"
 
@@ -271,7 +273,7 @@ def parse(text: str) -> Schema:
     schema = Schema()
     src = _strip_comments(text)
     if src.count("{") != src.count("}"):
-        schema.problems.append(("error", 0, "중괄호 { } 짝이 맞지 않습니다"))
+        schema.problems.append(("error", 0, msg("Unbalanced braces {{ }}")))
     pos, n = 0, len(src)
     while pos < n:
         m = re.compile(r"\S").search(src, pos)
@@ -284,7 +286,7 @@ def parse(text: str) -> Schema:
         if not kw:
             eol = src.find("\n", start)
             bad = src[start : (n if eol == -1 else eol)].strip()
-            schema.problems.append(("error", line, f"알 수 없는 문장: {bad[:60]}"))
+            schema.problems.append(("error", line, msg("Unknown statement: {bad}", bad=bad[:60])))
             pos = n if eol == -1 else eol + 1
             continue
         keyword = kw.group(1).lower()
@@ -309,11 +311,11 @@ def parse(text: str) -> Schema:
             continue
         brace = src.find("{", start)
         if brace == -1:
-            schema.problems.append(("error", line, f"{kw.group(1)} 블록에 {{ 가 없습니다"))
+            schema.problems.append(("error", line, msg("{group} block has no {{", group=kw.group(1))))
             break
         end = _match_brace(src, brace)
         if end == -1:
-            schema.problems.append(("error", line, f"{kw.group(1)} 블록이 닫히지 않았습니다"))
+            schema.problems.append(("error", line, msg("{group} block is not closed", group=kw.group(1))))
             break
         header = src[start + len(kw.group(0)) : brace].strip()
         body = src[brace + 1 : end]
@@ -333,7 +335,7 @@ def _parse_ref(expr: str, schema: Schema, line: int) -> None:
     m = re.match(r"^([\w.\"]+)\s*(<>|>|<|-)\s*([\w.\"]+)$", expr)
     if not m:
         if expr:
-            schema.problems.append(("error", line, f"Ref 형식이 올바르지 않습니다: {expr}"))
+            schema.problems.append(("error", line, msg("Invalid Ref: {expr}", expr=expr)))
         return
     schema.refs.append(Ref(_split_col(m.group(1)), m.group(2), _split_col(m.group(3)), line))
 
@@ -354,11 +356,11 @@ def _parse_table(header: str, body: str, body_line: int, line: int, schema: Sche
         head, alias = am.group(1).strip(), am.group(2)
     name = _unquote(head)
     if not name:
-        schema.problems.append(("error", line, "테이블 이름이 없습니다"))
+        schema.problems.append(("error", line, msg("Table name is missing")))
         return
     table = Table(name=name, line=line, alias=alias)
     if name in schema.tables:
-        schema.problems.append(("error", line, f"테이블 '{name}'이 두 번 정의되었습니다"))
+        schema.problems.append(("error", line, msg("Table '{name}' is defined twice", name=name)))
     schema.tables[name] = table
     lines = body.split("\n")
     i = 0
@@ -387,13 +389,13 @@ def _parse_table(header: str, body: str, body_line: int, line: int, schema: Sche
             core = raw[: sm.start()].strip()
         cm = re.match(r'^("[^"]+"|`[^`]+`|[\w]+)\s*(.*)$', core)
         if not cm:
-            schema.problems.append(("error", ln, f"{name}: 컬럼을 읽지 못했습니다: {raw[:60]}"))
+            schema.problems.append(("error", ln, msg("{name}: couldn't read the column: {raw}", name=name, raw=raw[:60])))
             continue
         cname, ctype = _unquote(cm.group(1)), _unquote(cm.group(2).strip())
         if not ctype:
-            schema.problems.append(("error", ln, f"{name}.{cname}: 타입이 없습니다"))
+            schema.problems.append(("error", ln, msg("{name}.{cname}: no type", name=name, cname=cname)))
         if table.column(cname):
-            schema.problems.append(("error", ln, f"{name}.{cname}: 컬럼이 두 번 정의되었습니다"))
+            schema.problems.append(("error", ln, msg("{name}.{cname}: column defined twice", name=name, cname=cname)))
         note = ""
         clean_settings: list[str] = []
         for s in settings:
@@ -405,12 +407,12 @@ def _parse_table(header: str, body: str, body_line: int, line: int, schema: Sche
                 if rm:
                     schema.refs.append(Ref((name, cname), rm.group(1), _split_col(rm.group(2)), ln))
                 else:
-                    schema.problems.append(("error", ln, f"{name}.{cname}: ref 형식이 올바르지 않습니다"))
+                    schema.problems.append(("error", ln, msg("{name}.{cname}: invalid ref", name=name, cname=cname)))
             else:
                 clean_settings.append(s.strip())
         table.columns.append(Column(name=cname, type=ctype, settings=clean_settings, note=note, line=ln))
     if not table.columns:
-        schema.problems.append(("warn", line, f"테이블 '{name}'에 컬럼이 없습니다"))
+        schema.problems.append(("warn", line, msg("Table '{name}' has no columns", name=name)))
 
 
 def check(schema: Schema) -> list[tuple[str, int, str]]:
@@ -433,12 +435,12 @@ def check(schema: Schema) -> list[tuple[str, int, str]]:
             tname = alias.get(side[0], side[0])
             table = schema.tables.get(tname)
             if table is None:
-                problems.append(("error", ref.line, f"Ref: 테이블 '{side[0]}'이 없습니다"))
+                problems.append(("error", ref.line, msg("Ref: table '{side}' doesn't exist", side=side[0])))
             elif side[1] and table.column(side[1]) is None:
-                problems.append(("error", ref.line, f"Ref: '{side[0]}.{side[1]}' 컬럼이 없습니다"))
+                problems.append(("error", ref.line, msg("Ref: column '{side}.{side2}' doesn't exist", side=side[0], side2=side[1])))
     for t in schema.tables.values():
         if t.columns and not any(c.pk for c in t.columns):
-            problems.append(("info", t.line, f"테이블 '{t.name}'에 기본 키(pk)가 없습니다"))
+            problems.append(("info", t.line, msg("Table '{name}' has no primary key (pk)", name=t.name)))
     return problems
 
 
@@ -518,7 +520,7 @@ def to_dictionary(schema: Schema) -> str:
         >>> print(to_dictionary(parse("Table users {\n  id int [pk, note: '번호 예: 1']\n}")).splitlines()[-1])
         | users | id | `int` | pk | 번호 | 1 |
     """
-    rows = ["| 테이블 | 컬럼 | 타입 | 제약 | 뜻 | 예시 |", "|---|---|---|---|---|---|"]
+    rows = [msg("| Table | Column | Type | Constraints | Meaning | Example |"), "|---|---|---|---|---|---|"]
     for t in schema.tables.values():
         for c in t.columns:
             meaning, example = c.note, ""
@@ -528,7 +530,7 @@ def to_dictionary(schema: Schema) -> str:
             cons = ", ".join(s for s in c.settings if not s.lower().startswith("default")) or ""
             rows.append(f"| {t.name} | {c.name} | `{c.type}` | {cons} | {meaning or '—'} | {example} |")
     if len(rows) == 2:
-        rows.append("| (아직 테이블 없음) | | | | | |")
+        rows.append(msg("| (no tables yet) | | | | | |"))
     return "\n".join(rows)
 
 
@@ -557,7 +559,9 @@ def render_into(doc_text: str, schema: Schema, source_note: str) -> str:
         >>> ERD_START in text and DICT_END in text
         True
     """
-    erd = f"> ⚙️ 자동 생성 — 원본: {source_note}. 손으로 고치지 마세요 (`lantern dbml render`).\n\n" + to_mermaid(schema)
+    erd = msg(
+        "> ⚙️ Generated — source: {source_note}. Don't edit by hand (`lantern dbml render`).\n\n", source_note=source_note
+    ) + to_mermaid(schema)
     doc_text = _replace_block(doc_text, ERD_START, ERD_END, erd)
     return _replace_block(doc_text, DICT_START, DICT_END, to_dictionary(schema))
 
@@ -802,18 +806,26 @@ def diff(doc_schema: Schema, real: Schema) -> list[str]:
     for name, t in real.tables.items():
         d = doc_schema.tables.get(name)
         if d is None:
-            out.append(f"✚ 테이블 '{name}'이 마이그레이션에는 있는데 DBML에 없습니다")
+            out.append(msg("✚ Table '{name}' is in the migrations but not in the DBML", name=name))
             continue
         for c in t.columns:
             dc = d.column(c.name)
             if dc is None:
-                out.append(f"✚ 컬럼 '{name}.{c.name}'이 DBML에 없습니다")
+                out.append(msg("✚ Column '{name}.{name2}' is not in the DBML", name=name, name2=c.name))
             elif _norm_type(dc.type) != _norm_type(c.type):
-                out.append(f"✎ 컬럼 '{name}.{c.name}' 타입: DBML {dc.type} ≠ 마이그레이션 {c.type}")
+                out.append(
+                    msg(
+                        "✎ Column '{name}.{name2}' type: DBML {type} ≠ migration {type2}",
+                        name=name,
+                        name2=c.name,
+                        type=dc.type,
+                        type2=c.type,
+                    )
+                )
         for dc in d.columns:
             if t.column(dc.name) is None:
-                out.append(f"✖ 컬럼 '{name}.{dc.name}'이 DBML에만 있습니다")
+                out.append(msg("✖ Column '{name}.{name2}' is only in the DBML", name=name, name2=dc.name))
     for name in doc_schema.tables:
         if name not in real.tables:
-            out.append(f"✖ 테이블 '{name}'이 DBML에만 있습니다")
+            out.append(msg("✖ Table '{name}' is only in the DBML", name=name))
     return out

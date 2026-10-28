@@ -16,19 +16,20 @@ import re
 from pathlib import Path
 
 from ..core import frontmatter
+from ..core.messages import msg
 from ..core.project import Project, git_out, nfc, now_minute, read, today, wikilink, work_id_of, work_name_of, write
 from ..core.taskfile import Task, TaskGraph, parse_criteria, parse_tasks
 from ..learn import debt as debt_mod
 
 VIEWS = ["kanban", "timeline", "domain", "trace", "debt", "sync", "eval"]
-VIEW_TITLE = {
-    "kanban": "🗂 칸반",
-    "timeline": "📅 타임라인 (WBS)",
-    "domain": "🧩 도메인 · 요구사항별",
-    "trace": "🔗 추적",
-    "debt": "📒 부채 현황",
-    "sync": "🔄 문서-코드 일치",
-    "eval": "📊 AI 작업 평가",
+VIEW_TITLE = {  # English; msg() translates them
+    "kanban": "🗂 Kanban",
+    "timeline": "📅 Timeline (WBS)",
+    "domain": "🧩 By domain · requirement",
+    "trace": "🔗 Traceability",
+    "debt": "📒 Debt Status",
+    "sync": "🔄 Doc-code alignment",
+    "eval": "📊 AI work evaluation",
 }
 SUM_START, SUM_END = "<!-- l-report:summary:start -->", "<!-- l-report:summary:end -->"
 SIZE_DAYS = {"S": 1, "M": 2, "L": 3}
@@ -79,10 +80,15 @@ def kanban(project: Project) -> str:
                 cols["todo"].append(label)
     rows = max((len(v) for v in cols.values()), default=0)
     if rows == 0:
-        return "_진행 중인 할 일이 없습니다._"
+        return msg("_No tasks in progress._")
     lines = [
-        f"| 📥 할 일 ({len(cols['todo'])}) | ⛔ 막힘 ({len(cols['blocked'])})"
-        f" | ▶ 진행 중 ({len(cols['doing'])}) | ✅ 완료 ({len(cols['done'])}) |",
+        msg(
+            "| 📥 To do ({count}) | ⛔ Blocked ({count2}) | ▶ Doing ({count3}) | ✅ Done ({count4}) |",
+            count=len(cols["todo"]),
+            count2=len(cols["blocked"]),
+            count3=len(cols["doing"]),
+            count4=len(cols["done"]),
+        ),
         "|---|---|---|---|",
     ]
     for i in range(rows):
@@ -121,7 +127,7 @@ def timeline(project: Project) -> str:
     """
     works = project.work_dirs(include_archive=True)
     if not works:
-        return "_작업이 없습니다._"
+        return msg("_No works._")
     lines = ["```mermaid", "gantt", "  dateFormat YYYY-MM-DD HH:mm", "  axisFormat %m-%d", "  todayMarker on"]
     any_task = False
     for w in works:
@@ -165,11 +171,23 @@ def timeline(project: Project) -> str:
             prev_id = tid
         if not tasks:
             created = frontmatter.as_str(plan_meta.get("created")) or today()
-            lines.append(f"  {_gantt_name(wid)} 기획 :milestone, {wid.lower().replace('-', '')}m, {created} 00:00, 0d")
+            lines.append(
+                msg(
+                    "  {gantt_name} plan :milestone, {replace}m, {created} 00:00, 0d",
+                    gantt_name=_gantt_name(wid),
+                    replace=wid.lower().replace("-", ""),
+                    created=created,
+                )
+            )
     lines.append("```")
-    note = "" if any_task else "\n_할 일이 아직 없어 작업 시작점만 보입니다._"
+    note = "" if any_task else msg("\n_No tasks yet, so only the start of each work is shown._")
     return (
-        "\n".join(lines) + "\n\n> 예정일이 없으면 할 일 순서와 크기(S=1일 · M=2일 · L=3일)로, 실제 시간이 생기면 그 시간으로 그린다." + note
+        "\n".join(lines)
+        + msg(
+            "\n\n> Without planned dates it is drawn from task order and size (S=1 day · M=2 days · L=3 "
+            "days); once actual times exist, from those."
+        )
+        + note
     )
 
 
@@ -191,7 +209,7 @@ def domain(project: Project) -> str:
         meta = _meta(project.doc_path(w, "plan"))
         dom = str(meta.get("domain") or "")
         if not dom or "{{" in dom:
-            dom = "(도메인 없음)"
+            dom = msg("(no domain)")
         acs = parse_criteria(read(project.doc_path(w, "plan"))) if (project.doc_path(w, "plan")).exists() else []
         tasks = _work_tasks(project, w)
         row = (
@@ -200,8 +218,8 @@ def domain(project: Project) -> str:
         )
         groups.setdefault(dom, []).append(row)
     if not groups:
-        return "_작업이 없습니다._"
-    lines = ["| 도메인 | 작업 | 단계 | 수락 기준 | 할 일 |", "|---|---|---|---|---|"]
+        return msg("_No works._")
+    lines = [msg("| Domain | Work | Stage | Acceptance criteria | Tasks |"), "|---|---|---|---|---|"]
     for dom in sorted(groups):
         lines += groups[dom]
     return "\n".join(lines)
@@ -220,7 +238,7 @@ def trace(project: Project) -> str:
         >>> trace(project).splitlines()[0]  # doctest: +SKIP
         '| 아이디어 | 상태 | 작업 | 커밋 | 마지막 커밋 |'
     """
-    rows = ["| 아이디어 | 상태 | 작업 | 커밋 | 마지막 커밋 |", "|---|---|---|---|---|"]
+    rows = [msg("| Idea | Status | Work | Commits | Last commit |"), "|---|---|---|---|---|"]
     ideas_folder = project.folder("ideas")
     works = project.work_dirs(include_archive=True)
     work_by_idea: dict[str, list[Path]] = {}
@@ -246,7 +264,7 @@ def trace(project: Project) -> str:
                 f"{wikilink(project, project.doc_path(w, 'plan'), wid, table=True)} | {len(log)} | {last} |"
             )
     if len(rows) == 2:
-        return "_아이디어가 없습니다._"
+        return msg("_No ideas._")
     return "\n".join(rows)
 
 
@@ -265,14 +283,17 @@ def debt_view(project: Project) -> str:
         '열린 부채 **3개** · ✅ 해결 1개 — 자세히: [[📒 부채/부채 현황|부채 현황]]'
     """
     if not project.folder("debt").exists():
-        return "_배우는 선로가 꺼져 있습니다 (lantern.yaml knowledge)._"
+        return msg("_The learning track is off (lantern.yaml knowledge)._")
     debt_mod.write_status(project)
     s = debt_mod.stats(project)
     status = project.folder("debt") / project.names.file("debt_status")
-    return (
-        f"열린 부채 **{s['open']}개** · {project.enums.label('debt_status', 'resolved')} {s['resolved']}개"
-        f" — 자세히: {wikilink(project, status, '부채 현황')}\n\n" + debt_mod.status_markdown(project)
-    )
+    return msg(
+        "Open debt **{open}** · {label} {resolved} — details: {wikilink}\n\n",
+        open=s["open"],
+        label=project.enums.label("debt_status", "resolved"),
+        resolved=s["resolved"],
+        wikilink=wikilink(project, status, project.names.doc("debt_status")),
+    ) + debt_mod.status_markdown(project)
 
 
 def sync_view(project: Project) -> tuple[str, int]:
@@ -364,15 +385,20 @@ def compare(project: Project, cur: dict, prev: dict | None) -> str:
         '_첫 보고입니다 — 다음 보고부터 비교가 나옵니다._'
     """
     if not prev:
-        return "_첫 보고입니다 — 다음 보고부터 비교가 나옵니다._"
+        return msg("_This is the first report — comparisons start with the next one._")
     p = prev["stats"]
     done = cur["tasks_done"] - int(p.get("tasks_done", 0))
     new_debt = cur["debt_total"] - int(p.get("debt_total", 0))
     resolved = cur["debt_resolved"] - int(p.get("debt_resolved", 0))
-    return (
-        f"지난 보고({prev['date']}) 대비: ✅ 완료한 할 일 **{done:+d}** · 📒 새 부채 **{new_debt:+d}**"
-        f" · {project.enums.label('debt_status', 'resolved')} 부채 **{resolved:+d}**"
-        f" · 진행 중 작업 {cur['works_active']}개"
+    return msg(
+        "Since the last report ({date}): ✅ tasks done **{done:+d}** · 📒 new debt **{new_debt:+d}** "
+        "· {label} debt **{resolved:+d}** · {works_active} works in progress",
+        date=prev["date"],
+        done=done,
+        new_debt=new_debt,
+        label=project.enums.label("debt_status", "resolved"),
+        resolved=resolved,
+        works_active=cur["works_active"],
     )
 
 
@@ -409,7 +435,7 @@ def run(project: Project, views: list[str] | None = None, summary: list[str] | N
     views = views or list(project.profile.get("report.views") or ["kanban", "timeline", "debt"])
     bad = [v for v in views if v not in VIEWS]
     if bad:
-        raise ValueError(f"알 수 없는 보기: {', '.join(bad)} (가능: {', '.join(VIEWS)})")
+        raise ValueError(msg("Unknown view: {items} (available: {items2})", items=", ".join(bad), items2=", ".join(VIEWS)))
     current = project.folder("reports") / project.names.file("report")
     sections: list[str] = []
     sync_total: int | None = None
@@ -430,7 +456,7 @@ def run(project: Project, views: list[str] | None = None, summary: list[str] | N
             body = eval_markdown(project)
         else:
             body, sync_total = sync_view(project)
-        sections.append(f"## {VIEW_TITLE[v]}\n\n{body}")
+        sections.append(f"## {msg(VIEW_TITLE[v])}\n\n{body}")
     if sync_total is None:  # stale docs are checked whenever the report is opened
         from . import scan
 
@@ -442,25 +468,36 @@ def run(project: Project, views: list[str] | None = None, summary: list[str] | N
             f"{i}. {line.strip()}" if not re.match(r"^\d+\.", line.strip()) else line.strip() for i, line in enumerate(summary[:3], start=1)
         )
     else:
-        summary_text = _existing_summary(current) or '> AI가 3줄로 채운다: `lantern report --summary "…" "…" "…"`'
+        summary_text = _existing_summary(current) or msg('> The AI fills in 3 lines: `lantern report --summary "…" "…" "…"`')
     waiting = stats["approval_waiting"]
     head = [
-        "# 📊 현황 보고",
+        msg("# 📊 Status Report"),
         "",
-        f"> ⚙️ 자동 생성 — `lantern report` · **기준: {now_minute()}** · 보기: {', '.join(VIEW_TITLE[v] for v in views)}",
+        msg(
+            "> ⚙️ Generated — `lantern report` · **as of {now_minute}** · views: {items}",
+            now_minute=now_minute(),
+            items=", ".join(msg(VIEW_TITLE[v]) for v in views),
+        ),
         "",
         f"> [!abstract] {project.names.marker('glance')}",
-        f"> 진행 중 작업 {stats['works_active']}개 · 할 일 {stats['tasks_done']}/{stats['tasks_total']} 완료 · "
-        f"열린 부채 {stats['debt_open']}개"
-        + (f" · ⏳ 설계 승인 대기 {', '.join(waiting)}" if waiting else "")
-        + (f" · 🔄 문서-코드 어긋남 {stats['sync_issues']}개 (`/l-sync`)" if stats.get("sync_issues") else ""),
+        msg(
+            "> {works_active} works in progress · tasks {tasks_done}/{tasks_total} done · {debt_open} open debts",
+            works_active=stats["works_active"],
+            tasks_done=stats["tasks_done"],
+            tasks_total=stats["tasks_total"],
+            debt_open=stats["debt_open"],
+        )
+        + (msg(" · ⏳ design awaiting approval {items}", items=", ".join(waiting)) if waiting else "")
+        + (
+            msg(" · 🔄 {sync_issues} doc-code mismatches (`/l-sync`)", sync_issues=stats["sync_issues"]) if stats.get("sync_issues") else ""
+        ),
         "",
-        "## 팀장 보고 3줄",
+        msg("## 3-line summary for the lead"),
         SUM_START,
         summary_text,
         SUM_END,
         "",
-        "## 지난 보고와 비교",
+        msg("## Compared with the last report"),
         compare(project, stats, prev),
         "",
     ]
@@ -477,5 +514,5 @@ def run(project: Project, views: list[str] | None = None, summary: list[str] | N
     write(current, frontmatter.render(meta, body))
     past = project.folder("past_reports") / f"{today()}.md"
     meta_past = dict(meta, id=f"OPS-report-{today()}")
-    write(past, frontmatter.render(meta_past, body.replace("# 📊 현황 보고", f"# 📊 {today()} 보고", 1)))
+    write(past, frontmatter.render(meta_past, body.replace(msg("# 📊 Status Report"), msg("# 📊 {today} Report", today=today()), 1)))
     return current, past
