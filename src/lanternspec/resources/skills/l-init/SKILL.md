@@ -9,7 +9,7 @@ argument-hint: "[바뀐 점 (다시 실행할 때)]"
 
 **목적:** 질문 7개로 어떤 문서를 켜고 끌지, 어떤 개발 원칙을 따를지 정하고, 그 구조를 만든다. 형식(파일 · 폴더 · 번호)은 전부 `lantern` 명령이 만들고, 너는 묻고 · 판단하고 · 빈칸을 채운다.
 
-먼저 `lantern --version`으로 CLI가 있는지 확인한다. 없으면 설치 안내(`uv tool install <lanternspec 저장소 경로>` — PyPI 배포 뒤에는 `pipx install lanternspec`)만 하고 멈춘다.
+먼저 `lantern --version`으로 CLI가 있는지 확인한다. 없으면 설치 안내(`uv tool install lanternspec`)만 하고 멈춘다.
 
 ## 0. 처음인가, 다시 실행인가
 - `lantern.yaml`이 **없으면** → 아래 1단계부터.

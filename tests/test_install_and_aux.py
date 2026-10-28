@@ -426,14 +426,14 @@ def test_mcp_server_and_install_registration(repo, vault):
 
 
 def test_install_explains_next_steps_and_other_ai_tools(repo, monkeypatch):
-    found = {"claude": "/bin/claude", "codex": "/bin/codex"}  # 이 컴퓨터에 Claude Code와 Codex만 있다고 친다
+    found = {"claude": "/bin/claude", "codex": "/bin/codex"}  # pretend only Claude Code and Codex are on this computer
     monkeypatch.setattr("lanternspec.cli.tools.shutil.which", found.get)
     _, out = repo("install")
     assert "1. 이 폴더에서 Claude Code를 엽니다 — 터미널에 `claude` 입력" in out
     assert "2. 입력창에 `/l-init`을 입력합니다" in out
     assert "이 컴퓨터에 Codex도 있습니다. 함께 쓰려면: lantern install --tools claude,codex" in out
-    assert "Antigravity" not in out  # 없는 도구는 권하지 않는다
+    assert "Antigravity" not in out  # tools that are not installed are not suggested
     _, out = repo("install", "--tools", "claude,codex")
     assert "Claude Code는 `claude`, Codex는 `codex`" in out and "(Codex는 `$l-init`)" in out
-    assert "이 컴퓨터에" not in out  # 다 설정했으면 더 권하지 않는다
+    assert "이 컴퓨터에" not in out  # once everything is set up, nothing more is suggested
     assert "H-" not in out  # internal spec numbers never reach the user

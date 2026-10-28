@@ -44,7 +44,7 @@ def run(project: Project) -> list[tuple[str, str]]:
     if shutil.which("lantern"):
         out.append((OK, "lantern 명령이 PATH에 있음"))
     else:
-        out.append((WARN, "lantern 명령이 PATH에 없습니다 — 에이전트 hook · git hook이 건너뜁니다 (uv tool install <lanternspec 경로>)"))
+        out.append((WARN, "lantern 명령이 PATH에 없습니다 — 에이전트 hook · git hook이 건너뜁니다 (uv tool install lanternspec)"))
     is_git = git(["rev-parse", "--git-dir"], project.root).returncode == 0
     if not is_git:
         out.append((WARN, "git 저장소가 아닙니다 — hook · 커밋 연결 · sync가 동작하지 않습니다"))

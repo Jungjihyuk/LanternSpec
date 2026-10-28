@@ -32,7 +32,7 @@ def test_levels_follow_kind_external_and_size():
     assert _levels(kind="cli", team="team", members=["가", "나"])["public_interface"] == "must"
     assert _levels(kind="cli")["observability"] == "skip"
     assert _levels(kind="cli", code_size="large")["observability"] == "should"
-    assert _levels(kind="script", code_size="large")["single_responsibility"] == "skip"  # 표의 skip은 규모로 올리지 않는다
+    assert _levels(kind="script", code_size="large")["single_responsibility"] == "skip"  # a skip in the table is never raised by size
 
 
 def test_conventions_by_language_and_size_library_docs_are_large():
@@ -41,7 +41,7 @@ def test_conventions_by_language_and_size_library_docs_are_large():
     medium = principles.select(_profile(kind="cli", languages=["python"], code_size="medium")).conventions[0]
     assert medium.rules["typecheck"] == "pyright standard"
     lib = principles.select(_profile(kind="library", languages=["python"])).conventions[0]
-    assert lib.rules["typecheck"] == "pyright basic" and "doctest" in lib.rules["docs"]  # 문서 규칙만 "큼"
+    assert lib.rules["typecheck"] == "pyright basic" and "doctest" in lib.rules["docs"]  # only the doc-comment rule is "large"
 
 
 def test_detect_records_existing_tools_without_touching_them(tmp_path):
@@ -55,7 +55,7 @@ def test_detect_records_existing_tools_without_touching_them(tmp_path):
     assert d.languages == ["python", "typescript"]
     assert d.existing["python"]["lint"] == ("ruff", "poetry run ruff check .", "pyproject.toml [tool.ruff")
     assert d.existing["typescript"]["lint"][:2] == ("ESLint", "yarn eslint .")
-    assert "typecheck" not in d.existing["python"]  # 설정이 없는 도구는 기록하지 않는다
+    assert "typecheck" not in d.existing["python"]  # tools without a config are not recorded
     brown = d.commands(fill_defaults=False)
     assert brown["lint"] == "poetry run ruff check . && yarn eslint ." and "typecheck" not in brown
     green = d.commands(fill_defaults=True)
@@ -72,7 +72,7 @@ def test_init_to_agents_block_doc_lint_and_doctor(repo):
     assert "언어: python (pyproject.toml)" in out and "project.code_size=small" in out
     prof = yaml.safe_load((repo.root / "lantern.yaml").read_text(encoding="utf-8"))
     assert prof["project"]["languages"] == ["python"] and prof["build"]["lint"] == "uv run ruff check ."
-    assert "— 설계 원칙을 고르는 기준" in (repo.root / "lantern.yaml").read_text(encoding="utf-8")  # 주석은 그대로
+    assert "— 설계 원칙을 고르는 기준" in (repo.root / "lantern.yaml").read_text(encoding="utf-8")  # comments stay
     repo("scaffold", "init")
     repo("install")
     agents = (repo.root / "AGENTS.md").read_text(encoding="utf-8")
@@ -83,7 +83,7 @@ def test_init_to_agents_block_doc_lint_and_doctor(repo):
     text = doc.read_text(encoding="utf-8")
     assert "## 코드 컨벤션 — Python" in text and "| 의존 방향 (DIP · 순수한 핵심) | 권장 | CLI 도구 → 권장 |" in text
     repo("upgrade")
-    assert doc.read_text(encoding="utf-8") == text  # 내용이 그대로면 다시 쓰지 않는다
+    assert doc.read_text(encoding="utf-8") == text  # unchanged content is not rewritten
     code, out = repo("check", ok=False)
     assert "개발 원칙" not in out
     # lantern lint runs the recorded commands
@@ -93,7 +93,7 @@ def test_init_to_agents_block_doc_lint_and_doctor(repo):
     # when the code grows past the boundary, doctor asks
     (repo.root / "app.py").write_text("x = 1\n" * 10_001, encoding="utf-8")
     (repo.root / "tests").mkdir()
-    (repo.root / "tests/test_app.py").write_text("y = 1\n" * 60_000, encoding="utf-8")  # 테스트는 세지 않는다
+    (repo.root / "tests/test_app.py").write_text("y = 1\n" * 60_000, encoding="utf-8")  # tests are not counted
     repo.git("add", "-A")
     code, out = repo("doctor", ok=False)
     assert "코드가 10,001줄로 자라 규모가 작음 → 중간이 됐습니다 — 원칙을 한 단계 올릴까요?" in out
@@ -119,11 +119,11 @@ def test_comment_language_is_separate_from_document_language(repo):
     repo("scaffold", "init")
     repo("install")
     agents = (repo.root / "AGENTS.md").read_text(encoding="utf-8")
-    assert "문서 주석 (Google 스타일 docstring · 한국어)" in agents  # 비워 두면 문서 언어(ko)를 따른다
+    assert "문서 주석 (Google 스타일 docstring · 한국어)" in agents  # left empty, it follows the document language (ko)
     repo("profile", "set", "project.comment_language=en")
     repo("upgrade")
     agents = (repo.root / "AGENTS.md").read_text(encoding="utf-8")
-    assert "문서 주석 (Google 스타일 docstring · 영어)" in agents and "### 개발 원칙" in agents  # 안내는 한국어 그대로
+    assert "문서 주석 (Google 스타일 docstring · 영어)" in agents and "### 개발 원칙" in agents  # the guidance stays in Korean
     doc = (repo.root / "docs/3. 현재 상태/규칙 · 결정 기록/개발 원칙.md").read_text(encoding="utf-8")
     assert "문서 주석: Google 스타일 docstring · 영어" in doc
     code, out = repo("profile", "set", "project.comment_language=jp", ok=False)

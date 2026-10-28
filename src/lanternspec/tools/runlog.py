@@ -1,4 +1,4 @@
-"""Run log `.lantern/runs.jsonl` — the raw material for evaluation. For now it only accumulates.
+"""Run log `.lantern/runs.jsonl` — the raw material for the AI work evaluation (`lantern eval`).
 
 Two writers, one format:
 * agent hooks: per turn — start · end · model · skill · tool counts

@@ -38,13 +38,13 @@ def test_vault_settings_follow_enums_and_keep_user_settings(repo):
     assert [f["name"] for f in mm["presetFields"]] == ["mood"] and mm["isAutosuggestEnabled"] is False
     assert json.loads((obs / "community-plugins.json").read_text(encoding="utf-8")) == ["calendar", "dataview", "metadata-menu"]
     app = json.loads((obs / "app.json").read_text(encoding="utf-8"))
-    assert app == {"alwaysUpdateLinks": False, "showInlineTitle": True, "spellcheck": False}  # 사용자가 정한 값은 그대로
+    assert app == {"alwaysUpdateLinks": False, "showInlineTitle": True, "spellcheck": False}  # values the user set stay
     # folder colours by stage: our CSS snippet is turned on; the user's theme and snippets stay
     look = json.loads((obs / "appearance.json").read_text(encoding="utf-8"))
     assert look == {"cssTheme": "Blue Topaz", "enabledCssSnippets": ["tags", "lanternspec"]}
     css = (obs / "snippets/lanternspec.css").read_text(encoding="utf-8")
     assert '.nav-folder-title[data-path="2. 작업"]' in css and '[data-path="📒 부채"]' in css
-    assert "--callout-radius" in css and ".markdown-rendered blockquote" in css  # callout · 인용문 모양도
+    assert "--callout-radius" in css and ".markdown-rendered blockquote" in css  # callout and quote styles too
     # renaming a value renames the Obsidian choice too
     repo("enums", "rename", "debt_status", "되물음", "다시 물음")
     assert _fields(repo, "debt")["status"] == ["처음", "다시 물음", "연습 중", "해결"]
@@ -71,7 +71,7 @@ def test_obsidian_plugins_download_latest_release_files(repo, monkeypatch):
     assert "✔ dataview 9.9.9" in out and "✔ metadata-menu 9.9.9" in out
     assert "https://github.com/blacksmithgu/obsidian-dataview/releases/latest/download/main.js" in asked
     plugins = repo.root / "docs/.obsidian/plugins"
-    assert (plugins / "metadata-menu/main.js").exists() and (plugins / "metadata-menu/data.json").exists()  # 설정은 그대로
+    assert (plugins / "metadata-menu/main.js").exists() and (plugins / "metadata-menu/data.json").exists()  # settings stay
     assert not (plugins / "dataview/styles.css").exists()
     # downloaded plugin code stays out of git — only settings (data.json) are committed
     repo.git("add", "-A")

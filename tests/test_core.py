@@ -28,7 +28,7 @@ def test_profile_render_roundtrip_and_spec_example(tmp_path):
 
 
 def test_bare_off_in_yaml_means_the_word(tmp_path):
-    # the spec writes `ui_reference: off` — YAML 1.1 would read False
+    # lantern.yaml writes `ui_reference: off` — YAML 1.1 would read False
     (tmp_path / "lantern.yaml").write_text("lantern: 1\nplan:\n  ui_reference: off\ndesign:\n  approval: off\n", encoding="utf-8")
     p = profile.load(tmp_path)
     assert p.get("plan.ui_reference") == "off"
