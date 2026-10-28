@@ -139,6 +139,8 @@ docs/
 
 문서를 원격 저장소에 올리고 싶지 않으면 `lantern docs-mode local`을 쓴다. 문서는 같은 저장소의 `docs-local` 브랜치에만 두고, 그 브랜치의 push는 막는다.
 
+lantern이 읽고 쓰는 칸(보호 칸, 예: 기록의 "지금 상황")도 이름을 바꾸거나 지워도 된다. lantern은 그 칸을 다시 넣지 않고, `lantern check`가 일부러 바꾼 것인지 묻는다 (`lantern sections`). 목록은 `0. 템플릿/_meta/보호 칸.md`에 있다.
+
 ### Obsidian으로 보기
 `docs/` 폴더를 Obsidian에서 볼트로 열면 바로 읽기 좋게 설정이 들어 있다 (`docs/.obsidian/`).
 
@@ -220,6 +222,7 @@ AI가 쓴 기술 중 모르는 것은 내 지식 저장소의 노트와 비교�
 - 핵심은 `AGENTS.md`에, 자세한 설명은 `개발 원칙.md`에 넣는다.
 - 기존 프로젝트는 이미 쓰는 린트 · 포맷 설정을 기록만 하고 바꾸지 않는다.
 - 코드가 자라 규모 경계를 넘으면 `lantern doctor`가 원칙을 한 단계 올릴지 묻는다.
+- 코드 주석 언어는 `project.comment_language`로 문서 언어와 따로 정할 수 있다.
 - 확인: `lantern principles show` · 린트와 타입 검사 실행: `lantern lint`
 
 ### AI 작업 방식
@@ -239,8 +242,8 @@ Claude Design · Figma · Canva를 각 도구의 MCP로 쓴다.
 ## CLI 한눈에
 
 ```text
-설치     install [--tools] [--mcp] [--ci|--no-ci] · upgrade · doctor · harness suggest
-프로필   profile show|docs|write|set · principles show|detect · enums list|rename
+설치     install [--language] [--tools] [--mcp] [--ci|--no-ci] · upgrade · doctor · harness suggest
+프로필   profile show|docs|write|set · principles show|detect · enums list|rename · sections list|rename|off|on
 문서     scaffold init [--plan] | work | doc | idea | adr | meeting | custom · new-id · map · meta get|set
 검사     check [--changed] [--epic W-012] · lint · check-dbml · dbml render|from-sql|diff
 일       task next [--all]|start|done|ac|list|estimate · task add [--parallel] · pack · screen import|compare

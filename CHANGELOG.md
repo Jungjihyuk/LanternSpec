@@ -7,6 +7,22 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+Upgrade: `uv tool upgrade lanternspec`, then `lantern upgrade` in each project (refreshes skills, rules and the AGENTS.md block)
+
+### Added
+- **English support** — with `lantern install --language en`, skills, templates, rules, choice names, folder names, command output and generated documents (MOC, reports, debt status, principles …) are all in English. The language is chosen at the first install and stays fixed once it is in `lantern.yaml`
+- **Code comment language** — `project.comment_language` (ko | en) in `lantern.yaml` sets the language of code comments apart from the documents; empty follows the document language. `/l-init` asks for it, and the AGENTS.md principles and the principles document follow it
+- **Protected sections** — renaming or deleting a section lantern reads or writes (such as "Now" in a log) no longer makes lantern put it back. The feature is skipped and `lantern check` asks whether it was on purpose. Record the answer with the new `lantern sections list|rename|off|on`; the list is in `0. Templates/_meta/Protected Sections.md`
+
+### Changed
+- **Install hint** — when the lantern command is missing, `/l-init` and `lantern doctor` suggest `uv tool install lanternspec`, as in the README
+- **Keeping documents off the remote** — before running `lantern docs-mode local`, `/l-init` first says in one line that it will commit three settings files to main
+- **Output wording** — planning-document IDs left in command output, skills and rules are gone; each place says what it does
+- **Noticing questions and ideas** — tech questions and ideas in conversation are also recognized in English ("what is X", "how does X work", "I'd like to" …)
+
+### Fixed
+- The Rust and Swift package notes were cut at a comma
+
 ## [0.1.1] - 2026-10-28
 
 Upgrade: `uv tool upgrade lanternspec`, then `lantern upgrade` in each project (refreshes skills, AGENTS.md rules and Obsidian settings)

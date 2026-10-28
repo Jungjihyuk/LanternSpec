@@ -141,6 +141,8 @@ Which documents you get depends on your `/l-init` answers (`lantern.yaml`; check
 
 If you don't want documents on the remote, use `lantern docs-mode local`. Documents then live only on a `docs-local` branch in the same repository, and pushing that branch is blocked.
 
+Sections lantern reads and writes (protected sections, such as "Now" in a log) may be renamed or deleted too. lantern doesn't put them back; `lantern check` asks whether it was on purpose (`lantern sections`). The list is in `0. Templates/_meta/Protected Sections.md`.
+
 ### Viewing the docs in Obsidian
 Open the `docs/` folder as a vault in Obsidian and it is already set up for reading (`docs/.obsidian/`).
 
@@ -222,6 +224,7 @@ Picks design principles and code conventions from a table, based on the project 
 - The essentials go into `AGENTS.md`; the full explanation goes into `Development Principles.md`.
 - In existing projects, lint and format settings already in use are recorded, never changed.
 - When the code grows past a size boundary, `lantern doctor` asks whether to raise the principles one level.
+- The language of code comments can be set apart from the documents with `project.comment_language`.
 - See the result with `lantern principles show`; run lint and type checks with `lantern lint`
 
 ### How the AI works
@@ -241,8 +244,8 @@ Import mockups with `lantern screen import`; `lantern screen compare` finds wher
 ## CLI at a glance
 
 ```text
-setup      install [--tools] [--mcp] [--ci|--no-ci] · upgrade · doctor · harness suggest
-profile    profile show|docs|write|set · principles show|detect · enums list|rename
+setup      install [--language] [--tools] [--mcp] [--ci|--no-ci] · upgrade · doctor · harness suggest
+profile    profile show|docs|write|set · principles show|detect · enums list|rename · sections list|rename|off|on
 documents  scaffold init [--plan] | work | doc | idea | adr | meeting | custom · new-id · map · meta get|set
 checks     check [--changed] [--epic W-012] · lint · check-dbml · dbml render|from-sql|diff
 work       task next [--all]|start|done|ac|list|estimate · task add [--parallel] · pack · screen import|compare

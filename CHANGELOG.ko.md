@@ -7,6 +7,22 @@
 
 ## [Unreleased]
 
+업그레이드: `uv tool upgrade lanternspec` → 프로젝트마다 `lantern upgrade` (스킬 · 규칙 · AGENTS.md 블록을 새로 맞춘다)
+
+### 추가
+- **영어 지원** — `lantern install --language en`으로 스킬 · 템플릿 · 규칙 · 선택지 이름 · 폴더 이름, 명령 출력과 만들어지는 문서(MOC · 보고 · 부채 현황 · 개발 원칙 등)가 모두 영어로 나온다. 언어는 처음 설치할 때 정하고, `lantern.yaml`에 적힌 뒤에는 바뀌지 않는다
+- **코드 주석 언어** — `lantern.yaml`의 `project.comment_language`(ko | en)로 문서와 코드 주석의 언어를 따로 정한다. 비우면 문서 언어를 따른다. `/l-init`이 묻고, AGENTS.md의 개발 원칙과 `개발 원칙.md`가 이 값을 따른다
+- **보호 칸** — lantern이 읽고 써 넣는 칸(예: 기록의 "지금 상황")의 제목을 바꾸거나 지워도 다시 넣지 않는다. 그 기능만 건너뛰고 `lantern check`가 "일부러 바꾸셨나요?"라고 묻는다. 답은 새 명령 `lantern sections list|rename|off|on`으로 남기고, 목록은 `0. 템플릿/_meta/보호 칸.md`에 있다
+
+### 바뀜
+- **설치 안내** — lantern 명령이 없을 때 `/l-init`과 `lantern doctor`가 README와 같은 `uv tool install lanternspec`을 안내한다
+- **문서를 원격에 안 올리는 설정** — `/l-init`이 `lantern docs-mode local`을 실행하기 전에, main에 설정 파일 3개를 커밋한다고 한 줄로 먼저 알린다
+- **출력 문구** — 명령 출력 · 스킬 · 규칙에 남아 있던 기획 문서 번호를 지우고, 하는 일을 말로 적었다
+- **질문 · 아이디어 알아채기** — 대화 중 기술 질문과 아이디어를 영어 표현으로도 알아본다("what is X", "how does X work", "I'd like to" 등)
+
+### 고침
+- Rust · Swift 컨벤션의 패키지 안내 글이 쉼표에서 잘리던 문제
+
 ## [0.1.1] - 2026-10-28
 
 업그레이드: `uv tool upgrade lanternspec` → 프로젝트마다 `lantern upgrade` (스킬 · AGENTS.md 규칙 · Obsidian 설정을 새로 맞춘다)
