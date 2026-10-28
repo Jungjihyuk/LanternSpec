@@ -42,12 +42,13 @@ Requirements: Python 3.12+ · git · [uv](https://docs.astral.sh/uv/)
 ```bash
 uv tool install lanternspec      # installs the lantern command
 cd my-project
-lantern install                  # installs skills, rules and hooks into this project (Claude Code by default)
+lantern install --language en    # installs skills, rules and hooks into this project (Claude Code by default)
 ```
 
 Then call `/l-init` inside your AI tool (`$l-init` in Codex).
 
-- **Using several AI tools:** `lantern install --tools claude,codex,antigravity`
+- **Language:** documents, skills and rules come in English (`--language en`) or Korean (the default). It is chosen at the first install and kept in `lantern.yaml`.
+- **Using several AI tools:** `lantern install --language en --tools claude,codex,antigravity`
 - **Skills live in your project:** they are written straight into the project, not installed as a plugin. So they are called without a prefix (`/l-init`) and shared with your team through git.
 - **When a new version comes out:** `uv tool upgrade lanternspec` → `lantern upgrade`
 
@@ -55,8 +56,8 @@ Then call `/l-init` inside your AI tool (`$l-init` in Codex).
 
 ```
 /l-init                       answer 7 questions → lantern.yaml · docs/ · draft project definition · design principles
-/l-idea dark mode support     record an idea right away → 1. 아이디어/IDEA-001
-/l-plan IDEA-001              what and why, with acceptance criteria → 2. 작업/W-001 …/기획.md
+/l-idea dark mode support     record an idea right away → 1. Ideas/IDEA-001
+/l-plan IDEA-001              what and why, with acceptance criteria → 2. Work/W-001 …/Plan.md
 /l-design W-001               how — only the structure, screens and data that change; a person approves
 /l-task W-001                 an ordered task list
 /l-build W-001                implement → test → one commit per task, report with evidence → merge into the current state
@@ -96,18 +97,18 @@ flowchart LR
 | Skill | What it does | What it leaves |
 |---|---|---|
 | `/l-init` | sets up the document structure and design principles from 7 questions (new or existing · team size · screens · server · knowledge base · design tool · project kind) | `lantern.yaml`, `docs/`, project definition, MOC, design principles |
-| `/l-idea` | records a thought from the conversation, as said and as summarised | `1. 아이디어/IDEA-001 …` |
-| `/l-plan` | what and why — a work folder and acceptance criteria | `2. 작업/W-001 …/기획.md` |
-| `/l-design` | how — only the structure, screens and data (DBML) that change, behind an approval gate | `설계.md`, `화면/`, ADR |
-| `/l-task` | an ordered task list (size · acceptance criteria · dependencies) | `할 일.md` |
-| `/l-build` | implement → test → one commit per task, report **with evidence**, merge into the current state when done | code, `기록.md` |
-| `/l-learn` | compares unfamiliar tech with your knowledge base → 🟢 · 🟡 · 🔴, debt cards and draft study notes | `📒 부채/카드/D-001 …` |
-| `/l-report` | kanban · timeline · domain · traceability · debt · docs-vs-code status + a three-line report | `4. 운영 기록/보고/현황.md` |
-| `/l-template` | create, refine and migrate templates (without losing content) | `0. 템플릿/…` |
+| `/l-idea` | records a thought from the conversation, as said and as summarised | `1. Ideas/IDEA-001 …` |
+| `/l-plan` | what and why — a work folder and acceptance criteria | `2. Work/W-001 …/Plan.md` |
+| `/l-design` | how — only the structure, screens and data (DBML) that change, behind an approval gate | `Design.md`, `Screens/`, ADR |
+| `/l-task` | an ordered task list (size · acceptance criteria · dependencies) | `Tasks.md` |
+| `/l-build` | implement → test → one commit per task, report **with evidence**, merge into the current state when done | code, `Log.md` |
+| `/l-learn` | compares unfamiliar tech with your knowledge base → 🟢 · 🟡 · 🔴, debt cards and draft study notes | `📒 Debt/Cards/D-001 …` |
+| `/l-report` | kanban · timeline · domain · traceability · debt · docs-vs-code status + a three-line report | `4. Operations/Reports/Status Report.md` |
+| `/l-template` | create, refine and migrate templates (without losing content) | `0. Templates/…` |
 | `/l-check` | format check (required sections · values · links · versions · IDs · length) | — |
 | `/l-sync` | finds where documents and code disagree and brings them back in line | — |
-| `/l-map` | updates the MOC (document map) | `개발문서 MOC.md` |
-| `/l-adr` | records decisions that are hard to reverse | `규칙 · 결정 기록/ADR-001 …` |
+| `/l-map` | updates the MOC (document map) | `Docs MOC.md` |
+| `/l-adr` | records decisions that are hard to reverse | `Rules and Decisions/ADR-001 …` |
 
 ### How it works
 - **Scripts handle the format, the AI writes the content.** Numbering, files, folders, checks and status changes all go through the `lantern` command; the AI only writes content.
@@ -122,15 +123,15 @@ Documents are stored in one folder per work item, and the MOC (document map) col
 
 ```
 docs/
-├─ 개발문서 MOC.md        document map + view by stage (lantern map rewrites the marked part)
-├─ 0. 템플릿/              templates you refine over time · _meta/enums.yaml (the single source of status and kind names)
-├─ 1. 아이디어/            ideas
-├─ 2. 작업/W-001 …/        plan · design · tasks · log — the only place edited while working
-│   └─ 보관/              archive
-├─ 3. 현재 상태/           what the system looks like now — updated only when work is done, after approval
-├─ 4. 운영 기록/           reports · session logs · (teams of 2+) meeting notes
-├─ 5. 기존 문서/           (existing projects) original documents, kept unchanged
-└─ 📒 부채/               understanding debt — one card per debt
+├─ Docs MOC.md           document map + view by stage (lantern map rewrites the marked part)
+├─ 0. Templates/          templates you refine over time · _meta/enums.yaml (the single source of status and kind names)
+├─ 1. Ideas/              ideas
+├─ 2. Work/W-001 …/       plan · design · tasks · log — the only place edited while working
+│   └─ Archive/           archive
+├─ 3. Current State/     what the system looks like now — updated only when work is done, after approval
+├─ 4. Operations/        reports · session logs · (teams of 2+) meeting notes
+├─ 5. Legacy Docs/       (existing projects) original documents, kept unchanged
+└─ 📒 Debt/              understanding debt — one card per debt
 ```
 
 Which documents you get depends on your `/l-init` answers (`lantern.yaml`; check with `lantern profile docs`).
@@ -218,7 +219,7 @@ There are three kinds of debt.
 Picks design principles and code conventions from a table, based on the project kind chosen in `/l-init` and the measured size (lines of code · team size).
 
 - Languages: Python · TypeScript · Swift · Rust · Go
-- The essentials go into `AGENTS.md`; the full explanation goes into `개발 원칙.md` (design principles).
+- The essentials go into `AGENTS.md`; the full explanation goes into `Development Principles.md`.
 - In existing projects, lint and format settings already in use are recorded, never changed.
 - When the code grows past a size boundary, `lantern doctor` asks whether to raise the principles one level.
 - See the result with `lantern principles show`; run lint and type checks with `lantern lint`

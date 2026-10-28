@@ -25,10 +25,6 @@ if TYPE_CHECKING:
     from ..core.profile import Profile
     from .skills import SkillSource
 
-GENERATED_NOTE = (
-    "<!-- lanternspec가 생성한 파일 — 원본: lanternspec/resources/skills. "
-    "`lantern upgrade`가 다시 만든다 (직접 고치면 upgrade가 건너뜀) -->\n"
-)
 HOOK_COMMAND = "if command -v lantern >/dev/null 2>&1; then lantern hook {event}{agent}; fi"
 MCP_NAME = "lantern-knowledge"
 MCP_SERVER = {"command": "lantern", "args": ["mcp"]}
@@ -194,9 +190,10 @@ class Tool:
         from .skills import body_context, fill_tokens, render_body, rewrite_commands
 
         base = f"{self.skill_root}/{src.name}"
+        note = f"<!-- {profile.names.marker('generated_skill')} -->\n"
         body = render_body(src, profile, self, prefix, enums)
         src = replace(src, description=fill_tokens(src.description, body_context(profile, self.name, enums)))
-        files = {f"{base}/SKILL.md": yaml_front(self.skill_meta(src, profile, prefix)) + GENERATED_NOTE + "\n" + body}
+        files = {f"{base}/SKILL.md": yaml_front(self.skill_meta(src, profile, prefix)) + note + "\n" + body}
         for rel, text in src.extra.items():
             files[f"{base}/{rel}"] = rewrite_commands(text, prefix)
         for rel, text in self.skill_extras(src, profile).items():

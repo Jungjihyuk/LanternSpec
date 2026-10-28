@@ -11,80 +11,84 @@
 
 
 folders:                    # docs/ 아래 폴더
-  templates: {ko: "0. 템플릿"}
-  ideas: {ko: "1. 아이디어"}
-  works: {ko: "2. 작업"}
-  archive: {ko: "2. 작업/보관"}
-  current: {ko: "3. 현재 상태"}
-  rules: {ko: "3. 현재 상태/규칙 · 결정 기록"}
-  ops: {ko: "4. 운영 기록"}
-  reports: {ko: "4. 운영 기록/보고"}
-  past_reports: {ko: "4. 운영 기록/보고/지난 보고"}
-  sessions: {ko: "4. 운영 기록/세션"}
-  meetings: {ko: "4. 운영 기록/회의록"}
-  legacy: {ko: "5. 기존 문서"}
-  debt: {ko: "📒 부채"}
-  debt_cards: {ko: "📒 부채/카드"}
-  note_drafts: {ko: "📒 부채/노트 초안"}
-  screens: {ko: "화면"}  # 작업 폴더 · 현재 상태 안의 화면 시안 폴더
-  data: {ko: "데이터"}  # 현재 상태 안의 데이터 폴더
+  templates: {ko: "0. 템플릿", en: "0. Templates"}
+  ideas: {ko: "1. 아이디어", en: "1. Ideas"}
+  works: {ko: "2. 작업", en: "2. Work"}
+  archive: {ko: "2. 작업/보관", en: "2. Work/Archive"}
+  current: {ko: "3. 현재 상태", en: "3. Current State"}
+  rules: {ko: "3. 현재 상태/규칙 · 결정 기록", en: "3. Current State/Rules and Decisions"}
+  ops: {ko: "4. 운영 기록", en: "4. Operations"}
+  reports: {ko: "4. 운영 기록/보고", en: "4. Operations/Reports"}
+  past_reports: {ko: "4. 운영 기록/보고/지난 보고", en: "4. Operations/Reports/Past"}
+  sessions: {ko: "4. 운영 기록/세션", en: "4. Operations/Sessions"}
+  meetings: {ko: "4. 운영 기록/회의록", en: "4. Operations/Meetings"}
+  legacy: {ko: "5. 기존 문서", en: "5. Legacy Docs"}
+  debt: {ko: "📒 부채", en: "📒 Debt"}
+  debt_cards: {ko: "📒 부채/카드", en: "📒 Debt/Cards"}
+  note_drafts: {ko: "📒 부채/노트 초안", en: "📒 Debt/Note Drafts"}
+  screens: {ko: "화면", en: "Screens"}  # 작업 폴더 · 현재 상태 안의 화면 시안 폴더
+  data: {ko: "데이터", en: "Data"}  # 현재 상태 안의 데이터 폴더
 
 docs:                       # 문서 이름 (확장자 없이) — 템플릿 이름이자, 이름이 정해진 문서의 파일 이름
-  moc: {ko: "개발문서 MOC"}
-  plan: {ko: "기획"}
-  design: {ko: "설계"}
-  tasks: {ko: "할 일"}
-  record: {ko: "기록"}
-  idea: {ko: "아이디어"}
-  adr: {ko: "ADR"}
-  meeting: {ko: "회의록"}
-  session: {ko: "세션 기록"}
-  debt_card: {ko: "부채 카드"}
-  competency_card: {ko: "역량 카드"}
-  known_tech: {ko: "아는 기술"}
-  unit_log: {ko: "작업 단위 기록"}
-  legacy_map: {ko: "기존 문서 지도"}
-  project_definition: {ko: "프로젝트 정의서"}
-  features: {ko: "기능 목록"}
-  architecture: {ko: "시스템 구조"}
-  data: {ko: "데이터"}  # 현재 상태 안의 데이터 폴더
-  screens: {ko: "화면"}  # 작업 폴더 · 현재 상태 안의 화면 시안 폴더
-  platform: {ko: "플랫폼 연동"}
-  deploy: {ko: "배포"}
-  api: {ko: "API"}
-  server_ops: {ko: "서버 배포 · 운영"}
-  collab: {ko: "협업 규칙"}
-  debt_status: {ko: "부채 현황"}  # 자동 생성
-  principles: {ko: "개발 원칙"}  # 자동 생성
-  report: {ko: "현황"}  # 자동 생성
-  no_work: {ko: "작업 없이 고친 것"}  # 자동 생성 (4. 운영 기록 안)
-  sections_page: {ko: "보호 칸"}  # 자동 생성 (0. 템플릿/_meta 안)
+  moc: {ko: "개발문서 MOC", en: "Docs MOC"}
+  plan: {ko: "기획", en: "Plan"}
+  design: {ko: "설계", en: "Design"}
+  tasks: {ko: "할 일", en: "Tasks"}
+  record: {ko: "기록", en: "Log"}
+  idea: {ko: "아이디어", en: "Idea"}
+  adr: {ko: "ADR", en: "ADR"}
+  meeting: {ko: "회의록", en: "Meeting Notes"}
+  session: {ko: "세션 기록", en: "Session Log"}
+  debt_card: {ko: "부채 카드", en: "Debt Card"}
+  competency_card: {ko: "역량 카드", en: "Competency Card"}
+  known_tech: {ko: "아는 기술", en: "Known Tech"}
+  unit_log: {ko: "작업 단위 기록", en: "Work Unit Log"}
+  legacy_map: {ko: "기존 문서 지도", en: "Legacy Map"}
+  project_definition: {ko: "프로젝트 정의서", en: "Project Definition"}
+  features: {ko: "기능 목록", en: "Feature List"}
+  architecture: {ko: "시스템 구조", en: "Architecture"}
+  data: {ko: "데이터", en: "Data"}  # 현재 상태 안의 데이터 폴더
+  screens: {ko: "화면", en: "Screens"}  # 작업 폴더 · 현재 상태 안의 화면 시안 폴더
+  platform: {ko: "플랫폼 연동", en: "Platform Integration"}
+  deploy: {ko: "배포", en: "Deployment"}
+  api: {ko: "API", en: "API"}
+  server_ops: {ko: "서버 배포 · 운영", en: "Server Operations"}
+  collab: {ko: "협업 규칙", en: "Collaboration Rules"}
+  debt_status: {ko: "부채 현황", en: "Debt Status"}  # 자동 생성
+  principles: {ko: "개발 원칙", en: "Development Principles"}  # 자동 생성
+  report: {ko: "현황", en: "Status Report"}  # 자동 생성
+  no_work: {ko: "작업 없이 고친 것", en: "Changes Without Work"}  # 자동 생성 (4. 운영 기록 안)
+  sections_page: {ko: "보호 칸", en: "Protected Sections"}  # 자동 생성 (0. 템플릿/_meta 안)
 
 task_attrs:                 # 할 일 줄의 칸 이름: - [ ] W-012-T02 무엇 [크기:: M] [기준:: AC-1] [먼저:: T01]
-  size: {ko: "크기"}
-  criteria: {ko: "기준"}
-  after: {ko: "먼저"}
-  owner: {ko: "담당"}
-  screen: {ko: "화면"}
-  start: {ko: "시작"}
-  finish: {ko: "완료"}
-  start_plan: {ko: "시작 예정"}
-  due_plan: {ko: "마감 예정"}
+  size: {ko: "크기", en: "size"}
+  criteria: {ko: "기준", en: "ac"}
+  after: {ko: "먼저", en: "after"}
+  owner: {ko: "담당", en: "owner"}
+  screen: {ko: "화면", en: "screen"}
+  start: {ko: "시작", en: "started"}
+  finish: {ko: "완료", en: "finished"}
+  start_plan: {ko: "시작 예정", en: "planned"}
+  due_plan: {ko: "마감 예정", en: "due"}
 
 markers:                    # 문서 안에서 lantern이 알아보는 표시
-  unknown: {ko: "❓ 확인 필요"}  # 모르는 것 — 이 줄이 있는 할 일은 시작하지 않는다
-  required: {ko: "(필수)"}  # {{칸 이름 (필수)}} — 꼭 채워야 하는 빈칸
-  glance: {ko: "한눈에 보기"}  # 문서 맨 위 > [!abstract] 칸의 제목
-  changelog: {ko: "변경 기록"}  # 템플릿 맨 아래, 템플릿에만 있는 칸
-  migrate_bin: {ko: "📦 옮기지 못한 내용"}  # 양식을 옮길 때 자리가 없는 내용을 모으는 칸
+  unknown: {ko: "❓ 확인 필요", en: "❓ Needs answer"}  # 모르는 것 — 이 줄이 있는 할 일은 시작하지 않는다
+  required: {ko: "(필수)", en: "(required)"}  # {{칸 이름 (필수)}} — 꼭 채워야 하는 빈칸
+  glance: {ko: "한눈에 보기", en: "At a glance"}  # 문서 맨 위 > [!abstract] 칸의 제목
+  changelog: {ko: "변경 기록", en: "Changelog"}  # 템플릿 맨 아래, 템플릿에만 있는 칸
+  migrate_bin: {ko: "📦 옮기지 못한 내용", en: "📦 Not moved"}
+  arguments_quoted: {ko: "사용자가 명령과 함께 준 입력", en: "the input given with the command"}  # $ARGUMENTS를 채우지 않는 도구용
+  arguments: {ko: "사용자 입력", en: "the user's input"}
+  generated_skill: {ko: "lanternspec가 생성한 파일 — 원본: lanternspec/resources/skills. `lantern upgrade`가 다시 만든다 (직접 고치면 upgrade가 건너뜀)", en: "Generated by lanternspec — source: lanternspec/resources/skills. `lantern upgrade` regenerates it (edit it by hand and upgrade skips it)"}  # 설치된 스킬 파일 맨 위의 안내  # 양식을 옮길 때 자리가 없는 내용을 모으는 칸
 
 acceptance:                 # 수락 기준 검사 (lantern check --epic)
-  situation: {ko: "상황"}  # gwt 형식: 상황: … · 행동: … · 결과: …
-  action: {ko: "행동"}
-  result: {ko: "결과"}
-  simple_mark: {ko: "면"}  # simple 형식: ~하면 ~된다 — 조건을 나타내는 말
-  vague: {ko: ["빠르게", "빠른", "신속", "느리지 않", "적절히", "적절한", "적당히", "쉽게", "쉬운", "편리", "편하게", "직관적", "효율적", "최적", "충분히", "충분한", "원활", "자연스럽", "깔끔", "보기 좋", "사용자 친화", "안정적", "많은", "적은", "대부분", "일반적으로", "가능한 한", "가급적", "등등", "잘 ", "좋게", "좋은", "향상", "개선된", "더 나은", "유연", "강력", "멋진", "합리적"]}
-  ambiguous: {ko: [" 또는 ", "혹은", "및/또는", "/또는", "필요하면", "경우에 따라", "상황에 따라", "등 "]}
+  situation: {ko: "상황", en: "Given"}  # gwt 형식: 상황: … · 행동: … · 결과: …
+  action: {ko: "행동", en: "When"}
+  result: {ko: "결과", en: "Then"}
+  mockup: {ko: "시안", en: "mockup"}  # 화면 작업의 "시안과 같다" 수락 기준을 알아보는 말
+  simple_mark: {ko: "면", en: "then"}  # simple 형식: ~하면 ~된다 — 조건을 나타내는 말
+  vague: {ko: ["빠르게", "빠른", "신속", "느리지 않", "적절히", "적절한", "적당히", "쉽게", "쉬운", "편리", "편하게", "직관적", "효율적", "최적", "충분히", "충분한", "원활", "자연스럽", "깔끔", "보기 좋", "사용자 친화", "안정적", "많은", "적은", "대부분", "일반적으로", "가능한 한", "가급적", "등등", "잘 ", "좋게", "좋은", "향상", "개선된", "더 나은", "유연", "강력", "멋진", "합리적"], en: [" fast", "quickly", "quick ", "speedy", "not slow", "appropriate", "properly", " easy", "easily", "convenient", "intuitive", "efficient", "optimal", "enough", "sufficient", "smooth", "seamless", "natural", " clean", "nice", "user-friendly", "stable", " many", " few", " most ", "usually", "as much as possible", "if possible", " etc", " well", " good", "better", "improved", "flexible", "powerful", "robust", "reasonable", "simple"]}
+  ambiguous: {ko: [" 또는 ", "혹은", "및/또는", "/또는", "필요하면", "경우에 따라", "상황에 따라", "등 "], en: [" or ", "and/or", "if needed", "if necessary", "depending on", "as appropriate", " etc"]}
 
 # 보호 칸 — lantern이 읽거나 써 넣는 칸.
 #   docs: 이 칸이 있는 문서(위 docs의 키) · title: 기본 제목 · feature: 이 칸으로 하는 일 (사용자에게 그대로 보인다)
@@ -94,30 +98,40 @@ sections:
   now:
     docs: [record, session]
     ko: {title: "지금 상황", feature: "대화가 길어져 AI가 앞 내용을 요약할 때, 하던 일을 이 칸에 적어 둡니다"}
+    en: {title: "Now", feature: "keeps what you were doing here when the conversation gets long and the AI summarizes earlier messages"}
   past:
     docs: [record, session]
     ko: {title: "지난 기록", feature: "\"지금 상황\"에서 밀려난 내용과 /l-sync가 이 작업에 연결한 커밋을 이 칸에 쌓습니다"}
+    en: {title: "History", feature: "collects what was pushed out of \"Now\", and the commits /l-sync linked to this work"}
   schema:
     docs: [record]
     ko: {title: "스키마 변경", feature: "커밋할 때 스키마 파일이 바뀌었으면 이 칸에 기록했는지 확인합니다"}
+    en: {title: "Schema Changes", feature: "is checked at commit time: when schema files changed, a line here must say so"}
   raw:
     docs: [idea]
     ko: {title: "원문", feature: "겹치는 아이디어를 찾을 때 이 칸에 남긴 원래 말도 비교합니다"}
+    en: {title: "Original Words", feature: "is compared too when looking for overlapping ideas"}
   status_log:
     docs: [idea]
     ko: {title: "상태 기록", feature: "아이디어 상태가 바뀔 때마다 이 칸에 한 줄씩 남깁니다"}
+    en: {title: "Status Log", feature: "gets one line each time the idea's status changes"}
   origin:
     docs: [debt_card]
     ko: {title: "어디서 나왔나", feature: "같은 것을 다시 물을 때마다 어디서 물었는지 이 칸에 남깁니다"}
+    en: {title: "Where It Came Up", feature: "gets a line each time the same thing is asked again, saying where"}
   practice:
     docs: [competency_card]
     ko: {title: "만들어 본 것", feature: "직접 만들어 본 것을 이 칸에 기록합니다"}
+    en: {title: "What I Built", feature: "records what you built yourself"}
   known_list:
     docs: [known_tech]
     ko: {title: "목록", feature: "이미 아는 기술을 이 칸에 모읍니다 (부채 후보에서 뺍니다)"}
+    en: {title: "List", feature: "collects technologies you already know (they are left out of debt suggestions)"}
   unit_log:
     docs: [unit_log]
     ko: {title: "기록", feature: "AI가 추천한 작업 단위와 사람이 고른 단위를 이 칸의 표에 남깁니다"}
+    en: {title: "Log", feature: "keeps, in its table, the work unit the AI recommended and the one the person chose"}
   legacy_docs:
     docs: [legacy_map]
     ko: {title: "문서", feature: "기존 문서마다 이 칸의 표에 한 줄씩 더합니다"}
+    en: {title: "Documents", feature: "gets one table row per legacy document"}

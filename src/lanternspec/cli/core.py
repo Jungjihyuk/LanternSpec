@@ -35,6 +35,10 @@ def cmd_profile(a: argparse.Namespace) -> int:
         for key in ("origin", "team", "server", "language", "comment_language"):
             if getattr(a, key) is not None:
                 proj[key] = getattr(a, key)
+        if a.language is None and not project.profile.exists:  # the language chosen at `lantern install --language`
+            from ..core import state
+
+            proj["language"] = state.load(project).get("language") or proj.get("language") or "ko"
         if a.members is not None:
             proj["members"] = _csv(a.members)
         if a.clients is not None:

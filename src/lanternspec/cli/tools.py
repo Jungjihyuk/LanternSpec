@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from ..core.names import languages
 from .common import Add, CliError, _csv, _p, _print
 
 if TYPE_CHECKING:
@@ -20,7 +21,12 @@ def cmd_install(a: argparse.Namespace) -> int:
 
     project = _p()
     rep = install(
-        project, _csv(a.tools) or None, force=a.force, mcp=True if a.mcp else None, ci=True if a.ci else False if a.no_ci else None
+        project,
+        _csv(a.tools) or None,
+        force=a.force,
+        mcp=True if a.mcp else None,
+        ci=True if a.ci else False if a.no_ci else None,
+        language=a.language,
     )
     _print(rep.lines())
     _print(_next_steps(project))
@@ -137,6 +143,7 @@ def register(add: Add) -> None:
     p.add_argument("--tools", help="claude,codex,antigravity (기본 claude)")
     p.add_argument("--force", action="store_true", help="사용자가 고친 파일도 덮어쓰기")
     p.add_argument("--mcp", action="store_true", help="지식 연결기 MCP 서버도 등록 (lantern mcp)")
+    p.add_argument("--language", choices=languages(), help="스킬 · 규칙 · 문서의 언어 (처음 설치할 때만, 기본 ko)")
     ci = p.add_mutually_exclusive_group()
     ci.add_argument(
         "--ci", action="store_true", help="GitHub Actions에서도 검사: 양식 · 린트 · 타입 검사 · 수락 기준 테스트 (프로젝트 도구 준비 포함)"

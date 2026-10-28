@@ -105,7 +105,7 @@ def check_criteria(project: Project, plan: Path) -> list[Finding]:
             out.append(Finding("warn", rel, "ac-result", f"{ac.id}: 결과가 너무 짧습니다", line))
     # screen work under ui_reference=required needs a "matches the mockup" criterion
     if project.profile.get("plan.ui_reference") == "required" and meta.get("ui") is True:
-        if not any("시안" in ac.text for ac in acs):
+        if not any(n.acceptance("mockup") in ac.text.lower() for ac in acs):
             out.append(
                 Finding(
                     "warn",

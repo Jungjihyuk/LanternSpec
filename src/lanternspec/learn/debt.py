@@ -107,6 +107,23 @@ def cards(project: Project) -> list[Card]:
     return [Card(p, frontmatter.parse(read(p)).meta) for p in sorted(folder.glob("*.md"))]
 
 
+def default_area(project: Project) -> str:
+    """Return the topic used when none is given: the value with the "other" role, else the last topic.
+
+    Args:
+        project: The project.
+
+    Returns:
+        A value of enums.yaml `area`.
+
+    Example:
+        >>> default_area(project)  # doctest: +SKIP
+        '기타'
+    """
+    e = project.enums["area"]
+    return e.roles.get("other") or list(e.values)[-1]
+
+
 def kind_of(project: Project, card: Card) -> str:
     """Return a card's debt kind.
 
@@ -264,7 +281,7 @@ def known_add(project: Project, name: str, aliases: list[str] | None = None) -> 
 def new_card(
     project: Project,
     name: str,
-    area: str = "기타",
+    area: str | None = None,
     aliases: list[str] | None = None,
     work: str | None = None,
     note: str | None = None,
@@ -280,7 +297,7 @@ def new_card(
     Args:
         project: The project.
         name: The term.
-        area: Topic, one of enums.yaml `area`.
+        area: Topic, one of enums.yaml `area`; the "other" topic when None.
         aliases: Other names for the term.
         work: The work it came up in.
         note: A link or name of the person's own note about it.
@@ -299,6 +316,7 @@ def new_card(
         >>> new_card(project, "JWT", area="보안", work="W-012").name  # doctest: +SKIP
         'D-008 JWT.md'
     """
+    area = area or default_area(project)
     enums = project.enums
     allowed = [enums.value("debt_kind", "understanding"), enums.value("debt_kind", "tech")]
     kind = kind or allowed[0]
@@ -503,7 +521,7 @@ def promote(project: Project, term: str, name: str | None = None) -> Path:
             "kind": project.enums.value("debt_kind", "competency"),
             "id": debt_id,
             "name": title,
-            "area": templating.yaml_str(str(src.meta.get("area") or "기타")),
+            "area": templating.yaml_str(str(src.meta.get("area") or default_area(project))),
             "aliases": templating.yaml_list([str(a) for a in frontmatter.as_list(src.meta.get("aliases"))]),
             "owner": templating.yaml_str(str(src.meta.get("owner") or "")),
             "source": src.id,
@@ -574,7 +592,7 @@ def stats(project: Project) -> dict:
         st = str(c.meta.get("status") or "")
         status[st] += 1
         if st != resolved:
-            table.setdefault(kind_of(project, c), Counter())[str(c.meta.get("area") or "기타")] += 1
+            table.setdefault(kind_of(project, c), Counter())[str(c.meta.get("area") or default_area(project))] += 1
     return {
         "total": len(cs),
         "open": sum(1 for c in cs if c.meta.get("status") != resolved),

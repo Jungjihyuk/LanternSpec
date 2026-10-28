@@ -83,7 +83,7 @@ def cmd_debt(a: argparse.Namespace) -> int:
         p = debt.new_card(
             project,
             a.arg,
-            area=a.area or "기타",
+            area=a.area,
             aliases=a.alias or [],
             work=a.work,
             note=a.note,

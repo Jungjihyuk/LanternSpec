@@ -39,61 +39,74 @@
 version: 1
 
 levels:                    # 단계 이름 — AGENTS.md · 개발 원칙 문서에 이 이름으로 나온다
-  must: {ko: 지킴}
-  should: {ko: 권장}
-  skip: {ko: 넣지 않음}
+  must: {ko: 지킴, en: "Must"}
+  should: {ko: 권장, en: "Should"}
+  skip: {ko: 넣지 않음, en: "Not included"}
 
-priority: {ko: 원칙끼리 부딪히면 단순함이 먼저다. 끼워 넣는 자리는 확장 지점에만 만든다.}
+priority: {ko: 원칙끼리 부딪히면 단순함이 먼저다. 끼워 넣는 자리는 확장 지점에만 만든다., en: "When principles conflict, simplicity comes first. Make plug-in points only at the extension points."}
 
 words:                     # 고른 이유 · 요약 줄에 쓰는 말 (예: "CLI 도구 · 바깥 연결 → 지킴")
-  external: {ko: 바깥 연결}
-  no_external: {ko: 바깥 연결 없음}
-  code: {ko: 코드}
-  people: {ko: 사람}
+  external: {ko: 바깥 연결, en: "external integrations"}
+  no_external: {ko: 바깥 연결 없음, en: "no external integrations"}
+  code: {ko: 코드, en: "code"}
+  people: {ko: 사람, en: "people"}
 
 roles:                     # 확인 명령의 이름 (lantern.yaml build.<role>)
-  package: {ko: 패키지}
-  format: {ko: 포맷}
-  lint: {ko: 린트}
-  typecheck: {ko: 타입 검사}
-  test: {ko: 테스트}
+  package: {ko: 패키지, en: "Package"}
+  format: {ko: 포맷, en: "Format"}
+  lint: {ko: 린트, en: "Lint"}
+  typecheck: {ko: 타입 검사, en: "Type check"}
+  test: {ko: 테스트, en: "Test"}
 
 rules:                     # 컨벤션 규칙 항목의 이름
-  lint: {ko: 린트}
-  typecheck: {ko: 타입 검사}
-  type_hints: {ko: 타입 힌트}
-  docs: {ko: 문서 주석}
-  tests: {ko: 테스트}
+  lint: {ko: 린트, en: "Lint"}
+  typecheck: {ko: 타입 검사, en: "Type check"}
+  type_hints: {ko: 타입 힌트, en: "Type hints"}
+  docs: {ko: 문서 주석, en: "Doc comments"}
+  tests: {ko: 테스트, en: "Tests"}
+
+agents:                    # AGENTS.md의 개발 원칙 · 코드 컨벤션 부분에 쓰는 문구 ({…}는 프로그램이 채운다)
+  principles_title: {ko: "### 개발 원칙 — {summary}", en: "### Development principles — {summary}"}
+  details: {ko: "자세히: `{doc}` (자동 생성 · `lantern principles show`)", en: "Details: `{doc}` (generated · `lantern principles show`)"}
+  ways_of_working: {ko: 작업 방식, en: Ways of working}
+  conventions_title: {ko: "### 코드 컨벤션 — {languages}", en: "### Code conventions — {languages}"}
+  checks: {ko: "고친 뒤 돌리고 모두 통과해야 끝: {commands} — 린트 · 타입 검사는 `lantern lint`로 한 번에", en: "Run after every change; done only when all pass: {commands} — lint and type check together with `lantern lint`"}
 
 comment_languages:          # lantern.yaml project.comment_language로 고를 수 있는 언어
-  - {code: ko, name: {ko: 한국어}}
-  - {code: en, name: {ko: 영어}}
+  - {code: ko, name: {ko: 한국어, en: Korean}}
+  - {code: en, name: {ko: 영어, en: English}}
 
 kinds:
   script:
     ko: {label: 스크립트 · 실험, examples: "개인 자동화, 한 번 쓰고 버리는 코드, 프로토타입"}
+    en: {label: "Script / experiment", examples: "personal automation, throwaway code, prototypes"}
   cli:
     ko: {label: CLI 도구, examples: 명령어로 쓰는 도구}
+    en: {label: "CLI tool", examples: "a tool used from the command line"}
   library:
     docs: large
     ko: {label: 라이브러리 · 플러그인, examples: "다른 사람이 import하거나 끼워 쓰는 코드, SDK"}
+    en: {label: "Library / plugin", examples: "code other people import or plug in, SDKs"}
   service:
     ko: {label: 서비스 (웹 · 앱), examples: 백엔드 · 프론트엔드 · 모바일 앱}
+    en: {label: "Service (web / app)", examples: "backend, frontend, mobile apps"}
   data:
     ko: {label: 데이터 · ML, examples: "분석, 데이터 파이프라인, 학습 · 실험 코드"}
+    en: {label: "Data / ML", examples: "analysis, data pipelines, training and experiment code"}
 
 external:
   ko: {question: "바깥 도구 · 서비스에 붙나요? (예 AI 도구, 결제, 외부 API, 플러그인을 받는 구조)"}
+  en: {question: "Does it connect to outside tools or services? (e.g. AI tools, payments, external APIs, a plugin system)"}
 
 sizes:
   code:                    # 줄 수 — 테스트 · 생성된 파일 · 문서는 빼고 센다
-    small: {below: 10000, ko: {label: 작음}}
-    medium: {below: 50000, ko: {label: 중간}}
-    large: {ko: {label: 큼}}
+    small: {below: 10000, ko: {label: 작음}, en: {label: "small"}}
+    medium: {below: 50000, ko: {label: 중간}, en: {label: "medium"}}
+    large: {ko: {label: 큼}, en: {label: "large"}}
   people:                  # lantern.yaml의 인원
-    small: {max: 1, ko: {label: 1인}}
-    medium: {max: 5, ko: {label: 2~5인}}
-    large: {ko: {label: 6인 이상}}
+    small: {max: 1, ko: {label: 1인}, en: {label: "1 person"}}
+    medium: {max: 5, ko: {label: 2~5인}, en: {label: "2–5 people"}}
+    large: {ko: {label: 6인 이상}, en: {label: "6+ people"}}
 
 principles:
   simplicity:
@@ -105,6 +118,12 @@ principles:
       rules:
         - 지금 쓰이지 않는 옵션 · 추상화 · 일반화는 넣지 않는다.
         - 한 번만 쓰이는 코드에 계층을 만들지 않는다. 더 짧게 쓸 수 있으면 다시 쓴다.
+    en:
+      name: "Simplicity (KISS · YAGNI)"
+      explain: "Build only what was asked, only what is needed now. Don't add abstractions, options or generality before they are used."
+      rules:
+        - "Don't add options, abstractions or generality that nothing uses yet."
+        - "Don't add layers to code used only once. If it can be written shorter, rewrite it."
 
   single_responsibility:
     grows_with: code
@@ -117,6 +136,14 @@ principles:
         - 점검 질문 "이 변경 이유 하나 때문에 고쳐야 하는 파일이 몇 개인가?" — 둘 이상이면 책임이 흩어졌다.
         - 모듈 문서 주석에 이 파일이 하지 않는 일을 적고 지킨다.
       data_note: 데이터 · ML에서는 "파이프라인 단계 하나 = 파일 하나"로 적용한다.
+    en:
+      name: "Single responsibility (SRP)"
+      explain: "A module, class or function should have one reason to change, so the place to fix is obvious when something changes."
+      rules:
+        - "Split folders and files by \"reason to change\"."
+        - "Check question: \"how many files must change for this one reason?\" — more than one means the responsibility is scattered."
+        - "Write in each module's doc comment what the file does not do, and keep to it."
+      data_note: "In data / ML, apply it as \"one pipeline step = one file\"."
 
   single_source:
     grows_with: code
@@ -128,6 +155,13 @@ principles:
         - 이름 · 경로 · 설정값처럼 여러 곳에서 쓰는 사실은 출처를 하나로 정하고 거기서 가져온다.
         - 만들어진 파일은 손으로 고치지 않는다. 출처를 고치고 다시 만든다.
       data_note: 데이터 · ML에서는 설정 · 하이퍼파라미터를 한 곳에 둔다.
+    en:
+      name: "Single source of truth (DRY · SSOT)"
+      explain: "Keep each fact in one place. Two copies drift apart, and changing them means hunting through files."
+      rules:
+        - "Facts used in many places (names, paths, settings) get one source; everything else reads from it."
+        - "Don't edit generated files by hand. Fix the source and generate again."
+      data_note: "In data / ML, keep settings and hyperparameters in one place."
 
   dependency_direction:
     grows_with: code
@@ -139,6 +173,13 @@ principles:
         - 의존은 한 방향으로만 흐른다. 아래 층은 위 층을 import하지 않는다.
         - 공유 코드는 계약(인터페이스)에만 기대고, 구체적인 바깥 도구는 모른다.
         - 판단하는 코드와 바깥 일을 하는 코드를 나눠, 판단하는 쪽을 테스트하기 쉽게 한다.
+    en:
+      name: "Dependency direction (DIP · pure core)"
+      explain: "The inside knows nothing about the outside. Decisions are pure functions; outside work (files, network, time) is pushed to the edges."
+      rules:
+        - "Dependencies flow one way: lower layers never import upper ones."
+        - "Shared code depends only on contracts (interfaces), never on a concrete outside tool."
+        - "Separate code that decides from code that does outside work, so the deciding part is easy to test."
 
   extension_points:
     grows_with: none
@@ -156,6 +197,14 @@ principles:
         - 같은 계약의 구현은 어디에 끼워도 같은 약속을 지킨다.
         - 계약은 작게 두고, 모든 구현이 쓰지 않는 기능은 기본 구현으로 둔다.
         - 새 확장 지점은 두 번째 구현이 실제로 생길 때 만든다.
+    en:
+      name: "Extension points (OCP · LSP · ISP)"
+      explain: "Only where there are several implementations, or they change often, make it possible to plug in a new one without editing existing code."
+      rules:
+        - "List the extension points and use the pattern only there. Don't make an interface for something with one implementation."
+        - "Every implementation of a contract keeps the same promises, wherever it is plugged in."
+        - "Keep contracts small; give features not every implementation needs a default implementation."
+        - "Make a new extension point when the second implementation actually appears."
 
   public_interface:
     grows_with: people
@@ -166,6 +215,12 @@ principles:
       rules:
         - 공개된 명령 · 옵션 · 함수 · API를 바꾸면 버전 규칙(semver)에 따라 버전을 올린다.
         - 없애기 전에 한 버전 이상 "곧 없어짐"을 알린다.
+    en:
+      name: "Keep the public interface (semver · deprecation)"
+      explain: "Don't change commands, functions or APIs other people use on a whim. When you change them, bump the version and announce it first."
+      rules:
+        - "When a public command, option, function or API changes, bump the version by the semver rules."
+        - "Announce \"going away soon\" at least one version before removing something."
 
   input_validation:
     grows_with: code
@@ -176,6 +231,12 @@ principles:
       rules:
         - 바깥 입력은 경계에서 검사하고, 틀리면 무엇이 틀렸는지 알려 주는 오류를 낸다.
         - 안쪽 코드에 같은 검사를 여기저기 반복하지 않는다.
+    en:
+      name: "Validate input at the boundary"
+      explain: "Check values that come from outside (user input, files, requests) once where they enter; the inside trusts checked values."
+      rules:
+        - "Validate outside input at the boundary, and on failure say what was wrong."
+        - "Don't repeat the same check all over the inner code."
 
   reproducibility:
     grows_with: people
@@ -187,6 +248,13 @@ principles:
         - 의존성은 lock 파일로 버전을 고정하고 함께 커밋한다.
         - 실행에 필요한 환경(언어 버전 · 설정)을 파일로 남긴다.
       data_note: 데이터 · ML에서는 무작위 seed · 데이터 버전 · 실험 설정도 고정해 기록한다.
+    en:
+      name: "Reproducibility"
+      explain: "Anyone running it at any time gets the same result. Pin dependency versions, the environment and random seeds."
+      rules:
+        - "Pin dependency versions with a lock file and commit it."
+        - "Keep the environment it needs (language version, settings) in files."
+      data_note: "In data / ML, also pin and record random seeds, data versions and experiment settings."
 
   observability:
     grows_with: code
@@ -198,6 +266,12 @@ principles:
       rules:
         - 실패와 중요한 동작은 원인을 찾을 수 있는 로그를 남긴다.
         - 비밀 값(토큰 · 비밀번호)은 로그에 남기지 않는다.
+    en:
+      name: "Observability (logs · metrics)"
+      explain: "Leave enough behind to know later what happened while it ran."
+      rules:
+        - "Log failures and important actions so their cause can be found."
+        - "Never log secrets (tokens, passwords)."
 
 # 종류 · 규모와 상관없이 늘 넣는다 — AI와 함께 코드를 고칠 때 흔히 생기는 실수를 막는 작업 방식
 always:
@@ -208,6 +282,12 @@ always:
         - 가정과 모르는 것을 먼저 말한다. 해석이 여럿이면 하나를 몰래 고르지 말고 묻는다.
         - 더 단순한 방법이 있으면 말한다.
         - 외부 도구의 형식은 기억에 기대지 말고 설치된 도구나 공식 문서에서 확인한다.
+    en:
+      name: "Think before coding"
+      rules:
+        - "Say your assumptions and unknowns first. If there are several readings, ask instead of quietly picking one."
+        - "If there is a simpler way, say so."
+        - "Don't rely on memory for outside tools' formats; check the installed tool or its official docs."
   surgical_changes:
     ko:
       name: 필요한 곳만 고친다
@@ -215,6 +295,12 @@ always:
         - 요청과 관련된 줄만 고치고 주변 코드의 이름 · 주석 · 모양을 따른다.
         - 관련 없는 정리 · 이름 바꾸기 · 리팩터링을 끼워 넣지 않는다. 보이면 따로 말한다.
         - 내 변경 때문에 쓸모없어진 코드는 지우고, 원래 있던 죽은 코드는 말만 한다.
+    en:
+      name: "Change only what is needed"
+      rules:
+        - "Touch only the lines the request is about, and follow the names, comments and style around them."
+        - "Don't slip in unrelated cleanup, renames or refactors. If you see some, mention it separately."
+        - "Remove code your change made useless; for dead code that was already there, only mention it."
   verify_by_goal:
     ko:
       name: 목표로 검증한다
@@ -222,3 +308,9 @@ always:
         - 시작 전에 "무엇이 되면 끝인가"를 정한다. 가능하면 실패하는 테스트를 먼저 쓴다.
         - 끝났다는 말 대신 결과를 보인다 — 언어별 확인 명령이 모두 통과해야 끝이다.
         - 확인하지 못한 것은 숨기지 않고 그렇다고 말한다.
+    en:
+      name: "Verify against the goal"
+      rules:
+        - "Before starting, decide \"what does done look like\". Write a failing test first when you can."
+        - "Show results instead of saying it is done — every check command for the languages must pass."
+        - "Don't hide what you could not check; say so."

@@ -18,7 +18,7 @@ argument-hint: "new | refine <양식> | migrate [<양식> | <문서 경로>]"
 - 스크립트가 채우는 값은 `${id}` · `${today}` · `${name}` · `${work_id}` · `${links}` 등 (손대지 않는다)
 - 맨 위 "<<marker.glance>>" 칸은 필수: `> [!abstract] <<marker.glance>>` + `> {{… <<marker.required>>}}`
 - 공통 frontmatter: `id · type · status · created · updated · links · template · template_version`(+ 양식에만 `based_on`)
-- 맨 아래 `<!-- lantern:template-only -->` 뒤 `## 변경 기록` 표 (문서에는 복사되지 않음)
+- 맨 아래 `<!-- lantern:template-only -->` 뒤 `## <<marker.changelog>>` 표 (문서에는 복사되지 않음)
 
 ## 만들기 `new`
 1. 시안에서 구조를 뽑는다: 제목 · 섹션 · 표 · 그림 자리 · <<marker.glance>>. 파일이 있으면 뼈대부터:
@@ -51,7 +51,7 @@ argument-hint: "new | refine <양식> | migrate [<양식> | <문서 경로>]"
    ```bash
    lantern template migrate "<양식 | 문서>" [--map "옛 칸=새 칸" …]
    ```
-3. 대응되는 내용은 새 자리로 옮기고, **대응되지 않는 내용은 지우지 않고** 문서 맨 아래 `## 📦 옮기지 못한 내용`에 모은다 → 사람이 정리한다.
+3. 대응되는 내용은 새 자리로 옮기고, **대응되지 않는 내용은 지우지 않고** 문서 맨 아래 `## <<marker.migrate_bin>>`에 모은다 → 사람이 정리한다.
 4. 문서별로 바뀌는 점을 보여 주고 승인 → `--apply`. git이 안전망이다.
 5. **기존 문서(<<folder.legacy>>)를 우리 양식으로:** `lantern template migrate "<<folder.legacy>>/<문서>.md" --to <양식> --dest "<docs 안 새 경로.md>" [--apply]` — 원본은 그대로 두고 새 문서를 만든다. `기존 문서 지도`의 새 위치 칸을 채운다.
 

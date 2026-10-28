@@ -35,7 +35,7 @@
 #     applies: {debt: status}                  ← 어느 문서(type)의 어느 칸에 쓰나: debt 문서의 status 칸
 #     values:                                  ← 고를 수 있는 값들
 #       처음: {icon: 🌱, role: new}            ← 이름: {아이콘, 역할}
-#       기타: ❔                               ← 이름: 아이콘 (역할이 필요 없는 값은 이렇게 짧게)
+#       frontend: 🖥                           ← 이름: 아이콘 (역할이 필요 없는 값은 이렇게 짧게)
 #
 #   role(역할)은 프로그램이 그 값을 알아보는 열쇠다. 예) 프로그램은 "해결"이라는 글자 대신
 #   "role이 resolved인 값"을 찾는다. 그래서 이름을 바꿔도 동작은 그대로지만, role은 고치거나 지우면 안 된다.
@@ -148,7 +148,7 @@ area:
     data: 🗄
     ai: 🤖
     infra: ☁️
-    기타: ❔
+    기타: {icon: ❔, role: other}
 
 current_status:
   label: 현재 상태 문서 상태

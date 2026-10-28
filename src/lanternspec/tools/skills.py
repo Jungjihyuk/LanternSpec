@@ -234,7 +234,8 @@ def render_body(src: SkillSource, profile: Profile, tool: Tool, prefix: str, enu
     body = rewrite_commands(templating.apply_conditions(src.body, ctx), prefix)
     body = body.replace(SESSION_TOKEN, tool.session_expr)
     if not tool.expands_arguments:
-        body = body.replace("`$ARGUMENTS`", "사용자가 명령과 함께 준 입력").replace("$ARGUMENTS", "사용자 입력")
+        n = profile.names
+        body = body.replace("`$ARGUMENTS`", n.marker("arguments_quoted")).replace("$ARGUMENTS", n.marker("arguments"))
     # <<plan.max_questions>> → the project's current answer (lantern upgrade re-renders on change)
     return fill_tokens(body, ctx)
 

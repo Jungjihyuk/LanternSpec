@@ -123,8 +123,9 @@ def test_comment_language_is_separate_from_document_language(repo):
     repo("profile", "set", "project.comment_language=en")
     repo("upgrade")
     agents = (repo.root / "AGENTS.md").read_text(encoding="utf-8")
-    assert "문서 주석 (Google 스타일 docstring · 영어)" in agents and "### 개발 원칙" in agents  # the guidance stays in Korean
+    # the doc-comment style and example follow the comment language; the guidance stays in Korean
+    assert "문서 주석 (Google-style docstrings · 영어)" in agents and "### 개발 원칙" in agents
     doc = (repo.root / "docs/3. 현재 상태/규칙 · 결정 기록/개발 원칙.md").read_text(encoding="utf-8")
-    assert "문서 주석: Google 스타일 docstring · 영어" in doc
+    assert "문서 주석: Google-style docstrings · 영어" in doc and "Rename one value in the text of enums.yaml." in doc
     code, out = repo("profile", "set", "project.comment_language=jp", ok=False)
     assert code == 1 and "comment_language" in out

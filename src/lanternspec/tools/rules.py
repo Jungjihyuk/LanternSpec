@@ -89,24 +89,25 @@ def principles_section(profile: Profile) -> str:
     sel = principles.select(profile)
     if sel is None:
         return ""
-    names = principles.table(profile.language)["levels"]
+    t = principles.table(profile.language)
+    names, say = t["levels"], t["agents"]
     doc = f"{profile.docs_root}/{profile.names.folder('rules')}/{profile.names.file('principles')}"
-    lines = [f"### 개발 원칙 — {sel.summary()}", f"자세히: `{doc}` (자동 생성 · `lantern principles show`)"]
+    lines = [say["principles_title"].format(summary=sel.summary()), say["details"].format(doc=doc)]
     for level in ("must", "should"):
         chosen = sel.at(level)
         if chosen:
             lines.append(f"- **{names[level]}:** " + " · ".join(p.name for p in chosen))
-    lines.append(f"- {principles.table(profile.language)['priority']}")
-    lines.append("- **작업 방식:** " + " · ".join(name for name, _ in sel.always))
+    lines.append(f"- {t['priority']}")
+    lines.append(f"- **{say['ways_of_working']}:** " + " · ".join(name for name, _ in sel.always))
     if sel.conventions:
-        lines += ["", "### 코드 컨벤션 — " + " · ".join(c.label for c in sel.conventions)]
+        lines += ["", say["conventions_title"].format(languages=" · ".join(c.label for c in sel.conventions))]
         cmds = [(principles.role_label(r, profile.language), profile.get(f"build.{r}")) for r in (*principles.COMMAND_ROLES, "test")]
         cmds = [f"{label} `{cmd}`" for label, cmd in cmds if cmd]
         if cmds:
-            lines.append("- 고친 뒤 돌리고 모두 통과해야 끝: " + " · ".join(cmds) + " — 린트 · 타입 검사는 `lantern lint`로 한 번에")
+            lines.append("- " + say["checks"].format(commands=" · ".join(cmds)))
         language = principles.comment_languages(profile.language).get(profile.comment_language, profile.comment_language)
         for c in sel.conventions:
             prefix = f"{c.label} " if len(sel.conventions) > 1 else ""
-            lines.append(f"- {prefix}타입 힌트: {c.rules['type_hints']}")
-            lines.append(f"- {prefix}문서 주석 ({c.docs_style} · {language}): {c.rules['docs']}")
+            lines.append(f"- {prefix}{principles.rule_label('type_hints', profile.language)}: {c.rules['type_hints']}")
+            lines.append(f"- {prefix}{principles.rule_label('docs', profile.language)} ({c.docs_style} · {language}): {c.rules['docs']}")
     return "\n".join(lines)

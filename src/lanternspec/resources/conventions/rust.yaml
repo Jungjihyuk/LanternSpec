@@ -8,12 +8,12 @@ detect: [Cargo.toml]
 tools:
   package:
     name: cargo
-    note: {ko: "의존성은 Cargo.toml로 관리하고, 실행 파일이면 Cargo.lock을 커밋한다."}
+    note: {ko: "의존성은 Cargo.toml로 관리하고, 실행 파일이면 Cargo.lock을 커밋한다.", en: "Manage dependencies in Cargo.toml; commit Cargo.lock for binaries."}
   format: {name: rustfmt, command: cargo fmt}
   lint: {name: clippy, command: cargo clippy --all-targets -- -D warnings}
   typecheck:
     command: cargo check
-    name: {ko: "Rust 컴파일러"}
+    name: {ko: "Rust 컴파일러", en: "Rust compiler"}
   test: {name: cargo test, command: cargo test}
 
 runners:                   # 명령 앞에 붙이는 실행기 — 기존 프로젝트는 lock 파일로 알아본다 (맞는 것이 없으면 처음 것)
@@ -44,6 +44,21 @@ docs:                      # 문서 주석 — lantern.yaml project.comment_lang
       /// let out = rename_in_text(text, "debt_status", "되물음", "다시 물음")?;
       /// ```
       pub fn rename_in_text(text: &str, list: &str, old: &str, new: &str) -> Result<String, EnumsError> {
+  en:
+    style: "doc comments /// (rustdoc)"
+    example: |
+      /// Renames one value in the text of enums.yaml.
+      ///
+      /// # Errors
+      ///
+      /// Returns `EnumsError::NotFound` when the list or the value does not exist.
+      ///
+      /// # Examples
+      ///
+      /// ```
+      /// let out = rename_in_text(text, "debt_status", "asked again", "asked twice")?;
+      /// ```
+      pub fn rename_in_text(text: &str, list: &str, old: &str, new: &str) -> Result<String, EnumsError> {
 
 levels:                    # 코드 크기별 규칙 (글)
   small:
@@ -53,6 +68,12 @@ levels:                    # 코드 크기별 규칙 (글)
       type_hints: 공개 함수 시그니처는 늘 명시 (언어가 요구)
       docs: 공개 항목에 무엇을 하는지 한 줄
       tests: cargo test — 핵심 동작부터
+    en:
+      lint: "clippy default rules"
+      typecheck: "compiler defaults"
+      type_hints: "public function signatures are always explicit (required by the language)"
+      docs: "one line on what each public item does"
+      tests: "cargo test — core behavior first"
   medium:
     ko:
       lint: 기본 + 경고를 오류로(-D warnings) · clippy::pedantic 경고
@@ -60,6 +81,12 @@ levels:                    # 코드 크기별 규칙 (글)
       type_hints: 작음과 같음
       docs: '공개 항목에 문서 주석 (# Errors · # Panics), 라이브러리는 #![warn(missing_docs)]'
       tests: cargo test
+    en:
+      lint: "defaults + warnings as errors (-D warnings) · clippy::pedantic warnings"
+      typecheck: "compiler defaults"
+      type_hints: "same as small"
+      docs: "doc comments on public items (# Errors · # Panics); libraries use #![warn(missing_docs)]"
+      tests: "cargo test"
   large:
     ko:
       lint: 중간 + 고른 pedantic 규칙을 오류로
@@ -67,3 +94,9 @@ levels:                    # 코드 크기별 규칙 (글)
       type_hints: 작음과 같음
       docs: '중간 + #![deny(missing_docs)] · 공개 함수마다 # Examples (cargo test가 돌린다)'
       tests: cargo test + 문서 예시 테스트
+    en:
+      lint: "medium + chosen pedantic rules as errors"
+      typecheck: "compiler defaults"
+      type_hints: "same as small"
+      docs: "medium + #![deny(missing_docs)] · # Examples on every public function (run by cargo test)"
+      tests: "cargo test + doc tests"

@@ -198,7 +198,12 @@ def _ours(rel: str, tools: list[Tool]) -> bool:
 
 
 def install(
-    project: Project, tools: list[str] | None = None, force: bool = False, mcp: bool | None = None, ci: bool | None = None
+    project: Project,
+    tools: list[str] | None = None,
+    force: bool = False,
+    mcp: bool | None = None,
+    ci: bool | None = None,
+    language: str | None = None,
 ) -> InstallReport:
     """Install or refresh everything for the chosen tools.
 
@@ -211,18 +216,21 @@ def install(
         force: Overwrite files someone edited.
         mcp: Register the knowledge MCP server; the last choice when None.
         ci: Write the CI workflow; the last choice when None.
+        language: Language of the skills and rules before lantern.yaml exists (`lantern install --language en`);
+            remembered until /l-init writes it into lantern.yaml. Once lantern.yaml exists, its language is used.
 
     Returns:
         What was done.
 
     Raises:
-        ValueError: A tool is not supported.
+        ValueError: A tool is not supported, or language differs from the language lantern.yaml already fixed.
 
     Example:
         >>> install(project, ["claude"]).merged[0]  # doctest: +SKIP
         'AGENTS.md'
     """
     st = state.load(project)
+    language = _language(project, st, language)
     names = tools or st.get("tools") or ["claude"]
     chosen = resolve_tools(names)
     mcp = bool(st.get("mcp")) if mcp is None else mcp
@@ -260,12 +268,29 @@ def install(
         report.written.append(project.rel(page))  # Obsidian choices follow enums.yaml changes too
     for tool in chosen:  # each tool merges its own settings (rules hookup · hooks · MCP)
         report.merged += tool.install_config(project, mcp)
+    st["language"] = language
     st["mcp"] = mcp
     st["ci"] = ci
     st["tools"] = names
     st["version"] = __version__
     state.save(project, st)
     return report
+
+
+def _language(project: Project, st: dict, language: str | None) -> str:
+    """The language to install in: lantern.yaml's once it exists, else the one asked for or remembered."""
+    from ..core.names import languages
+
+    if language is not None and language not in languages():
+        raise ValueError(f"언어 '{language}' 묶음이 없습니다 (가능: {', '.join(languages())})")
+    if project.profile.exists:
+        fixed = project.profile.language
+        if language is not None and language != fixed:
+            raise ValueError(f"이 프로젝트의 언어는 lantern.yaml에서 '{fixed}'로 정해졌습니다 — 처음 정한 뒤에는 바꾸지 않습니다")
+        return fixed
+    chosen = language or st.get("language") or project.profile.language
+    project.profile.data.setdefault("project", {})["language"] = chosen  # no lantern.yaml yet: render in this language
+    return chosen
 
 
 def upgrade_templates(project: Project, force: bool = False) -> list[str]:

@@ -45,6 +45,7 @@ lantern install                  # 이 프로젝트에 스킬 · 규칙 · hook 
 
 그다음 AI 도구 안에서 `/l-init`을 부른다 (Codex는 `$l-init`).
 
+- **언어:** 문서 · 스킬 · 규칙은 한국어(기본)나 영어(`--language en`)로 만든다. 처음 설치할 때 정하고 `lantern.yaml`에 남는다.
 - **여러 AI 도구를 함께 쓸 때:** `lantern install --tools claude,codex,antigravity`
 - **스킬은 프로젝트 폴더에 들어간다:** 플러그인이 아니라 프로젝트 안에 직접 써 넣는다. 그래서 `/l-init`처럼 접두어 없이 불리고, git으로 팀원과 그대로 공유된다.
 - **새 버전이 나오면:** `uv tool upgrade lanternspec` → `lantern upgrade`

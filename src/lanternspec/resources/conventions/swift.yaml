@@ -8,17 +8,17 @@ detect: [Package.swift, '*.xcodeproj', '*.xcworkspace']
 tools:
   package:
     name: SwiftPM · Xcode
-    note: {ko: "패키지는 Package.swift, 앱은 Xcode 프로젝트로 관리하고 Package.resolved를 커밋한다."}
+    note: {ko: "패키지는 Package.swift, 앱은 Xcode 프로젝트로 관리하고 Package.resolved를 커밋한다.", en: "Packages use Package.swift, apps an Xcode project; commit Package.resolved."}
   format: {name: swift-format, command: swift format --in-place --recursive .}
   lint: {name: SwiftLint, command: swiftlint}
   typecheck:
     command: swift build
-    name: {ko: "Swift 컴파일러"}
-    note: {ko: "앱은 xcodebuild build"}
+    name: {ko: "Swift 컴파일러", en: "Swift compiler"}
+    note: {ko: "앱은 xcodebuild build", en: "apps: xcodebuild build"}
   test:
     name: Swift Testing
     command: swift test
-    note: {ko: "앱은 xcodebuild test"}
+    note: {ko: "앱은 xcodebuild test", en: "apps: xcodebuild test"}
 
 runners:                   # 명령 앞에 붙이는 실행기 — 기존 프로젝트는 lock 파일로 알아본다 (맞는 것이 없으면 처음 것)
                            # ci: GitHub Actions에서 확인 명령을 돌리기 전에 도구 · 의존성을 준비하는 단계 (lantern install --ci)
@@ -47,6 +47,18 @@ docs:                      # 문서 주석 — lantern.yaml project.comment_lang
       /// - Returns: 이름을 바꾼 enums.yaml 글.
       /// - Throws: 목록이나 값이 없으면 `EnumsError.notFound`.
       func renameInText(_ text: String, old: String, new: String) throws -> String {
+  en:
+    style: "doc comments /// (Swift Markup · DocC)"
+    example: |
+      /// Renames one value in the text of enums.yaml.
+      ///
+      /// - Parameters:
+      ///   - text: The whole text of enums.yaml.
+      ///   - old: Current name.
+      ///   - new: New name.
+      /// - Returns: The enums.yaml text with the value renamed.
+      /// - Throws: `EnumsError.notFound` when the list or the value does not exist.
+      func renameInText(_ text: String, old: String, new: String) throws -> String {
 
 levels:                    # 코드 크기별 규칙 (글)
   small:
@@ -56,6 +68,12 @@ levels:                    # 코드 크기별 규칙 (글)
       type_hints: 공개(public · internal API) 함수의 반환 타입을 생략하지 않는다
       docs: 공개 타입 · 함수에 무엇을 하는지 한 줄
       tests: Swift Testing — 핵심 동작부터
+    en:
+      lint: "SwiftLint default rules"
+      typecheck: "compiler defaults"
+      type_hints: "don't omit return types of public (public · internal API) functions"
+      docs: "one line on what each public type or function does"
+      tests: "Swift Testing — core behavior first"
   medium:
     ko:
       lint: 기본 규칙 + 강제 언래핑 금지(force_unwrapping) · 강제 캐스팅 금지
@@ -63,6 +81,12 @@ levels:                    # 코드 크기별 규칙 (글)
       type_hints: 작음과 같음
       docs: 공개 타입 · 함수에 문서 주석 (Parameters · Returns · Throws)
       tests: Swift Testing
+    en:
+      lint: "defaults + no force unwrapping (force_unwrapping) · no force casts"
+      typecheck: "strict concurrency checking complete (Swift 6 language mode recommended)"
+      type_hints: "same as small"
+      docs: "doc comments on public types and functions (Parameters · Returns · Throws)"
+      tests: "Swift Testing"
   large:
     ko:
       lint: 중간 + missing_docs(공개 API) · 경고를 오류로
@@ -70,3 +94,9 @@ levels:                    # 코드 크기별 규칙 (글)
       type_hints: 작음과 같음
       docs: 중간 + DocC 문서 빌드
       tests: Swift Testing + UI 테스트(앱)
+    en:
+      lint: "medium + missing_docs (public API) · warnings as errors"
+      typecheck: "Swift 6 language mode"
+      type_hints: "same as small"
+      docs: "medium + build the DocC documentation"
+      tests: "Swift Testing + UI tests (apps)"

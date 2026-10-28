@@ -541,7 +541,7 @@ def work_doc_role(project: Project, kind: str) -> str | None:
     kind = {"task": "tasks"}.get(kind, kind)
     if kind in WORK_DOCS:
         return kind
-    return next((r for r in WORK_DOCS if nfc(project.names.doc(r)) == nfc(kind)), None)
+    return next((r for r in WORK_DOCS if nfc(project.names.doc(r)).casefold() == nfc(kind).casefold()), None)
 
 
 def work_doc(project: Project, work_id: str, kind: str) -> Path:

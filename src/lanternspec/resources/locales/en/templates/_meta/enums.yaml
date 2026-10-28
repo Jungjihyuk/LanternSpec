@@ -1,0 +1,188 @@
+# ============================================================================
+# enums.yaml — the one file that holds the names and icons of the fixed choices in documents (statuses · kinds · topics …)
+# ============================================================================
+#
+# ■ What this is
+#
+#   The top of a LanternSpec document (its frontmatter) has fields where you pick one of a fixed set of values.
+#   e.g. a debt card's status: Asked Again · an idea's kind: Feature · a work plan's status: Build
+#   Those lists of values live in this file. Each list has a name:
+#
+#     Document type  doc_type            the type field of every document (idea · plan · debt …)
+#     Status         idea_status         how far an idea has come (New → Reviewing → In Work …)
+#                    work_status         which stage a work is in (Plan → Design → Tasks → Build → Done)
+#                    adr_status          whether a decision is proposed or accepted
+#                    debt_status         whether a debt card was asked once, asked again, or resolved
+#                    current_status      whether a current-state document is in use
+#                    note_draft_status   whether a learning-note draft waits for approval or was applied
+#                    meeting_status      whether meeting notes are a draft or final
+#     Kind           idea_kind           whether an idea is a feature, an improvement, a bug, an experiment …
+#                    debt_kind           whether a debt is understanding, competency or tech
+#     Topic          area                which topic a debt card belongs to (backend · frontend …)
+#     Other          size                the size of a task (S · M · L)
+#                    legacy_route        how to handle a legacy document: absorb · archive · move
+#
+#   Who reads this file — so changing it here changes it everywhere:
+#     · lantern commands  e.g. lantern debt ask sets a card's status to "Asked Again" and shows it with 🤔
+#     · skills (AI guide) e.g. "🤔 Asked Again" in the /l-learn guide is filled from this file at install
+#     · templates         e.g. a new Plan.md gets this file's "Plan" in its status field
+#     · lantern check     checks that every field value is in its list (an unknown value is an error)
+#
+# ■ How to write it
+#
+#   debt_status:                               ← list name (never change it)
+#     label: Debt status                       ← what the list is, for people
+#     applies: {debt: status}                  ← which field of which document type uses it: the status field of debt documents
+#     values:                                  ← the values to choose from
+#       New: {icon: 🌱, role: new}             ← name: {icon, role}
+#       frontend: 🖥                           ← name: icon (values without a role can be this short)
+#
+#   The role is the key the program knows a value by. e.g. the program looks for "the value whose role is
+#   resolved" rather than the word "Resolved". So names can change and nothing breaks — but never edit or remove a role.
+#
+# ■ How to use it
+#
+#   1) Change an icon — edit the icon here, then run upgrade once so the skills show it too.
+#        Asked Again: {icon: 🤔, role: asked_again}   →   Asked Again: {icon: 💬, role: asked_again}
+#        $ lantern upgrade
+#        (lantern command output and the debt status page change right away, without upgrade)
+#
+#   2) Rename a value — don't edit it by hand; use the command. Values already written in documents and the skills change too.
+#        $ lantern enums rename debt_status "Asked Again" "Asked Twice"
+#        $ lantern enums rename work_status Build Implement
+#        (renaming only by hand makes documents with the old name fail lantern check with "unknown value")
+#
+#   3) Add a value — add one line under values and it can be used right away.  e.g. in area:  mobile: 📱
+#
+#   4) Check — show the lists, icons and roles, and check that no role is missing.
+#        $ lantern enums list
+#        $ lantern enums list debt_status
+#
+#   ※ In a project, edit docs/0. Templates/_meta/enums.yaml (this file is the default copied into new projects).
+# ============================================================================
+
+version: 1
+
+doc_type:
+  label: Document type
+  applies: {"*": type}
+  values:
+    idea: 💡
+    plan: 📋
+    design: 📐
+    tasks: ✅
+    record: 🔨
+    adr: 📝
+    debt: 📒
+    current: 📘
+    moc: 🗺
+    report: 📊
+    meeting: 🗣
+    legacy-map: 🗂
+    known-tech: 🧠
+    session: 🕐
+    note-draft: 📝
+
+idea_kind:
+  label: Idea kind
+  applies: {idea: kind}
+  values:
+    Feature: ✨
+    Improvement: 🔧
+    Bug: 🐞
+    Experiment: 🧪
+    Tech Review: 🔍
+
+idea_status:
+  label: Idea status
+  applies: {idea: status}
+  values:
+    New: {icon: 💭, role: new}
+    Reviewing: {icon: 🔍, role: reviewing}
+    In Work: {icon: 📦, role: worked}
+    On Hold: {icon: 🗄, role: on_hold}
+    Dropped: {icon: ❌, role: dropped}
+
+work_status:
+  label: Work stage
+  applies: {plan: status, design: status, tasks: status, record: status}
+  values:
+    Plan: {icon: 📋, role: plan}
+    Design: {icon: 📐, role: design}
+    Tasks: {icon: ✅, role: tasks}
+    Build: {icon: 🔨, role: build}
+    Done: {icon: 🎉, role: done}
+    On Hold: {icon: 🗄, role: on_hold}
+
+adr_status:
+  label: Decision status
+  applies: {adr: status}
+  values:
+    Proposed: {icon: 🟡, role: proposed}
+    Accepted: {icon: ✅, role: accepted}
+    Superseded: {icon: ↩️, role: superseded}
+
+debt_kind:
+  label: Debt kind
+  applies: {debt: kind}
+  values:
+    Understanding: {icon: 🧠, role: understanding}
+    Competency: {icon: 🛠, role: competency}
+    Tech: {icon: 🧱, role: tech}
+
+debt_status:
+  label: Debt status
+  applies: {debt: status}
+  values:
+    New: {icon: 🌱, role: new}
+    Asked Again: {icon: 🤔, role: asked_again}
+    Practicing: {icon: ✍️, role: practicing}
+    Resolved: {icon: ✅, role: resolved}
+
+area:
+  label: Topic (one topic per card)
+  applies: {debt: area}
+  values:
+    backend: ⚙️
+    frontend: 🖥
+    data: 🗄
+    ai: 🤖
+    infra: ☁️
+    other: {icon: ❔, role: other}
+
+current_status:
+  label: Current-state document status
+  applies: {current: status, moc: status, legacy-map: status, known-tech: status, report: status, session: status}
+  values:
+    Active: {icon: 🟢, role: active}
+    Inactive: {icon: ⚪, role: inactive}
+
+note_draft_status:
+  label: Learning-note draft status
+  applies: {note-draft: status}
+  values:
+    Pending: {icon: ⏳, role: pending}
+    Applied: {icon: ✅, role: applied}
+
+meeting_status:
+  label: Meeting notes status
+  applies: {meeting: status}
+  values:
+    Draft: {icon: ✏️, role: draft}
+    Final: {icon: ✅, role: final}
+
+size:
+  label: Task size
+  applies: {}
+  values:
+    S: 🟢
+    M: 🟡
+    L: 🔴
+
+legacy_route:
+  label: How to handle a legacy document
+  applies: {}
+  values:
+    Absorb: 🧽
+    Archive: 🗄
+    Move: 🚚

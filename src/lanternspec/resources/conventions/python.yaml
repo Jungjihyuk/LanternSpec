@@ -8,7 +8,7 @@ detect: [pyproject.toml, setup.py, setup.cfg, requirements.txt]
 tools:
   package:
     name: uv
-    note: {ko: "모든 명령은 uv run으로 실행한다. pip · .venv/bin을 직접 쓰지 않는다."}
+    note: {ko: "모든 명령은 uv run으로 실행한다. pip · .venv/bin을 직접 쓰지 않는다.", en: "Run every command with uv run. Don't call pip or .venv/bin directly."}
   format: {name: ruff format, command: ruff format .}
   lint: {name: ruff, command: ruff check .}
   typecheck: {name: pyright, command: pyright}
@@ -64,6 +64,24 @@ docs:                      # 문서 주석 — lantern.yaml project.comment_lang
           Raises:
               LookupError: 목록이나 값이 없을 때.
           """
+  en:
+    style: "Google-style docstrings"
+    example: |
+      def rename_in_text(text: str, enum: str, old: str, new: str) -> str:
+          """Rename one value in the text of enums.yaml.
+
+          Args:
+              text: The whole text of enums.yaml.
+              enum: List name.
+              old: Current name.
+              new: New name.
+
+          Returns:
+              The enums.yaml text with the value renamed.
+
+          Raises:
+              LookupError: The list or the value does not exist.
+          """
 
 levels:                    # 코드 크기별 규칙 (글)
   small:
@@ -73,6 +91,12 @@ levels:                    # 코드 크기별 규칙 (글)
       type_hints: 공개 함수의 인자와 반환값
       docs: 공개 함수 · 클래스에 무엇을 하는지 한 줄
       tests: pytest — 핵심 동작부터
+    en:
+      lint: "ruff rules F · E · W · I · B (pyflakes · pycodestyle · import order · bugbear)"
+      typecheck: "pyright basic"
+      type_hints: "arguments and return values of public functions"
+      docs: "one line on what each public function or class does"
+      tests: "pytest — core behavior first"
   medium:
     ko:
       lint: 작음 + UP(최신 문법) · ANN(타입 힌트) · D(docstring, google)
@@ -80,6 +104,12 @@ levels:                    # 코드 크기별 규칙 (글)
       type_hints: 모든 함수의 인자와 반환값 (모양이 정해지지 않은 데이터만 Any)
       docs: 모듈은 책임 한 줄 + 하지 않는 일, 공개 함수 · 클래스는 Google 스타일(Args · Returns · Raises)
       tests: pytest
+    en:
+      lint: "small + UP (modern syntax) · ANN (type hints) · D (docstrings, google)"
+      typecheck: "pyright standard"
+      type_hints: "arguments and return values of every function (Any only for data without a fixed shape)"
+      docs: "modules: one line on the responsibility + what they don't do; public functions and classes: Google style (Args · Returns · Raises)"
+      tests: "pytest"
   large:
     ko:
       lint: 중간 + 테스트 밖의 모든 파일에 D
@@ -87,3 +117,9 @@ levels:                    # 코드 크기별 규칙 (글)
       type_hints: 모든 함수, Any는 경계에서만
       docs: 중간 + 공개 함수마다 실제로 돌아가는 Example (pytest --doctest-modules)
       tests: pytest + doctest
+    en:
+      lint: "medium + D on every file outside tests"
+      typecheck: "pyright strict"
+      type_hints: "every function; Any only at boundaries"
+      docs: "medium + a working Example for every public function (pytest --doctest-modules)"
+      tests: "pytest + doctest"

@@ -8,7 +8,7 @@ detect: [tsconfig.json, package.json]
 tools:
   package:
     name: pnpm
-    note: {ko: "의존성은 pnpm으로 관리하고 pnpm-lock.yaml을 커밋한다."}
+    note: {ko: "의존성은 pnpm으로 관리하고 pnpm-lock.yaml을 커밋한다.", en: "Manage dependencies with pnpm and commit pnpm-lock.yaml."}
   format: {name: Biome, command: biome format --write .}
   lint: {name: Biome, command: biome check .}
   typecheck: {name: tsc, command: tsc --noEmit}
@@ -65,6 +65,19 @@ docs:                      # 문서 주석 — lantern.yaml project.comment_lang
        * @throws {@link LookupError} 목록이나 값이 없을 때
        */
       export function renameInText(text: string, old: string, next: string): string {
+  en:
+    style: "TSDoc (/** … */)"
+    example: |
+      /**
+       * Rename one value in the text of enums.yaml.
+       *
+       * @param text - The whole text of enums.yaml
+       * @param old - Current name
+       * @param next - New name
+       * @returns The enums.yaml text with the value renamed
+       * @throws {@link LookupError} The list or the value does not exist
+       */
+      export function renameInText(text: string, old: string, next: string): string {
 
 levels:                    # 코드 크기별 규칙 (글)
   small:
@@ -74,6 +87,12 @@ levels:                    # 코드 크기별 규칙 (글)
       type_hints: 내보내는(export) 함수의 인자와 반환값
       docs: 내보내는 함수 · 클래스에 무엇을 하는지 한 줄
       tests: Vitest — 핵심 동작부터
+    en:
+      lint: "Biome recommended rules"
+      typecheck: "tsconfig \"strict\": true"
+      type_hints: "arguments and return values of exported functions"
+      docs: "one line on what each exported function or class does"
+      tests: "Vitest — core behavior first"
   medium:
     ko:
       lint: 권장 규칙 + any 금지(noExplicitAny) · 쓰지 않는 변수 · import 금지
@@ -81,6 +100,12 @@ levels:                    # 코드 크기별 규칙 (글)
       type_hints: 모든 함수의 인자와 반환값, any 대신 unknown
       docs: 내보내는 모든 것에 TSDoc (@param · @returns · @throws)
       tests: Vitest
+    en:
+      lint: "recommended + no any (noExplicitAny) · no unused variables or imports"
+      typecheck: "strict + noUncheckedIndexedAccess · noImplicitOverride"
+      type_hints: "arguments and return values of every function; unknown instead of any"
+      docs: "TSDoc on everything exported (@param · @returns · @throws)"
+      tests: "Vitest"
   large:
     ko:
       lint: 중간 + 복잡도 · 안전성 규칙을 오류로
@@ -88,3 +113,9 @@ levels:                    # 코드 크기별 규칙 (글)
       type_hints: 중간과 같음
       docs: 중간 + 공개 API마다 @example
       tests: Vitest + 타입 테스트(expectTypeOf)
+    en:
+      lint: "medium + complexity and safety rules as errors"
+      typecheck: "medium + exactOptionalPropertyTypes"
+      type_hints: "same as medium"
+      docs: "medium + @example for every public API"
+      tests: "Vitest + type tests (expectTypeOf)"
