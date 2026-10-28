@@ -1,6 +1,9 @@
 """`lantern pack W-012` — work pack: the work folder + only the related current-state parts.
 
-A one-off summary for the AI (figure 9). Regenerated every time, never edited, git-ignored.
+A one-off summary for the AI. Regenerated every time, never edited, git-ignored.
+
+Not here:
+    - choosing the next task → work/tasks.py (next_task)
 """
 
 from __future__ import annotations
@@ -37,6 +40,26 @@ def _strip_guides(text: str) -> str:
 
 
 def build(project: Project, work_id: str) -> str:
+    """Build the text of a work pack.
+
+    It holds the working rules, the next task, the work's four documents without writing guides,
+    the project definition's at-a-glance part, the data source when the design touches data,
+    and every current-state document the work links to.
+
+    Args:
+        project: The project.
+        work_id: A work in progress, e.g. "W-012".
+
+    Returns:
+        The pack as Markdown.
+
+    Raises:
+        ValueError: The work is not in progress.
+
+    Example:
+        >>> build(project, "W-012").splitlines()[0]  # doctest: +SKIP
+        '# 📦 작업 꾸러미 — W-012 로그인'
+    """
     folder = project.find_work(work_id, include_archive=False)
     if folder is None:
         raise ValueError(f"진행 중인 작업 {work_id}를 찾지 못했습니다")
@@ -93,6 +116,23 @@ def build(project: Project, work_id: str) -> str:
 
 
 def run(project: Project, work_id: str, out: Path | None = None) -> Path:
+    """Build a work pack and write it (`.lantern/pack/W-012.md` by default).
+
+    Args:
+        project: The project.
+        work_id: A work in progress.
+        out: Where to write instead of the default.
+
+    Returns:
+        The written file.
+
+    Raises:
+        ValueError: The work is not in progress.
+
+    Example:
+        >>> run(project, "W-012").name  # doctest: +SKIP
+        'W-012.md'
+    """
     text = build(project, work_id)
     dest = out or (project.state / "pack" / f"{work_id.upper()}.md")
     from ..core.state import ensure_state_dir

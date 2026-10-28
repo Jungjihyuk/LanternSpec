@@ -5,8 +5,8 @@ Checked against agy 1.4.7 (its built-in agy-customizations guide and a live run)
 - rules: AGENTS.md / GEMINI.md read natively
 - hooks: `{"<hook name>": {Event: [...]}}`, run with cwd = `.agents/`; payload keys are camelCase
   (conversationId · lastUserInput · toolCall{name,args} · invocationNum · terminationReason)
-- PostToolUse can't talk back (it must print `{}`), so H-5 results wait for PostInvocation
-- no compaction hook → H-8 is not available here
+- PostToolUse can't talk back (it must print `{}`), so document-check results wait for PostInvocation
+- no compaction hook → saving progress before compaction is not available here
 - MCP has no project file; a workspace plugin (`.agents/plugins/<name>/mcp_config.json`) carries it
 """
 
@@ -25,6 +25,13 @@ PATH_ARGS = ("Path", "TargetFile", "AbsolutePath", "FilePath", "path", "file_pat
 
 
 class Antigravity(Tool):
+    """The Antigravity CLI adapter.
+
+    Example:
+        >>> Antigravity().launch
+        'agy'
+    """
+
     name = "antigravity"
     label = "Antigravity CLI"
     launch = "agy"
@@ -36,6 +43,16 @@ class Antigravity(Tool):
 
     # ---- config
     def hooks(self) -> dict[str, Any]:
+        """Build our named hook block for `.agents/hooks.json`.
+
+        Returns:
+            Antigravity event → handlers.
+
+        Example:
+            >>> sorted(Antigravity().hooks())
+            ['PostInvocation', 'PostToolUse', 'PreInvocation', 'SessionStart', 'Stop']
+        """
+
         def handler(event: str, timeout: int) -> dict[str, Any]:
             return {"type": "command", "command": self.hook_command(event), "timeout": timeout}
 
@@ -48,6 +65,22 @@ class Antigravity(Tool):
         }
 
     def install_config(self, project: Project, mcp: bool) -> list[str]:
+        """Implement Tool.install_config for Antigravity.
+
+        Our hooks are one named key in `.agents/hooks.json`; the MCP server (when asked) goes into a workspace plugin.
+
+        Args:
+            project: The project.
+            mcp: Also register the knowledge MCP server.
+
+        Returns:
+            What was merged.
+
+        Example:
+            >>> Antigravity().install_config(project, mcp=False)  # doctest: +SKIP
+            ['.agents/hooks.json (에이전트 hook — 압축 hook이 없어 압축 전 저장은 빠짐)']
+        """
+
         def merge(data: dict[str, Any]) -> dict[str, Any]:
             data[HOOK_NAME] = self.hooks()  # named hooks: ours is one key, the user's stay as they are
             return data
@@ -65,6 +98,21 @@ class Antigravity(Tool):
 
     # ---- hooks
     def parse_hook(self, event: str, data: dict[str, Any]) -> HookInput:
+        """Implement Tool.parse_hook for Antigravity's camelCase payload.
+
+        PreInvocation fires before every model call; only call 0 starts a turn.
+
+        Args:
+            event: Our hook event.
+            data: The JSON agy sent on stdin.
+
+        Returns:
+            The call in LanternSpec's words.
+
+        Example:
+            >>> Antigravity().parse_hook("prompt", {"conversationId": "c1", "invocationNum": 2}).turn_start
+            False
+        """
         call = data.get("toolCall")
         call = call if isinstance(call, dict) else {}
         args = call.get("args")
@@ -83,9 +131,38 @@ class Antigravity(Tool):
         )
 
     def written_paths(self, inp: HookInput) -> list[str]:
+        """Implement Tool.written_paths over the path arguments agy's file tools use.
+
+        Args:
+            inp: The hook call.
+
+        Returns:
+            The written paths.
+
+        Example:
+            >>> Antigravity().written_paths(HookInput(tool_input={"TargetFile": "docs/a.md"}))
+            ['docs/a.md']
+        """
         return [str(inp.tool_input[k]) for k in PATH_ARGS if inp.tool_input.get(k)]
 
     def respond(self, project: Project, event: str, result: HookResult) -> HookReply:
+        """Implement Tool.respond for Antigravity.
+
+        post-tool always prints `{}` and holds its messages until feedback (PostInvocation) injects them;
+        a stop notice asks the agent to pass it on; context is injected as a system message.
+
+        Args:
+            project: The project.
+            event: Our hook event.
+            result: What the hook wants to say.
+
+        Returns:
+            What to print and the exit code.
+
+        Example:
+            >>> Antigravity().respond(project, "post-tool", HookResult(block="양식이 깨졌습니다")).stdout  # doctest: +SKIP
+            '{}'
+        """
         if event == "post-tool":
             self._hold(project, [m for m in (result.block, result.context) if m])
             return HookReply(stdout="{}")
@@ -99,7 +176,7 @@ class Antigravity(Tool):
             )
         return _inject(result.context)
 
-    # H-5 results wait here between PostToolUse and PostInvocation
+    # document-check results wait here between PostToolUse and PostInvocation
     def _pending(self, project: Project) -> Path:
         return hook_state_dir(project) / "antigravity-pending.json"
 

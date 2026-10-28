@@ -1,8 +1,13 @@
-"""Run log `.lantern/runs.jsonl` — the raw material for evaluation. For now it only accumulates (H-6).
+"""Run log `.lantern/runs.jsonl` — the raw material for evaluation. For now it only accumulates.
 
 Two writers, one format:
-* agent hooks (Claude Code): per turn — start · end · model · skill · tool counts
-* `lantern close <skill>` (P4): tools without agent hooks still leave one line per skill run
+* agent hooks: per turn — start · end · model · skill · tool counts
+* `lantern close <skill>`: tools without agent hooks still leave one line per skill run
+
+Per-session state between hook calls lives in `.lantern/runs-state/`.
+
+Not here:
+    - reading the log → report/evaluate.py
 """
 
 from __future__ import annotations
@@ -25,6 +30,15 @@ def _state_file(project: Project, session: str) -> Path:
 
 
 def append(project: Project, record: dict[str, Any]) -> None:
+    """Append one record to the run log.
+
+    Args:
+        project: The project.
+        record: The record (written as one JSON line, sorted keys).
+
+    Example:
+        >>> append(project, {"kind": "skill", "skill": "l-build"})  # doctest: +SKIP
+    """
     ensure_state_dir(project)
     with (project.state / RUNS).open("a", encoding="utf-8") as f:
         f.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
@@ -47,6 +61,17 @@ def _save(project: Project, session: str, data: dict[str, Any]) -> None:
 
 
 def session_start(project: Project, session: str, model: str | None, source: str = "") -> None:
+    """Remember the model and how the session started.
+
+    Args:
+        project: The project.
+        session: The conversation.
+        model: The model, when the tool sent it.
+        source: "startup", "resume" or "compact".
+
+    Example:
+        >>> session_start(project, "s1", "claude-opus-5-5", "startup")  # doctest: +SKIP
+    """
     data = _load(project, session)
     if model:
         data["model"] = model
@@ -55,6 +80,16 @@ def session_start(project: Project, session: str, model: str | None, source: str
 
 
 def prompt(project: Project, session: str, text: str) -> None:
+    """Mark the start of a turn and which skill (`/l-…` or `$l-…`) started it.
+
+    Args:
+        project: The project.
+        session: The conversation.
+        text: The user's message.
+
+    Example:
+        >>> prompt(project, "s1", "/l-build W-012")  # doctest: +SKIP
+    """
     data = _load(project, session)
     if not data.get("start"):
         data["start"] = now_iso()
@@ -65,6 +100,17 @@ def prompt(project: Project, session: str, text: str) -> None:
 
 
 def tool(project: Project, session: str, tool_name: str, tool_input: dict | None = None) -> None:
+    """Count one tool call (a Skill call also names the turn's skill).
+
+    Args:
+        project: The project.
+        session: The conversation.
+        tool_name: The tool that ran.
+        tool_input: Its input.
+
+    Example:
+        >>> tool(project, "s1", "Edit")  # doctest: +SKIP
+    """
     data = _load(project, session)
     if not data.get("start"):
         data["start"] = now_iso()
@@ -79,6 +125,20 @@ def tool(project: Project, session: str, tool_name: str, tool_input: dict | None
 
 
 def stop(project: Project, session: str, model: str | None = None) -> dict[str, Any] | None:
+    """Write the turn's record and start the next turn fresh (the model is kept).
+
+    Args:
+        project: The project.
+        session: The conversation.
+        model: The model, when the tool sent it now.
+
+    Returns:
+        The record; None when nothing happened in the turn.
+
+    Example:
+        >>> stop(project, "s1")["tool_calls"]  # doctest: +SKIP
+        4
+    """
     data = _load(project, session)
     if model:
         data["model"] = model
@@ -102,6 +162,22 @@ def stop(project: Project, session: str, model: str | None = None) -> dict[str, 
 
 
 def skill_run(project: Project, skill: str, start: str | None, model: str | None, extra: dict[str, Any]) -> dict[str, Any]:
+    """Write one skill-run record (from `lantern close`).
+
+    Args:
+        project: The project.
+        skill: The skill.
+        start: When it started.
+        model: The model in use.
+        extra: More fields, e.g. work, check counts and the configuration.
+
+    Returns:
+        The record.
+
+    Example:
+        >>> skill_run(project, "l-build", None, None, {"work": "W-012"})["kind"]  # doctest: +SKIP
+        'skill'
+    """
     record = {"kind": "skill", "source": "close", "skill": skill, "start": start, "end": now_iso(), "model": model, **extra}
     append(project, record)
     return record

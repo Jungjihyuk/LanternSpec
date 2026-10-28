@@ -1,4 +1,4 @@
-"""배우는 선로: 지식 연결기(search · read · propose · write) + 부채 장부."""
+"""The learning line: the knowledge connector (search · read · propose · write) + the debt ledger."""
 
 from conftest import docs, init_project
 from lanternspec.core import frontmatter

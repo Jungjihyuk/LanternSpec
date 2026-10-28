@@ -1,5 +1,5 @@
-"""08 · 09의 '나중 · 다음 버전' 항목: H-9 · H-10 · Notion · 역량 부채 · Figma/Canva ·
-AI 작업 평가 · 작업 방식 추천 · [P] 병렬 · 예정일 제안 · 시안 자동 비교 · 큰 반복."""
+"""Features added after the first version: tech-question and idea detection · Notion · competency debt · Figma/Canva ·
+AI work evaluation · work-mode suggestion · [P] parallel tasks · due-date suggestions · mockup comparison · the big loop."""
 
 import json
 import struct
@@ -31,7 +31,7 @@ def _ctx(r):
     return json.loads(r.stdout)["hookSpecificOutput"]["additionalContext"] if r.stdout.strip() else ""
 
 
-# --------------------------------------------------------------------------- H-9 · H-10
+# --------------------------------------------------------------------------- tech-question · idea detection
 
 
 def test_h9_learning_question_detection(repo, vault):
@@ -130,7 +130,7 @@ def test_notion_adapter_contract():
     assert kinds == ["heading_1", "bulleted_list_item", "quote", "code", "paragraph"]
 
 
-# --------------------------------------------------------------------------- 역량 부채
+# --------------------------------------------------------------------------- competency debt
 
 
 def test_competency_debt_flow(repo, vault):
@@ -288,7 +288,7 @@ def test_ci_workflow(repo):
     assert "lantern scan --tests" in runs and "lantern check --quiet" in runs and "lantern lint" in runs
     repo("upgrade")
     assert wf.exists()
-    # 언어가 정해지면 그 언어 실행기의 도구 준비 단계가 검사보다 먼저 들어간다 (실행기는 lock 파일로)
+    # once a language is set, its runner's setup steps come before the checks (the runner comes from the lock file)
     (repo.root / "package.json").write_text("{}", encoding="utf-8")
     (repo.root / "yarn.lock").write_text("", encoding="utf-8")
     init_project(repo)
@@ -303,12 +303,12 @@ def test_ci_workflow(repo):
     )
     runs = [s.get("run") for s in steps]
     assert "uv sync" in runs and "npm install -g yarn && yarn install" in runs
-    # 끄기: 고치지 않은 workflow는 지우고, 다음 upgrade에서도 다시 생기지 않는다
+    # turning it off: an unedited workflow is removed and does not come back on the next upgrade
     repo("install", "--no-ci")
     assert not wf.exists()
     repo("upgrade")
     assert not wf.exists()
-    # 고친 workflow는 끄더라도 지우지 않는다
+    # an edited workflow is never removed, even when turned off
     repo("install", "--ci")
     wf.write_text(wf.read_text(encoding="utf-8") + "# 우리 팀 단계\n", encoding="utf-8")
     code, out = repo("install", "--no-ci")
@@ -340,7 +340,7 @@ def test_codex_agent_hooks(repo, vault):
     out = json.loads(_hook_as(repo.root, "session-start", "codex", {"session_id": "s", "source": "startup"}).stdout)
     assert out["hookSpecificOutput"]["hookEventName"] == "SessionStart"
     assert "W-001 작업" in out["hookSpecificOutput"]["additionalContext"]
-    # apply_patch → H-5 on the patched doc
+    # apply_patch → the document check runs on the patched doc
     plan = docs(repo) / "2. 작업/W-001 작업/기획.md"
     plan.write_text(plan.read_text(encoding="utf-8").replace("## 왜", "## 이유"), encoding="utf-8")
     patch = f"*** Begin Patch\n*** Update File: {plan}\n@@\n-## 왜\n+## 이유\n*** End Patch\n"
@@ -370,7 +370,7 @@ def test_antigravity_agent_hooks(repo, vault):
     steps = json.loads(hook("session-start").stdout)["injectSteps"]
     assert "W-001 작업" in steps[0]["systemMessage"]["systemMessage"]
     hook("prompt", invocationNum=0, initialNumSteps=1)
-    # write_file on a broken doc: PostToolUse must answer {} — the H-5 result comes at PostInvocation
+    # write_file on a broken doc: PostToolUse must answer {} — the document-check result comes at PostInvocation
     plan = docs(repo) / "2. 작업/W-001 작업/기획.md"
     plan.write_text(plan.read_text(encoding="utf-8").replace("## 왜", "## 이유"), encoding="utf-8")
     r = hook("post-tool", stepIdx=2, toolCall={"name": "write_file", "args": {"Path": str(plan), "Content": "…"}})
@@ -385,7 +385,7 @@ def test_antigravity_agent_hooks(repo, vault):
     assert json.loads(hook("prompt", invocationNum=1, lastUserInput="JWT가 뭐야?").stdout) == {}
     steps = json.loads(hook("prompt", invocationNum=0, lastUserInput="JWT가 뭐야?").stdout)["injectSteps"]
     assert "LanternSpec 기술 질문" in steps[0]["systemMessage"]["systemMessage"]
-    # H-7 at Stop: keep going once so the agent tells the user; never on errors
+    # sync suggestion at Stop: keep going once so the agent tells the user; never on errors
     repo("work", "stage", "W-001", "구현")
     repo.git("add", "-A")
     repo.git("commit", "-qm", "docs: 시작")

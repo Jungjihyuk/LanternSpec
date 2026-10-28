@@ -1,4 +1,4 @@
-"""scripts/changelog.py — make release가 CHANGELOG에 버전을 찍는 규칙."""
+"""scripts/changelog.py — how make release stamps the version into the changelogs."""
 
 import doctest
 import importlib.util
@@ -21,7 +21,7 @@ def test_both_real_changelogs_can_be_stamped():
     for name in changelog.FILES:
         text = (ROOT / name).read_text(encoding="utf-8")
         if "## [Unreleased]\n\n## [" in text:
-            continue  # 비어 있으면 찍을 수 없는 게 맞다
+            continue  # an empty section must not be stamped
         out = changelog.stamp(text, "9.9.9", "2099-01-01")
         assert "## [9.9.9] - 2099-01-01" in out and "/compare/v9.9.9...HEAD" in out
 

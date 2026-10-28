@@ -1,4 +1,7 @@
-"""Obsidian folder adapter (llm-wiki included): reads files directly, never reorganises the vault."""
+"""Obsidian folder adapter (llm-wiki included): reads files directly, never reorganises the vault.
+
+Also serves `knowledge.type: folder` — any folder of Markdown files.
+"""
 
 from __future__ import annotations
 
@@ -34,9 +37,29 @@ def _summary(meta: dict, body: str) -> str:
 
 
 class ObsidianAdapter(Adapter):
+    """A knowledge store that is a folder of Markdown files (an Obsidian vault or any folder).
+
+    Hidden folders and tool folders (`.obsidian`, `node_modules` …) are skipped.
+
+    Attributes:
+        root: The store folder.
+
+    Example:
+        >>> ObsidianAdapter(Path("~/vault").expanduser()).search("JWT")[0].path  # doctest: +SKIP
+        '개발/JWT.md'
+    """
+
     name = "obsidian"
 
     def __init__(self, root: Path) -> None:
+        """Open a store folder.
+
+        Args:
+            root: The store folder.
+
+        Raises:
+            KnowledgeError: The folder does not exist.
+        """
         self.root = root.resolve()
         if not self.root.exists():
             raise KnowledgeError(f"지식 저장소 폴더가 없습니다: {root}")
@@ -49,6 +72,22 @@ class ObsidianAdapter(Adapter):
             yield p
 
     def search(self, query: str, aliases: list[str] | None = None, limit: int = 5) -> list[Hit]:
+        """Implement Adapter.search over file names, aliases, headings, body text and tags.
+
+        An exact title scores most, then an alias, a title containing the term, headings, and body mentions.
+
+        Args:
+            query: The term.
+            aliases: Other names for the term.
+            limit: Most results to return.
+
+        Returns:
+            The best matches, best first.
+
+        Example:
+            >>> ObsidianAdapter(vault).search("JWT", ["JSON Web Token"])[0].score  # doctest: +SKIP
+            180
+        """
         terms = [t for t in [query, *(aliases or [])] if t and t.strip()]
         nterms = [_norm(t) for t in terms]
         lterms = [nfc(t).lower() for t in terms]
@@ -96,12 +135,43 @@ class ObsidianAdapter(Adapter):
         return hits[:limit]
 
     def read(self, path: str) -> str:
+        r"""Implement Adapter.read for a file inside the store.
+
+        Args:
+            path: The note's path, relative to the store root.
+
+        Returns:
+            The note's text.
+
+        Raises:
+            KnowledgeError: The file does not exist or is outside the store.
+
+        Example:
+            >>> ObsidianAdapter(vault).read("개발/JWT.md")  # doctest: +SKIP
+            '# JWT\n…'
+        """
         p = (self.root / path).resolve()
         if self.root not in p.parents or not p.exists():
             raise KnowledgeError(f"노트를 찾지 못했습니다: {path}")
         return p.read_text(encoding="utf-8")
 
     def write(self, rel_path: str, content: str) -> str:
+        r"""Implement Adapter.write by creating a new file inside the store.
+
+        Args:
+            rel_path: Where to create it, relative to the store root.
+            content: The note's text.
+
+        Returns:
+            The created file, relative to the store root.
+
+        Raises:
+            KnowledgeError: The path is outside the store, or a file is already there.
+
+        Example:
+            >>> ObsidianAdapter(vault).write("개발/JWT.md", "# JWT\n")  # doctest: +SKIP
+            '개발/JWT.md'
+        """
         p = (self.root / rel_path).resolve()
         if self.root not in p.parents:
             raise KnowledgeError("저장소 밖에는 쓸 수 없습니다")
@@ -112,6 +182,18 @@ class ObsidianAdapter(Adapter):
         return nfc(str(p.relative_to(self.root)))
 
     def areas(self, folder: str) -> list[str]:
+        """Implement Adapter.areas: the subfolders of a folder.
+
+        Args:
+            folder: A folder of the store.
+
+        Returns:
+            Subfolder names, sorted; empty when the folder does not exist.
+
+        Example:
+            >>> ObsidianAdapter(vault).areas("개발")  # doctest: +SKIP
+            ['백엔드', '프론트']
+        """
         base = self.root / folder
         if not base.is_dir():
             return []

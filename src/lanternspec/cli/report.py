@@ -9,6 +9,7 @@ from .common import Add, CliError, _csv, _p, _print
 
 
 def cmd_report(a: argparse.Namespace) -> int:
+    """`lantern report` — write the report views (with up to three summary lines)."""
     from ..report import views as report
 
     project = _p()
@@ -20,6 +21,7 @@ def cmd_report(a: argparse.Namespace) -> int:
 
 
 def cmd_status(a: argparse.Namespace) -> int:
+    """`lantern status` — print the three-line current status."""
     from ..report.status import lines
 
     _print(lines(_p()))
@@ -27,6 +29,7 @@ def cmd_status(a: argparse.Namespace) -> int:
 
 
 def cmd_scan(a: argparse.Namespace) -> int:
+    """`lantern scan` — find docs-vs-code drift (text or JSON)."""
     from ..report import scan
 
     res = scan.run(_p(), rev=a.range, limit=a.limit, tests=a.tests)
@@ -35,6 +38,7 @@ def cmd_scan(a: argparse.Namespace) -> int:
 
 
 def cmd_sync(a: argparse.Namespace) -> int:
+    """`lantern sync adopt` — record what /l-sync decided about an unowned change."""
     from ..report import scan
 
     project = _p()
@@ -48,6 +52,7 @@ def cmd_sync(a: argparse.Namespace) -> int:
 
 
 def cmd_map(a: argparse.Namespace) -> int:
+    """`lantern map` — rewrite the MOC's generated block."""
     project = _p()
     from ..report import doc_map
 
@@ -56,6 +61,7 @@ def cmd_map(a: argparse.Namespace) -> int:
 
 
 def cmd_eval(a: argparse.Namespace) -> int:
+    """`lantern eval` — show the AI work evaluation (text or JSON)."""
     from ..report import evaluate
 
     project = _p()
@@ -67,6 +73,7 @@ def cmd_eval(a: argparse.Namespace) -> int:
 
 
 def cmd_harness(a: argparse.Namespace) -> int:
+    """`lantern harness suggest [--apply]` — suggest a work mode for the project size, and apply it when asked."""
     from ..core import profile as pm
     from ..core.project import read, write
     from ..report import harness
@@ -114,6 +121,7 @@ def cmd_obsidian(a: argparse.Namespace) -> int:
 
 
 def register(add: Add) -> None:
+    """Register the report and sync commands."""
     p = add("report", cmd_report, "현황 보고 생성")
     p.add_argument("--views")
     p.add_argument("--summary", nargs="+", help="팀장 보고 3줄")

@@ -11,6 +11,7 @@ from .common import Add, CliError, _p
 
 
 def cmd_knowledge(a: argparse.Namespace) -> int:
+    """`lantern knowledge search|read|propose|write|areas` — talk to the knowledge store."""
     from ..learn.knowledge import adapter_for, drafts
 
     project = _p()
@@ -61,6 +62,7 @@ def cmd_knowledge(a: argparse.Namespace) -> int:
 
 
 def cmd_debt(a: argparse.Namespace) -> int:
+    """`lantern debt find|new|ask|resolve|promote|practice|known|status|list` — the debt ledger."""
     from ..learn import debt
 
     project = _p()
@@ -134,12 +136,14 @@ def cmd_debt(a: argparse.Namespace) -> int:
 
 
 def cmd_mcp(a: argparse.Namespace) -> int:
+    """`lantern mcp` — serve the knowledge contract as an MCP server over stdio."""
     from ..learn.knowledge.mcp_server import serve
 
     return serve(_p())
 
 
 def register(add: Add) -> None:
+    """Register the learning-line commands."""
     p = add("knowledge", cmd_knowledge, "지식 연결기: search · read · propose · write · areas")
     p.add_argument("action", choices=["search", "read", "propose", "write", "areas"])
     p.add_argument("arg", nargs="?")

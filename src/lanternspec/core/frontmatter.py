@@ -1,4 +1,14 @@
-"""Read and edit YAML frontmatter without disturbing the rest of the file."""
+"""Read and edit YAML frontmatter without disturbing the rest of the file.
+
+Responsibilities:
+    - split a document into frontmatter and body, reporting broken YAML instead of raising
+    - change, add or delete frontmatter keys while keeping other lines and comments as written
+    - small converters for frontmatter values (as_list · as_str)
+
+Not here:
+    - which values a field may hold → core/enums.py (rules_for)
+    - the `lantern meta` command → core/meta.py
+"""
 
 from __future__ import annotations
 
@@ -15,6 +25,21 @@ _KEY_RE = re.compile(r"^([A-Za-z0-9_\-가-힣]+)\s*:")
 
 @dataclass
 class Doc:
+    r"""A document split into frontmatter and body.
+
+    Attributes:
+        meta: The parsed frontmatter; empty when there is none or it is broken.
+        body: Everything after the closing `---`.
+        raw_meta: The frontmatter text as written; None when the document has none.
+        error: Why the frontmatter could not be read; None when it was fine.
+        body_offset: The 0-based line number where the body starts.
+
+    Example:
+        >>> doc = parse("---\ntype: idea\n---\n# 제목\n")
+        >>> doc.meta, doc.body, doc.body_offset
+        ({'type': 'idea'}, '# 제목\n', 3)
+    """
+
     meta: dict[str, Any] = field(default_factory=dict)
     body: str = ""
     raw_meta: str | None = None
@@ -23,10 +48,28 @@ class Doc:
 
     @property
     def has_frontmatter(self) -> bool:
+        """Whether the document starts with a `---` block (even a broken one)."""
         return self.raw_meta is not None
 
 
 def parse(text: str) -> Doc:
+    r"""Split a document into frontmatter and body.
+
+    Args:
+        text: The whole document.
+
+    Returns:
+        The split document. Broken YAML, or frontmatter that is not a mapping,
+        gives an empty meta with error set — it never raises.
+
+    Example:
+        >>> parse("---\nstatus: 🆕 새것\n---\n본문").meta
+        {'status': '🆕 새것'}
+        >>> parse("---\n- a\n---\n").error
+        'frontmatter가 키: 값 형태가 아닙니다'
+        >>> parse("본문만").has_frontmatter
+        False
+    """
     m = _FM_RE.match(text)
     if not m:
         return Doc(meta={}, body=text, raw_meta=None)
@@ -84,9 +127,27 @@ def _block_key(block: list[str]) -> str | None:
 
 
 def set_fields(text: str, updates: dict[str, Any], *, touch: bool = True) -> str:
-    """Return text with frontmatter keys replaced/added. Other lines stay as they were.
+    r"""Replace or add frontmatter keys; every other line stays as written.
 
-    ``touch`` refreshes ``updated`` when the document already tracks it.
+    Comments above a replaced key are kept. Pass DELETE as a value to remove a key.
+    A document without frontmatter gets a new block with just the updates.
+
+    Args:
+        text: The whole document.
+        updates: Key → new value (DELETE removes the key).
+        touch: Also set `updated` to today when the document already has that key.
+
+    Returns:
+        The document with the new frontmatter.
+
+    Example:
+        >>> text = "---\n# 상태\nstatus: 새것\ntags: [a]\n---\n본문\n"
+        >>> print(set_fields(text, {"status": "검토", "tags": DELETE}), end="")
+        ---
+        # 상태
+        status: 검토
+        ---
+        본문
     """
     m = _FM_RE.match(text)
     updates = dict(updates)
@@ -130,11 +191,43 @@ DELETE = _DELETE
 
 
 def render(meta: dict[str, Any], body: str) -> str:
+    r"""Build a document from a frontmatter mapping and a body.
+
+    Dates are written unquoted and lists of plain values stay on one line.
+
+    Args:
+        meta: Frontmatter keys and values, in the order to write them.
+        body: The text after the frontmatter.
+
+    Returns:
+        The whole document.
+
+    Example:
+        >>> print(render({"type": "debt", "links": ["[[a]]"], "created": "2026-10-28"}, "# D-001\n"), end="")
+        ---
+        type: debt
+        links: ['[[a]]']
+        created: 2026-10-28
+        ---
+        # D-001
+    """
     head = "\n".join(_dump_value(k, v) for k, v in meta.items())
     return f"---\n{head}\n---\n{body}"
 
 
 def as_list(value: Any) -> list[Any]:
+    """Read a frontmatter value that may be one item or a list.
+
+    Args:
+        value: The raw value.
+
+    Returns:
+        A list: empty for None or "", the list itself, or the single value wrapped.
+
+    Example:
+        >>> as_list(None), as_list("a"), as_list(["a", "b"])
+        ([], ['a'], ['a', 'b'])
+    """
     if value is None or value == "":
         return []
     if isinstance(value, list):
@@ -143,6 +236,19 @@ def as_list(value: Any) -> list[Any]:
 
 
 def as_str(value: Any) -> str:
+    """Read a frontmatter value as text (YAML turns `2026-10-28` into a date).
+
+    Args:
+        value: The raw value.
+
+    Returns:
+        "" for None, ISO text for dates, str() otherwise.
+
+    Example:
+        >>> import datetime
+        >>> as_str(datetime.date(2026, 10, 28)), as_str(None), as_str(3)
+        ('2026-10-28', '', '3')
+    """
     if value is None:
         return ""
     if isinstance(value, (_dt.date, _dt.datetime)):

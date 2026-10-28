@@ -1,4 +1,11 @@
-"""`lantern doctor` — does the project's real structure match lantern.yaml? One look at everything."""
+"""`lantern doctor` — does the project's real structure match lantern.yaml? One look at everything.
+
+Checks lantern.yaml, the `lantern` command, git and its hooks, the docs storage mode, templates,
+enums.yaml, the MOC, the knowledge store, installed skills, AGENTS.md and the code size.
+
+Not here:
+    - fixing anything — each row names the command that fixes it
+"""
 
 from __future__ import annotations
 
@@ -15,6 +22,18 @@ OK, WARN, BAD = "✔", "⚠", "✖"
 
 
 def run(project: Project) -> list[tuple[str, str]]:
+    """Check the project and return one row per check.
+
+    Args:
+        project: The project.
+
+    Returns:
+        (icon, message) rows; the icon is OK, WARN or BAD.
+
+    Example:
+        >>> run(project)[0]  # doctest: +SKIP
+        ('✔', 'lantern.yaml 형식')
+    """
     out: list[tuple[str, str]] = []
     p = project.profile
     if not p.exists:
@@ -106,6 +125,20 @@ def _code_size_row(project: Project) -> tuple[str, str]:
 
 
 def format_result(rows: list[tuple[str, str]]) -> str:
+    """Write doctor rows as text with a closing summary line.
+
+    Args:
+        rows: (icon, message) rows from run.
+
+    Returns:
+        One line per row, then "all fine" or the counts of problems.
+
+    Example:
+        >>> print(format_result([(OK, "lantern.yaml 형식"), (WARN, "MOC가 없습니다 — lantern map")]))
+        ✔ lantern.yaml 형식
+        ⚠ MOC가 없습니다 — lantern map
+        ✖ 0개 · ⚠ 1개
+    """
     bad = sum(1 for r in rows if r[0] == BAD)
     warn = sum(1 for r in rows if r[0] == WARN)
     lines = [f"{icon} {msg}" for icon, msg in rows]

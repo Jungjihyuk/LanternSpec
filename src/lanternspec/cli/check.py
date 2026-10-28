@@ -9,6 +9,7 @@ from .common import Add, CliError, _p, _print
 
 
 def cmd_check(a: argparse.Namespace) -> int:
+    """`lantern check` — check document formats (all, changed, or given documents; `--epic` for acceptance criteria)."""
     from ..check import check_docs
     from ..work import epic_rules
 
@@ -40,6 +41,7 @@ def cmd_check(a: argparse.Namespace) -> int:
 
 
 def cmd_template(a: argparse.Namespace) -> int:
+    """`lantern template …` — list, lint, version and migrate templates."""
     from ..check import templates as tc
 
     project = _p()
@@ -97,6 +99,7 @@ def cmd_template(a: argparse.Namespace) -> int:
 
 
 def cmd_legacy(a: argparse.Namespace) -> int:
+    """`lantern legacy adopt|todos` — keep existing documents in `5. 기존 문서/`, or list their TODOs."""
     from ..check import legacy
 
     project = _p()
@@ -113,6 +116,7 @@ def cmd_legacy(a: argparse.Namespace) -> int:
 
 
 def cmd_hooks(a: argparse.Namespace) -> int:
+    """`lantern hooks install|uninstall|status` — manage the git hooks."""
     from ..check import githooks
 
     project = _p()
@@ -127,6 +131,7 @@ def cmd_hooks(a: argparse.Namespace) -> int:
 
 
 def cmd_doctor(a: argparse.Namespace) -> int:
+    """`lantern doctor` — check that the project's structure matches lantern.yaml."""
     from ..check import doctor
 
     rows = doctor.run(_p())
@@ -156,6 +161,7 @@ def cmd_lint(a: argparse.Namespace) -> int:
 
 
 def register(add: Add) -> None:
+    """Register the check and template commands."""
     p = add("check", cmd_check, "양식 검사")
     p.add_argument("paths", nargs="*")
     p.add_argument("--changed", action="store_true")

@@ -1,7 +1,14 @@
 """Issue IDs: IDEA-001 · W-012 · W-012-T03 · ADR-004 · D-007 · MTG-001.
 
 The next number is always max(existing)+1, found by scanning file names, frontmatter
-and task lines — so the same project state always yields the same ID (P1).
+and task lines — so the same project state always yields the same ID.
+
+Responsibilities:
+    - the next document ID of each kind (IDEA · W · ADR · D · MTG)
+    - the next task ID inside a work
+
+Not here:
+    - creating the document that carries the ID → work/scaffold.py
 """
 
 from __future__ import annotations
@@ -33,6 +40,24 @@ def _numbers(prefix: str, texts: Iterable[str]) -> Iterable[int]:
 
 
 def next_id(project: Project, kind: str) -> str:
+    """Return the next free ID of a kind.
+
+    File names, `id` frontmatter fields and (for works) `work/W-…` branches all reserve numbers.
+
+    Args:
+        project: The project.
+        kind: "idea", "work", "adr", "debt" or "meeting" (aliases such as "w", "d", "decision" work too).
+
+    Returns:
+        The ID, e.g. "W-013".
+
+    Raises:
+        ValueError: The kind is unknown.
+
+    Example:
+        >>> next_id(project, "debt")  # doctest: +SKIP
+        'D-008'
+    """
     kind = ALIASES.get(kind, kind)
     if kind not in KINDS:
         raise ValueError(f"알 수 없는 ID 종류: {kind} (가능: {', '.join(KINDS)} · task W-012)")
@@ -60,6 +85,23 @@ def next_id(project: Project, kind: str) -> str:
 
 
 def next_task_id(project: Project, work_id: str, tasks_file: Path | None = None) -> str:
+    """Return the next task ID of a work.
+
+    Args:
+        project: The project.
+        work_id: The work, e.g. "W-012".
+        tasks_file: The task list to read; the work's `할 일.md` when None.
+
+    Returns:
+        The task ID, e.g. "W-012-T03".
+
+    Raises:
+        ValueError: tasks_file is None and the work folder does not exist.
+
+    Example:
+        >>> next_task_id(project, "W-012")  # doctest: +SKIP
+        'W-012-T03'
+    """
     work_id = work_id.upper()
     if tasks_file is None:
         work = project.find_work(work_id)

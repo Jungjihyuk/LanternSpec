@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 
 
 def cmd_install(a: argparse.Namespace) -> int:
+    """`lantern install` — install skills, rules and hooks for the chosen AI tools, then show the next steps."""
     from ..tools.install import install
 
     project = _p()
@@ -62,6 +63,7 @@ def _next_steps(project: Project) -> list[str]:
 
 
 def cmd_upgrade(a: argparse.Namespace) -> int:
+    """`lantern upgrade` — refresh what install wrote, and template copies nobody edited."""
     from ..tools.install import upgrade
 
     _print(upgrade(_p(), force=a.force).lines())
@@ -69,6 +71,7 @@ def cmd_upgrade(a: argparse.Namespace) -> int:
 
 
 def cmd_build_adapters(a: argparse.Namespace) -> int:
+    """`lantern build-adapters` — write every tool's skill files into a folder, without installing."""
     from ..core.project import write
     from ..tools import NAMES, resolve
     from ..tools.skills import generate
@@ -83,6 +86,7 @@ def cmd_build_adapters(a: argparse.Namespace) -> int:
 
 
 def cmd_docs_mode(a: argparse.Namespace) -> int:
+    """`lantern docs-mode local|shared` — switch how documents are stored."""
     from ..tools import docs_mode
 
     project = _p()
@@ -92,6 +96,7 @@ def cmd_docs_mode(a: argparse.Namespace) -> int:
 
 
 def cmd_hook(a: argparse.Namespace) -> int:
+    """`lantern hook <event>` (internal) — handle an agent or git hook; never stops the agent."""
     from ..check import githooks
     from ..tools import agent_hooks, get
 
@@ -119,6 +124,7 @@ def cmd_hook(a: argparse.Namespace) -> int:
 
 
 def cmd_close(a: argparse.Namespace) -> int:
+    """`lantern close <skill>` — every skill's common close: check → map → debt status → run record."""
     from ..tools import close
 
     _print(close.close(_p(), a.skill, work=a.work, start=a.start, model=a.model, check=not a.no_check, do_map=not a.no_map))
@@ -126,6 +132,7 @@ def cmd_close(a: argparse.Namespace) -> int:
 
 
 def register(add: Add) -> None:
+    """Register the AI-tool commands."""
     p = add("install", cmd_install, "스킬 · 규칙 · 에이전트 hook을 AI 도구 폴더에 설치 (/l-init 전에)")
     p.add_argument("--tools", help="claude,codex,antigravity (기본 claude)")
     p.add_argument("--force", action="store_true", help="사용자가 고친 파일도 덮어쓰기")

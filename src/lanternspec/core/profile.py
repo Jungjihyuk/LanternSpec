@@ -2,6 +2,15 @@
 
 Only human answers live in the file. Everything derived (enabled docs, folder paths)
 is computed here on demand (one fact, one place).
+
+Responsibilities:
+    - defaults, allowed values and validation of lantern.yaml
+    - read, write (with explanatory comments) and update lantern.yaml
+    - the document folders and which documents the answers turn on
+
+Not here:
+    - creating the folders and documents → work/scaffold.py
+    - the principle and convention tables behind kind · languages · code_size → core/principles.py
 """
 
 from __future__ import annotations
@@ -79,7 +88,7 @@ LIST_CHOICES: dict[str, tuple[str, ...]] = {
 }
 MIN_INTS: dict[str, int] = {"plan.max_questions": 1, "learn.max_candidates": 1, "check.max_lines": 20, "build.loop_limit": 1}
 
-# Code paths whose change means "the schema changed" (H-2). Overridable via git.schema_paths.
+# Code paths whose change means "the schema changed" (the schema-record check). Overridable via git.schema_paths.
 DEFAULT_SCHEMA_PATHS = [
     "**/migrations/**",
     "**/migration/**",
@@ -102,6 +111,22 @@ def _deep_merge(base: dict[str, Any], over: dict[str, Any]) -> dict[str, Any]:
 
 
 def get_path(data: dict[str, Any], dotted: str, default: Any = None) -> Any:
+    """Read a value from nested mappings by a dotted key.
+
+    Args:
+        data: Nested mappings, e.g. the parsed lantern.yaml.
+        dotted: Key such as "project.team".
+        default: Returned when any part of the key is missing.
+
+    Returns:
+        The value, or default.
+
+    Example:
+        >>> get_path({"project": {"team": "solo"}}, "project.team")
+        'solo'
+        >>> get_path({}, "project.team", "none")
+        'none'
+    """
     cur: Any = data
     for part in dotted.split("."):
         if not isinstance(cur, dict) or part not in cur:
@@ -111,6 +136,19 @@ def get_path(data: dict[str, Any], dotted: str, default: Any = None) -> Any:
 
 
 def set_path(data: dict[str, Any], dotted: str, value: Any) -> None:
+    """Set a value in nested mappings by a dotted key, creating the mappings on the way.
+
+    Args:
+        data: Nested mappings, changed in place.
+        dotted: Key such as "build.test".
+        value: The new value.
+
+    Example:
+        >>> data = {}
+        >>> set_path(data, "build.test", "uv run pytest")
+        >>> data
+        {'build': {'test': 'uv run pytest'}}
+    """
     parts = dotted.split(".")
     cur = data
     for part in parts[:-1]:
@@ -122,36 +160,68 @@ def set_path(data: dict[str, Any], dotted: str, value: Any) -> None:
 
 @dataclass
 class Profile:
+    """The settings of one project: lantern.yaml merged over the defaults.
+
+    Attributes:
+        data: All settings, defaults filled in.
+        path: Where lantern.yaml lives (or would live).
+        exists: Whether lantern.yaml exists.
+
+    Example:
+        >>> profile = Profile(data={"project": {"team": "team", "clients": ["web"]}})
+        >>> profile.team, profile.clients, profile.docs_root
+        (True, ['web'], 'docs')
+    """
+
     data: dict[str, Any]
     path: Path | None = None
     exists: bool = False
 
     def get(self, dotted: str, default: Any = None) -> Any:
+        """Read a setting by a dotted key.
+
+        Args:
+            dotted: Key such as "plan.ac_format".
+            default: Returned when the key is missing.
+
+        Returns:
+            The value, or default.
+
+        Example:
+            >>> Profile(data={"plan": {"ac_format": "simple"}}).get("plan.ac_format")
+            'simple'
+        """
         return get_path(self.data, dotted, default)
 
     # convenient accessors
     @property
     def docs_root(self) -> str:
+        """The documents root without a trailing slash (`docs` by default)."""
         return str(self.get("docs.root", "docs/")).rstrip("/") or "docs"
 
     @property
     def remote(self) -> str:
+        """How documents are stored: "shared" (pushed with the code) or "local"."""
         return self.get("docs.remote", "shared")
 
     @property
     def team(self) -> bool:
+        """Whether two or more people work on the project."""
         return self.get("project.team") == "team"
 
     @property
     def clients(self) -> list[str]:
+        """Screen types the project has (web · desktop · mobile)."""
         return list(self.get("project.clients") or [])
 
     @property
     def server(self) -> str:
+        """Server kind: "none", "external" (a backend service) or "custom" (own server code)."""
         return self.get("project.server", "none")
 
     @property
     def knowledge(self) -> dict[str, Any] | None:
+        """The knowledge store settings with defaults filled in; None when there is no store."""
         k = self.data.get("knowledge")
         if not k:
             return None
@@ -164,14 +234,31 @@ class Profile:
 
     @property
     def brownfield(self) -> bool:
+        """Whether the project started from existing code."""
         return self.get("project.origin") == "brownfield"
 
     @property
     def schema_paths(self) -> list[str]:
+        """Glob patterns of schema files (git.schema_paths, else the defaults)."""
         return list(self.get("git.schema_paths") or DEFAULT_SCHEMA_PATHS)
 
 
 def load(root: Path) -> Profile:
+    """Read lantern.yaml from a project root.
+
+    Args:
+        root: Project root.
+
+    Returns:
+        The profile; the defaults (exists=False) when the file is missing.
+
+    Raises:
+        ValueError: The file is not a mapping.
+
+    Example:
+        >>> load(Path("my-app")).get("project.team")  # doctest: +SKIP
+        'solo'
+    """
     path = root / PROFILE_FILE
     if not path.exists():
         return Profile(data=copy.deepcopy(DEFAULTS), path=path, exists=False)
@@ -196,7 +283,20 @@ def _unbool(data: dict[str, Any]) -> None:
 
 
 def validate(data: dict[str, Any]) -> list[str]:
-    """Return human-readable problems (empty when valid)."""
+    """Check settings against the allowed values and limits.
+
+    Args:
+        data: All settings (usually merged over DEFAULTS).
+
+    Returns:
+        Human-readable problems; empty when the settings are valid.
+
+    Example:
+        >>> validate(DEFAULTS)
+        []
+        >>> validate({**DEFAULTS, "git": {"hooks": "loud"}})[0]
+        "git.hooks: 'loud' 는 허용되지 않는 값입니다 (가능: warn | block)"
+    """
     problems: list[str] = []
     for key, allowed in CHOICES.items():
         if key.startswith("knowledge.") and not data.get("knowledge"):
@@ -255,7 +355,18 @@ def _yaml_scalar(value: Any) -> str:
 
 
 def render(data: dict[str, Any]) -> str:
-    """Render lantern.yaml with explanatory comments (same layout as the spec example)."""
+    """Write settings as lantern.yaml text, with a comment explaining each key.
+
+    Args:
+        data: Settings (missing keys take the defaults).
+
+    Returns:
+        The whole file.
+
+    Example:
+        >>> render({"project": {"name": "my-app"}}).splitlines()[4]
+        '  name: my-app'
+    """
     d = _deep_merge(DEFAULTS, data)
     p, docs, k = d["project"], d["docs"], d.get("knowledge")
     s = _yaml_scalar
@@ -349,6 +460,22 @@ def render(data: dict[str, Any]) -> str:
 
 
 def save(root: Path, data: dict[str, Any]) -> Path:
+    """Validate settings and write lantern.yaml.
+
+    Args:
+        root: Project root.
+        data: Settings (missing keys take the defaults).
+
+    Returns:
+        The written file.
+
+    Raises:
+        ValueError: The settings are not valid; the message lists every problem.
+
+    Example:
+        >>> save(Path("my-app"), {"project": {"name": "my-app"}})  # doctest: +SKIP
+        PosixPath('my-app/lantern.yaml')
+    """
     problems = validate(_deep_merge(DEFAULTS, data))
     if problems:
         raise ValueError("lantern.yaml 값이 올바르지 않습니다:\n- " + "\n- ".join(problems))
@@ -358,7 +485,21 @@ def save(root: Path, data: dict[str, Any]) -> Path:
 
 
 def update(root: Path, updates: dict[str, Any]) -> None:
-    """Change some values in lantern.yaml, keeping the comments when every key is already in the file."""
+    """Change some values in lantern.yaml.
+
+    When every key is already written in the file, only those values change and the comments stay;
+    otherwise the whole file is written again.
+
+    Args:
+        root: Project root.
+        updates: Dotted key → new value.
+
+    Raises:
+        ValueError: The result would not be valid.
+
+    Example:
+        >>> update(Path("my-app"), {"project.code_size": "medium"})  # doctest: +SKIP
+    """
     path = root / PROFILE_FILE
     data = load(root).data
     for k, v in updates.items():
@@ -376,7 +517,18 @@ def update(root: Path, updates: dict[str, Any]) -> None:
 
 
 def parse_value(raw: str) -> Any:
-    """Parse a CLI value (`key=value`) with YAML rules: `[web, mobile]`, `3`, `true`."""
+    """Parse a CLI value (`key=value`) with YAML rules.
+
+    Args:
+        raw: The text after "=".
+
+    Returns:
+        The parsed value; the text itself when it is not valid YAML.
+
+    Example:
+        >>> parse_value("[web, mobile]"), parse_value("3"), parse_value("true"), parse_value("a: [")
+        (['web', 'mobile'], 3, True, 'a: [')
+    """
     try:
         return yaml.safe_load(raw)
     except yaml.YAMLError:
@@ -388,11 +540,27 @@ def parse_value(raw: str) -> Any:
 
 @dataclass
 class DocSpec:
+    """One document or folder the answers turn on.
+
+    Attributes:
+        key: Stable key, e.g. "screens".
+        path: Path from the documents root; folders end with "/".
+        template: The template to fill; None for folders and generated files.
+        reason: Why it is on, shown to the user.
+        sections: Client sections to keep in the document (web · desktop · mobile).
+        variant: Which variant of the template to use, e.g. the data document for a server DB.
+
+    Example:
+        >>> spec = enabled_docs(Profile(data={"project": {"clients": ["web"]}}))[-2]
+        >>> spec.key, spec.sections
+        ('platform', ['web'])
+    """
+
     key: str
     path: str  # relative to docs root; folders end with "/"
     template: str | None
     reason: str
-    sections: list[str] = field(default_factory=list)  # client sections to keep (I-04)
+    sections: list[str] = field(default_factory=list)  # client sections to keep
     variant: str | None = None
 
 
@@ -420,7 +588,19 @@ CLIENT_LABEL = {"web": "웹", "desktop": "데스크톱", "mobile": "모바일"}
 
 
 def enabled_docs(profile: Profile) -> list[DocSpec]:
-    """Spec 08's "documents enabled by the answers" table, as data."""
+    """List the documents and folders the answers turn on.
+
+    Args:
+        profile: The project's settings.
+
+    Returns:
+        The documents, always-on ones first.
+
+    Example:
+        >>> keys = [d.key for d in enabled_docs(Profile(data={"project": {"server": "custom"}}))]
+        >>> "api" in keys, "screens" in keys
+        (True, False)
+    """
     clients = profile.clients
     server = profile.server
     extra = set(profile.get("docs.extra") or [])
@@ -479,10 +659,10 @@ def enabled_docs(profile: Profile) -> list[DocSpec]:
     return out
 
 
-# Doc keys that may become "사용 안 함" (inactive) when answers change (I-01). Folders are never removed.
+# Doc keys that may become "사용 안 함" (inactive) when answers change. Folders are never removed.
 OPTIONAL_DOC_KEYS = {"screens", "platform", "deploy", "api", "server-ops", "collab", "known-tech", "legacy-map"}
 
-# Which /l-init follow-up questions a newly enabled doc needs (I-01 ③).
+# Which /l-init follow-up questions a newly enabled doc needs.
 FOLLOW_UP_QUESTIONS = {
     "deploy": "배포 방식 (호스팅 · 스토어 · 서명 등)",
     "platform": "플랫폼 연동 (푸시 · 딥링크 · URL 스킴 등)",
@@ -497,7 +677,22 @@ _KEY_LINE = re.compile(r"^(\s*)([A-Za-z_]+):(\s*)([^#\n]*?)(\s*#.*)?$")
 
 
 def set_in_text(text: str, dotted: str, value: Any) -> str | None:
-    """Replace one scalar value in lantern.yaml text, keeping comments. None if not found."""
+    r"""Replace one scalar value in lantern.yaml text, keeping comments.
+
+    Args:
+        text: The lantern.yaml text.
+        dotted: Key such as "git.hooks".
+        value: The new value.
+
+    Returns:
+        The changed text; None when the key is not written in the text.
+
+    Example:
+        >>> set_in_text("git:\n  hooks: warn   # warn | block\n", "git.hooks", "block")
+        'git:\n  hooks: block  # warn | block\n'
+        >>> set_in_text("git:\n", "git.base", "dev") is None
+        True
+    """
     parts = dotted.split(".")
     lines = text.split("\n")
     depth = 0

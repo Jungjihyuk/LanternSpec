@@ -1,4 +1,14 @@
-"""📒 Debt ledger — one card per debt. Counting and status changes are scripted (LE-01 · LE-03)."""
+"""📒 Debt ledger — one card per debt. Counting and status changes are scripted.
+
+Responsibilities:
+    - find debt cards by ID, title or alias
+    - create cards, count asks (once per conversation), resolve, promote to competency debt, log practice
+    - the known-tech list that keeps familiar terms out of the candidates
+    - the generated debt status page (`부채 현황.md`)
+
+Not here:
+    - reading the person's knowledge store → learn/knowledge/
+"""
 
 from __future__ import annotations
 
@@ -13,33 +23,84 @@ from ..core.project import Project, nfc, now_minute, read, safe_name, today, wik
 
 
 def norm(term: str) -> str:
+    """Normalize a term for matching: lower case, NFC, no spaces or separators.
+
+    Args:
+        term: A term as written, e.g. "Server-Side Rendering".
+
+    Returns:
+        The normalized form.
+
+    Example:
+        >>> norm("Server-Side Rendering") == norm("serverside rendering")
+        True
+    """
     return re.sub(r"[\s\-_.·/]+", "", nfc(term).lower())
 
 
 @dataclass
 class Card:
+    """One debt card.
+
+    Attributes:
+        path: The card file.
+        meta: Its frontmatter.
+
+    Example:
+        >>> card = Card(Path("D-007 JWT.md"), {"id": "D-007", "aliases": ["JSON Web Token"]})
+        >>> card.id, card.title, card.names
+        ('D-007', 'JWT', ['JWT', 'JSON Web Token'])
+    """
+
     path: Path
     meta: dict
 
     @property
     def id(self) -> str:
+        """The card's ID, e.g. "D-007"."""
         return str(self.meta.get("id", ""))
 
     @property
     def title(self) -> str:
+        """The card's title: the file name without the ID."""
         stem = nfc(self.path.stem)
         return stem.split(" ", 1)[1] if " " in stem else stem
 
     @property
     def names(self) -> list[str]:
+        """The title followed by the aliases."""
         return [self.title] + [str(a) for a in frontmatter.as_list(self.meta.get("aliases"))]
 
     def matches(self, term: str) -> bool:
+        """Tell whether a term names this card (title or alias, ignoring case, spaces and separators).
+
+        Args:
+            term: The term.
+
+        Returns:
+            True when the term matches one of the names.
+
+        Example:
+            >>> Card(Path("D-007 JWT.md"), {"aliases": ["JSON Web Token"]}).matches("json web-token")
+            True
+        """
         t = norm(term)
         return any(norm(n) == t for n in self.names if n)
 
 
 def cards(project: Project) -> list[Card]:
+    """Read every debt card.
+
+    Args:
+        project: The project.
+
+    Returns:
+        The cards, sorted by file name; empty when there is no card folder.
+
+    Example:
+        >>> [c.id for c in cards(project)]  # doctest: +SKIP
+        ['D-001', 'D-002']
+    """
     folder = project.folder("debt_cards")
     if not folder.exists():
         return []
@@ -47,16 +108,54 @@ def cards(project: Project) -> list[Card]:
 
 
 def kind_of(project: Project, card: Card) -> str:
+    """Return a card's debt kind.
+
+    Args:
+        project: The project.
+        card: The card.
+
+    Returns:
+        Its `kind`; the "understanding" kind when the card has none.
+
+    Example:
+        >>> kind_of(project, cards(project)[0])  # doctest: +SKIP
+        '이해'
+    """
     return str(card.meta.get("kind") or project.enums.value("debt_kind", "understanding"))
 
 
 def status_label(project: Project, status: str) -> str:
-    """Icon + name of a debt status, from enums.yaml."""
+    """Return the icon and name of a debt status, from enums.yaml.
+
+    Args:
+        project: The project.
+        status: A debt_status value.
+
+    Returns:
+        "icon name".
+
+    Example:
+        >>> status_label(project, "되물음")  # doctest: +SKIP
+        '🤔 되물음'
+    """
     return project.enums["debt_status"].labelled(status)
 
 
 def find(project: Project, term: str, kind: str | None = None) -> Card | None:
-    """kind: a debt_kind role (understanding · competency · tech), or None for any."""
+    """Find a card by ID, title or alias.
+
+    Args:
+        project: The project.
+        term: An ID such as "D-007", a title or an alias.
+        kind: A debt_kind role (understanding · competency · tech) to limit the search; any kind when None.
+
+    Returns:
+        The first matching card; None when nothing matches.
+
+    Example:
+        >>> find(project, "json web token").id  # doctest: +SKIP
+        'D-007'
+    """
     want = project.enums.value("debt_kind", kind) if kind else None
     for c in cards(project):
         if want and kind_of(project, c) != want:
@@ -66,14 +165,38 @@ def find(project: Project, term: str, kind: str | None = None) -> Card | None:
     return None
 
 
-# --------------------------------------------------------------------------- known tech (LE-02)
+# --------------------------------------------------------------------------- known tech
 
 
 def known_file(project: Project) -> Path:
+    """Return the known-tech list file (`📒 부채/아는 기술.md`).
+
+    Args:
+        project: The project.
+
+    Returns:
+        Its path (it may not exist).
+
+    Example:
+        >>> known_file(project).name  # doctest: +SKIP
+        '아는 기술.md'
+    """
     return project.folder("debt") / "아는 기술.md"
 
 
 def known_list(project: Project) -> list[list[str]]:
+    """Read the known-tech list.
+
+    Args:
+        project: The project.
+
+    Returns:
+        One list of names per entry: the name, then its aliases. Empty when there is no list.
+
+    Example:
+        >>> known_list(project)  # doctest: +SKIP
+        [['React', 'ReactJS']]
+    """
     p = known_file(project)
     if not p.exists():
         return []
@@ -87,11 +210,38 @@ def known_list(project: Project) -> list[list[str]]:
 
 
 def is_known(project: Project, term: str) -> bool:
+    """Tell whether a term is on the known-tech list.
+
+    Args:
+        project: The project.
+        term: The term.
+
+    Returns:
+        True when it matches a name or alias on the list.
+
+    Example:
+        >>> is_known(project, "reactjs")  # doctest: +SKIP
+        True
+    """
     t = norm(term)
     return any(norm(n) == t for names in known_list(project) for n in names)
 
 
 def known_add(project: Project, name: str, aliases: list[str] | None = None) -> Path:
+    """Add a term to the known-tech list (creating the list when missing); known terms are skipped.
+
+    Args:
+        project: The project.
+        name: The term.
+        aliases: Other names for it.
+
+    Returns:
+        The known-tech list file.
+
+    Example:
+        >>> known_add(project, "React", ["ReactJS"]).name  # doctest: +SKIP
+        '아는 기술.md'
+    """
     p = known_file(project)
     if not p.exists():
         from ..work.scaffold import create_from_template
@@ -137,7 +287,33 @@ def new_card(
     context: str = "",
     kind: str | None = None,
 ) -> Path:
-    """Understanding debt by default — or technical debt recorded by hand (`--kind 기술`). Competency debt comes from `promote`."""
+    """Create a debt card under the next debt ID.
+
+    Understanding debt by default — or technical debt recorded by hand (`--kind 기술`).
+    Competency debt comes from promote.
+
+    Args:
+        project: The project.
+        name: The term.
+        area: Topic, one of enums.yaml `area`.
+        aliases: Other names for the term.
+        work: The work it came up in.
+        note: A link or name of the person's own note about it.
+        session: The conversation it came up in (so asks are counted once per conversation).
+        context: One line on where it came up.
+        kind: The understanding or tech kind; understanding when None.
+
+    Returns:
+        The new card.
+
+    Raises:
+        ValueError: The topic or kind is not allowed.
+        FileExistsError: A card of that kind already has the name.
+
+    Example:
+        >>> new_card(project, "JWT", area="보안", work="W-012").name  # doctest: +SKIP
+        'D-008 JWT.md'
+    """
     enums = project.enums
     allowed = [enums.value("debt_kind", "understanding"), enums.value("debt_kind", "tech")]
     kind = kind or allowed[0]
@@ -203,6 +379,20 @@ def _append_origin(text: str, line: str) -> str:
 
 @dataclass
 class AskResult:
+    """What `lantern debt ask` did.
+
+    Attributes:
+        card: The card file.
+        counted: Whether this ask was counted (once per conversation).
+        status: The card's status now.
+        ask_count: How many times it has been asked.
+        reopened: Whether a resolved card was opened again.
+
+    Example:
+        >>> AskResult(Path("D-007 JWT.md"), True, "되물음", 2, False).ask_count
+        2
+    """
+
     card: Path
     counted: bool
     status: str
@@ -211,7 +401,25 @@ class AskResult:
 
 
 def ask(project: Project, term: str, work: str | None = None, session: str = "", context: str = "") -> AskResult:
-    """Count one more ask (LE-01): once per conversation; resolved cards reopen (LE-03)."""
+    """Count one more ask of an understanding-debt card: once per conversation; resolved cards reopen.
+
+    Args:
+        project: The project.
+        term: The card's ID, title or alias.
+        work: The work it came up in; linked from the card.
+        session: The conversation; a second ask in the same conversation is not counted.
+        context: One line on where it came up.
+
+    Returns:
+        What happened.
+
+    Raises:
+        LookupError: There is no understanding-debt card for the term.
+
+    Example:
+        >>> ask(project, "JWT", work="W-012", session="s1").ask_count  # doctest: +SKIP
+        2
+    """
     card = find(project, term, kind="understanding")
     if card is None:
         raise LookupError(f"'{term}' 카드가 없습니다 — lantern debt new 로 만드세요")
@@ -246,6 +454,23 @@ def ask(project: Project, term: str, work: str | None = None, session: str = "",
 
 
 def resolve(project: Project, term: str, note: str | None = None) -> Path:
+    """Mark a card resolved (with today's date).
+
+    Args:
+        project: The project.
+        term: The card's ID, title or alias.
+        note: A note to record with it.
+
+    Returns:
+        The card file.
+
+    Raises:
+        LookupError: There is no card for the term.
+
+    Example:
+        >>> resolve(project, "D-007").name  # doctest: +SKIP
+        'D-007 JWT.md'
+    """
     card = find(project, term)
     if card is None:
         raise LookupError(f"'{term}' 카드가 없습니다")
@@ -260,7 +485,25 @@ def resolve(project: Project, term: str, note: str | None = None) -> Path:
 
 
 def promote(project: Project, term: str, name: str | None = None) -> Path:
-    """Once understanding debt is resolved, "shall I build it myself?" → a competency-debt card (08 · LE-03)."""
+    """Create a competency-debt card ("build it myself") from a resolved understanding-debt card.
+
+    Args:
+        project: The project.
+        term: The understanding card's ID, title or alias.
+        name: The new card's title; "<title> 직접 만들기" when None.
+
+    Returns:
+        The new competency card.
+
+    Raises:
+        LookupError: There is no understanding card for the term.
+        ValueError: The understanding card is not resolved yet.
+        FileExistsError: It already has a competency card.
+
+    Example:
+        >>> promote(project, "D-007").name  # doctest: +SKIP
+        'D-009 JWT 직접 만들기.md'
+    """
     src = find(project, term, kind="understanding")
     if src is None:
         raise LookupError(f"'{term}' 이해 부채 카드가 없습니다")
@@ -298,6 +541,23 @@ def promote(project: Project, term: str, name: str | None = None) -> Path:
 
 
 def practice(project: Project, term: str, result: str) -> Path:
+    """Log something built for a competency-debt card and mark it practicing.
+
+    Args:
+        project: The project.
+        term: The competency card's ID, title or alias.
+        result: What was built, in one line.
+
+    Returns:
+        The card file.
+
+    Raises:
+        LookupError: There is no competency card for the term.
+
+    Example:
+        >>> practice(project, "D-009", "토큰 발급 직접 구현").name  # doctest: +SKIP
+        'D-009 JWT 직접 만들기.md'
+    """
     competency = project.enums.value("debt_kind", "competency")
     card = next(
         (c for c in cards(project) if kind_of(project, c) == competency and (c.id.upper() == term.upper() or c.matches(term))), None
@@ -329,6 +589,19 @@ def practice(project: Project, term: str, result: str) -> Path:
 
 
 def stats(project: Project) -> dict:
+    """Count the debt cards.
+
+    Args:
+        project: The project.
+
+    Returns:
+        total, open and resolved counts, by_status (status → count) and
+        table (kind → topic → open count).
+
+    Example:
+        >>> stats(project)["open"]  # doctest: +SKIP
+        3
+    """
     cs = cards(project)
     enums = project.enums
     resolved = enums.value("debt_status", "resolved")
@@ -349,6 +622,18 @@ def stats(project: Project) -> dict:
 
 
 def status_markdown(project: Project) -> str:
+    """Build the table of open debt by kind and topic.
+
+    Args:
+        project: The project.
+
+    Returns:
+        A Markdown table: one row per kind, one column per topic, plus a total.
+
+    Example:
+        >>> status_markdown(project).splitlines()[0]  # doctest: +SKIP
+        '| 부채 (열린 것) | 프론트 | 백엔드 | 기타 | 합계 |'
+    """
     enums = project.enums
     areas = enums.values("area")
     kinds = enums.values("debt_kind")
@@ -363,6 +648,18 @@ def status_markdown(project: Project) -> str:
 
 
 def write_status(project: Project) -> Path:
+    """Write the generated debt status page (`📒 부채/부채 현황.md`).
+
+    Args:
+        project: The project.
+
+    Returns:
+        The page.
+
+    Example:
+        >>> write_status(project).name  # doctest: +SKIP
+        '부채 현황.md'
+    """
     p = project.folder("debt") / "부채 현황.md"
     s = stats(project)
     cs = cards(project)

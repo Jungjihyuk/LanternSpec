@@ -1,4 +1,5 @@
-"""git 쪽: hooks (H-1~H-3 · 구조 · R6) · docs-mode · work worktrees · scan · sync adopt."""
+"""The git side: hooks (commit message · schema record · document check · structure · docs-local push) · docs-mode ·
+work worktrees · scan · sync adopt."""
 
 import pytest
 
@@ -70,7 +71,7 @@ def test_schema_change_needs_a_record_and_doc_check(repo):
     repo.git("add", "-A")
     res = commit(repo, "feat: b [W-001-T02]")
     assert "스키마 기록:" not in res.stderr
-    # H-3: a broken link in a staged doc
+    # document check: a broken link in a staged doc
     idea_dir = docs(repo) / "1. 아이디어"
     repo("scaffold", "idea", "링크")
     idea = next(idea_dir.glob("IDEA-001*"))

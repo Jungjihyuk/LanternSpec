@@ -3,6 +3,14 @@
 Like `openspec init/update`: written straight into the project (not a plugin), so `/l-init`
 is called without a prefix and the team gets it through git. Upgrades only replace files
 the installer wrote and nobody edited since.
+
+Responsibilities:
+    - write the skill files and the optional CI workflow, skipping files someone edited
+    - merge the AGENTS.md block and each tool's settings; refresh generated documents
+    - refresh unedited template copies on upgrade; report drift for doctor
+
+Not here:
+    - what the skill files contain → tools/skills.py · each tool's file
 """
 
 from __future__ import annotations
@@ -22,7 +30,7 @@ from . import rules, skills
 from .base import Tool
 
 CI_PATH = ".github/workflows/lanternspec.yml"
-CI_HEAD = """# lanternspec가 생성 — 그림 8 ③: 양식 · 린트 · 타입 검사 · 수락 기준 테스트 · 문서-코드 어긋남을 CI에서도 본다
+CI_HEAD = """# lanternspec가 생성 — 양식 · 린트 · 타입 검사 · 수락 기준 테스트 · 문서-코드 어긋남을 CI에서도 본다
 name: lanternspec
 on: [push, pull_request]
 jobs:
@@ -50,6 +58,20 @@ CI_CHECKS = """      - name: 양식 검사 (lantern check)
 
 @dataclass
 class InstallReport:
+    """What an install or upgrade did.
+
+    Attributes:
+        written: Files created, updated or removed.
+        unchanged: Files already up to date.
+        skipped: Files left alone because someone edited them.
+        merged: Settings merged into existing files.
+        templates: Messages about template copies (upgrade only).
+
+    Example:
+        >>> InstallReport(written=["AGENTS.md"]).lines()
+        ['✔ 생성 · 갱신 1개', '   AGENTS.md']
+    """
+
     written: list[str] = field(default_factory=list)
     unchanged: list[str] = field(default_factory=list)
     skipped: list[str] = field(default_factory=list)  # user-modified
@@ -57,6 +79,15 @@ class InstallReport:
     templates: list[str] = field(default_factory=list)
 
     def lines(self) -> list[str]:
+        """Describe the report for the user.
+
+        Returns:
+            Lines grouped by what happened (at most 40 written files are listed).
+
+        Example:
+            >>> InstallReport(skipped=[".claude/skills/l-build/SKILL.md"]).lines()[0]
+            '⚠ 사용자가 고친 파일이라 건드리지 않음 1개 (덮어쓰려면 --force):'
+        """
         out = []
         if self.written:
             out.append(f"✔ 생성 · 갱신 {len(self.written)}개")
@@ -94,11 +125,36 @@ def _write_managed(project: Project, files: dict[str, str], record: dict, report
 
 
 def tools_cover(rel: str, tools: list[Tool]) -> bool:
+    """Tell whether a generated file belongs to one of the chosen tools' skill folders.
+
+    Args:
+        rel: Path relative to the project root.
+        tools: The chosen tools.
+
+    Returns:
+        True when one of the tools owns it.
+
+    Example:
+        >>> from lanternspec.tools import get
+        >>> tools_cover(".agents/skills/l-build/SKILL.md", [get("claude")])
+        False
+    """
     return any(t.owns_skill_file(rel) for t in tools)
 
 
 def ci_workflow(project: Project) -> str:
-    """GitHub Actions workflow: lanternspec + the project's own tools (each language's runner, found by its lock file)."""
+    """Build the GitHub Actions workflow: lanternspec + the project's own tools (each language's runner, found by its lock file).
+
+    Args:
+        project: The project.
+
+    Returns:
+        The workflow YAML.
+
+    Example:
+        >>> ci_workflow(project).splitlines()[1]  # doctest: +SKIP
+        'name: lanternspec'
+    """
     steps: list[dict] = []
     for lang in project.profile.get("project.languages") or []:
         if lang not in principles.language_names():
@@ -116,6 +172,20 @@ def ci_workflow(project: Project) -> str:
 
 
 def generated_files(project: Project, tools: list[Tool], ci: bool) -> dict[str, str]:
+    """Build every file the installer manages: skill files, and the CI workflow when asked.
+
+    Args:
+        project: The project.
+        tools: The chosen tools.
+        ci: Include the CI workflow.
+
+    Returns:
+        Path relative to the project root → text.
+
+    Example:
+        >>> CI_PATH in generated_files(project, [get("claude")], ci=True)  # doctest: +SKIP
+        True
+    """
     files = skills.generate(project.profile, tools, project.enums)
     if ci:
         files[CI_PATH] = ci_workflow(project)
@@ -130,6 +200,28 @@ def _ours(rel: str, tools: list[Tool]) -> bool:
 def install(
     project: Project, tools: list[str] | None = None, force: bool = False, mcp: bool | None = None, ci: bool | None = None
 ) -> InstallReport:
+    """Install or refresh everything for the chosen tools.
+
+    Files someone edited are skipped unless force; files no longer generated are removed when unedited.
+    Choices not given (tools, MCP, CI) are kept from the last install.
+
+    Args:
+        project: The project.
+        tools: Tool names; the last install's (or Claude Code) when None.
+        force: Overwrite files someone edited.
+        mcp: Register the knowledge MCP server; the last choice when None.
+        ci: Write the CI workflow; the last choice when None.
+
+    Returns:
+        What was done.
+
+    Raises:
+        ValueError: A tool is not supported.
+
+    Example:
+        >>> install(project, ["claude"]).merged[0]  # doctest: +SKIP
+        'AGENTS.md'
+    """
     st = state.load(project)
     names = tools or st.get("tools") or ["claude"]
     chosen = resolve_tools(names)
@@ -174,7 +266,19 @@ def install(
 
 
 def upgrade_templates(project: Project, force: bool = False) -> list[str]:
-    """C-04 option C: refresh the copies in `docs/0. 템플릿` that nobody edited; report the edited ones."""
+    """Refresh the copies in `docs/0. 템플릿` that nobody edited when the bundled base is newer; report the edited ones.
+
+    Args:
+        project: The project.
+        force: Replace edited copies too.
+
+    Returns:
+        One message per template with a newer base.
+
+    Example:
+        >>> upgrade_templates(project)  # doctest: +SKIP
+        ["✔ 양식 '기획' 1.0.0 → 1.1.0"]
+    """
     if not project.templates_dir.exists():
         return []
     st = state.load(project)
@@ -204,18 +308,54 @@ def upgrade_templates(project: Project, force: bool = False) -> list[str]:
 
 
 def upgrade(project: Project, force: bool = False) -> InstallReport:
+    """Re-install with the last choices and refresh template copies (`lantern upgrade`).
+
+    Args:
+        project: The project.
+        force: Overwrite files and templates someone edited.
+
+    Returns:
+        What was done, including template messages.
+
+    Example:
+        >>> upgrade(project).templates  # doctest: +SKIP
+        []
+    """
     report = install(project, None, force=force)
     report.templates = upgrade_templates(project, force=force)
     return report
 
 
 def expected_files(project: Project) -> dict[str, str]:
+    """Build the files the last install's choices would generate now.
+
+    Args:
+        project: The project.
+
+    Returns:
+        Path relative to the project root → text.
+
+    Example:
+        >>> len(expected_files(project))  # doctest: +SKIP
+        13
+    """
     st = state.load(project)
     return generated_files(project, resolve_tools(st.get("tools") or ["claude"]), bool(st.get("ci")))
 
 
 def drift(project: Project) -> dict[str, list[str]]:
-    """For doctor: installed skills that differ from what the current profile would generate."""
+    """Compare installed files with what the current profile would generate (for doctor).
+
+    Args:
+        project: The project.
+
+    Returns:
+        missing (not there), stale (unedited but outdated — upgrade fixes them) and modified (edited by someone).
+
+    Example:
+        >>> drift(project)  # doctest: +SKIP
+        {'missing': [], 'stale': [], 'modified': []}
+    """
     st = state.load(project)
     out: dict[str, list[str]] = {"missing": [], "stale": [], "modified": []}
     for rel, content in expected_files(project).items():

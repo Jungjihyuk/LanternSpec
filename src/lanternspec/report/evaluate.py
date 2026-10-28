@@ -1,8 +1,11 @@
-"""📊 AI work evaluation — "which setup helped the outcome?" (figure 6, what the H-6 run log is for).
+"""📊 AI work evaluation — "which setup helped the outcome?" (what the run log is for).
 
 Reads `.lantern/runs.jsonl` (turn records from agent hooks, skill records from `lantern close`)
 and the work folders, then compares configurations (model · skill · profile settings) by
 cost (duration, tool calls) and outcome (check errors left at close, tasks done, size estimates).
+
+Not here:
+    - writing the run log → tools/runlog.py
 """
 
 from __future__ import annotations
@@ -28,10 +31,34 @@ CONFIG_KEYS = [
 
 
 def config_snapshot(project: Project) -> dict[str, Any]:
+    """Take the profile settings that a run record keeps, so runs can be compared by configuration.
+
+    Args:
+        project: The project.
+
+    Returns:
+        Setting key → value for each key in CONFIG_KEYS.
+
+    Example:
+        >>> config_snapshot(project)["build.loop"]  # doctest: +SKIP
+        'off'
+    """
     return {k: project.profile.get(k) for k in CONFIG_KEYS}
 
 
 def load_runs(project: Project) -> list[dict[str, Any]]:
+    """Read the run log; broken lines are skipped.
+
+    Args:
+        project: The project.
+
+    Returns:
+        One record per line; empty when there is no log.
+
+    Example:
+        >>> load_runs(project)[0]["kind"]  # doctest: +SKIP
+        'turn'
+    """
     p = project.state / "runs.jsonl"
     if not p.exists():
         return []
@@ -67,7 +94,20 @@ def _minutes(rec: dict[str, Any]) -> float | None:
 
 
 def task_durations(project: Project) -> dict[str, list[float]]:
-    """Actual hours per size from `[시작:: …]` → `[완료:: …]` (also used by `lantern task estimate`)."""
+    """Measure actual hours per size from `[시작:: …]` → `[완료:: …]` of finished tasks.
+
+    Also used by `lantern task estimate`.
+
+    Args:
+        project: The project.
+
+    Returns:
+        Size (S · M · L, or "?") → hours of each finished task.
+
+    Example:
+        >>> task_durations(project)["S"]  # doctest: +SKIP
+        [1.5, 2.0]
+    """
     out: dict[str, list[float]] = defaultdict(list)
     for w in project.work_dirs(include_archive=True):
         tf = w / "할 일.md"
@@ -81,6 +121,20 @@ def task_durations(project: Project) -> dict[str, list[float]]:
 
 
 def summary(project: Project) -> dict[str, Any]:
+    """Summarize the run log and task times.
+
+    Args:
+        project: The project.
+
+    Returns:
+        turns, skill_runs, by_skill and by_model (count, median minutes, average tool calls),
+        close_quality and by_config (count, percent closed without errors, average warnings),
+        and task_hours (size → count and median hours).
+
+    Example:
+        >>> summary(project)["skill_runs"]  # doctest: +SKIP
+        12
+    """
     runs = load_runs(project)
     turns = [r for r in runs if r.get("kind") == "turn"]
     skills = [r for r in runs if r.get("kind") == "skill"]
@@ -130,6 +184,18 @@ def summary(project: Project) -> dict[str, Any]:
 
 
 def markdown(project: Project) -> str:
+    """Write the evaluation as Markdown tables for the report.
+
+    Args:
+        project: The project.
+
+    Returns:
+        The tables; a short note when there is no run log yet.
+
+    Example:
+        >>> markdown(project).splitlines()[0]  # doctest: +SKIP
+        '실행 기록: 대화 턴 40개 · 스킬 마무리 12개'
+    """
     s = summary(project)
     if not s["turns"] and not s["skill_runs"]:
         return "_실행 기록이 아직 없습니다 (.lantern/runs.jsonl) — 스킬을 쓰면 쌓인다._"

@@ -1,4 +1,7 @@
-"""Current status in three lines (H-4): work in progress · next task · open ❓ questions."""
+"""Current status in three lines: work in progress · next task · open ❓ questions.
+
+Shown at session start, by `lantern status` and at the top of reports.
+"""
 
 from __future__ import annotations
 
@@ -11,7 +14,20 @@ UNKNOWN = "❓ 확인 필요"
 
 
 def open_unknowns(project: Project) -> list[tuple[str, int]]:
-    """(doc, count) in docs still in use: active works and current state."""
+    """Count the open "❓ 확인 필요" marks in documents still in use (active works and current state).
+
+    Writing guides and example lines that only mention the mark are not counted.
+
+    Args:
+        project: The project.
+
+    Returns:
+        (document path from the docs root, count) for each document with open marks.
+
+    Example:
+        >>> open_unknowns(project)  # doctest: +SKIP
+        [('2. 작업/W-012 로그인/설계.md', 2)]
+    """
     out = []
     targets = []
     for w in project.work_dirs():
@@ -31,6 +47,18 @@ def open_unknowns(project: Project) -> list[tuple[str, int]]:
 
 
 def lines(project: Project) -> list[str]:
+    """Build the three status lines.
+
+    Args:
+        project: The project.
+
+    Returns:
+        [works in progress (up to three, with stage and task progress), next task, open ❓ marks].
+
+    Example:
+        >>> lines(project)  # doctest: +SKIP
+        ['📦 진행 중: W-012 로그인 (구현, 할 일 1/3)', '▶ 다음 할 일: W-012-T02 버튼 [S]', '❓ 확인 필요: 없음']
+    """
     works = project.work_dirs()
     if works:
         parts = []

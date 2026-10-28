@@ -207,8 +207,10 @@ make release VERSION=0.2.0      # 안전 확인 → 확인 네 가지 → CHANGE
   | CLI 명령 함수 (`cli/` 의 `cmd_*` · `register`) | **한 줄** — 인자가 argparse 결과 하나라 Args · Example이 반복일 뿐이다 |
   | 프로젝트 폴더 · git · 네트워크가 있어야 도는 Example | 줄 끝에 `# doctest: +SKIP`을 붙여 읽기용으로 둔다 |
 
-- **검사:** ruff의 docstring 규칙(`D`, google)은 이 형식을 적용한 파일에만 켜져 있다.
-  파일에 적용을 마치면 `pyproject.toml`의 `[tool.ruff.lint.per-file-ignores]` 목록에서 그 파일을 뺀다.
+- **검사:** ruff의 docstring 규칙(`D`, google)이 `src` 전체에 켜져 있다 (테스트는 뺀다).
+  ruff는 docstring이 *있는지*와 모양만 본다. Args · Returns · Example을 빠짐없이 쓰는 것은 사람과 리뷰가 지킨다.
+- **명세 번호를 쓰지 않는다:** 기획 문서의 번호(결정 · 요구사항 번호 등)는 코드 · 주석 · 테스트 · 스킬 · 템플릿 어디에도 적지 않는다.
+  그 번호를 모르는 사람도 읽을 수 있게, 무엇을 하는지를 말로 쓴다 (스킬 이름 `/l-check`처럼 사용자가 보는 이름은 괜찮다).
 
 ## 3. 작업 방식
 

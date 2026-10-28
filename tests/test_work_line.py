@@ -1,4 +1,4 @@
-"""일하는 선로 end-to-end: /l-init → idea → plan → design → task → build → 현재 상태 → 보관 → report."""
+"""The work line end to end: /l-init → idea → plan → design → task → build → current state → archive → report."""
 
 import json
 

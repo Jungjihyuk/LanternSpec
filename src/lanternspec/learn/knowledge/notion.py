@@ -6,7 +6,7 @@ lantern.yaml:
       path: <parent page id>      # where approved notes are created
       token_env: NOTION_TOKEN     # (optional) env var holding the integration token
 
-The integration only sees pages shared with it; we never edit existing pages (P6).
+The integration only sees pages shared with it; we never edit existing pages.
 """
 
 from __future__ import annotations
@@ -41,6 +41,18 @@ def _rich(text: str) -> list[dict[str, Any]]:
 
 
 def markdown_to_blocks(md: str) -> list[dict[str, Any]]:
+    r"""Turn Markdown into Notion blocks: headings (1–3), bullets, quotes, code fences and paragraphs.
+
+    Args:
+        md: Markdown text.
+
+    Returns:
+        Notion block objects, one per non-empty line (one per code fence).
+
+    Example:
+        >>> [b["type"] for b in markdown_to_blocks("# 제목\n- 하나\n> 인용\n본문")]
+        ['heading_1', 'bulleted_list_item', 'quote', 'paragraph']
+    """
     blocks: list[dict[str, Any]] = []
     fence: list[str] | None = None
     for line in md.split("\n"):
@@ -73,6 +85,18 @@ def markdown_to_blocks(md: str) -> list[dict[str, Any]]:
 
 
 def block_text(block: dict[str, Any]) -> str:
+    """Turn one Notion block back into a Markdown line.
+
+    Args:
+        block: A Notion block object.
+
+    Returns:
+        The block's text with its Markdown mark (heading, bullet, quote, code fence).
+
+    Example:
+        >>> block_text(markdown_to_blocks("## 소제목")[0])
+        '## 소제목'
+    """
     kind = block.get("type", "")
     body = block.get(kind) or {}
     text = _plain(body.get("rich_text") or [])
@@ -90,9 +114,32 @@ def block_text(block: dict[str, Any]) -> str:
 
 
 class NotionAdapter(Adapter):
+    """A knowledge store in Notion, reached with an integration token.
+
+    Attributes:
+        parent: The page new notes are created under (ID without dashes).
+        token: The integration token.
+
+    Example:
+        >>> NotionAdapter("abc-123", token=None)
+        Traceback (most recent call last):
+        ...
+        lanternspec.learn.knowledge.KnowledgeError: Notion 토큰이 없습니다 — 환경 변수 NOTION_TOKEN (또는 knowledge.token_env)
+    """
+
     name = "notion"
 
     def __init__(self, parent_id: str, token: str | None, opener: Callable[..., Any] | None = None) -> None:
+        """Set up the adapter.
+
+        Args:
+            parent_id: The page new notes are created under.
+            token: The integration token.
+            opener: Replaces urllib.request.urlopen (tests pass a fake).
+
+        Raises:
+            KnowledgeError: There is no token.
+        """
         if not token:
             raise KnowledgeError("Notion 토큰이 없습니다 — 환경 변수 NOTION_TOKEN (또는 knowledge.token_env)")
         self.parent = parent_id.replace("-", "")
@@ -115,6 +162,23 @@ class NotionAdapter(Adapter):
             raise KnowledgeError(f"Notion에 연결하지 못했습니다: {e.reason}") from e
 
     def search(self, query: str, aliases: list[str] | None = None, limit: int = 5) -> list[Hit]:
+        """Implement Adapter.search with Notion's page search, once per name.
+
+        Args:
+            query: The term.
+            aliases: Other names for the term.
+            limit: Most results to return.
+
+        Returns:
+            The best matches; path is the page ID and summary the page URL.
+
+        Raises:
+            KnowledgeError: The API call failed.
+
+        Example:
+            >>> NotionAdapter(parent, token).search("JWT")[0].title  # doctest: +SKIP
+            'JWT'
+        """
         seen: dict[str, Hit] = {}
         terms: list[str] = [query, *(aliases or [])]
         for i, term in enumerate(terms):
@@ -130,6 +194,21 @@ class NotionAdapter(Adapter):
         return sorted(seen.values(), key=lambda h: -h.score)[:limit]
 
     def read(self, path: str) -> str:
+        r"""Implement Adapter.read by reading a page's blocks as Markdown lines.
+
+        Args:
+            path: The page ID.
+
+        Returns:
+            The page's text.
+
+        Raises:
+            KnowledgeError: The API call failed.
+
+        Example:
+            >>> NotionAdapter(parent, token).read(page_id)  # doctest: +SKIP
+            '# JWT\n…'
+        """
         lines, cursor = [], None
         while True:
             q = f"/blocks/{path}/children?page_size=100" + (f"&start_cursor={cursor}" if cursor else "")
@@ -141,6 +220,22 @@ class NotionAdapter(Adapter):
         return "\n".join(lines)
 
     def write(self, rel_path: str, content: str) -> str:
+        r"""Implement Adapter.write by creating a page under the parent page.
+
+        Args:
+            rel_path: The note's name (its last path part, without `.md`, becomes the title).
+            content: The note's Markdown.
+
+        Returns:
+            The new page's URL (or ID).
+
+        Raises:
+            KnowledgeError: The API call failed.
+
+        Example:
+            >>> NotionAdapter(parent, token).write("JWT.md", "# JWT\n")  # doctest: +SKIP
+            'https://www.notion.so/JWT-…'
+        """
         title = re.sub(r"\.md$", "", rel_path.rsplit("/", 1)[-1])
         blocks = markdown_to_blocks(content)
         page = self._call(
@@ -154,4 +249,21 @@ class NotionAdapter(Adapter):
 
 
 def from_config(k: dict[str, Any]) -> NotionAdapter:
+    """Create the adapter from the `knowledge` block of lantern.yaml.
+
+    Args:
+        k: The knowledge settings (path = parent page ID, token_env = token variable).
+
+    Returns:
+        The adapter.
+
+    Raises:
+        KnowledgeError: The token variable is not set.
+
+    Example:
+        >>> from_config({"path": "abc", "token_env": "NO_SUCH_TOKEN_VAR"})
+        Traceback (most recent call last):
+        ...
+        lanternspec.learn.knowledge.KnowledgeError: Notion 토큰이 없습니다 — 환경 변수 NOTION_TOKEN (또는 knowledge.token_env)
+    """
     return NotionAdapter(str(k.get("path") or ""), os.environ.get(str(k.get("token_env") or "NOTION_TOKEN")))

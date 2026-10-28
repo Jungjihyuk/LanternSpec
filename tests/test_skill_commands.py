@@ -66,4 +66,4 @@ def test_every_skill_mentions_its_wrapup():
         if name == "l-check":
             assert "lantern check" in text
             continue
-        assert f"lantern close {name}" in text, f"{name} lacks the common close (P4)"
+        assert f"lantern close {name}" in text, f"{name} lacks the common close"

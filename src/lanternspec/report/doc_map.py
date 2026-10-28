@@ -47,6 +47,21 @@ def _md_files(folder: Path, recursive: bool = False) -> list[Path]:
 
 
 def build_block(project: Project) -> str:
+    """Build the generated part of the MOC from the folders as they are now.
+
+    It lists the folders with their roles, current-state documents, works by stage,
+    archived works, ideas, decisions, shortcuts and the commands.
+
+    Args:
+        project: The project.
+
+    Returns:
+        The block's Markdown (without the marks), starting with a "generated" line.
+
+    Example:
+        >>> build_block(project).splitlines()[2]  # doctest: +SKIP
+        '## 폴더'
+    """
     lines: list[str] = [f"> ⚙️ 자동 생성 — `lantern map` · 기준: {now_minute()}", ""]
     # folder table
     lines += ["## 폴더", "| 폴더 | 역할 | 문서 수 | 템플릿 | 명령 |", "|---|---|---|---|---|"]
@@ -158,6 +173,20 @@ def build_block(project: Project) -> str:
 
 
 def run(project: Project) -> Path:
+    """Rewrite the MOC's generated block, creating the MOC from its template when missing.
+
+    The file is left untouched when only the timestamp would change.
+
+    Args:
+        project: The project.
+
+    Returns:
+        The MOC file.
+
+    Example:
+        >>> run(project).name  # doctest: +SKIP
+        '개발문서 MOC.md'
+    """
     moc = project.moc
     if not moc.exists():
         from ..work.scaffold import create_from_template

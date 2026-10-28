@@ -1,13 +1,13 @@
-"""git hooks — block structural mistakes, warn about content mistakes (C-09 · C-10 · I-03).
+"""git hooks — block structural mistakes, warn about content mistakes.
 
-commit-msg  H-1        is there a task ID · are several tasks mixed in one commit
+commit-msg  message    is there a task ID · are several tasks mixed in one commit
 pre-commit  structure  docs/.git · .gitignore · .ignore · docs/ mixed into a code commit   (always blocks)
-            H-2        is a schema change recorded
-            H-3        lantern check on the changed documents
-pre-push    R6         block pushing the docs-local branch (only an allowed personal remote passes)
+            schema     is a schema change recorded
+            docs       lantern check on the changed documents
+pre-push    docs-local block pushing the docs-local branch (only an allowed personal remote passes)
 
-Shell shims call `lantern hook git-…`; an existing non-LanternSpec hook is kept as `<name>.local`
-and still runs first.
+Content checks warn or block according to `git.hooks`. Shell shims call `lantern hook git-…`;
+an existing non-LanternSpec hook is kept as `<name>.local` and still runs first.
 """
 
 from __future__ import annotations
@@ -46,6 +46,21 @@ exit 0
 
 
 def hooks_dir(project: Project) -> Path:
+    """Return the folder git runs hooks from (core.hooksPath, else the common `.git/hooks`).
+
+    Args:
+        project: The project.
+
+    Returns:
+        The hooks folder.
+
+    Raises:
+        RuntimeError: The project is not a git repository.
+
+    Example:
+        >>> hooks_dir(project).name  # doctest: +SKIP
+        'hooks'
+    """
     custom = git_out(["config", "--get", "core.hooksPath"], project.root)
     if custom:
         p = Path(custom)
@@ -70,6 +85,21 @@ def _shim(name: str) -> str:
 
 
 def install(project: Project) -> list[str]:
+    """Install the hook shims, keeping any existing hook as `<name>.local`.
+
+    Args:
+        project: The project.
+
+    Returns:
+        Messages describing what was installed or kept.
+
+    Raises:
+        RuntimeError: The project is not a git repository.
+
+    Example:
+        >>> install(project)[-1]  # doctest: +SKIP
+        '✔ git hook 설치: commit-msg, pre-commit, pre-push (…/.git/hooks)'
+    """
     d = hooks_dir(project)
     d.mkdir(parents=True, exist_ok=True)
     msgs = []
@@ -87,6 +117,21 @@ def install(project: Project) -> list[str]:
 
 
 def uninstall(project: Project) -> list[str]:
+    """Remove our hook shims and put back any `<name>.local` hooks.
+
+    Args:
+        project: The project.
+
+    Returns:
+        Messages describing what was removed.
+
+    Raises:
+        RuntimeError: The project is not a git repository.
+
+    Example:
+        >>> uninstall(project)  # doctest: +SKIP
+        ['✔ commit-msg 제거', '✔ pre-commit 제거', '✔ pre-push 제거']
+    """
     d = hooks_dir(project)
     msgs = []
     for name in HOOKS:
@@ -102,6 +147,18 @@ def uninstall(project: Project) -> list[str]:
 
 
 def status(project: Project) -> list[tuple[str, bool]]:
+    """Tell which of our hooks are installed.
+
+    Args:
+        project: The project.
+
+    Returns:
+        (hook name, installed) for each hook; all False outside git.
+
+    Example:
+        >>> status(project)  # doctest: +SKIP
+        [('commit-msg', True), ('pre-commit', True), ('pre-push', True)]
+    """
     try:
         d = hooks_dir(project)
     except RuntimeError:
@@ -152,6 +209,19 @@ def _content_result(project: Project, problems: list[str], label: str) -> int:
 
 
 def commit_msg(project: Project, msg_file: str) -> int:
+    """Check a commit message: code commits need a task ID, and one commit should hold one task.
+
+    Args:
+        project: The project.
+        msg_file: The file git passes with the message.
+
+    Returns:
+        The hook's exit code: 1 blocks the commit (only under `git.hooks: block`), 0 lets it through.
+
+    Example:
+        >>> commit_msg(project, ".git/COMMIT_EDITMSG")  # doctest: +SKIP
+        0
+    """
     if _skip():
         return 0
     text = Path(msg_file).read_text(encoding="utf-8", errors="replace")
@@ -176,7 +246,24 @@ def commit_msg(project: Project, msg_file: str) -> int:
 
 
 def structure_problems(project: Project, cwd: Path | None = None, staged: list[str] | None = None) -> list[str]:
-    """C-10 rules. Always blocking. Also used by `lantern doctor`."""
+    """Check the docs storage structure (always blocking). Also used by `lantern doctor`.
+
+    shared: no `docs/.git`, and .gitignore must not ignore docs/.
+    local: `docs/` is the docs-local worktree, .gitignore ignores it, .ignore lets AI search find it again,
+    and code commits carry no docs/ files.
+
+    Args:
+        project: The project.
+        cwd: Where to read the current branch; the project root when None.
+        staged: Staged files, to catch docs/ mixed into a code commit; not checked when None.
+
+    Returns:
+        The problems; empty when the structure is right.
+
+    Example:
+        >>> structure_problems(project)  # doctest: +SKIP
+        []
+    """
     cwd = cwd or project.root
     branch = _branch(cwd)
     docs = project.docs
@@ -200,9 +287,9 @@ def structure_problems(project: Project, cwd: Path | None = None, staged: list[s
         elif not g.exists():
             out.append("docs/가 docs-local worktree가 아닙니다 — lantern docs-mode local 로 만드세요")
         if not gi_has:
-            out.append(".gitignore에 docs/가 없습니다 (R1)")
+            out.append(".gitignore에 docs/가 없습니다")
         if not ig_has:
-            out.append(".ignore에 !docs/가 없습니다 — AI 검색이 문서를 못 찾습니다 (R2)")
+            out.append(".ignore에 !docs/가 없습니다 — AI 검색이 문서를 못 찾습니다")
         if branch != DOCS_BRANCH and staged is not None:
             mixed = [f for f in staged if f.startswith(pattern)]
             if mixed:
@@ -211,6 +298,18 @@ def structure_problems(project: Project, cwd: Path | None = None, staged: list[s
 
 
 def pre_commit(project: Project) -> int:
+    """Run the pre-commit checks: structure (always blocks), then schema record and document format.
+
+    Args:
+        project: The project.
+
+    Returns:
+        The hook's exit code: 1 blocks the commit, 0 lets it through.
+
+    Example:
+        >>> pre_commit(project)  # doctest: +SKIP
+        0
+    """
     if _skip():
         return 0
     top = _toplevel()
@@ -222,7 +321,7 @@ def pre_commit(project: Project) -> int:
         _say(["✖ LanternSpec 구조 검사 — 커밋을 막았습니다 (구조 실수는 항상 막음)"] + [f"   {p}" for p in structural])
         return 1
     problems: list[str] = []
-    # H-2 schema change without a record
+    # schema change without a record
     from ..report.scan import is_doc_path, schema_files
 
     if not docs_branch:
@@ -239,7 +338,7 @@ def pre_commit(project: Project) -> int:
                     f"스키마 기록: 스키마 파일이 바뀌었는데 기록.md 변경이 없습니다: {', '.join(sfiles[:3])}"
                     " — 작업 기록.md '## 스키마 변경'에 남기세요"
                 )
-    # H-3 lantern check on the documents in this commit
+    # lantern check on the documents in this commit
     from . import check_docs
 
     if docs_branch:
@@ -263,6 +362,21 @@ def pre_commit(project: Project) -> int:
 
 
 def pre_push(project: Project, remote: str, url: str, stdin_text: str) -> int:
+    """Refuse to push the docs-local branch, unless the remote is allowed (`lantern.allowDocsRemote`).
+
+    Args:
+        project: The project.
+        remote: The remote's name.
+        url: The remote's URL (not used; git passes it).
+        stdin_text: The refs git sends on stdin, one "local_ref local_sha remote_ref remote_sha" per line.
+
+    Returns:
+        The hook's exit code: 1 blocks the push, 0 lets it through.
+
+    Example:
+        >>> pre_push(project, "origin", url, "refs/heads/docs-local abc refs/heads/docs-local 000")  # doctest: +SKIP
+        1
+    """
     if _skip():
         return 0
     allowed = git_out(["config", "--get-all", "lantern.allowDocsRemote"], project.root).split()

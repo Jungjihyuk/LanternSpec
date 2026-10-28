@@ -1,7 +1,12 @@
-"""One skill source (Agent Skills standard, resources/skills) → each tool's skill files (C-05).
+"""One skill source (Agent Skills standard, resources/skills) → each tool's skill files.
 
 Rendering is tool-agnostic: profile values and conditions are filled in here; a tool adapter
 only says where the files go and what frontmatter they carry (tools/<tool>.py).
+
+Marks in a skill source:
+    - `<<dotted.key>>` — a lantern.yaml value or an enum name by role, e.g. `<<debt_status.resolved>>`
+    - `<<SESSION_ID>>` — the tool's session expression
+    - `lantern:if` blocks — kept only when the profile matches (core/templating.py)
 """
 
 from __future__ import annotations
@@ -41,6 +46,22 @@ PROFILE_TOKEN = re.compile(r"<<([a-z_]+(?:\.[a-z_]+)+)>>")  # profile values and
 
 @dataclass
 class SkillSource:
+    """One skill as written in resources/skills.
+
+    Attributes:
+        name: The skill name, e.g. "l-build".
+        description: When to use it (the model reads this to decide).
+        invocation: "model", "manual", or "profile:<dotted key>" (manual when that setting is "manual").
+        argument_hint: Hint for the skill's argument, e.g. "W-012".
+        body: The skill body, before rendering.
+        extra: Other files of the skill folder: relative path → text.
+
+    Example:
+        >>> src = next(s for s in load_sources() if s.name == "l-idea")
+        >>> src.invocation
+        'profile:idea.capture'
+    """
+
     name: str
     description: str
     invocation: str  # model | manual | profile:<dotted key>
@@ -49,6 +70,19 @@ class SkillSource:
     extra: dict[str, str] = field(default_factory=dict)  # relative path -> text (references/…)
 
     def manual_only(self, profile: Profile) -> bool:
+        """Tell whether the skill runs only when the user calls it (never chosen by the model).
+
+        Args:
+            profile: The project's settings.
+
+        Returns:
+            True for manual skills, and for profile-bound skills whose setting is "manual".
+
+        Example:
+            >>> src = next(s for s in load_sources() if s.name == "l-idea")
+            >>> src.manual_only(Profile(data={"idea": {"capture": "manual"}}))
+            True
+        """
         if self.invocation == "manual":
             return True
         if self.invocation.startswith("profile:"):
@@ -57,6 +91,22 @@ class SkillSource:
 
 
 def validate_name(name: str) -> None:
+    """Check a skill name against the Agent Skills naming rules.
+
+    Args:
+        name: The skill name.
+
+    Raises:
+        ValueError: The name breaks a rule (lower case, digits and hyphens, 1–64 characters,
+            no leading, trailing or double hyphen).
+
+    Example:
+        >>> validate_name("l-build")
+        >>> validate_name("L_Build")
+        Traceback (most recent call last):
+        ...
+        ValueError: 스킬 이름 규칙 위반: L_Build (소문자 · 숫자 · 하이픈, 1~64자, 하이픈으로 시작/끝 · -- 금지)
+    """
     if not NAME_RE.match(name):
         raise ValueError(f"스킬 이름 규칙 위반: {name} (소문자 · 숫자 · 하이픈, 1~64자, 하이픈으로 시작/끝 · -- 금지)")
     if ":" in name:
@@ -64,6 +114,18 @@ def validate_name(name: str) -> None:
 
 
 def load_sources() -> list[SkillSource]:
+    """Read every skill source bundled with the package.
+
+    Returns:
+        One source per name in SKILL_NAMES, in that order.
+
+    Raises:
+        ValueError: A name breaks the rules or does not match its folder.
+
+    Example:
+        >>> [s.name for s in load_sources()][:3]
+        ['l-init', 'l-idea', 'l-plan']
+    """
     out: list[SkillSource] = []
     for name in SKILL_NAMES:
         validate_name(name)
@@ -101,6 +163,21 @@ def _flatten(data: Any, prefix: str = "") -> dict[str, Any]:
 
 
 def body_context(profile: Profile, tool: str, enums: enums_mod.Enums | None = None) -> dict[str, Any]:
+    """Collect the values skill bodies and the AGENTS.md block are filled with.
+
+    Args:
+        profile: The project's settings.
+        tool: The tool name (or "agents" for AGENTS.md).
+        enums: The project's choice lists; the bundled ones when None.
+
+    Returns:
+        Enum names by role, every lantern.yaml value by dotted key, and tool, knowledge and team.
+
+    Example:
+        >>> ctx = body_context(Profile(data={"plan": {"max_questions": 3}}), "claude")
+        >>> ctx["plan.max_questions"], ctx["debt_status.resolved"], ctx["tool"]
+        (3, '해결', 'claude')
+    """
     data = dict(profile.data)
     data["knowledge"] = profile.knowledge  # with defaults (write: direct …)
     # <<debt_status.resolved>> · <<idea_status.dropped.label>> — status names come from enums.yaml only
@@ -113,11 +190,41 @@ def body_context(profile: Profile, tool: str, enums: enums_mod.Enums | None = No
 
 
 def rewrite_commands(text: str, prefix: str) -> str:
-    """`/l-build` → the tool's calling form (`$l-build` for Codex)."""
+    """Rewrite `/l-…` skill calls into the tool's calling form (`$l-build` for Codex).
+
+    Args:
+        text: Any text.
+        prefix: The tool's command prefix.
+
+    Returns:
+        The rewritten text.
+
+    Example:
+        >>> rewrite_commands("다음: /l-build W-012 (경로 a/l-build는 그대로)", "$")
+        '다음: $l-build W-012 (경로 a/l-build는 그대로)'
+    """
     return text if prefix == "/" else CMD_RE.sub(lambda m: prefix + m.group(1), text)
 
 
 def render_body(src: SkillSource, profile: Profile, tool: Tool, prefix: str, enums: enums_mod.Enums | None = None) -> str:
+    """Render a skill body for one tool: conditions, command form, session expression, `$ARGUMENTS`, profile values.
+
+    Args:
+        src: The skill source.
+        profile: The project's settings.
+        tool: The tool.
+        prefix: The command prefix to use.
+        enums: The project's choice lists; the bundled ones when None.
+
+    Returns:
+        The body as the tool will read it.
+
+    Example:
+        >>> from lanternspec.tools import get
+        >>> src = next(s for s in load_sources() if s.name == "l-plan")
+        >>> "<<" in render_body(src, Profile(data={}), get("codex"), "$")
+        False
+    """
     ctx = body_context(profile, tool.name, enums)
     body = rewrite_commands(templating.apply_conditions(src.body, ctx), prefix)
     body = body.replace(SESSION_TOKEN, tool.session_expr)
@@ -138,13 +245,46 @@ def _token_value(value: Any) -> str:
 
 
 def command_prefix(tools: list[Tool]) -> str:
-    """Tools that share a skill folder (Codex · Antigravity: .agents/skills) get one calling form;
-    if they disagree, `/` is used and AGENTS.md tells Codex to read it as `$`."""
+    """Pick one calling form for tools that share a skill folder.
+
+    Codex and Antigravity both use `.agents/skills`; if they disagree, "/" is used and
+    AGENTS.md tells Codex to read it as "$".
+
+    Args:
+        tools: Tools that share a skill folder.
+
+    Returns:
+        The prefix.
+
+    Example:
+        >>> from lanternspec.tools import get
+        >>> command_prefix([get("codex")]), command_prefix([get("codex"), get("antigravity")])
+        ('$', '/')
+    """
     prefixes = {t.command_prefix for t in tools}
     return prefixes.pop() if len(prefixes) == 1 else "/"
 
 
 def generate(profile: Profile, tools: list[Tool], enums: enums_mod.Enums | None = None) -> dict[str, str]:
+    """Build every skill file for the chosen tools.
+
+    Args:
+        profile: The project's settings.
+        tools: The tools to install for.
+        enums: The project's choice lists; the bundled ones when None.
+
+    Returns:
+        Path relative to the project root → text.
+
+    Raises:
+        ValueError: Tools sharing a folder would write different content to the same file.
+
+    Example:
+        >>> from lanternspec.tools import get
+        >>> files = generate(Profile(data={}), [get("claude")])
+        >>> ".claude/skills/l-build/SKILL.md" in files
+        True
+    """
     by_root: dict[str, list[Tool]] = {}
     for t in tools:
         by_root.setdefault(t.skill_root, []).append(t)

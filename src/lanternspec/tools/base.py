@@ -1,11 +1,11 @@
-"""What every AI tool adapter provides — the contract the rest of LanternSpec talks to (C-05 · C-09).
+"""What every AI tool adapter provides — the contract the rest of LanternSpec talks to.
 
 A tool adapter answers three questions only, each in that tool's own format:
   1. skills  — where a skill goes and what its frontmatter looks like
   2. config  — which settings files carry our rules, hooks and MCP server
   3. hooks   — how its hook payload reads (parse_hook) and how an answer is written back (respond)
 
-What a hook *does* (H-4 … H-10) lives in agent_hooks.py and never looks at a tool's format.
+What a hook *does* lives in agent_hooks.py and never looks at a tool's format.
 """
 
 from __future__ import annotations
@@ -36,7 +36,23 @@ MCP_SERVER = {"command": "lantern", "args": ["mcp"]}
 
 @dataclass
 class HookInput:
-    """One hook call, in LanternSpec's words (each tool maps its own payload onto this)."""
+    """One hook call, in LanternSpec's words (each tool maps its own payload onto this).
+
+    Attributes:
+        session: The conversation's ID.
+        model: The model in use.
+        source: For session-start: "startup", "resume" or "compact".
+        prompt: For prompt: what the user wrote.
+        tool: For post-tool: the tool that ran.
+        tool_input: For post-tool: the tool's input.
+        cwd: The folder the agent works in.
+        turn_start: For prompt: whether this is the first model call of a user turn.
+        finished: For stop: whether the turn ended normally (not an error or a cancel).
+
+    Example:
+        >>> HookInput(session="s1", prompt="/l-build W-012").prompt
+        '/l-build W-012'
+    """
 
     session: str = ""
     model: str = ""
@@ -51,21 +67,66 @@ class HookInput:
 
 @dataclass
 class HookResult:
-    """What a hook wants to say — each tool decides how to deliver it."""
+    """What a hook wants to say — each tool decides how to deliver it.
 
-    context: str = ""  # add to the model's context (H-4 · H-5 notes · H-9 · H-10)
-    block: str = ""  # H-5: the doc just written is broken — fix it now
-    notice: str = ""  # H-7: a one-line suggestion when the turn ends
+    Attributes:
+        context: Text to add to the model's context (status, notes, detected questions or ideas).
+        block: The document just written is broken — the agent must fix it now.
+        notice: A one-line suggestion when the turn ends.
+
+    Example:
+        >>> HookResult(notice="/l-sync 할까요?").block
+        ''
+    """
+
+    context: str = ""
+    block: str = ""
+    notice: str = ""
 
 
 @dataclass
 class HookReply:
+    """What the hook process prints and returns, in the tool's own format.
+
+    Attributes:
+        stdout: Text for standard output.
+        stderr: Text for standard error.
+        code: The exit code.
+
+    Example:
+        >>> HookReply(stdout="{}").code
+        0
+    """
+
     stdout: str = ""
     stderr: str = ""
     code: int = 0
 
 
 class Tool:
+    """The contract of an AI tool adapter.
+
+    Shared code knows only this class; each tool overrides what its format needs.
+    Methods with a default (skill_meta, skill_extras, install_config, written_paths) are overridden
+    only by tools that need them.
+
+    Attributes:
+        name: Key used on the command line and in installed.json, e.g. "claude".
+        label: Display name, e.g. "Claude Code".
+        launch: The terminal command that opens this tool (claude · codex · agy).
+        skill_root: Folder that holds `<skill>/SKILL.md`.
+        command_prefix: How a user calls a skill: "/" (/l-build) or "$" ($l-build).
+        session_expr: Shell expression a skill passes as `--session`.
+        expands_arguments: Whether the tool substitutes `$ARGUMENTS` in a skill body.
+        config_paths: Files and folders this tool owns (not project code).
+        write_tools: Tool names that write files (checked after they run).
+
+    Example:
+        >>> from lanternspec.tools import get
+        >>> get("claude").skill_root
+        '.claude/skills'
+    """
+
     name = ""
     label = ""
     launch = ""  # the terminal command that opens this tool (claude · codex · agy)
@@ -74,19 +135,60 @@ class Tool:
     session_expr = "$(date +%Y-%m-%d)"  # shell expression a skill passes as --session
     expands_arguments = False  # does the tool substitute $ARGUMENTS in a skill body?
     config_paths: tuple[str, ...] = ()  # files · folders this tool owns (not project code)
-    write_tools: frozenset[str] = frozenset()  # tool names that write files (H-5)
+    write_tools: frozenset[str] = frozenset()  # tool names that write files (checked right after)
 
     # ---- skills
     def skill_meta(self, src: SkillSource, profile: Profile, prefix: str) -> dict[str, Any]:
+        """Build the frontmatter of an installed skill.
+
+        Args:
+            src: The skill source.
+            profile: The project's settings.
+            prefix: The tool's command prefix, used to rewrite skill names in the description.
+
+        Returns:
+            Frontmatter keys and values (name and description by default).
+
+        Example:
+            >>> get("codex").skill_meta(src, profile, "$")["name"]  # doctest: +SKIP
+            'l-build'
+        """
         from .skills import rewrite_commands
 
         return {"name": src.name, "description": rewrite_commands(src.description, prefix)}
 
     def skill_extras(self, src: SkillSource, profile: Profile) -> dict[str, str]:
-        """Tool-only files next to SKILL.md (relative to the skill folder)."""
+        """Return tool-only files to put next to SKILL.md.
+
+        Args:
+            src: The skill source.
+            profile: The project's settings.
+
+        Returns:
+            Path relative to the skill folder → text; none by default.
+
+        Example:
+            >>> get("claude").skill_extras(src, profile)  # doctest: +SKIP
+            {}
+        """
         return {}
 
     def skill_files(self, src: SkillSource, profile: Profile, prefix: str, enums: Enums | None = None) -> dict[str, str]:
+        """Build every file of one installed skill: SKILL.md (frontmatter + generated note + body) and its extra files.
+
+        Args:
+            src: The skill source.
+            profile: The project's settings (fill `<<…>>` values).
+            prefix: The tool's command prefix.
+            enums: The project's choice lists; the bundled ones when None.
+
+        Returns:
+            Path relative to the project root → text.
+
+        Example:
+            >>> list(get("claude").skill_files(src, profile, "/"))[0]  # doctest: +SKIP
+            '.claude/skills/l-build/SKILL.md'
+        """
         from .skills import render_body, rewrite_commands
 
         base = f"{self.skill_root}/{src.name}"
@@ -99,23 +201,101 @@ class Tool:
         return files
 
     def owns_skill_file(self, rel: str) -> bool:
+        """Tell whether an installed file is one of this tool's skill files.
+
+        Args:
+            rel: Path relative to the project root.
+
+        Returns:
+            True when it lies under skill_root.
+
+        Example:
+            >>> from lanternspec.tools import get
+            >>> get("claude").owns_skill_file(".claude/skills/l-build/SKILL.md")
+            True
+        """
         return rel.startswith(self.skill_root + "/")
 
     # ---- project config (rules · hooks · MCP); returns what was merged, for the install report
     def install_config(self, project: Project, mcp: bool) -> list[str]:
+        """Merge our rules, hooks and MCP server into the tool's settings files, keeping the user's own entries.
+
+        Args:
+            project: The project.
+            mcp: Also register the knowledge MCP server.
+
+        Returns:
+            What was merged, for the install report; nothing by default.
+
+        Example:
+            >>> get("claude").install_config(project, mcp=False)  # doctest: +SKIP
+            ['.claude/settings.json (hooks)']
+        """
         return []
 
     # ---- hooks
     def hook_command(self, event: str) -> str:
+        """Return the shell command a hook entry runs (it does nothing when `lantern` is missing).
+
+        Args:
+            event: Our hook event, e.g. "session-start".
+
+        Returns:
+            The command.
+
+        Example:
+            >>> from lanternspec.tools import get
+            >>> get("codex").hook_command("stop")
+            'if command -v lantern >/dev/null 2>&1; then lantern hook stop --agent codex; fi'
+        """
         return HOOK_COMMAND.format(event=event, agent=f" --agent {self.name}")
 
     def parse_hook(self, event: str, data: dict[str, Any]) -> HookInput:
+        """Read the tool's hook payload.
+
+        Args:
+            event: Our hook event.
+            data: The JSON the tool sent on stdin.
+
+        Returns:
+            The call in LanternSpec's words.
+
+        Example:
+            >>> get("claude").parse_hook("prompt", {"session_id": "s1", "prompt": "hi"}).session  # doctest: +SKIP
+            's1'
+        """
         raise NotImplementedError
 
     def written_paths(self, inp: HookInput) -> list[str]:
+        """Return the files a post-tool call wrote (so they can be checked right away).
+
+        Args:
+            inp: The hook call.
+
+        Returns:
+            Written paths; none by default.
+
+        Example:
+            >>> get("claude").written_paths(HookInput(tool="Write", tool_input={"file_path": "docs/a.md"}))  # doctest: +SKIP
+            ['docs/a.md']
+        """
         return []
 
     def respond(self, project: Project, event: str, result: HookResult) -> HookReply:
+        """Write a hook result back in the form the tool accepts. Must work for any result, even an empty one.
+
+        Args:
+            project: The project.
+            event: Our hook event.
+            result: What the hook wants to say.
+
+        Returns:
+            What to print and the exit code.
+
+        Example:
+            >>> get("antigravity").respond(project, "post-tool", HookResult()).stdout  # doctest: +SKIP
+            '{}'
+        """
         raise NotImplementedError
 
 
@@ -123,21 +303,70 @@ class Tool:
 
 
 def yaml_front(meta: dict[str, Any]) -> str:
+    """Write a mapping as a YAML frontmatter block.
+
+    Args:
+        meta: Keys and values, in order.
+
+    Returns:
+        The block, between `---` lines.
+
+    Example:
+        >>> print(yaml_front({"name": "l-build", "description": "구현"}), end="")
+        ---
+        name: l-build
+        description: 구현
+        ---
+    """
     return "---\n" + yaml.safe_dump(meta, allow_unicode=True, sort_keys=False, width=10_000) + "---\n"
 
 
 def merge_json_file(path: Path, merge: Callable[[dict[str, Any]], dict[str, Any]]) -> None:
+    """Change a JSON settings file through a merge function (a missing or empty file starts as {}).
+
+    Args:
+        path: The JSON file.
+        merge: Takes the current data and returns the new data.
+
+    Example:
+        >>> merge_json_file(Path(".claude/settings.json"), lambda d: {**d, "x": 1})  # doctest: +SKIP
+    """
     data = json.loads(read(path)) if path.exists() and read(path).strip() else {}
     write(path, json.dumps(merge(data), ensure_ascii=False, indent=2) + "\n")
 
 
 def is_our_hook(entry: dict[str, Any]) -> bool:
+    """Tell whether a hook entry is ours (its command calls `lantern hook`).
+
+    Args:
+        entry: A hook entry, with a command or a list of hooks with commands.
+
+    Returns:
+        True for LanternSpec's entries.
+
+    Example:
+        >>> is_our_hook({"hooks": [{"command": "lantern hook stop"}]}), is_our_hook({"command": "echo hi"})
+        (True, False)
+    """
     cmds = [entry.get("command", "")] + [h.get("command", "") for h in entry.get("hooks", [])]
     return any("lantern hook" in c for c in cmds)
 
 
 def replace_hook_entries(data: dict[str, Any], ours: dict[str, list[dict[str, Any]]]) -> dict[str, Any]:
-    """Claude-style `hooks: {Event: [entries]}` — drop our old entries, keep the user's, add ours."""
+    """Replace our hook entries in Claude-style settings (`hooks: {Event: [entries]}`), keeping the user's.
+
+    Args:
+        data: The settings, changed in place.
+        ours: Event → our new entries.
+
+    Returns:
+        The settings.
+
+    Example:
+        >>> data = {"hooks": {"Stop": [{"command": "echo hi"}, {"command": "lantern hook stop"}]}}
+        >>> replace_hook_entries(data, {"Stop": [{"command": "lantern hook stop --agent claude"}]})["hooks"]["Stop"]
+        [{'command': 'echo hi'}, {'command': 'lantern hook stop --agent claude'}]
+    """
     hooks = data.setdefault("hooks", {})
     for event, entries in ours.items():
         hooks[event] = [e for e in hooks.get(event, []) if not is_our_hook(e)] + entries
@@ -145,6 +374,18 @@ def replace_hook_entries(data: dict[str, Any], ours: dict[str, list[dict[str, An
 
 
 def hook_state_dir(project: Project) -> Path:
+    """Return the folder where hooks keep state between calls (created when missing).
+
+    Args:
+        project: The project.
+
+    Returns:
+        `.lantern/hook-state`.
+
+    Example:
+        >>> hook_state_dir(project).name  # doctest: +SKIP
+        'hook-state'
+    """
     p = project.state / "hook-state"
     p.mkdir(parents=True, exist_ok=True)
     return p

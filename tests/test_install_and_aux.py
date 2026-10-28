@@ -1,4 +1,4 @@
-"""설치기 · 어댑터 · 에이전트 hook · 보조 명령(template · map · legacy · doctor)."""
+"""Installer · adapters · agent hooks · helper commands (template · map · legacy · doctor)."""
 
 import json
 import re
@@ -358,7 +358,7 @@ def test_h7_sync_nudge_once_per_work_and_h8_compact_roundtrip(repo):
     r = _hook(repo.root, "stop", {"session_id": "s1"})
     assert not r.stdout  # once per work
     _hook(repo.root, "pre-compact", {"session_id": "s1"})
-    # H-8: the script overwrites 기록.md "지금 상황" with the state; what was written there moves to "지난 기록"
+    # before compaction: the script overwrites 기록.md "지금 상황" with the state; what was written there moves to "지난 기록"
     text = rec.read_text(encoding="utf-8")
     now = text.split("## 지금 상황", 1)[1].split("## 증거", 1)[0]
     history = text.split("## 지난 기록", 1)[1]
@@ -436,4 +436,4 @@ def test_install_explains_next_steps_and_other_ai_tools(repo, monkeypatch):
     _, out = repo("install", "--tools", "claude,codex")
     assert "Claude Code는 `claude`, Codex는 `codex`" in out and "(Codex는 `$l-init`)" in out
     assert "이 컴퓨터에" not in out  # 다 설정했으면 더 권하지 않는다
-    assert "H-" not in out  # 명세 번호는 사용자에게 보이지 않는다
+    assert "H-" not in out  # internal spec numbers never reach the user

@@ -1,4 +1,8 @@
-"""Existing documents of a brownfield project (I-02): originals stay in `5. 기존 문서/`; the script builds the map and TODOs."""
+"""Existing documents of a brownfield project: originals stay in `5. 기존 문서/`; the script builds the map and TODOs.
+
+Not here:
+    - deciding where each document's content goes — the person does that in the map (/l-init)
+"""
 
 from __future__ import annotations
 
@@ -28,7 +32,22 @@ def _move(project: Project, src: Path, dest: Path) -> None:
 
 
 def adopt(project: Project, source: Path | None = None) -> list[str]:
-    """Move existing documents into `docs/5. 기존 문서/` (git mv keeps their history)."""
+    """Move existing documents into `docs/5. 기존 문서/` (git mv keeps their history) and add them to the map.
+
+    Args:
+        project: The project.
+        source: A file or folder to move; when None, everything in the documents root that is not ours.
+
+    Returns:
+        Where each item moved, relative to the project root.
+
+    Raises:
+        FileNotFoundError: source does not exist.
+
+    Example:
+        >>> adopt(project, Path("wiki"))  # doctest: +SKIP
+        ['docs/5. 기존 문서/wiki']
+    """
     legacy = project.folder("legacy")
     moved: list[str] = []
     if source is None:
@@ -54,6 +73,18 @@ def adopt(project: Project, source: Path | None = None) -> list[str]:
 
 
 def legacy_files(project: Project) -> list[Path]:
+    """List the files kept in the legacy folder (the map itself and hidden files left out).
+
+    Args:
+        project: The project.
+
+    Returns:
+        The files, sorted; empty when there is no legacy folder.
+
+    Example:
+        >>> [p.name for p in legacy_files(project)]  # doctest: +SKIP
+        ['README.md', '설계 메모.md']
+    """
     legacy = project.folder("legacy")
     if not legacy.exists():
         return []
@@ -65,6 +96,19 @@ def legacy_files(project: Project) -> list[Path]:
 
 
 def map_rows(project: Project, files: list[Path]) -> str:
+    """Build the map's table rows for legacy files, with blanks for the person to fill.
+
+    Args:
+        project: The project.
+        files: Legacy files.
+
+    Returns:
+        One row per file; a single blank row when there are none.
+
+    Example:
+        >>> map_rows(project, []).count("|")  # doctest: +SKIP
+        6
+    """
     rows = []
     for p in files:
         rel = project.docs_rel(p)
@@ -76,7 +120,18 @@ def map_rows(project: Project, files: list[Path]) -> str:
 
 
 def add_map_rows(project: Project) -> Path | None:
-    """Add a row for every legacy file the map does not mention yet."""
+    """Add a row to the legacy map for every legacy file it does not mention yet.
+
+    Args:
+        project: The project.
+
+    Returns:
+        The map; None when there is no map.
+
+    Example:
+        >>> add_map_rows(project).name  # doctest: +SKIP
+        '기존 문서 지도.md'
+    """
     m = project.folder("legacy") / "기존 문서 지도.md"
     if not m.exists():
         return None
@@ -105,6 +160,18 @@ def add_map_rows(project: Project) -> Path | None:
 
 
 def todos(project: Project) -> list[dict[str, str]]:
+    """Find TODO-like lines in legacy text documents (TODO, FIXME, "나중에", open check boxes …).
+
+    Args:
+        project: The project.
+
+    Returns:
+        file (from the docs root), line and text for each match.
+
+    Example:
+        >>> todos(project)[0]["text"]  # doctest: +SKIP
+        'TODO: 로그인 실패 처리'
+    """
     out = []
     for p in legacy_files(project):
         if p.suffix.lower() not in (".md", ".txt", ".markdown"):

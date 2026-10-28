@@ -1,4 +1,13 @@
-"""`lantern task next|start|done|list` — used inside /l-build (TA-02). Not a user command."""
+"""`lantern task next|start|done|list` — used inside /l-build. Not a user command.
+
+Responsibilities:
+    - choose the next task that can start (dependencies, ❓ marks, missing mockups)
+    - add tasks with the next ID; mark start, done and reopen with times
+    - tick acceptance criteria once verified; suggest due dates from past durations
+
+Not here:
+    - reading and editing task lines → core/taskfile.py
+"""
 
 from __future__ import annotations
 
@@ -16,6 +25,19 @@ STAGE_ROLES = ["plan", "design", "tasks", "build", "done"]  # work_status roles,
 
 @dataclass
 class NextResult:
+    """What `lantern task next` found.
+
+    Attributes:
+        task: The next task to start; None when nothing can start.
+        work: The work folder of that task.
+        skipped: (task ID, reason) for each unfinished task that cannot start yet.
+        all_done: Whether there were tasks and every one is done.
+
+    Example:
+        >>> NextResult(task=None, work=None).all_done
+        False
+    """
+
     task: Task | None
     work: Path | None
     skipped: list[tuple[str, str]] = field(default_factory=list)  # (task id, reason)
@@ -37,6 +59,25 @@ def _work_of_task(task_id: str) -> str:
 
 
 def next_task(project: Project, work_id: str | None = None) -> NextResult:
+    """Find the next task that can start, in work and file order.
+
+    A task is skipped while it is done, marked ❓, waits on another task, or (under
+    `plan.ui_reference: required`) builds a screen whose mockup is missing.
+
+    Args:
+        project: The project.
+        work_id: Look only in this work; every work in progress when None.
+
+    Returns:
+        The next task, or the skipped tasks with their reasons.
+
+    Raises:
+        ValueError: work_id is given but the work is not in progress.
+
+    Example:
+        >>> next_task(project, "W-012").task.id  # doctest: +SKIP
+        'W-012-T02'
+    """
     works = [project.find_work(work_id, include_archive=False)] if work_id else project.work_dirs()
     ui_required = project.profile.get("plan.ui_reference") == "required"
     skipped: list[tuple[str, str]] = []
@@ -91,6 +132,23 @@ def _edit_task(project: Project, task_id: str, edit: Callable[[str, Task], str])
 
 
 def start(project: Project, task_id: str) -> Task:
+    """Mark a task started (`[시작:: time]`) and move the work's documents to the build stage.
+
+    Args:
+        project: The project.
+        task_id: The task, e.g. "W-012-T02".
+
+    Returns:
+        The task as it is now.
+
+    Raises:
+        ValueError: The work or the task does not exist.
+
+    Example:
+        >>> start(project, "W-012-T02").started  # doctest: +SKIP
+        '2026-10-28 09:00'
+    """
+
     def edit(line: str, t: Task) -> str:
         return line if t.started else set_attr(line, "시작", now_minute())
 
@@ -102,12 +160,41 @@ def start(project: Project, task_id: str) -> Task:
 
 @dataclass
 class DoneResult:
+    """What `lantern task done` changed.
+
+    Attributes:
+        task: The task as it is now.
+        checkpoints: Acceptance criteria whose tasks are now all done — check these now.
+        work_done: Whether every task of the work is done.
+
+    Example:
+        >>> DoneResult(task=None, checkpoints=["AC-1"], work_done=False).checkpoints  # doctest: +SKIP
+        ['AC-1']
+    """
+
     task: Task
     checkpoints: list[str]  # AC ids whose tasks are now all done
     work_done: bool
 
 
 def done(project: Project, task_id: str) -> DoneResult:
+    """Check a task and stamp its finish time (and its start time if it was never started).
+
+    Args:
+        project: The project.
+        task_id: The task, e.g. "W-012-T02".
+
+    Returns:
+        The task, the acceptance criteria now ready to check, and whether the work is done.
+
+    Raises:
+        ValueError: The work or the task does not exist.
+
+    Example:
+        >>> done(project, "W-012-T02").checkpoints  # doctest: +SKIP
+        ['AC-1']
+    """
+
     def edit(line: str, t: Task) -> str:
         line = set_checked(line, True)
         if not t.started:
@@ -124,6 +211,23 @@ def done(project: Project, task_id: str) -> DoneResult:
 
 
 def reopen(project: Project, task_id: str) -> Task:
+    """Uncheck a task and drop its finish time.
+
+    Args:
+        project: The project.
+        task_id: The task, e.g. "W-012-T02".
+
+    Returns:
+        The task as it is now.
+
+    Raises:
+        ValueError: The work or the task does not exist.
+
+    Example:
+        >>> reopen(project, "W-012-T02").done  # doctest: +SKIP
+        False
+    """
+
     def edit(line: str, t: Task) -> str:
         import re
 
@@ -135,7 +239,23 @@ def reopen(project: Project, task_id: str) -> Task:
 
 
 def check_ac(project: Project, work_id: str, ac_id: str) -> Path:
-    """Tick an acceptance criterion in `기획.md` once it was verified (AC checkpoint)."""
+    """Tick an acceptance criterion in `기획.md` once it was verified.
+
+    Args:
+        project: The project.
+        work_id: The work, e.g. "W-012".
+        ac_id: The criterion, e.g. "AC-1".
+
+    Returns:
+        The plan document.
+
+    Raises:
+        ValueError: The work or the criterion does not exist.
+
+    Example:
+        >>> check_ac(project, "W-012", "AC-1").name  # doctest: +SKIP
+        '기획.md'
+    """
     folder = project.find_work(work_id, include_archive=False)
     if folder is None:
         raise ValueError(f"작업 {work_id}를 찾지 못했습니다")
@@ -150,6 +270,19 @@ def check_ac(project: Project, work_id: str, ac_id: str) -> Path:
 
 
 def summary(project: Project, work_id: str | None = None) -> list[str]:
+    """List the tasks of works with their progress, for `lantern task list`.
+
+    Args:
+        project: The project.
+        work_id: Only this work; every work in progress when None.
+
+    Returns:
+        Lines: one header per work, then one line per task (`[x]` done, `[▶]` started) with why it is blocked.
+
+    Example:
+        >>> summary(project, "W-012")[0]  # doctest: +SKIP
+        'W-012: 1/3 완료'
+    """
     out = []
     works = [project.find_work(work_id)] if work_id else project.work_dirs()
     for w in works:
@@ -183,7 +316,32 @@ def add(
     unknown: bool = False,
     parallel: bool = False,
 ) -> Task:
-    """Append a task line with the next ID (P1: numbering by script). Replaces the template's blank line."""
+    """Append a task line with the next ID. Replaces the template's example line.
+
+    Args:
+        project: The project.
+        work_id: The work, e.g. "W-012".
+        what: What to do, in one line.
+        size: "S", "M" or "L".
+        ac: Acceptance criteria the task serves, e.g. ["AC-1"].
+        after: Tasks that must finish first, e.g. ["T01"].
+        owner: Who does it (team projects).
+        screen: The screen the task builds (matched with mockups).
+        start_plan: Planned start date.
+        due_plan: Planned due date.
+        unknown: Mark the line "❓ 확인 필요" — it cannot start until checked.
+        parallel: Mark the line `[P]` — it can run alongside other `[P]` tasks.
+
+    Returns:
+        The new task.
+
+    Raises:
+        ValueError: The size is not S · M · L, or the work or its `할 일.md` does not exist.
+
+    Example:
+        >>> add(project, "W-012", "카카오 버튼", size="S", ac=["AC-1"]).id  # doctest: +SKIP
+        'W-012-T03'
+    """
     import re
 
     if size not in ("S", "M", "L"):
@@ -219,7 +377,19 @@ def add(
 
 
 def ready(project: Project, work_id: str | None = None) -> list[Task]:
-    """Every task that can start now — [P] ones can go to parallel agents together."""
+    """List every task that can start now — `[P]` ones can go to parallel agents together.
+
+    Args:
+        project: The project.
+        work_id: Only this work; every work in progress when None.
+
+    Returns:
+        The tasks that are not done and not blocked.
+
+    Example:
+        >>> [t.id for t in ready(project, "W-012")]  # doctest: +SKIP
+        ['W-012-T02', 'W-012-T03']
+    """
     out: list[Task] = []
     works = [project.find_work(work_id, include_archive=False)] if work_id else project.work_dirs()
     ui_required = project.profile.get("plan.ui_reference") == "required"
@@ -240,7 +410,27 @@ DEFAULT_HOURS = {"S": 2.0, "M": 4.0, "L": 8.0}  # S an hour or two · M half a d
 
 
 def estimate(project: Project, work_id: str, start: str | None = None, hours_per_day: float = 6.0, apply: bool = False) -> list[str]:
-    """**Suggest** due dates from the actual average per size (TA-02, next version). Writes only with apply (after the person agrees)."""
+    """**Suggest** due dates from the actual median duration per size; writes only with apply.
+
+    Sizes with fewer than two finished tasks use the defaults (S 2h · M 4h · L 8h). Weekends are skipped.
+
+    Args:
+        project: The project.
+        work_id: The work, e.g. "W-012".
+        start: First day (ISO date); today when None.
+        hours_per_day: Working hours per day.
+        apply: Write `[시작 예정]` · `[마감 예정]` into `할 일.md` (after the person agrees).
+
+    Returns:
+        Lines: the hours per size, one line per unfinished task, then what to do next.
+
+    Raises:
+        ValueError: The work or its `할 일.md` does not exist.
+
+    Example:
+        >>> estimate(project, "W-012", start="2026-10-28")[1]  # doctest: +SKIP
+        'W-012-T02 카카오 버튼 [S] → 2026-10-28 ~ 2026-10-28'
+    """
     import datetime as dt
     from statistics import median
 

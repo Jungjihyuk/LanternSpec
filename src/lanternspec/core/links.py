@@ -1,4 +1,13 @@
-"""Find and resolve links the way Obsidian does: path from vault root, relative path, or unique basename."""
+"""Find and resolve links the way Obsidian does: path from vault root, relative path, or unique basename.
+
+Responsibilities:
+    - find wikilinks and Markdown links in a document (skipping code and template blanks)
+    - resolve a link to a file under the documents root
+
+Not here:
+    - reporting broken links → check/check_docs.py
+    - building links → core/project.py (wikilink)
+"""
 
 from __future__ import annotations
 
@@ -17,6 +26,20 @@ INLINE_CODE = re.compile(r"`[^`\n]*`")
 
 @dataclass
 class Link:
+    """One link found in a document.
+
+    Attributes:
+        target: The linked path or name, without alias, heading or block part.
+        line_no: The 1-based line the link is on.
+        embed: Whether it is an embed (`![[…]]` or `![…](…)`).
+        kind: "wiki" or "md".
+        raw: The link exactly as written.
+
+    Example:
+        >>> next(iter_links("[[기록#지금 상황|기록]]")).target
+        '기록'
+    """
+
     target: str
     line_no: int  # 1-based
     embed: bool
@@ -25,6 +48,22 @@ class Link:
 
 
 def iter_links(text: str) -> Iterator[Link]:
+    r"""Yield the links of a document.
+
+    Code fences and inline code are skipped, as are links with template blanks (`{{…}}` · `${…}`),
+    web or other scheme links, and Markdown links to a heading of the same file.
+
+    Args:
+        text: The whole document.
+
+    Yields:
+        Each link, in reading order.
+
+    Example:
+        >>> text = "[[W-012 로그인]] 와 [설계](설계.md)\n`[[코드]]`"
+        >>> [(link.kind, link.target) for link in iter_links(text)]
+        [('wiki', 'W-012 로그인'), ('md', '설계.md')]
+    """
     in_fence = False
     for i, line in enumerate(text.split("\n"), start=1):
         if line.lstrip().startswith("```"):
@@ -48,7 +87,27 @@ def iter_links(text: str) -> Iterator[Link]:
 
 
 class Resolver:
+    """Resolve links against the files under a documents root, as Obsidian would.
+
+    The file list is read once when the resolver is made; hidden folders are skipped.
+
+    Attributes:
+        root: The resolved documents root.
+        by_name: Lower-case file name (and stem for `.md`) → files with that name.
+        by_rel: Lower-case path from the root (with and without `.md`) → file.
+
+    Example:
+        >>> resolver = Resolver(project.docs)  # doctest: +SKIP
+        >>> resolver.resolve(next(iter_links("[[기록]]")), project.docs / "index.md")  # doctest: +SKIP
+        PosixPath('…/docs/기록.md')
+    """
+
     def __init__(self, docs_root: Path) -> None:
+        """Read the file list under the documents root.
+
+        Args:
+            docs_root: The documents root (the Obsidian vault).
+        """
         self.root = docs_root.resolve()
         self.by_name: dict[str, list[Path]] = {}
         self.by_rel: dict[str, Path] = {}
@@ -65,6 +124,22 @@ class Resolver:
                     self.by_rel[rel[:-3]] = p
 
     def resolve(self, link: Link, source: Path) -> Path | None:
+        """Find the file a link points to.
+
+        Wikilinks try, in order: the path from the root, the path relative to the source's folder,
+        then a unique file name. Markdown links are relative to the source, then to the root.
+
+        Args:
+            link: The link.
+            source: The document the link is in.
+
+        Returns:
+            The target file (the source itself for `[[#heading]]`); None when nothing matches.
+
+        Example:
+            >>> resolver.resolve(link, project.docs / "index.md")  # doctest: +SKIP
+            PosixPath('…/docs/2. 작업/W-012 로그인/기록.md')
+        """
         target = nfc(link.target).strip()
         if not target:
             return source  # [[#heading]] — same file

@@ -1,15 +1,17 @@
-"""Agent hooks — nice to have. Without them the skills' common close (P4) does the same.
+"""Agent hooks — nice to have. Without them the skills' common close (`lantern close`) does the same.
 
 What each hook does, for every tool alike (a tool adapter only reads its payload and writes the answer):
 
-session-start  H-4  put the three-line status into the conversation (right after compaction, also the H-8 save)
-prompt         H-6  which skill started the turn · H-9 tech-question detection · H-10 idea detection
-post-tool      H-5  check the format as soon as a docs/ document is written → fix it on the spot if broken
-               H-6  count tool calls
-feedback       (Antigravity) deliver the H-5 result that post-tool could not say right away
-stop           H-6  one run-log line per finished answer
-               H-7  suggest /l-sync when code changed but the work documents did not (once per work item, never forced)
-pre-compact    H-8  save progress into "지금 상황" of `기록.md` (or the session document) before compaction; session-start puts it back
+session-start  put the three-line status into the conversation (right after compaction, also the saved progress)
+prompt         which skill started the turn (run log) · tech-question detection · idea detection
+post-tool      check the format as soon as a docs/ document is written → fix it on the spot if broken
+               count tool calls (run log)
+feedback       (Antigravity) deliver the document-check result that post-tool could not say right away
+stop           one run-log line per finished answer
+               suggest /l-sync when code changed but the work documents did not (once per work item, never forced)
+pre-compact    save progress into "지금 상황" of `기록.md` (or the session document) before compaction; session-start puts it back
+
+Every handler takes (project, tool, hook call) and returns a HookResult; it never stops the agent.
 """
 
 from __future__ import annotations
@@ -27,6 +29,24 @@ STRUCTURE_CODES = {"frontmatter", "common-fields", "enum", "broken-link", "dup-i
 
 
 def run(project: Project, event: str, tool: Tool, raw: str) -> HookReply:
+    """Handle one hook call: read the payload, run the handler, answer in the tool's format.
+
+    Args:
+        project: The project.
+        event: Our hook event, e.g. "post-tool".
+        tool: The tool that called.
+        raw: The payload text from stdin (empty or broken JSON is read as {}).
+
+    Returns:
+        What to print and the exit code.
+
+    Raises:
+        ValueError: The event is unknown.
+
+    Example:
+        >>> run(project, "stop", get("claude"), "{}").code  # doctest: +SKIP
+        0
+    """
     try:
         data = json.loads(raw) if raw.strip() else {}
     except json.JSONDecodeError:
@@ -37,10 +57,24 @@ def run(project: Project, event: str, tool: Tool, raw: str) -> HookReply:
     return tool.respond(project, event, HANDLERS[event](project, tool, inp))
 
 
-# --------------------------------------------------------------------------- H-4 · H-8
+# --------------------------------------------------------------------------- session start · compaction
 
 
 def session_start(project: Project, tool: Tool, inp: HookInput) -> HookResult:
+    """Put the three-line status into the conversation; after compaction, also the progress saved before it.
+
+    Args:
+        project: The project.
+        tool: The tool that called.
+        inp: The hook call.
+
+    Returns:
+        The status as context (a "run /l-init" note before the project is set up).
+
+    Example:
+        >>> session_start(project, tool, HookInput(source="startup")).context.splitlines()[0]  # doctest: +SKIP
+        '[LanternSpec 지금 상황]'
+    """
     runlog.session_start(project, inp.session, inp.model or None, inp.source)
     if not project.profile.exists:
         return HookResult(context="[LanternSpec] 아직 프로젝트 준비 전입니다 — /l-init 으로 시작하세요.")
@@ -58,7 +92,20 @@ def _compact_file(project: Project, session: str) -> Path:
 
 
 def pre_compact(project: Project, tool: Tool, inp: HookInput) -> HookResult:
-    """H-8: save progress into the documents' "지금 상황" and remember which documents to put back after compaction."""
+    """Save progress into the documents' "지금 상황" and remember which documents to put back after compaction.
+
+    Args:
+        project: The project.
+        tool: The tool that called.
+        inp: The hook call.
+
+    Returns:
+        An empty result (nothing to say).
+
+    Example:
+        >>> pre_compact(project, tool, HookInput(session="s1"))  # doctest: +SKIP
+        HookResult(context='', block='', notice='')
+    """
     from ..work.progress import save_before_compact
 
     saved = save_before_compact(project)
@@ -87,10 +134,26 @@ def _saved_progress(project: Project, session: str) -> list[str]:
     return out
 
 
-# --------------------------------------------------------------------------- H-5 · H-6
+# --------------------------------------------------------------------------- document check · tool count
 
 
 def post_tool(project: Project, tool: Tool, inp: HookInput) -> HookResult:
+    """Count the tool call, and check any document the tool just wrote.
+
+    Errors and structure problems block (the agent must fix them now); warnings are added as context.
+
+    Args:
+        project: The project.
+        tool: The tool that called.
+        inp: The hook call.
+
+    Returns:
+        block for broken documents, otherwise context for warnings; empty for other tools.
+
+    Example:
+        >>> post_tool(project, tool, HookInput(tool="Write", tool_input={"file_path": "docs/a.md"})).block  # doctest: +SKIP
+        ''
+    """
     runlog.tool(project, inp.session, inp.tool, inp.tool_input)
     if inp.tool not in tool.write_tools:
         return HookResult()
@@ -121,13 +184,43 @@ def post_tool(project: Project, tool: Tool, inp: HookInput) -> HookResult:
 
 
 def feedback(project: Project, tool: Tool, inp: HookInput) -> HookResult:
+    """Return nothing — the tool adapter delivers what post-tool held back (Antigravity).
+
+    Args:
+        project: The project.
+        tool: The tool that called.
+        inp: The hook call.
+
+    Returns:
+        An empty result.
+
+    Example:
+        >>> feedback(None, None, HookInput())
+        HookResult(context='', block='', notice='')
+    """
     return HookResult()  # the tool adapter delivers what post-tool held back
 
 
-# --------------------------------------------------------------------------- H-6 · H-9 · H-10
+# --------------------------------------------------------------------------- prompt: tech questions · ideas
 
 
 def prompt(project: Project, tool: Tool, inp: HookInput) -> HookResult:
+    """At the start of a user turn: log which skill started it, then look for a tech question or an idea.
+
+    Explicit commands (`/…`, `$…`) are left to their skill.
+
+    Args:
+        project: The project.
+        tool: The tool that called.
+        inp: The hook call.
+
+    Returns:
+        Notes for the model as context; empty when there is nothing to say.
+
+    Example:
+        >>> prompt(project, tool, HookInput(prompt="JWT가 뭐야?")).context  # doctest: +SKIP
+        "LanternSpec 기술 질문: 사용자가 기술 'JWT'을(를) 물었습니다. …"
+    """
     if not inp.turn_start:
         return HookResult()
     runlog.prompt(project, inp.session, inp.prompt)
@@ -151,6 +244,20 @@ IDEA_HINT = re.compile(
 
 
 def tech_term(text: str) -> str:
+    """Find the technology a message asks about ("X가 뭐야", "X 설명해 줘", "what is X").
+
+    Only the first two lines are read.
+
+    Args:
+        text: The user's message.
+
+    Returns:
+        The term; "" when the message is not a tech question.
+
+    Example:
+        >>> tech_term("JWT가 뭐야?"), tech_term("What is a webhook?"), tech_term("버튼 색 바꿔 줘")
+        ('JWT', 'webhook', '')
+    """
     for line in text.strip().split("\n")[:2]:
         for pat in TECH_Q:
             m = pat.search(line.strip())
@@ -176,7 +283,23 @@ def _once(project: Project, key: str) -> bool:
 
 
 def learn_detect(project: Project, session: str, text: str) -> str:
-    """H-9 (LE-01, detect tech questions in conversation): manual: no count · ask: ask first · auto: count if a card exists."""
+    """React to a tech question according to `learn.detect`.
+
+    manual: nothing · ask: suggest recording it as debt · auto: count the ask when a card exists,
+    otherwise suggest a card once per conversation. Known terms and projects without a knowledge store are skipped.
+
+    Args:
+        project: The project.
+        session: The conversation.
+        text: The user's message.
+
+    Returns:
+        A note for the model; "" when there is nothing to say.
+
+    Example:
+        >>> learn_detect(project, "s1", "JWT가 뭐야?")  # doctest: +SKIP
+        "LanternSpec 기술 질문: 'JWT'은(는) 부채 카드 D-007에 있어 물은 횟수를 셌습니다 (2번째). …"
+    """
     mode = project.profile.get("learn.detect")
     if mode == "manual" or not project.profile.knowledge:
         return ""
@@ -211,7 +334,22 @@ def learn_detect(project: Project, session: str, text: str) -> str:
 
 
 def idea_detect(project: Project, session: str, text: str) -> str:
-    """H-10 (ID-03): ask — ask once per conversation · auto — record right away."""
+    """React to idea-like words according to `idea.capture`.
+
+    manual: nothing · ask: ask once per conversation whether to record it · auto: record it right away.
+
+    Args:
+        project: The project.
+        session: The conversation.
+        text: The user's message.
+
+    Returns:
+        A note for the model; "" when there is nothing to say.
+
+    Example:
+        >>> idea_detect(project, "s1", "다크 모드가 있으면 좋겠다")  # doctest: +SKIP
+        'LanternSpec 아이디어: 아이디어 같은 말이 있습니다. …'
+    """
     mode = project.profile.get("idea.capture")
     if mode == "manual" or not IDEA_HINT.search(text) or tech_term(text):
         return ""
@@ -228,16 +366,42 @@ def idea_detect(project: Project, session: str, text: str) -> str:
     )
 
 
-# --------------------------------------------------------------------------- H-6 · H-7
+# --------------------------------------------------------------------------- stop: run log · sync suggestion
 
 
 def stop(project: Project, tool: Tool, inp: HookInput) -> HookResult:
+    """Write the turn's run-log line and, after a normal finish, maybe suggest /l-sync.
+
+    Args:
+        project: The project.
+        tool: The tool that called.
+        inp: The hook call.
+
+    Returns:
+        The suggestion as a notice, or an empty result.
+
+    Example:
+        >>> stop(project, tool, HookInput(session="s1")).notice  # doctest: +SKIP
+        ''
+    """
     runlog.stop(project, inp.session, model=inp.model or None)
     return HookResult(notice=sync_nudge(project, inp.session) if inp.finished else "")
 
 
 def sync_nudge(project: Project, session: str) -> str:
-    """H-7: uncommitted code changes while the in-progress work's docs are untouched → suggest /l-sync once."""
+    """Suggest /l-sync once when code changed but the work in the build stage left its documents untouched.
+
+    Args:
+        project: The project.
+        session: The conversation (each work is suggested once per conversation).
+
+    Returns:
+        The suggestion; "" when there is nothing to suggest.
+
+    Example:
+        >>> sync_nudge(project, "s1")  # doctest: +SKIP
+        'LanternSpec: 코드 2개 파일이 바뀌었는데 진행 중 작업 W-012의 문서는 그대로예요. …'
+    """
     from ..core import frontmatter
     from ..core.project import git_out, nfc, read, work_id_of
     from ..report.scan import is_doc_path

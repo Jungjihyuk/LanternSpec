@@ -9,6 +9,7 @@ from .common import Add, CliError, _csv, _p
 
 
 def cmd_profile(a: argparse.Namespace) -> int:
+    """`lantern profile show|docs|write|set` — show, write or change lantern.yaml, or list the documents it turns on."""
     from ..core import profile as pm
     from ..core.project import read
 
@@ -153,6 +154,7 @@ def cmd_principles(a: argparse.Namespace) -> int:
 
 
 def cmd_new_id(a: argparse.Namespace) -> int:
+    """`lantern new-id <kind>` — print the next free ID of a kind."""
     from ..core.new_id import next_id, next_task_id
 
     project = _p()
@@ -166,6 +168,7 @@ def cmd_new_id(a: argparse.Namespace) -> int:
 
 
 def cmd_meta(a: argparse.Namespace) -> int:
+    """`lantern meta get|set` — read or change one document's frontmatter."""
     from ..core import frontmatter, meta
 
     project = _p()
@@ -179,6 +182,7 @@ def cmd_meta(a: argparse.Namespace) -> int:
 
 
 def cmd_enums(a: argparse.Namespace) -> int:
+    """`lantern enums list|rename` — show the choice lists, or rename a value everywhere."""
     from ..core import meta, state
 
     project = _p()
@@ -213,6 +217,7 @@ def cmd_enums(a: argparse.Namespace) -> int:
 
 
 def register(add: Add) -> None:
+    """Register the document-format commands."""
     p = add("profile", cmd_profile, "lantern.yaml 보기 · 쓰기 · 고치기 · 켜질 문서")
     p.add_argument("action", choices=["show", "docs", "write", "set"])
     p.add_argument("items", nargs="*", help="set: key=value …")

@@ -195,6 +195,13 @@ class Principle:
         explain: One-line description of the principle.
         rules: How to follow it.
         note: Kind-specific addition (data_note for data · ML); empty otherwise.
+
+    Example:
+        >>> from lanternspec.core.profile import DEFAULTS, Profile
+        >>> data = {**DEFAULTS, "project": {**DEFAULTS["project"], "kind": "script"}}
+        >>> first = select(Profile(data)).principles[0]
+        >>> first.id, first.level
+        ('simplicity', 'must')
     """
 
     id: str
@@ -241,6 +248,13 @@ class Selection:
         principles: All principles in table order (including skip).
         always: Ways of working always included (name, rules).
         conventions: One per language.
+
+    Example:
+        >>> from lanternspec.core.profile import DEFAULTS, Profile
+        >>> data = {**DEFAULTS, "project": {**DEFAULTS["project"], "kind": "script", "languages": ["python"]}}
+        >>> sel = select(Profile(data))
+        >>> sel.kind, sel.code, [c.language for c in sel.conventions]
+        ('script', 'small', ['python'])
     """
 
     kind: str
@@ -332,6 +346,11 @@ class Detected:
         evidence: Language → the file it was detected from.
         runners: Language → the runner prefix for commands (from the lock file, else the first runner).
         existing: Language → role → (tool name, command with runner, evidence). Only tools already configured.
+
+    Example:
+        >>> found = Detected(languages=["python"], runners={"python": "uv run"})
+        >>> found.commands(fill_defaults=False)
+        {}
     """
 
     languages: list[str] = field(default_factory=list)

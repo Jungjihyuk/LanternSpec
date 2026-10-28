@@ -1,9 +1,11 @@
-"""DBML is the source of truth for data (DE-03).
+"""DBML is the source of truth for data.
 
 * `check`       — syntax · duplicates · references
 * `render`      — Mermaid ERD + data dictionary into `데이터.md` (generated, never hand-edited)
 * `from_sql`    — brownfield: rebuild DBML from SQL migrations
 * `diff`        — DBML vs migrations drift (/l-sync)
+
+The parser covers the DBML that data documents use (tables, refs, enums); it is not a full DBML implementation.
 """
 
 from __future__ import annotations
@@ -18,6 +20,21 @@ DICT_START, DICT_END = "<!-- lantern:dictionary:start -->", "<!-- lantern:dictio
 
 @dataclass
 class Column:
+    r"""One column of a table.
+
+    Attributes:
+        name: Column name.
+        type: Column type as written, e.g. "varchar(20)".
+        settings: Settings inside `[…]`, e.g. ["pk", "not null"].
+        note: The column's note.
+        line: The 1-based line it is on (0 when built from SQL).
+
+    Example:
+        >>> col = parse("Table users {\n  id int [pk]\n}").tables["users"].columns[0]
+        >>> col.name, col.type, col.pk
+        ('id', 'int', True)
+    """
+
     name: str
     type: str
     settings: list[str] = field(default_factory=list)
@@ -26,19 +43,36 @@ class Column:
 
     @property
     def pk(self) -> bool:
+        """Whether the column is the primary key."""
         return any(s.lower() in ("pk", "primary key") for s in self.settings)
 
     @property
     def unique(self) -> bool:
+        """Whether the column is unique."""
         return any(s.lower() == "unique" for s in self.settings)
 
     @property
     def not_null(self) -> bool:
+        """Whether the column is not null."""
         return any(s.lower() == "not null" for s in self.settings)
 
 
 @dataclass
 class Table:
+    r"""One table.
+
+    Attributes:
+        name: Table name.
+        columns: Its columns, in order.
+        note: The table's note.
+        line: The 1-based line it starts on.
+        alias: The `as` alias, if any.
+
+    Example:
+        >>> parse("Table users as U {\n  id int\n}").tables["users"].alias
+        'U'
+    """
+
     name: str
     columns: list[Column] = field(default_factory=list)
     note: str = ""
@@ -46,6 +80,18 @@ class Table:
     alias: str | None = None
 
     def column(self, name: str) -> Column | None:
+        r"""Find a column by name.
+
+        Args:
+            name: Column name.
+
+        Returns:
+            The column; None when the table has none by that name.
+
+        Example:
+            >>> parse("Table users {\n  id int\n}").tables["users"].column("id").type
+            'int'
+        """
         for c in self.columns:
             if c.name == name:
                 return c
@@ -54,6 +100,19 @@ class Table:
 
 @dataclass
 class Ref:
+    """One reference between two columns.
+
+    Attributes:
+        left: (table, column) on the left.
+        op: ">" many-to-one, "<" one-to-many, "-" one-to-one, "<>" many-to-many.
+        right: (table, column) on the right.
+        line: The 1-based line it is on.
+
+    Example:
+        >>> parse("Ref: posts.user_id > users.id").refs[0].op
+        '>'
+    """
+
     left: tuple[str, str]
     op: str
     right: tuple[str, str]
@@ -62,6 +121,19 @@ class Ref:
 
 @dataclass
 class Schema:
+    r"""A parsed DBML file (or a schema rebuilt from SQL).
+
+    Attributes:
+        tables: Table name → table, in file order.
+        refs: All references.
+        enums: Enum name → values.
+        problems: (level, line, message) found while parsing.
+
+    Example:
+        >>> list(parse("Table a {\n  id int\n}\nTable b {\n  id int\n}").tables)
+        ['a', 'b']
+    """
+
     tables: dict[str, Table] = field(default_factory=dict)
     refs: list[Ref] = field(default_factory=list)
     enums: dict[str, list[str]] = field(default_factory=dict)
@@ -179,6 +251,23 @@ def _unquote(s: str) -> str:
 
 
 def parse(text: str) -> Schema:
+    r"""Parse DBML text.
+
+    Never raises: syntax problems are collected in Schema.problems instead.
+
+    Args:
+        text: DBML text.
+
+    Returns:
+        The schema.
+
+    Example:
+        >>> schema = parse("Table users {\n  id int [pk]\n  name varchar [not null]\n}")
+        >>> [c.name for c in schema.tables["users"].columns], schema.problems
+        (['id', 'name'], [])
+        >>> parse("Table users {").problems[0][2]
+        '중괄호 { } 짝이 맞지 않습니다'
+    """
     schema = Schema()
     src = _strip_comments(text)
     if src.count("{") != src.count("}"):
@@ -325,6 +414,18 @@ def _parse_table(header: str, body: str, body_line: int, line: int, schema: Sche
 
 
 def check(schema: Schema) -> list[tuple[str, int, str]]:
+    r"""Check a schema: parse problems, references to missing tables or columns, tables without a primary key.
+
+    Args:
+        schema: A parsed schema.
+
+    Returns:
+        (level, line, message) per problem; level is "error" or "info".
+
+    Example:
+        >>> check(parse("Table posts {\n  id int [pk]\n  user_id int\n}\nRef: posts.user_id > users.id"))
+        [('error', 5, "Ref: 테이블 'users'이 없습니다")]
+    """
     problems = list(schema.problems)
     alias = {t.alias: t.name for t in schema.tables.values() if t.alias}
     for ref in schema.refs:
@@ -360,6 +461,23 @@ REL = {">": "}o--||", "<": "||--o{", "-": "||--||", "<>": "}o--o{"}
 
 
 def to_mermaid(schema: Schema) -> str:
+    r"""Draw a schema as a Mermaid ER diagram (in a code fence).
+
+    Args:
+        schema: A parsed schema.
+
+    Returns:
+        The Mermaid block, with PK · FK · UK marks and column notes.
+
+    Example:
+        >>> print(to_mermaid(parse("Table users {\n  id int [pk]\n}")))
+        ```mermaid
+        erDiagram
+          users {
+            int id PK
+          }
+        ```
+    """
     lines = ["```mermaid", "erDiagram"]
     fks = {(r.left[0], r.left[1]) for r in schema.refs if r.op in (">", "-")} | {
         (r.right[0], r.right[1]) for r in schema.refs if r.op == "<"
@@ -386,6 +504,20 @@ def to_mermaid(schema: Schema) -> str:
 
 
 def to_dictionary(schema: Schema) -> str:
+    r"""Write a schema as a data-dictionary table.
+
+    A column note "뜻 예: 값" is split into meaning and example.
+
+    Args:
+        schema: A parsed schema.
+
+    Returns:
+        A Markdown table with one row per column.
+
+    Example:
+        >>> print(to_dictionary(parse("Table users {\n  id int [pk, note: '번호 예: 1']\n}")).splitlines()[-1])
+        | users | id | `int` | pk | 번호 | 1 |
+    """
     rows = ["| 테이블 | 컬럼 | 타입 | 제약 | 뜻 | 예시 |", "|---|---|---|---|---|---|"]
     for t in schema.tables.values():
         for c in t.columns:
@@ -408,12 +540,44 @@ def _replace_block(text: str, start: str, end: str, content: str) -> str:
 
 
 def render_into(doc_text: str, schema: Schema, source_note: str) -> str:
+    r"""Put the ERD and the data dictionary into a data document, between their markers.
+
+    Missing marker pairs are added at the end; everything outside the markers stays.
+
+    Args:
+        doc_text: The data document.
+        schema: The schema to draw.
+        source_note: Where the schema came from, shown in the "generated" note.
+
+    Returns:
+        The updated document.
+
+    Example:
+        >>> text = render_into("# 데이터\n", parse("Table a {\n  id int\n}"), "schema.dbml")
+        >>> ERD_START in text and DICT_END in text
+        True
+    """
     erd = f"> ⚙️ 자동 생성 — 원본: {source_note}. 손으로 고치지 마세요 (`lantern dbml render`).\n\n" + to_mermaid(schema)
     doc_text = _replace_block(doc_text, ERD_START, ERD_END, erd)
     return _replace_block(doc_text, DICT_START, DICT_END, to_dictionary(schema))
 
 
 def to_dbml(schema: Schema, header: str = "") -> str:
+    r"""Write a schema as DBML text.
+
+    Args:
+        schema: The schema (often rebuilt from SQL).
+        header: A first line to put on top, e.g. a comment.
+
+    Returns:
+        The DBML text.
+
+    Example:
+        >>> print(to_dbml(parse("Table users {\n  id int [pk]\n}")), end="")
+        Table users {
+          id int [pk]
+        }
+    """
     out: list[str] = [header] if header else []
     for t in schema.tables.values():
         out.append(f"Table {t.name} {{")
@@ -469,6 +633,20 @@ def _sql_statements(sql: str) -> list[str]:
 
 
 def from_sql(files: list[Path]) -> Schema:
+    """Rebuild a schema from SQL migration files, applied in the given order.
+
+    CREATE TABLE, ALTER TABLE (add · drop · rename column), DROP TABLE and foreign keys are understood.
+
+    Args:
+        files: SQL files, oldest first.
+
+    Returns:
+        The schema the migrations end with.
+
+    Example:
+        >>> list(from_sql(sorted(Path("migrations").glob("*.sql"))).tables)  # doctest: +SKIP
+        ['users', 'posts']
+    """
     schema = Schema()
     for f in files:
         for stmt in _sql_statements(f.read_text(encoding="utf-8", errors="replace")):
@@ -607,7 +785,19 @@ def _norm_type(t: str) -> str:
 
 
 def diff(doc_schema: Schema, real: Schema) -> list[str]:
-    """Differences where the real schema (migrations) is the reference."""
+    r"""List the differences between the documented schema and the real one (migrations are the reference).
+
+    Args:
+        doc_schema: The schema in the DBML document.
+        real: The schema rebuilt from migrations.
+
+    Returns:
+        One line per difference: ✚ missing from DBML, ✎ type differs, ✖ only in DBML.
+
+    Example:
+        >>> diff(parse("Table users {\n  id int\n}"), parse("Table users {\n  id bigint\n}"))
+        ["✎ 컬럼 'users.id' 타입: DBML int ≠ 마이그레이션 bigint"]
+    """
     out: list[str] = []
     for name, t in real.tables.items():
         d = doc_schema.tables.get(name)

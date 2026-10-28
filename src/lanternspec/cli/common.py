@@ -12,6 +12,13 @@ Add = Callable[[str, Handler, str], argparse.ArgumentParser]  # add(name, handle
 
 
 class CliError(Exception):
+    r"""A command was used the wrong way; `main` prints the message as one "✖" line.
+
+    Example:
+        >>> str(CliError("--work W-012 또는 --none \"이유\" 중 하나"))
+        '--work W-012 또는 --none "이유" 중 하나'
+    """
+
     pass
 
 

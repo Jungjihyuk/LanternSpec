@@ -1,8 +1,10 @@
-"""Screen mockups (DE-01 · PL-04): bring mockups in as files, and compare a capture with its mockup.
+"""Screen mockups: bring mockups in as files, and compare a capture with its mockup.
 
 * `import`  — images · HTML · PDF, or a handoff bundle (zip / folder) → `2. 작업/W-012 …/화면/`
 * `compare` — PNG capture vs PNG mockup → similarity %. Automatic comparison is a *hint*;
   the person still answers "does it match the mockup?" before the criterion is ticked.
+
+PNG files are decoded with the standard library only, so no image package is needed.
 """
 
 from __future__ import annotations
@@ -20,6 +22,27 @@ BUNDLE_EXT = MOCKUP_EXT | {".css", ".js", ".json", ".md", ".woff", ".woff2", ".t
 
 
 def import_files(project: Project, work_id: str, sources: list[Path]) -> list[str]:
+    """Copy mockups into a work's `화면/` folder.
+
+    Zip bundles are unpacked into a folder of their own (unsafe paths and other file types skipped);
+    folders are copied with only web and image files.
+
+    Args:
+        project: The project.
+        work_id: A work in progress, e.g. "W-012".
+        sources: Image, HTML or PDF files, zip bundles or folders.
+
+    Returns:
+        Where each source landed, relative to the project root (folders end with "/").
+
+    Raises:
+        ValueError: The work is not in progress, or a file is not a mockup type.
+        FileNotFoundError: A source does not exist.
+
+    Example:
+        >>> import_files(project, "W-012", [Path("~/Downloads/login.png")])  # doctest: +SKIP
+        ['docs/2. 작업/W-012 로그인/화면/login.png']
+    """
     folder = project.find_work(work_id, include_archive=False)
     if folder is None:
         raise ValueError(f"진행 중인 작업 {work_id}를 찾지 못했습니다")
@@ -72,6 +95,22 @@ def _paeth(a: int, b: int, c: int) -> int:
 
 
 def read_png(path: Path) -> tuple[int, int, list[tuple[int, int, int]]]:
+    """Decode an 8-bit, non-interlaced PNG into RGB pixels.
+
+    Args:
+        path: The PNG file.
+
+    Returns:
+        (width, height, pixels) with pixels in row order; grey and palette images become RGB.
+
+    Raises:
+        ValueError: The file is not a PNG, or uses a bit depth or interlacing this reader does not support.
+
+    Example:
+        >>> width, height, pixels = read_png(Path("capture.png"))  # doctest: +SKIP
+        >>> pixels[0]  # doctest: +SKIP
+        (255, 255, 255)
+    """
     data = path.read_bytes()
     if data[:8] != b"\x89PNG\r\n\x1a\n":
         raise ValueError(f"PNG가 아닙니다: {path.name} (자동 비교는 PNG 캡처끼리만)")
@@ -150,7 +189,22 @@ def _grid(path: Path, n: int = 32) -> list[tuple[float, float, float]]:
 
 
 def compare(capture: Path, mockup: Path) -> tuple[float, list[str]]:
-    """Similarity (0~100) on a 32×32 colour grid, plus where the biggest differences are."""
+    """Compare a capture with its mockup on a 32×32 colour grid.
+
+    Args:
+        capture: PNG capture of the built screen.
+        mockup: PNG mockup.
+
+    Returns:
+        The similarity (0–100) and the regions (of a 3×3 split) that differ by more than 12%.
+
+    Raises:
+        ValueError: Either file is not a supported PNG.
+
+    Example:
+        >>> compare(Path("capture.png"), Path("화면/로그인.png"))  # doctest: +SKIP
+        (91.4, ['아래 가운데 (18% 다름)'])
+    """
     a, b = _grid(capture), _grid(mockup)
     diffs = [sum(abs(x - y) for x, y in zip(ca, cb, strict=True)) / (3 * 255) for ca, cb in zip(a, b, strict=True)]
     score = round(100 * (1 - sum(diffs) / len(diffs)), 1)

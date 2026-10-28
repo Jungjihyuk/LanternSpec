@@ -1,10 +1,12 @@
 """`lantern scan` — finding (the first half of /l-sync, docs-vs-code status in /l-report).
 
-* unowned changes: commits without a work ID (SY-01)
+* unowned changes: commits without a work ID
 * stale documents: `3. 현재 상태` docs whose `code` paths changed after `checked_commit`
-* unrecorded schema changes: schema files changed but no `기록.md` entry (H-2)
-* DBML ↔ migration drift (DE-03)
+* unrecorded schema changes: schema files changed but no `기록.md` entry
+* DBML ↔ migration drift
 * failing acceptance tests (build.test, with --tests)
+
+Also records what /l-sync decided about unowned changes (adopt into a work, or log as no-work).
 """
 
 from __future__ import annotations
@@ -28,6 +30,22 @@ SKIP_SUBJECT = re.compile(r"^(Merge |Revert \"|fixup! |squash! |amend! )|\[lante
 
 @dataclass
 class Commit:
+    """One commit, as scan reads it.
+
+    Attributes:
+        hash: Full hash.
+        short: Abbreviated hash.
+        date: Commit date (YYYY-MM-DD).
+        subject: First line of the message.
+        body: The rest of the message.
+        files: Changed files, relative to the repository root.
+
+    Example:
+        >>> c = Commit("abc", "abc", "2026-10-28", "로그인 버튼 [W-012-T02]", "", ["src/app.py"])
+        >>> c.ids, c.task_ids, c.work_ids
+        (['W-012-T02'], ['W-012-T02'], ['W-012'])
+    """
+
     hash: str
     short: str
     date: str
@@ -37,18 +55,36 @@ class Commit:
 
     @property
     def ids(self) -> list[str]:
+        """Every document or task ID mentioned in the message, sorted."""
         return sorted(set(ID_RE.findall(self.subject + "\n" + self.body)))
 
     @property
     def task_ids(self) -> list[str]:
+        """Task IDs mentioned in the message, sorted."""
         return sorted(set(TASK_ID_RE.findall(self.subject + "\n" + self.body)))
 
     @property
     def work_ids(self) -> list[str]:
+        """Works the message's IDs belong to, sorted."""
         return sorted({i.rsplit("-T", 1)[0] for i in self.ids if i.startswith("W-")})
 
 
 def commits(project: Project, rev: str | None = None, limit: int = 200, paths: list[str] | None = None) -> list[Commit]:
+    """Read commits (merges skipped) with their changed files.
+
+    Args:
+        project: The project.
+        rev: A revision or range, e.g. "main..HEAD"; the current branch when None.
+        limit: Most commits to read.
+        paths: Only commits touching these paths.
+
+    Returns:
+        The commits, newest first; empty when git fails.
+
+    Example:
+        >>> commits(project, limit=1)[0].subject  # doctest: +SKIP
+        '로그인 버튼 [W-012-T02]'
+    """
     args = ["log", f"-n{limit}", "--no-merges", "--date=short", "--name-only", "--format=%x1e%H%x1f%h%x1f%ad%x1f%s%x1f%b%x1f"]
     if rev:
         args.append(rev)
@@ -70,6 +106,19 @@ def commits(project: Project, rev: str | None = None, limit: int = 200, paths: l
 
 
 def is_doc_path(project: Project, rel: str) -> bool:
+    """Tell whether a path is not code: under the documents root or an AI tool's settings folder.
+
+    Args:
+        project: The project.
+        rel: Path relative to the project root.
+
+    Returns:
+        True for documents and AI-tool settings.
+
+    Example:
+        >>> is_doc_path(project, "docs/기록.md"), is_doc_path(project, "src/app.py")  # doctest: +SKIP
+        (True, False)
+    """
     root = project.profile.docs_root.rstrip("/") + "/"
     from ..tools import is_config_path
 
@@ -77,6 +126,19 @@ def is_doc_path(project: Project, rel: str) -> bool:
 
 
 def matches_any(rel: str, patterns: list[str]) -> bool:
+    """Tell whether a path matches any glob pattern (`**/` also matches at the top level).
+
+    Args:
+        rel: Path relative to the project root.
+        patterns: Glob patterns.
+
+    Returns:
+        True when one pattern matches.
+
+    Example:
+        >>> matches_any("migrations/001.sql", ["**/migrations/**"]), matches_any("src/app.py", ["**/*.sql"])
+        (True, False)
+    """
     for pat in patterns:
         if fnmatch.fnmatch(rel, pat) or fnmatch.fnmatch("/" + rel, pat) or (pat.startswith("**/") and fnmatch.fnmatch(rel, pat[3:])):
             return True
@@ -84,6 +146,19 @@ def matches_any(rel: str, patterns: list[str]) -> bool:
 
 
 def schema_files(project: Project, files: list[str]) -> list[str]:
+    """Pick the schema files out of a list of changed files.
+
+    Args:
+        project: The project (its schema paths).
+        files: Changed files.
+
+    Returns:
+        The files that match the schema paths and are not documents.
+
+    Example:
+        >>> schema_files(project, ["db/schema.prisma", "src/app.ts"])  # doctest: +SKIP
+        ['db/schema.prisma']
+    """
     return [f for f in files if not is_doc_path(project, f) and matches_any(f, project.profile.schema_paths)]
 
 
@@ -113,6 +188,22 @@ def _has_schema_rows(record_text: str) -> bool:
 
 @dataclass
 class ScanResult:
+    """Everything a scan found.
+
+    Attributes:
+        orphans: Code commits without a work ID that no record mentions.
+        mixed: Commits that mix several tasks (a note, not counted as drift).
+        stale: Current-state documents whose code changed after their last check.
+        schema: Schema changes without a record.
+        dbml_drift: Differences between the DBML document and the migrations.
+        tests: The acceptance-test run, when asked for.
+        notes: Extra notes for the person.
+
+    Example:
+        >>> ScanResult().format()
+        '✔ 문서와 코드가 맞습니다 — 어긋난 곳 없음'
+    """
+
     orphans: list[dict] = field(default_factory=list)
     mixed: list[dict] = field(default_factory=list)
     stale: list[dict] = field(default_factory=list)
@@ -123,13 +214,33 @@ class ScanResult:
 
     @property
     def total(self) -> int:
+        """Number of drift findings (a failed test run counts as one; mixed commits do not count)."""
         failed = 1 if self.tests and not self.tests.get("ok") else 0
         return len(self.orphans) + len(self.stale) + len(self.schema) + len(self.dbml_drift) + failed
 
     def to_json(self) -> str:
+        """Return the result as JSON.
+
+        Returns:
+            Indented JSON with every field.
+
+        Example:
+            >>> '"orphans": []' in ScanResult().to_json()
+            True
+        """
         return json.dumps(asdict(self), ensure_ascii=False, indent=2)
 
     def format(self) -> str:
+        """Write the result as Markdown sections, one per kind of finding.
+
+        Returns:
+            The text; a single "all matches" line when there is nothing.
+
+        Example:
+            >>> print(ScanResult(dbml_drift=["✖ 테이블 'old'이 DBML에만 있습니다"]).format())
+            ## DBML ↔ 마이그레이션 (1) — 데이터는 마이그레이션이 기준
+            - ✖ 테이블 'old'이 DBML에만 있습니다
+        """
         lines = []
         if self.orphans:
             lines.append(f"## 주인 없는 변경 ({len(self.orphans)}) — 어느 작업인지 묻기")
@@ -162,6 +273,21 @@ class ScanResult:
 
 
 def run(project: Project, rev: str | None = None, limit: int = 200, tests: bool = False) -> ScanResult:
+    """Scan for docs-vs-code drift.
+
+    Args:
+        project: The project.
+        rev: A revision or range of commits to look at; the current branch when None.
+        limit: Most commits to look at.
+        tests: Also run build.test.
+
+    Returns:
+        The findings.
+
+    Example:
+        >>> run(project).total  # doctest: +SKIP
+        0
+    """
     res = ScanResult()
     if git(["rev-parse", "--verify", "HEAD"], project.root).returncode != 0:
         res.notes.append("아직 커밋이 없습니다")
@@ -237,6 +363,20 @@ def run(project: Project, rev: str | None = None, limit: int = 200, tests: bool 
 
 
 def run_tests(project: Project, cmd: str, cwd: Path | None = None) -> dict:
+    """Run a test command and keep the end of its output.
+
+    Args:
+        project: The project.
+        cmd: The shell command.
+        cwd: Where to run it; the project root when None.
+
+    Returns:
+        command, ok, code (exit code) and tail (the last 15 lines of output).
+
+    Example:
+        >>> run_tests(project, "uv run pytest -q")["ok"]  # doctest: +SKIP
+        True
+    """
     r = subprocess.run(cmd, shell=True, cwd=str(cwd or project.root), capture_output=True, text=True)
     tail = "\n".join((r.stdout + r.stderr).strip().split("\n")[-15:])
     return {"command": cmd, "ok": r.returncode == 0, "code": r.returncode, "tail": tail}
@@ -246,6 +386,20 @@ def run_tests(project: Project, cmd: str, cwd: Path | None = None) -> dict:
 
 
 def record_no_work(project: Project, short: str, reason: str) -> Path:
+    """Log a code change that belongs to no work (`4. 운영 기록/작업 없이 고친 것.md`).
+
+    Args:
+        project: The project.
+        short: The commit's short hash.
+        reason: Why it needed no work, in one line.
+
+    Returns:
+        The log document.
+
+    Example:
+        >>> record_no_work(project, "abc1234", "오타 수정").name  # doctest: +SKIP
+        '작업 없이 고친 것.md'
+    """
     p = project.docs / NO_WORK_FILE
     if not p.exists():
         body = (
@@ -272,6 +426,23 @@ def record_no_work(project: Project, short: str, reason: str) -> Path:
 
 
 def adopt_into_work(project: Project, short: str, work_id: str) -> Path:
+    """Link an unowned commit to a work by noting it in the work's `기록.md`.
+
+    Args:
+        project: The project.
+        short: The commit's short hash.
+        work_id: The work it belongs to.
+
+    Returns:
+        The work's record.
+
+    Raises:
+        ValueError: The work does not exist.
+
+    Example:
+        >>> adopt_into_work(project, "abc1234", "W-012").name  # doctest: +SKIP
+        '기록.md'
+    """
     folder = project.find_work(work_id)
     if folder is None:
         raise ValueError(f"작업 {work_id}를 찾지 못했습니다")

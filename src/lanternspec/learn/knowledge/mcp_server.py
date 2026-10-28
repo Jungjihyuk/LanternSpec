@@ -1,7 +1,7 @@
 """`lantern mcp` — the knowledge contract (search · read · propose · write) as an MCP server over stdio.
 
-v1 skills call the same functions through `lantern knowledge …` (LE-05). This server is the
-"one MCP server" of figure 5 for tools that prefer MCP; register it with `lantern install --mcp`.
+Skills call the same functions through `lantern knowledge …`. This server is for tools that
+prefer MCP; register it with `lantern install --mcp`.
 Newline-delimited JSON-RPC 2.0, no dependencies.
 """
 
@@ -59,6 +59,24 @@ TOOLS = [
 
 
 def call(project: Project, name: str, args: dict[str, Any]) -> Any:
+    """Run one knowledge tool.
+
+    Args:
+        project: The project.
+        name: "search", "read", "propose" or "write".
+        args: The tool's arguments, as in TOOLS.
+
+    Returns:
+        The tool's result, ready for JSON.
+
+    Raises:
+        KnowledgeError: The tool is unknown or the store refused.
+        KeyError: A required argument is missing.
+
+    Example:
+        >>> call(project, "search", {"query": "JWT"})[0]["title"]  # doctest: +SKIP
+        'JWT'
+    """
     if name == "search":
         hits = adapter_for(project).search(str(args["query"]), aliases=list(args.get("aliases") or []), limit=int(args.get("limit") or 5))
         return [h.to_dict() for h in hits]
@@ -77,6 +95,19 @@ def call(project: Project, name: str, args: dict[str, Any]) -> Any:
 
 
 def handle(project: Project, msg: dict[str, Any]) -> dict[str, Any] | None:
+    """Answer one JSON-RPC message.
+
+    Args:
+        project: The project.
+        msg: The parsed message.
+
+    Returns:
+        The response; None for notifications. Tool failures come back as results with isError.
+
+    Example:
+        >>> handle(None, {"jsonrpc": "2.0", "id": 1, "method": "ping"})
+        {'jsonrpc': '2.0', 'id': 1, 'result': {}}
+    """
     method = msg.get("method")
     mid = msg.get("id")
     if mid is None:  # notification
@@ -107,6 +138,18 @@ def handle(project: Project, msg: dict[str, Any]) -> dict[str, Any] | None:
 
 
 def serve(project: Project) -> int:
+    """Serve MCP over stdin and stdout until stdin closes.
+
+    Args:
+        project: The project.
+
+    Returns:
+        The exit code (0).
+
+    Example:
+        >>> serve(project)  # doctest: +SKIP
+        0
+    """
     for line in sys.stdin:
         line = line.strip()
         if not line:

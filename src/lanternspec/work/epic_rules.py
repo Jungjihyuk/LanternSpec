@@ -1,6 +1,9 @@
-"""`lantern check --epic` — acceptance-criteria rule check (PL-02, /l-plan step 5).
+"""`lantern check --epic` — acceptance-criteria rule check (/l-plan step 5).
 
 Two questions per criterion: does it mean one thing? can it be checked?
+
+Not here:
+    - the format checks of documents → check/check_docs.py
 """
 
 from __future__ import annotations
@@ -59,6 +62,23 @@ AMBIGUOUS = [" 또는 ", "혹은", "및/또는", "/또는", "필요하면", "경
 
 
 def check_criteria(project: Project, plan: Path) -> list[Finding]:
+    """Check the acceptance criteria of one plan.
+
+    Numbers must be unique and in order, blanks filled, the format match `plan.ac_format`,
+    and the result must be checkable (no vague words) and mean one thing (no "또는").
+    Screen work under `plan.ui_reference: required` also needs a mockup and a "matches the mockup" criterion.
+
+    Args:
+        project: The project.
+        plan: A work's `기획.md`.
+
+    Returns:
+        The findings; empty when every criterion passes.
+
+    Example:
+        >>> [f.message for f in check_criteria(project, plan)]  # doctest: +SKIP
+        ["AC-1: 확인하기 어려운 말 '빠르게'"]
+    """
     rel = project.rel(plan)
     text = read(plan)
     meta = frontmatter.parse(text).meta
@@ -124,7 +144,7 @@ def check_criteria(project: Project, plan: Path) -> list[Finding]:
                 break
         if len(result.strip()) < 4:
             out.append(Finding("warn", rel, "ac-result", f"{ac.id}: 결과가 너무 짧습니다", line))
-    # PL-04: screen work under ui_reference=required needs a "matches the mockup" criterion
+    # screen work under ui_reference=required needs a "matches the mockup" criterion
     if project.profile.get("plan.ui_reference") == "required" and meta.get("ui") is True:
         if not any("시안" in ac.text for ac in acs):
             out.append(
@@ -158,10 +178,38 @@ def _has_mockup(work_dir: Path) -> bool:
 
 
 def has_mockup(work_dir: Path) -> bool:
+    """Tell whether a work folder has a screen mockup (an image, HTML or PDF under `화면/`).
+
+    Args:
+        work_dir: The work folder.
+
+    Returns:
+        True when at least one mockup file exists.
+
+    Example:
+        >>> has_mockup(Path("no-such-work"))
+        False
+    """
     return _has_mockup(work_dir)
 
 
 def run(project: Project, work_id: str | None = None) -> list[Finding]:
+    """Check the acceptance criteria of one work or of every work in progress.
+
+    Args:
+        project: The project.
+        work_id: Only this work; every work in progress when None.
+
+    Returns:
+        The findings of all checked plans.
+
+    Raises:
+        ValueError: work_id is given but the work does not exist.
+
+    Example:
+        >>> run(project, "W-012")  # doctest: +SKIP
+        []
+    """
     out: list[Finding] = []
     works = [project.find_work(work_id)] if work_id else project.work_dirs()
     for w in works:

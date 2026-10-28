@@ -1,4 +1,8 @@
-"""propose · write — learning-note drafts wait in `📒 부채/노트 초안/` until a person approves."""
+"""propose · write — learning-note drafts wait in `📒 부채/노트 초안/` until a person approves.
+
+Not here:
+    - writing into the store itself → each adapter's write (learn/knowledge/obsidian.py · notion.py)
+"""
 
 from __future__ import annotations
 
@@ -25,6 +29,25 @@ DRAFT_SKELETON = """# {title}
 
 
 def propose(project: Project, title: str, content: str | None = None, area: str = "", target: str = "") -> dict:
+    """Create a learning-note draft waiting for approval (in our own folder, not the store).
+
+    Args:
+        project: The project.
+        title: The note's title.
+        content: The note's text; a skeleton with headings when empty.
+        area: Topic, kept as a tag.
+        target: Where the note should go in the store; under `knowledge.areas_from` when empty.
+
+    Returns:
+        draft (path), status, target and write_mode (`knowledge.write`).
+
+    Raises:
+        KnowledgeError: A draft with that title already exists.
+
+    Example:
+        >>> propose(project, "JWT")["draft"]  # doctest: +SKIP
+        'docs/📒 부채/노트 초안/JWT.md'
+    """
     folder = project.folder("note_drafts")
     dest = folder / f"{safe_name(title)}.md"
     if dest.exists():
@@ -53,11 +76,29 @@ def propose(project: Project, title: str, content: str | None = None, area: str 
 
 
 def write_draft(project: Project, draft: Path, target: str | None = None) -> dict:
+    """Write an approved draft into the knowledge store and mark the draft applied.
+
+    Args:
+        project: The project.
+        draft: The draft file.
+        target: Where to write in the store; the draft's `target` when None.
+
+    Returns:
+        path (where it was written) and store (the store root).
+
+    Raises:
+        KnowledgeError: No store is set up, the store is propose_only, the draft is missing,
+            it still has blanks, or the store refused the write.
+
+    Example:
+        >>> write_draft(project, project.folder("note_drafts") / "JWT.md")["path"]  # doctest: +SKIP
+        'JWT.md'
+    """
     k = project.profile.knowledge
     if not k:
         raise KnowledgeError("지식 저장소가 설정되지 않았습니다")
     if k.get("write") == "propose_only":
-        raise KnowledgeError("이 저장소는 propose_only — 초안 파일만 만들고, 넣는 것은 사용자가 합니다 (P6)")
+        raise KnowledgeError("이 저장소는 propose_only — 초안 파일만 만들고, 넣는 것은 사용자가 합니다")
     if not draft.exists():
         raise KnowledgeError(f"초안이 없습니다: {draft}")
     doc = frontmatter.parse(read(draft))

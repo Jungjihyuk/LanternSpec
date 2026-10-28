@@ -1,4 +1,7 @@
-"""`lantern close` — every skill's common close (P4): check → map → debt status → run record."""
+"""`lantern close` — every skill's common close: check → map → debt status → run record.
+
+Works for every tool, with or without agent hooks.
+"""
 
 from __future__ import annotations
 
@@ -14,6 +17,24 @@ def close(
     check: bool = True,
     do_map: bool = True,
 ) -> list[str]:
+    """Close a skill run: check the changed documents, refresh the MOC and debt status, and log the run.
+
+    Args:
+        project: The project.
+        skill: The skill that ran, e.g. "l-build".
+        work: The work it ran for.
+        start: When it started (ISO time).
+        model: The model in use.
+        check: Check the documents.
+        do_map: Refresh the MOC.
+
+    Returns:
+        One line per step.
+
+    Example:
+        >>> close(project, "l-build", work="W-012")[-1]  # doctest: +SKIP
+        '✔ 실행 기록 — l-build · W-012 (.lantern/runs.jsonl)'
+    """
     from ..check import check_docs
     from ..report import doc_map
     from . import runlog

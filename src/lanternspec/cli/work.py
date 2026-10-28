@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 
 
 def cmd_scaffold(a: argparse.Namespace) -> int:
+    """`lantern scaffold init|work|doc|idea|adr|meeting|custom` — create folders and documents from templates."""
     from ..core.profile import FOLLOW_UP_QUESTIONS
     from ..work import scaffold
 
@@ -66,6 +67,7 @@ def cmd_scaffold(a: argparse.Namespace) -> int:
 
 
 def cmd_idea(a: argparse.Namespace) -> int:
+    """`lantern idea find|status` — find overlapping ideas, or move an idea to another status."""
     from ..work import ideas
 
     project = _p()
@@ -87,6 +89,7 @@ def cmd_idea(a: argparse.Namespace) -> int:
 
 
 def cmd_task(a: argparse.Namespace) -> int:
+    """`lantern task next|start|done|reopen|list|ac|estimate` — task progress inside /l-build."""
     from ..work import tasks as task_cmd
 
     project = _p()
@@ -162,6 +165,7 @@ def cmd_task(a: argparse.Namespace) -> int:
 
 
 def cmd_task_add(a: argparse.Namespace) -> int:
+    """`lantern task add` — append a task line with the next ID."""
     from ..work import tasks as task_cmd
 
     t = task_cmd.add(
@@ -183,6 +187,7 @@ def cmd_task_add(a: argparse.Namespace) -> int:
 
 
 def cmd_design(a: argparse.Namespace) -> int:
+    """`lantern design approve` — record that a work's design was approved."""
     from ..work import stages
 
     project = _p()
@@ -191,6 +196,7 @@ def cmd_design(a: argparse.Namespace) -> int:
 
 
 def cmd_unit_log(a: argparse.Namespace) -> int:
+    """`lantern unit-log add` — record the work unit the AI recommended and the one the person chose."""
     from ..work import stages
 
     project = _p()
@@ -199,6 +205,7 @@ def cmd_unit_log(a: argparse.Namespace) -> int:
 
 
 def cmd_work(a: argparse.Namespace) -> int:
+    """`lantern work branch|start|list|finish|archive|stage` — work branches, parallel worktrees, finishing."""
     from ..work import branches as work
     from ..work import stages
 
@@ -223,6 +230,7 @@ def cmd_work(a: argparse.Namespace) -> int:
 
 
 def cmd_pack(a: argparse.Namespace) -> int:
+    """`lantern pack W-012` — write the work pack for the AI."""
     from ..work import pack
 
     project = _p()
@@ -231,6 +239,7 @@ def cmd_pack(a: argparse.Namespace) -> int:
 
 
 def cmd_screen(a: argparse.Namespace) -> int:
+    """`lantern screen import|compare` — bring mockups in, or compare a capture with its mockup."""
     from ..work import screen
 
     project = _p()
@@ -281,6 +290,7 @@ def _dbml_source(project: Project, path: str | None) -> tuple[Path, dbml.Schema]
 
 
 def cmd_dbml(a: argparse.Namespace) -> int:
+    """`lantern dbml render|from-sql|diff` — ERD and data dictionary from DBML, DBML from SQL, drift."""
     from ..core.project import read, write
     from ..work import dbml
 
@@ -334,6 +344,7 @@ def cmd_dbml(a: argparse.Namespace) -> int:
 
 
 def cmd_check_dbml(a: argparse.Namespace) -> int:
+    """`lantern check-dbml` — check DBML syntax and references; exits 1 on errors."""
     from ..work import dbml
 
     project = _p()
@@ -351,6 +362,7 @@ def cmd_check_dbml(a: argparse.Namespace) -> int:
 
 
 def register(add: Add) -> None:
+    """Register the work-line commands."""
     p = add("scaffold", cmd_scaffold, "템플릿으로 폴더 · 문서 만들기")
     ss = p.add_subparsers(dest="kind", required=True)
     s = ss.add_parser("init", help="lantern.yaml대로 폴더 · 템플릿 · MOC")

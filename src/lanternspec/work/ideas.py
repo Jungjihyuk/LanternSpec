@@ -1,4 +1,8 @@
-"""Idea cards (ID-01 · ID-02): find overlapping ideas, move an idea through its status flow."""
+"""Idea cards: find overlapping ideas, move an idea through its status flow.
+
+Not here:
+    - creating an idea card → work/scaffold.py
+"""
 
 from __future__ import annotations
 
@@ -22,6 +26,23 @@ def _tokens(s: str) -> set:
 
 
 def idea_find(project: Project, text: str, limit: int = 5) -> list[dict[str, Any]]:
+    """Find idea cards that overlap with a text, best match first.
+
+    Words of the title and the at-a-glance line weigh three times the words of the raw note.
+    Korean words are also split into two-letter pieces so compounds meet their spaced forms.
+
+    Args:
+        project: The project.
+        text: The new idea, in any words.
+        limit: Most results to return.
+
+    Returns:
+        One mapping per hit with id, title, status, kind, dropped_reason, path and score.
+
+    Example:
+        >>> [h["id"] for h in idea_find(project, "카톡 로그인")]  # doctest: +SKIP
+        ['IDEA-003']
+    """
     folder = project.folder("ideas")
     if not folder.exists():
         return []
@@ -72,6 +93,28 @@ def _append_under(text: str, heading: str, line: str) -> str:
 def idea_status(
     project: Project, idea_id: str, status: str, work: str | None = None, reason: str | None = None, note: str | None = None
 ) -> Path:
+    """Move an idea to another status and log the change under `## 상태 기록`.
+
+    Dropping needs a reason; marking it worked needs the work ID, and links the work's plan.
+
+    Args:
+        project: The project.
+        idea_id: The idea, e.g. "IDEA-003".
+        status: An idea_status value from enums.yaml.
+        work: The work it became (required for the "worked" role).
+        reason: Why it was dropped (required for the "dropped" role).
+        note: An extra note for the log line.
+
+    Returns:
+        The idea card.
+
+    Raises:
+        ValueError: The idea or work does not exist, the status is unknown, or a required value is missing.
+
+    Example:
+        >>> idea_status(project, "IDEA-003", "작업됨", work="W-012").name  # doctest: +SKIP
+        'IDEA-003 카톡 로그인.md'
+    """
     path = project.find_by_id(idea_id)
     if path is None or nfc(path.parent.name) != nfc(project.folder("ideas").name):
         raise ValueError(f"아이디어 {idea_id}를 찾지 못했습니다")

@@ -1,4 +1,11 @@
-"""AGENTS.md — the one rules file every tool reads (Claude Code through CLAUDE.md's `@AGENTS.md`)."""
+"""AGENTS.md — the one rules file every tool reads (Claude Code through CLAUDE.md's `@AGENTS.md`).
+
+Our rules live between `<!-- lanternspec:start -->` and `<!-- lanternspec:end -->`; the rest of
+the file belongs to the project.
+
+Not here:
+    - choosing the principles → core/principles.py
+"""
 
 from __future__ import annotations
 
@@ -18,6 +25,21 @@ PRINCIPLES_SLOT = "<!-- lantern:principles -->"
 
 
 def agents_block(profile: Profile, tools: list[Tool], enums: Enums | None = None) -> str:
+    """Render our AGENTS.md block: the rules source filled with profile values, plus the design principles.
+
+    Args:
+        profile: The project's settings.
+        tools: The installed tools (they decide the command form).
+        enums: The project's choice lists; the bundled ones when None.
+
+    Returns:
+        The block, with its start and end marks.
+
+    Example:
+        >>> from lanternspec.tools import get
+        >>> agents_block(Profile(data={}), [get("claude")]).splitlines()[0]
+        '<!-- lanternspec:start -->'
+    """
     text = resources.read_text("agents/AGENTS.md")
     ctx = body_context(profile, "agents", enums)
     text = rewrite_commands(templating.apply_conditions(text, ctx), command_prefix(tools))
@@ -28,6 +50,19 @@ def agents_block(profile: Profile, tools: list[Tool], enums: Enums | None = None
 
 
 def merge_block(existing: str, block: str) -> str:
+    r"""Put our block into an AGENTS.md text: replace the old block, or add it at the end.
+
+    Args:
+        existing: The current AGENTS.md text ("" when missing).
+        block: Our block.
+
+    Returns:
+        The new text; the project's own lines stay as written.
+
+    Example:
+        >>> merge_block("# 우리 규칙\n", "<!-- lanternspec:start -->\n…\n<!-- lanternspec:end -->")
+        '# 우리 규칙\n\n<!-- lanternspec:start -->\n…\n<!-- lanternspec:end -->\n'
+    """
     s, e = existing.find(AGENTS_START), existing.find(AGENTS_END)
     if s != -1 and e != -1 and e > s:
         return existing[:s] + block + existing[e + len(AGENTS_END) :]
@@ -37,7 +72,20 @@ def merge_block(existing: str, block: str) -> str:
 
 
 def principles_section(profile: Profile) -> str:
-    """Design principles and code conventions for the AGENTS.md block — essentials only (details live in the design-principles document)."""
+    """Build the design principles and code conventions for the AGENTS.md block — essentials only.
+
+    Details live in the design-principles document.
+
+    Args:
+        profile: The project's settings.
+
+    Returns:
+        The section; "" when the project kind is not set.
+
+    Example:
+        >>> principles_section(Profile(data={}))
+        ''
+    """
     sel = principles.select(profile)
     if sel is None:
         return ""

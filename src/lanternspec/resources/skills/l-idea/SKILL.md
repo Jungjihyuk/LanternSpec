@@ -7,7 +7,7 @@ argument-hint: "<생각 한 줄> | 방금 대화에서 나온 아이디어들"
 
 # /l-idea — 대화 속 생각을 아이디어 노트로
 
-**목적:** 떠오른 생각을 **원문 그대로 + 정리본**으로 바로 남긴다. 속도가 중요하므로 **승인 없이 바로 쓴다** (P5의 예외).
+**목적:** 떠오른 생각을 **원문 그대로 + 정리본**으로 바로 남긴다. 속도가 중요하므로 **승인 없이 바로 쓴다** ("쓰기 전에 보여 준다" 규칙의 예외).
 
 입력: `$ARGUMENTS` — 생각 한 줄, 또는 "방금 대화에서 나온 아이디어들"(이 대화에서 나온 아이디어를 모두 모은다).
 
@@ -27,7 +27,7 @@ argument-hint: "<생각 한 줄> | 방금 대화에서 나온 아이디어들"
    만들어진 파일의 빈칸만 채운다: 한 줄 요약(필수) · 왜 좋은가 · 관련 문서(링크만 — 내용 복사 금지). 모르면 `❓ 확인 필요`. 쓸 것이 없는 선택 칸은 지운다.
 5. **한 줄로 알린다:** `💡 IDEA-014 카카오 로그인 (기능) 기록함` (여러 장이면 한 줄씩)
 
-## 상태는 스킬이 바꾼다 (ID-02)
+## 상태는 스킬이 바꾼다
 <<idea_status.new.label>>(`/l-idea`) → <<idea_status.reviewing.label>> · <<idea_status.worked.label>>(`/l-plan`) / <<idea_status.on_hold.label>> · <<idea_status.dropped.label>>(사람). 사람이 <<idea_status.on_hold>> · <<idea_status.dropped>>을 말하면:
 ```bash
 lantern idea status IDEA-014 "<<idea_status.on_hold>>"

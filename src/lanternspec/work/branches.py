@@ -1,4 +1,13 @@
-"""`lantern work` — one work = one branch (BU-05), parallel worktrees, finish, archive."""
+"""`lantern work` — one work = one branch, parallel worktrees, finish, archive.
+
+Responsibilities:
+    - the `work/W-012` branch of a work, in this folder or in its own worktree
+    - warn when parallel works say they will change the same tables or files
+    - finish a work: test, merge into the base branch, clean up; archive its folder and fix links
+
+Not here:
+    - running the test command → report/scan.py (run_tests)
+"""
 
 from __future__ import annotations
 
@@ -25,10 +34,29 @@ LOCKFILES = [
 
 
 class WorkError(RuntimeError):
+    """A work branch or worktree operation could not be done; the message says why and what to do.
+
+    Example:
+        >>> str(WorkError("작업 W-012 폴더가 없습니다"))
+        '작업 W-012 폴더가 없습니다'
+    """
+
     pass
 
 
 def branch_name(work_id: str) -> str:
+    """Return the branch name of a work.
+
+    Args:
+        work_id: The work, e.g. "w-012".
+
+    Returns:
+        "work/W-012".
+
+    Example:
+        >>> branch_name("w-012")
+        'work/W-012'
+    """
     return f"work/{work_id.upper()}"
 
 
@@ -37,6 +65,18 @@ def _branch_exists(project: Project, name: str) -> bool:
 
 
 def current_branch(cwd: Path) -> str:
+    """Return the checked-out branch of a folder.
+
+    Args:
+        cwd: A folder inside a git repository.
+
+    Returns:
+        The branch name ("HEAD" when detached; "" outside git).
+
+    Example:
+        >>> current_branch(Path("."))  # doctest: +SKIP
+        'main'
+    """
     return git_out(["rev-parse", "--abbrev-ref", "HEAD"], cwd)
 
 
@@ -48,7 +88,22 @@ def _base(project: Project) -> str:
 
 
 def ensure_branch(project: Project, work_id: str) -> str:
-    """/l-build W-012 → work on `work/W-012` in this folder (created from the current HEAD)."""
+    """Switch this folder to the work's branch, creating it from the current HEAD when needed (/l-build W-012).
+
+    Args:
+        project: The project.
+        work_id: The work, e.g. "W-012".
+
+    Returns:
+        What happened, as a message.
+
+    Raises:
+        WorkError: git could not switch or create the branch.
+
+    Example:
+        >>> ensure_branch(project, "W-012")  # doctest: +SKIP
+        'work/W-012 브랜치를 만들었습니다'
+    """
     name = branch_name(work_id)
     if current_branch(project.root) == name:
         return f"이미 {name} 브랜치입니다"
@@ -68,12 +123,36 @@ def ensure_branch(project: Project, work_id: str) -> str:
 
 @dataclass
 class Worktree:
+    """One git worktree.
+
+    Attributes:
+        path: Its folder.
+        branch: Its branch without "refs/heads/"; "" when detached.
+        head: The commit it is on.
+
+    Example:
+        >>> Worktree(Path("../app-W-012"), "work/W-012", "abc123").branch
+        'work/W-012'
+    """
+
     path: Path
     branch: str
     head: str
 
 
 def worktrees(project: Project) -> list[Worktree]:
+    """List the repository's worktrees (the main folder included).
+
+    Args:
+        project: The project.
+
+    Returns:
+        The worktrees, as git lists them.
+
+    Example:
+        >>> [wt.branch for wt in worktrees(project)]  # doctest: +SKIP
+        ['main', 'work/W-012']
+    """
     out = git_out(["worktree", "list", "--porcelain"], project.root)
     items: list[Worktree] = []
     cur: dict[str, str] = {}
@@ -89,6 +168,19 @@ def worktrees(project: Project) -> list[Worktree]:
 
 
 def work_worktree(project: Project, work_id: str) -> Worktree | None:
+    """Find the worktree where a work's branch is checked out.
+
+    Args:
+        project: The project.
+        work_id: The work, e.g. "W-012".
+
+    Returns:
+        The worktree; None when the branch is not checked out anywhere.
+
+    Example:
+        >>> work_worktree(project, "W-012").path  # doctest: +SKIP
+        PosixPath('/Users/me/app-W-012')
+    """
     name = branch_name(work_id)
     for wt in worktrees(project):
         if wt.branch == name:
@@ -112,6 +204,22 @@ def _touch_points(project: Project, work_id: str) -> set[str]:
 
 
 def conflicts(project: Project, work_ids: list[str]) -> list[str]:
+    """Warn when works would change the same tables or files.
+
+    The touch points come from each design: DBML tables and file paths written in backticks.
+    Works already running in worktrees are compared too.
+
+    Args:
+        project: The project.
+        work_ids: The works about to start.
+
+    Returns:
+        One warning per pair that shares touch points.
+
+    Example:
+        >>> conflicts(project, ["W-012", "W-013"])  # doctest: +SKIP
+        ['⚠ W-012 · W-013가 같은 곳을 고칩니다: 테이블 users']
+    """
     running = [wt.branch.split("/", 1)[1] for wt in worktrees(project) if wt.branch.startswith("work/")]
     ids = list(dict.fromkeys([w.upper() for w in work_ids] + running))
     points = {w: _touch_points(project, w) for w in ids}
@@ -135,6 +243,27 @@ def _install(path: Path) -> str | None:
 
 
 def start(project: Project, work_ids: list[str], install: bool = True, parent: Path | None = None) -> list[str]:
+    """Start works in parallel, each in its own worktree next to the project folder.
+
+    Each worktree gets `.env*` files copied, the docs folder linked in local mode, and
+    its dependencies installed from the lock file it has.
+
+    Args:
+        project: The project.
+        work_ids: The works to start, e.g. ["W-012", "W-013"].
+        install: Install dependencies in each new worktree.
+        parent: Folder to put the worktrees in; the project's parent when None.
+
+    Returns:
+        Messages: conflict warnings, then one line per work with how to open it.
+
+    Raises:
+        WorkError: The repository has no commit, a work folder is missing, or git failed.
+
+    Example:
+        >>> start(project, ["W-012"], install=False)[0]  # doctest: +SKIP
+        '• W-012: /Users/me/app-W-012 (work/W-012)'
+    """
     if git(["rev-parse", "--verify", "HEAD"], project.root).returncode != 0:
         raise WorkError("커밋이 하나도 없어 worktree를 만들 수 없습니다 — 먼저 커밋하세요")
     msgs: list[str] = []
@@ -185,6 +314,18 @@ def _progress(project: Project, wid: str, root: Path | None = None) -> str:
 
 
 def list_works(project: Project) -> list[str]:
+    """List the works running on their own branches, with progress and uncommitted changes.
+
+    Args:
+        project: The project.
+
+    Returns:
+        One line per work branch; a single "none" line when there are none.
+
+    Example:
+        >>> list_works(project)  # doctest: +SKIP
+        ['W-012  work/W-012  /Users/me/app-W-012  1/3 완료']
+    """
     out = []
     for wt in worktrees(project):
         if not wt.branch.startswith("work/"):
@@ -200,6 +341,25 @@ def list_works(project: Project) -> list[str]:
 
 
 def finish(project: Project, work_id: str, test: bool = True, keep: bool = False) -> list[str]:
+    """Finish a work: run the tests, merge its branch into the base branch, and clean up.
+
+    Args:
+        project: The project.
+        work_id: The work, e.g. "W-012".
+        test: Run build.test first; a failure stops the merge.
+        keep: Keep the worktree and the branch after merging.
+
+    Returns:
+        Messages describing each step, ending with what to do next.
+
+    Raises:
+        WorkError: The branch is missing, there are uncommitted changes, the tests failed,
+            the base branch is missing or not checked out, or the merge conflicted (it is aborted).
+
+    Example:
+        >>> finish(project, "W-012", test=False)[0]  # doctest: +SKIP
+        '✔ work/W-012 → main 머지'
+    """
     wid = work_id.upper()
     name = branch_name(wid)
     if not _branch_exists(project, name):
@@ -267,6 +427,22 @@ def finish(project: Project, work_id: str, test: bool = True, keep: bool = False
 
 
 def archive(project: Project, work_id: str) -> Path:
+    """Mark a work done and move its folder to the archive, fixing links that pointed into it.
+
+    Args:
+        project: The project.
+        work_id: A work in progress, e.g. "W-012".
+
+    Returns:
+        The folder's new place.
+
+    Raises:
+        WorkError: The work is not in progress.
+
+    Example:
+        >>> archive(project, "W-012").parent.name  # doctest: +SKIP
+        '보관'
+    """
     folder = project.find_work(work_id, include_archive=False)
     if folder is None:
         raise WorkError(f"진행 중인 작업 {work_id}가 없습니다")
@@ -285,7 +461,20 @@ def archive(project: Project, work_id: str) -> Path:
 
 
 def rewrite_links(project: Project, old_rel: str, new_rel: str) -> list[Path]:
-    """Rewrite `[[old_rel/…]]` links after a folder moved (our CLI moves, Obsidian is not watching)."""
+    """Rewrite `[[old_rel/…]]` and `](old_rel/…)` links after a folder moved (Obsidian is not watching our moves).
+
+    Args:
+        project: The project.
+        old_rel: The folder's old path from the documents root.
+        new_rel: Its new path from the documents root.
+
+    Returns:
+        The documents that were changed.
+
+    Example:
+        >>> rewrite_links(project, "2. 작업/W-012 로그인", "2. 작업/보관/W-012 로그인")  # doctest: +SKIP
+        [PosixPath('…/개발문서 MOC.md')]
+    """
     changed = []
     pat = re.compile(r"(\[\[)" + re.escape(old_rel) + r"(/)")
     pat_md = re.compile(r"(\]\()" + re.escape(old_rel.replace(" ", "%20")) + r"(/)")

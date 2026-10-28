@@ -1,8 +1,12 @@
-"""`lantern report` — write the views out as plain text (RE-01 · RE-02).
+"""`lantern report` — write the views out as plain text.
 
 `4. 운영 기록/보고/현황.md` is always the latest; each run also writes
 `보고/지난 보고/YYYY-MM-DD.md` (one per day, same day overwrites) with a comparison
 to the previous report. The AI writes only the three summary lines.
+
+Not here:
+    - the docs-vs-code drift itself → report/scan.py
+    - AI work evaluation numbers → report/evaluate.py
 """
 
 from __future__ import annotations
@@ -47,6 +51,18 @@ def _cell(s: str) -> str:
 
 
 def kanban(project: Project) -> str:
+    """Draw the tasks of works in progress as a kanban table (to do · blocked · in progress · done).
+
+    Args:
+        project: The project.
+
+    Returns:
+        A Markdown table; a short note when there are no tasks.
+
+    Example:
+        >>> kanban(project).splitlines()[0]  # doctest: +SKIP
+        '| 📥 할 일 (1) | ⛔ 막힘 (0) | ▶ 진행 중 (1) | ✅ 완료 (2) |'
+    """
     cols: dict[str, list[str]] = {"todo": [], "blocked": [], "doing": [], "done": []}
     for w in project.work_dirs():
         tasks = _work_tasks(w)
@@ -88,6 +104,21 @@ def _parse_dt(s: str) -> _dt.datetime | None:
 
 
 def timeline(project: Project) -> str:
+    """Draw every work (archived ones too) as a Mermaid Gantt chart.
+
+    Tasks use their actual times when they have them, then planned dates, then their order and size
+    (S = 1 day · M = 2 · L = 3). The idea a work came from shows as a milestone.
+
+    Args:
+        project: The project.
+
+    Returns:
+        The Mermaid block with a note on how it was drawn; a short note when there are no works.
+
+    Example:
+        >>> timeline(project).splitlines()[1]  # doctest: +SKIP
+        'gantt'
+    """
     works = project.work_dirs(include_archive=True)
     if not works:
         return "_작업이 없습니다._"
@@ -143,6 +174,18 @@ def timeline(project: Project) -> str:
 
 
 def domain(project: Project) -> str:
+    """Group works by their plan's `domain`, with stage and progress.
+
+    Args:
+        project: The project.
+
+    Returns:
+        A Markdown table (domain · work · stage · criteria done · tasks done); a short note when there are no works.
+
+    Example:
+        >>> domain(project).splitlines()[0]  # doctest: +SKIP
+        '| 도메인 | 작업 | 단계 | 수락 기준 | 할 일 |'
+    """
     groups: dict[str, list[str]] = {}
     for w in project.work_dirs(include_archive=True):
         meta = _meta(w / "기획.md")
@@ -165,6 +208,18 @@ def domain(project: Project) -> str:
 
 
 def trace(project: Project) -> str:
+    """Trace each idea to the works it became and their commits.
+
+    Args:
+        project: The project.
+
+    Returns:
+        A Markdown table (idea · status · work · commit count · last commit); a short note when there are no ideas.
+
+    Example:
+        >>> trace(project).splitlines()[0]  # doctest: +SKIP
+        '| 아이디어 | 상태 | 작업 | 커밋 | 마지막 커밋 |'
+    """
     rows = ["| 아이디어 | 상태 | 작업 | 커밋 | 마지막 커밋 |", "|---|---|---|---|---|"]
     ideas_folder = project.folder("ideas")
     works = project.work_dirs(include_archive=True)
@@ -196,6 +251,19 @@ def trace(project: Project) -> str:
 
 
 def debt_view(project: Project) -> str:
+    """Refresh the debt status page and summarize it.
+
+    Args:
+        project: The project.
+
+    Returns:
+        Open and resolved counts, a link to the status page and the kind × topic table;
+        a short note when the learning line is off.
+
+    Example:
+        >>> debt_view(project).splitlines()[0]  # doctest: +SKIP
+        '열린 부채 **3개** · ✅ 해결 1개 — 자세히: [[📒 부채/부채 현황|부채 현황]]'
+    """
     if not project.folder("debt").exists():
         return "_배우는 선로가 꺼져 있습니다 (lantern.yaml knowledge)._"
     debt_mod.write_status(project)
@@ -208,6 +276,18 @@ def debt_view(project: Project) -> str:
 
 
 def sync_view(project: Project) -> tuple[str, int]:
+    """Run the docs-vs-code drift scan for the report.
+
+    Args:
+        project: The project.
+
+    Returns:
+        The scan's text and its number of findings.
+
+    Example:
+        >>> sync_view(project)[1]  # doctest: +SKIP
+        0
+    """
     from . import scan
 
     res = scan.run(project, limit=100)
@@ -218,6 +298,20 @@ def sync_view(project: Project) -> tuple[str, int]:
 
 
 def collect_stats(project: Project, sync_total: int | None) -> dict:
+    """Collect the numbers a report keeps in its frontmatter (and the next report compares against).
+
+    Args:
+        project: The project.
+        sync_total: Number of drift findings; left out when None.
+
+    Returns:
+        tasks_done, tasks_total, works_active, works_archived, debt_open, debt_resolved, debt_total,
+        approval_waiting (works whose design waits for approval) and, when given, sync_issues.
+
+    Example:
+        >>> collect_stats(project, None)["works_active"]  # doctest: +SKIP
+        1
+    """
     tasks_done = tasks_total = 0
     for w in project.work_dirs(include_archive=True):
         ts = _work_tasks(w)
@@ -253,6 +347,20 @@ def _previous(project: Project) -> dict | None:
 
 
 def compare(project: Project, cur: dict, prev: dict | None) -> str:
+    """Compare the current numbers with the previous report.
+
+    Args:
+        project: The project.
+        cur: Numbers from collect_stats.
+        prev: The previous report's date and stats; None for the first report.
+
+    Returns:
+        One line with the changes in finished tasks, new debt and resolved debt.
+
+    Example:
+        >>> compare(project, stats, None)  # doctest: +SKIP
+        '_첫 보고입니다 — 다음 보고부터 비교가 나옵니다._'
+    """
     if not prev:
         return "_첫 보고입니다 — 다음 보고부터 비교가 나옵니다._"
     p = prev["stats"]
@@ -277,6 +385,25 @@ def _existing_summary(path: Path) -> str | None:
 
 
 def run(project: Project, views: list[str] | None = None, summary: list[str] | None = None) -> tuple[Path, Path]:
+    """Write the report: `현황.md` (latest) and today's copy under `지난 보고/`.
+
+    The three summary lines are kept from the previous `현황.md` unless new ones are given.
+
+    Args:
+        project: The project.
+        views: Views to include; `report.views` when None.
+        summary: Up to three summary lines written by the AI.
+
+    Returns:
+        The latest report and today's copy.
+
+    Raises:
+        ValueError: A view name is unknown.
+
+    Example:
+        >>> [p.name for p in run(project, ["kanban"])]  # doctest: +SKIP
+        ['현황.md', '2026-10-28.md']
+    """
     views = views or list(project.profile.get("report.views") or ["kanban", "timeline", "debt"])
     bad = [v for v in views if v not in VIEWS]
     if bad:
@@ -302,7 +429,7 @@ def run(project: Project, views: list[str] | None = None, summary: list[str] | N
         else:
             body, sync_total = sync_view(project)
         sections.append(f"## {VIEW_TITLE[v]}\n\n{body}")
-    if sync_total is None:  # figure 8: stale docs are checked whenever the report is opened
+    if sync_total is None:  # stale docs are checked whenever the report is opened
         from . import scan
 
         sync_total = scan.run(project, limit=100).total

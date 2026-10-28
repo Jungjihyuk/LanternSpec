@@ -1,4 +1,4 @@
-"""resources/principles — 설계 원칙 기준표와 언어별 컨벤션이 프로그램이 읽을 수 있는 모양인지."""
+"""resources/principles — the principle table and per-language conventions have the shape the program reads."""
 
 import yaml
 

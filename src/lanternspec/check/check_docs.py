@@ -1,8 +1,11 @@
-"""`lantern check` — format checks (/l-check, H-3, H-5).
+"""`lantern check` — format checks (/l-check, the git pre-commit hook, the agent hook after a document is written).
 
 Looks at: required blanks · enums.yaml values · broken links · leftover {{blanks}} ·
 old template versions · duplicate IDs · document length · task line format.
 The AI only explains the result; the verdict comes from here.
+
+Not here:
+    - acceptance-criteria rules → work/epic_rules.py
 """
 
 from __future__ import annotations
@@ -28,6 +31,22 @@ UNKNOWN = "❓ 확인 필요"
 
 @dataclass
 class Finding:
+    """One problem found in a document.
+
+    Attributes:
+        level: "error", "warn" or "info".
+        path: The document, relative to the project root.
+        code: A stable short name for the kind of problem, e.g. "broken-link".
+        message: What is wrong, for the person.
+        line: The 1-based line, when it is about one line.
+        hint: How to fix it.
+
+    Example:
+        >>> print(Finding("error", "docs/기록.md", "broken-link", "깨진 링크: [[없음]]", 3, "대상 문서 이름을 확인하세요").format())
+          ✖ 깨진 링크: [[없음]] (줄 3)
+              → 대상 문서 이름을 확인하세요
+    """
+
     level: str
     path: str
     code: str
@@ -36,6 +55,15 @@ class Finding:
     hint: str | None = None
 
     def format(self) -> str:
+        """Write the finding as an indented line (with its hint on the next line).
+
+        Returns:
+            The text.
+
+        Example:
+            >>> Finding("warn", "a.md", "blank", "빈 칸 2개").format()
+            '  ⚠ 빈 칸 2개'
+        """
         loc = f":{self.line}" if self.line else ""
         s = f"  {LEVEL_ICON[self.level]} {self.message}{f' (줄 {self.line})' if loc else ''}"
         if self.hint:
@@ -45,22 +73,58 @@ class Finding:
 
 @dataclass
 class Report:
+    """The result of a check run.
+
+    Attributes:
+        findings: Every finding.
+        files: How many documents were checked.
+
+    Example:
+        >>> Report(findings=[], files=3).format()
+        '✔ 양식에 맞음 — 문서 3개'
+    """
+
     findings: list[Finding]
     files: int
 
     @property
     def errors(self) -> list[Finding]:
+        """The error findings."""
         return [f for f in self.findings if f.level == "error"]
 
     @property
     def warnings(self) -> list[Finding]:
+        """The warning findings."""
         return [f for f in self.findings if f.level == "warn"]
 
     def counts(self) -> dict[str, int]:
+        """Count findings per level.
+
+        Returns:
+            {"error": n, "warn": n, "info": n}.
+
+        Example:
+            >>> Report([Finding("warn", "a.md", "blank", "빈 칸")], 1).counts()
+            {'error': 0, 'warn': 1, 'info': 0}
+        """
         c = Counter(f.level for f in self.findings)
         return {"error": c.get("error", 0), "warn": c.get("warn", 0), "info": c.get("info", 0)}
 
     def format(self, show_info: bool = True) -> str:
+        """Write the report grouped by document, most serious first, with a closing summary line.
+
+        Args:
+            show_info: Include info findings.
+
+        Returns:
+            The text.
+
+        Example:
+            >>> print(Report([Finding("error", "a.md", "enum", "status: 'x'는 상태 값이 아닙니다", 1)], 1).format())
+            📄 a.md
+              ✖ status: 'x'는 상태 값이 아닙니다 (줄 1)
+            문서 1개 검사 — ✖ 오류 1개
+        """
         lines: list[str] = []
         by_file: dict[str, list[Finding]] = defaultdict(list)
         for f in self.findings:
@@ -86,12 +150,33 @@ class Report:
         return "\n".join(lines)
 
     def to_json(self) -> str:
+        """Return the report as JSON (files, counts, findings).
+
+        Returns:
+            Indented JSON.
+
+        Example:
+            >>> '"files": 0' in Report([], 0).to_json()
+            True
+        """
         return json.dumps(
             {"files": self.files, "counts": self.counts(), "findings": [asdict(f) for f in self.findings]}, ensure_ascii=False, indent=2
         )
 
 
 def semver(v: object) -> tuple[int, int, int]:
+    """Read a version as three numbers; missing parts are 0.
+
+    Args:
+        v: A version such as "1.2" or "1.2.3".
+
+    Returns:
+        (major, minor, patch); (0, 0, 0) when it is not a version.
+
+    Example:
+        >>> semver("1.2"), semver(None)
+        ((1, 2, 0), (0, 0, 0))
+    """
     m = re.match(r"^\s*(\d+)(?:\.(\d+))?(?:\.(\d+))?", str(v or ""))
     if not m:
         return (0, 0, 0)
@@ -99,7 +184,19 @@ def semver(v: object) -> tuple[int, int, int]:
 
 
 def version_gap(old: object, new: object) -> str | None:
-    """'major' | 'minor' | 'patch' | None (same or newer)."""
+    """Tell which part changed from an old version to a newer one.
+
+    Args:
+        old: The document's version.
+        new: The template's version.
+
+    Returns:
+        "major", "minor" or "patch"; None when old is the same or newer.
+
+    Example:
+        >>> version_gap("1.0.0", "1.1.0"), version_gap("2.0", "1.9")
+        ('minor', None)
+    """
     a, b = semver(old), semver(new)
     if a >= b:
         return None
@@ -145,11 +242,23 @@ def _glance_empty(body: str) -> bool:
 
 
 def is_generated(meta: dict) -> bool:
+    """Tell whether a document is generated by a script (`generated: true`) — such documents skip content checks.
+
+    Args:
+        meta: The document's frontmatter.
+
+    Returns:
+        True for generated documents.
+
+    Example:
+        >>> is_generated({"generated": True}), is_generated({})
+        (True, False)
+    """
     return bool(meta.get("generated"))
 
 
 def _active_doc(project: Project, path: Path, meta: dict) -> bool:
-    """TE-03: only docs still in use get migrate suggestions."""
+    """Only docs still in use get migrate suggestions."""
     rel = project.docs_rel(path)
     if rel.startswith(nfc("3. 현재 상태")):
         return meta.get("status") != project.enums.value("current_status", "inactive")
@@ -161,7 +270,18 @@ def _active_doc(project: Project, path: Path, meta: dict) -> bool:
 
 
 def required_headings(template_text: str) -> list[str]:
-    """`## ` sections of a template that hold a required `(필수)` blank — removing one breaks the structure."""
+    r"""List the `## ` sections of a template that hold a required `(필수)` blank — removing one breaks the structure.
+
+    Args:
+        template_text: The template.
+
+    Returns:
+        The section headings.
+
+    Example:
+        >>> required_headings("## 목표\n{{목표 (필수)}}\n## 메모\n{{메모}}\n")
+        ['목표']
+    """
     body = templating.strip_template_only(template_text)
     out = []
     for heading, start, end in _section_spans(body):
@@ -172,7 +292,23 @@ def required_headings(template_text: str) -> list[str]:
 
 
 class TemplateIndex:
+    """The current version and required sections of every template (the project's, else the bundled ones).
+
+    Attributes:
+        versions: Template name → template_version.
+        required: Template name → headings of sections with required blanks.
+
+    Example:
+        >>> TemplateIndex(project).versions["기획"]  # doctest: +SKIP
+        '1.0.0'
+    """
+
     def __init__(self, project: Project) -> None:
+        """Read the templates.
+
+        Args:
+            project: The project.
+        """
         self.versions: dict[str, str] = {}
         self.required: dict[str, list[str]] = {}
         texts: dict[str, str] = {}
@@ -194,6 +330,21 @@ class TemplateIndex:
 
 
 def check_file(project: Project, path: Path, text: str, ctx: _Ctx) -> list[Finding]:
+    """Check one document.
+
+    Args:
+        project: The project.
+        path: The document.
+        text: Its text.
+        ctx: State shared across one run (enums, link resolver, template index, IDs seen so far).
+
+    Returns:
+        The document's findings. Its ID is also recorded in ctx for the duplicate check.
+
+    Example:
+        >>> check_file(project, path, read(path), _Ctx(project))  # doctest: +SKIP
+        []
+    """
     rel = project.rel(path)
     out: list[Finding] = []
     doc = frontmatter.parse(text)
@@ -267,7 +418,7 @@ def check_file(project: Project, path: Path, text: str, ctx: _Ctx) -> list[Findi
         if ctx.resolver.resolve(link, path) is None:
             out.append(Finding("error", rel, "broken-link", f"깨진 링크: {link.raw}", link.line_no, "대상 문서 이름 · 경로를 확인하세요"))
 
-    # template version (TE-03)
+    # template version
     tname = nfc(str(meta.get("template") or ""))
     if tname and tname in ctx.templates.versions and not generated:
         gap = version_gap(meta.get("template_version"), ctx.templates.versions[tname])
@@ -294,7 +445,7 @@ def check_file(project: Project, path: Path, text: str, ctx: _Ctx) -> list[Findi
                     )
                 )
 
-    # structure: sections holding required blanks must survive (H-5: the AI changed the template structure)
+    # structure: sections holding required blanks must survive (the AI changed the template structure)
     if tname and tname in ctx.templates.required and not generated and not disabled:
         have = {h for h, _, _ in _section_spans(text)}
         for heading in ctx.templates.required[tname]:
@@ -310,7 +461,7 @@ def check_file(project: Project, path: Path, text: str, ctx: _Ctx) -> list[Findi
                     )
                 )
 
-    # idea: dropped needs a reason (ID-02)
+    # idea: dropped needs a reason
     if (
         doc_type == "idea"
         and meta.get("status") == project.enums.value("idea_status", "dropped")
@@ -322,7 +473,7 @@ def check_file(project: Project, path: Path, text: str, ctx: _Ctx) -> list[Findi
     if doc_type == "tasks":
         out += _check_tasks(project, path, text, rel)
 
-    # length (CH-01)
+    # length
     max_lines = int(project.profile.get("check.max_lines") or 300)
     n_lines = text.count("\n") + 1
     if not generated and n_lines > max_lines:
@@ -412,6 +563,18 @@ class _Ctx:
 
 
 def changed_docs(project: Project) -> list[Path]:
+    """List the documents with uncommitted changes (in the docs worktree for local mode).
+
+    Args:
+        project: The project.
+
+    Returns:
+        Changed or new `.md` files under the documents root.
+
+    Example:
+        >>> [p.name for p in changed_docs(project)]  # doctest: +SKIP
+        ['기록.md']
+    """
     cwd = project.docs_git_cwd()
     out = git_out(["status", "--porcelain", "--untracked-files=all", "--", "."], cwd)
     paths: list[Path] = []
@@ -430,6 +593,21 @@ def changed_docs(project: Project) -> list[Path]:
 
 
 def run(project: Project, paths: Iterable[Path] | None = None) -> Report:
+    """Check documents, then look for IDs used twice across all documents.
+
+    Templates and legacy originals are never checked.
+
+    Args:
+        project: The project.
+        paths: Documents to check; every document when None.
+
+    Returns:
+        The report.
+
+    Example:
+        >>> run(project).counts()  # doctest: +SKIP
+        {'error': 0, 'warn': 1, 'info': 2}
+    """
     ctx = _Ctx(project)
     all_docs = list(project.iter_docs())
     targets = [Path(p).resolve() for p in paths] if paths is not None else [p.resolve() for p in all_docs]

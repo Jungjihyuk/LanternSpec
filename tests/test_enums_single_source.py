@@ -1,4 +1,4 @@
-"""enums.yaml 한 곳에서 상태 이름 · 아이콘을 바꾸면 코드 출력 · 카드 · 스킬 · 템플릿 · 검사가 모두 따라간다."""
+"""Change a status name or icon in enums.yaml alone, and code output, cards, skills, templates and checks all follow."""
 
 import re
 

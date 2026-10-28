@@ -56,9 +56,8 @@ ignore = [
 convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
-# docstring 규칙(AGENTS.md 2장)은 적용을 마친 파일에만 검사한다 — 그룹을 적용할 때마다 여기서 뺀다
-"!src/lanternspec/{core/enums.py,core/principles.py,report/obsidian.py,report/principles_doc.py,work/progress.py}" = ["D"]
-"tests/**" = ["ANN"]  # 테스트 함수는 pytest가 부르므로 타입 힌트를 요구하지 않는다
+# 테스트 함수는 pytest가 부르므로 타입 힌트 · docstring을 요구하지 않는다 (docstring 규칙은 AGENTS.md 2장)
+"tests/**" = ["ANN", "D"]
 
 [tool.pyright]
 include = ["src"]

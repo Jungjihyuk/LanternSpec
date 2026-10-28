@@ -1,9 +1,9 @@
-"""`lantern docs-mode local|shared` — switch how documents are stored (C-10).
+"""`lantern docs-mode local|shared` — switch how documents are stored.
 
 local = the same repository's orphan branch `docs-local`, checked out at docs/ as a worktree:
     git worktree add --orphan -b docs-local docs
-plus `.gitignore: docs/`, `.ignore: !docs/` (R2 — ripgrep searches docs/ again) and a
-pre-push hook that refuses to push docs-local (R6). Never switch by hand.
+plus `.gitignore: docs/`, `.ignore: !docs/` (so ripgrep searches docs/ again) and a
+pre-push hook that refuses to push docs-local. Never switch by hand.
 """
 
 from __future__ import annotations
@@ -21,6 +21,13 @@ SKIP = {"LANTERN_SKIP_HOOKS": "1"}
 
 
 class ModeError(RuntimeError):
+    """The storage mode could not be switched; the message says why and what to do.
+
+    Example:
+        >>> str(ModeError("git 저장소가 아닙니다"))
+        'git 저장소가 아닙니다'
+    """
+
     pass
 
 
@@ -29,6 +36,19 @@ def _lines(path: Path) -> list[str]:
 
 
 def ensure_line(path: Path, line: str) -> bool:
+    """Add a line to a text file unless it is already there (creating the file when missing).
+
+    Args:
+        path: The file, e.g. `.gitignore`.
+        line: The line.
+
+    Returns:
+        True when the line was added.
+
+    Example:
+        >>> ensure_line(Path(".gitignore"), "docs/")  # doctest: +SKIP
+        True
+    """
     lines = _lines(path)
     if any(l.strip() == line for l in lines):
         return False
@@ -40,6 +60,19 @@ def ensure_line(path: Path, line: str) -> bool:
 
 
 def remove_line(path: Path, line: str) -> bool:
+    """Remove a line from a text file (deleting the file when nothing is left).
+
+    Args:
+        path: The file.
+        line: The line.
+
+    Returns:
+        True when the line was removed.
+
+    Example:
+        >>> remove_line(Path(".gitignore"), "docs/")  # doctest: +SKIP
+        True
+    """
     if not path.exists():
         return False
     lines = _lines(path)
@@ -70,6 +103,18 @@ def _regenerate(project: Project) -> list[str]:
 
 
 def docs_pattern(project: Project) -> str:
+    """Return the documents root as an ignore pattern.
+
+    Args:
+        project: The project.
+
+    Returns:
+        The root with a trailing slash, e.g. "docs/".
+
+    Example:
+        >>> docs_pattern(project)  # doctest: +SKIP
+        'docs/'
+    """
     return project.profile.docs_root.rstrip("/") + "/"
 
 
@@ -87,6 +132,26 @@ def _set_remote(project: Project, value: str) -> None:
 
 
 def to_local(project: Project, commit: bool = True) -> list[str]:
+    """Move documents to the `docs-local` branch, checked out at docs/ as a worktree.
+
+    Existing documents get a first commit there; the ignore files, lantern.yaml, git hooks and
+    installed skills are updated, and the structure change is committed on the code branch
+    (only staged when the user already had staged changes).
+
+    Args:
+        project: The project.
+        commit: Commit the structure change on the code branch.
+
+    Returns:
+        One message per step.
+
+    Raises:
+        ModeError: git is too old, this is not a repository, docs/ already has .git, or the branch exists.
+
+    Example:
+        >>> to_local(project)[0]  # doctest: +SKIP
+        '✔ docs-local 빈 브랜치를 docs/에 펼침 (저장소는 하나)'
+    """
     if git_version(project.root) < MIN_GIT:
         raise ModeError(f"local 방식은 git {'.'.join(map(str, MIN_GIT))} 이상이 필요합니다 (git worktree --orphan)")
     if git(["rev-parse", "--git-dir"], project.root).returncode != 0:
@@ -132,9 +197,9 @@ def to_local(project: Project, commit: bool = True) -> list[str]:
         git(["commit", "-q", "-m", "docs: 문서를 docs-local 브랜치로 옮김 [lantern]"], docs, env=SKIP)
         msgs.append("✔ 기존 문서를 docs-local에 첫 커밋")
     if ensure_line(project.root / ".gitignore", docs_pattern(project)):
-        msgs.append("✔ .gitignore에 docs/ 추가 (R1)")
+        msgs.append("✔ .gitignore에 docs/ 추가")
     if ensure_line(project.root / ".ignore", "!" + docs_pattern(project)):
-        msgs.append("✔ .ignore에 !docs/ 추가 — AI 검색이 문서를 찾게 (R2)")
+        msgs.append("✔ .ignore에 !docs/ 추가 — AI 검색이 문서를 찾게")
     _set_remote(project, "local")
     msgs.append("✔ lantern.yaml docs.remote: local")
     from ..check.githooks import install as install_hooks
@@ -152,6 +217,22 @@ def to_local(project: Project, commit: bool = True) -> list[str]:
 
 
 def to_shared(project: Project, commit: bool = True) -> list[str]:
+    """Move documents back into the code branch's docs/ (the `docs-local` branch is kept as history).
+
+    Args:
+        project: The project.
+        commit: Commit the documents on the code branch.
+
+    Returns:
+        One message per step.
+
+    Raises:
+        ModeError: docs/ is not the docs-local worktree, or the worktree could not be removed.
+
+    Example:
+        >>> to_shared(project)[-1]  # doctest: +SKIP
+        '✔ 코드 브랜치에 문서 커밋'
+    """
     docs = project.docs
     if not (docs / ".git").is_file():
         raise ModeError("docs/가 docs-local worktree가 아닙니다 — 이미 shared인지 lantern doctor로 확인하세요")
