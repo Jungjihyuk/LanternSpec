@@ -1,0 +1,1 @@
+{"session_id": "s1", "transcript_path": "/tmp/t.jsonl", "cwd": "/repo", "hook_event_name": "UserPromptSubmit", "model": "gpt-5-codex", "turn_id": "t1", "prompt": "$l-build W-012"}

@@ -143,6 +143,7 @@ class ClaudeCode(ClaudeHooks, Tool):
     expands_arguments = True
     config_paths = (".claude/", "CLAUDE.md", ".mcp.json")
     write_tools = frozenset({"Write", "Edit", "MultiEdit", "NotebookEdit"})
+    verified_version = "2.1.308"
 
     def skill_meta(self, src: SkillSource, profile: Profile, prefix: str) -> dict[str, Any]:
         """Implement Tool.skill_meta with Claude Code's extra frontmatter keys.

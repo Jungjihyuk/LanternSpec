@@ -548,6 +548,15 @@
 "Knowledge store path doesn't exist: {path}": {ko: "지식 저장소 경로가 없습니다: {path}"}
 "{count} skills edited by the user (upgrade skips them): ": {ko: "사용자가 고친 스킬 {count}개 (upgrade가 건너뜀): "}
 "CLAUDE.md doesn't load @AGENTS.md": {ko: "CLAUDE.md가 @AGENTS.md를 불러오지 않습니다"}
+"{label}: the {launch} command isn't on PATH — can't check its version": {ko: "{label}: {launch} 명령이 PATH에 없어 버전을 확인하지 못했습니다"}
+"{label} {version} is older than {min} — update it (some features won't work)": {ko: "{label} {version}은 {min}보다 낮습니다 — 업데이트하세요 (일부 기능이 동작하지 않습니다)"}
+"{label} {version} is newer than the last checked {verified} — if hooks misbehave, the hook rows below show it": {ko: "{label} {version}은 마지막으로 확인한 {verified}보다 새 버전입니다 — hook이 이상하면 아래 hook 줄에 나타납니다"}
+"{label} {version} (checked up to {verified})": {ko: "{label} {version} ({verified}까지 확인됨)"}
+"{label}: couldn't read its version": {ko: "{label}: 버전을 읽지 못했습니다"}
+"{label}: its hooks have never run in this project — open a session once to check": {ko: "{label}: 이 프로젝트에서 hook이 한 번도 실행되지 않았습니다 — 세션을 한 번 열어 확인하세요"}
+"{label}: hook {items} stopped running for {count} sessions — the tool may have changed its hooks (lantern upgrade; if it stays, report it)": {ko: "{label}: hook {items}이 세션 {count}번 동안 실행되지 않았습니다 — 도구의 hook 방식이 바뀌었을 수 있습니다 (lantern upgrade, 그래도 그대로면 알려 주세요)"}
+"{label}: hooks running ({count} runs)": {ko: "{label}: hook 동작 중 ({count}회 실행)"}
+"{label}: {count} hook calls came without {items} (latest {at}, {event}) — its payload format may have changed": {ko: "{label}: hook 호출 {count}건에 {items}이 없었습니다 (최근 {at}, {event}) — 입력 형식이 바뀌었을 수 있습니다"}
 
 # check/githooks.py
 "✔ git hooks installed: {items} ({d})": {ko: "✔ git hook 설치: {items} ({d})"}

@@ -11,6 +11,7 @@ What a hook *does* lives in agent_hooks.py and never looks at a tool's format.
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -103,7 +104,7 @@ class Tool:
     """The contract of an AI tool adapter.
 
     Shared code knows only this class; each tool overrides what its format needs.
-    Methods with a default (skill_meta, skill_extras, install_config, written_paths) are overridden
+    Methods with a default (skill_meta, skill_extras, install_config, hooks, written_paths) are overridden
     only by tools that need them.
 
     Attributes:
@@ -116,6 +117,8 @@ class Tool:
         expands_arguments: Whether the tool substitutes `$ARGUMENTS` in a skill body.
         config_paths: Files and folders this tool owns (not project code).
         write_tools: Tool names that write files (checked after they run).
+        min_version: The oldest version with every feature we rely on ("" = not known, not checked).
+        verified_version: The newest version whose formats were checked against its docs ("" = not checked).
 
     Example:
         >>> from lanternspec.tools import get
@@ -132,6 +135,8 @@ class Tool:
     expands_arguments = False  # does the tool substitute $ARGUMENTS in a skill body?
     config_paths: tuple[str, ...] = ()  # files · folders this tool owns (not project code)
     write_tools: frozenset[str] = frozenset()  # tool names that write files (checked right after)
+    min_version = ""  # oldest version with every feature we rely on; "" = not known
+    verified_version = ""  # newest version checked against its docs; "" = not checked
 
     # ---- skills
     def skill_meta(self, src: SkillSource, profile: Profile, prefix: str) -> dict[str, Any]:
@@ -234,6 +239,32 @@ class Tool:
         return []
 
     # ---- hooks
+    def hooks(self) -> dict[str, Any]:
+        """Build our hook entries in the tool's settings format.
+
+        Returns:
+            The tool's event name → its entries; none by default.
+
+        Example:
+            >>> from lanternspec.tools import get
+            >>> sorted(get("codex").hooks())
+            ['PostToolUse', 'PreCompact', 'SessionStart', 'Stop', 'UserPromptSubmit']
+        """
+        return {}
+
+    def hook_events(self) -> list[str]:
+        """List our hook events this tool calls, read from the commands in hooks().
+
+        Returns:
+            Our event names, e.g. "session-start", sorted.
+
+        Example:
+            >>> from lanternspec.tools import get
+            >>> get("antigravity").hook_events()
+            ['feedback', 'post-tool', 'prompt', 'session-start', 'stop']
+        """
+        return sorted(set(re.findall(r"lantern hook ([a-z-]+)", json.dumps(self.hooks()))))
+
     def hook_command(self, event: str) -> str:
         """Return the shell command a hook entry runs (it does nothing when `lantern` is missing).
 

@@ -1,0 +1,1 @@
+{"conversationId": "c1", "workspacePaths": ["/repo"], "transcriptPath": "/tmp/t.jsonl", "artifactDirectoryPath": "/tmp/a", "modelName": "gemini-3-pro", "terminationReason": "NO_TOOL_CALL"}

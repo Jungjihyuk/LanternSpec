@@ -1,6 +1,6 @@
 """Antigravity CLI (`agy`, successor of Gemini CLI) — `.agents/skills`, AGENTS.md, hooks in `.agents/hooks.json`.
 
-Checked against agy 1.4.7 (its built-in agy-customizations guide and a live run):
+Checked against agy 1.4.7 (its built-in agy-customizations guide and a live run), hooks rechecked on 1.4.9:
 - skills: `.agents/skills/<name>/SKILL.md` (name · description), called `/l-…`
 - rules: AGENTS.md / GEMINI.md read natively
 - hooks: `{"<hook name>": {Event: [...]}}`, run with cwd = `.agents/`; payload keys are camelCase
@@ -41,6 +41,7 @@ class Antigravity(Tool):
     write_tools = frozenset(
         {"write_file", "edit_file", "create_file", "write_to_file", "replace_file_content", "multi_replace_file_content"}
     )
+    verified_version = "1.4.9"
 
     # ---- config
     def hooks(self) -> dict[str, Any]:

@@ -1,7 +1,8 @@
 """`lantern doctor` — does the project's real structure match lantern.yaml? One look at everything.
 
 Checks lantern.yaml, the `lantern` command, git and its hooks, the docs storage mode, templates,
-enums.yaml, the MOC, the knowledge store, installed skills, AGENTS.md and the code size.
+enums.yaml, the MOC, the knowledge store, installed skills, AGENTS.md, the code size and, for each
+installed AI tool, its version and whether its hooks still run (tools/health.py).
 
 Not here:
     - fixing anything — each row names the command that fixes it
@@ -125,6 +126,98 @@ def run(project: Project) -> list[tuple[str, str]]:
             cm = project.root / "CLAUDE.md"
             if not cm.exists() or "@AGENTS.md" not in read(cm):
                 out.append((WARN, msg("CLAUDE.md doesn't load @AGENTS.md")))
+        out += _tool_rows(project, list(st.get("tools") or []))
+    return out
+
+
+def _tool_rows(project: Project, names: list[str]) -> list[tuple[str, str]]:
+    """Check each installed AI tool: its version against the checked ones, its hooks still running, odd payloads."""
+    from ..tools import REGISTRY, health
+
+    beats, odd = health.heartbeat(project), health.unexpected(project)
+    out: list[tuple[str, str]] = []
+    for tool in (REGISTRY[n] for n in names if n in REGISTRY):
+        version = health.installed_version(tool)
+        verdict = health.version_verdict(tool, version) if version else ""
+        if version is None:
+            out.append(
+                (WARN, msg("{label}: the {launch} command isn't on PATH — can't check its version", label=tool.label, launch=tool.launch))
+            )
+        elif verdict == "old":
+            out.append(
+                (
+                    BAD,
+                    msg(
+                        "{label} {version} is older than {min} — update it (some features won't work)",
+                        label=tool.label,
+                        version=version,
+                        min=tool.min_version,
+                    ),
+                )
+            )
+        elif verdict == "new":
+            out.append(
+                (
+                    WARN,
+                    msg(
+                        "{label} {version} is newer than the last checked {verified} — if hooks misbehave, the hook rows below show it",
+                        label=tool.label,
+                        version=version,
+                        verified=tool.verified_version,
+                    ),
+                )
+            )
+        elif verdict == "ok":
+            out.append(
+                (
+                    OK,
+                    msg(
+                        "{label} {version} (checked up to {verified})",
+                        label=tool.label,
+                        version=version,
+                        verified=tool.verified_version or "-",
+                    ),
+                )
+            )
+        else:
+            out.append((WARN, msg("{label}: couldn't read its version", label=tool.label)))
+        mine = beats.get(tool.name)
+        if not mine:
+            out.append((WARN, msg("{label}: its hooks have never run in this project — open a session once to check", label=tool.label)))
+        else:
+            silent = health.silent_events(tool, mine)
+            if silent:
+                out.append(
+                    (
+                        WARN,
+                        msg(
+                            "{label}: hook {items} stopped running for {count} sessions — the tool may have "
+                            "changed its hooks (lantern upgrade; if it stays, report it)",
+                            label=tool.label,
+                            items=", ".join(silent),
+                            count=health.MISSED_STARTS,
+                        ),
+                    )
+                )
+            else:
+                runs = sum(int(v.get("count") or 0) for v in (mine.get("events") or {}).values())
+                out.append((OK, msg("{label}: hooks running ({count} runs)", label=tool.label, count=runs)))
+        calls = [c for c in odd if c.get("tool") == tool.name]
+        if calls:
+            last = calls[-1]
+            out.append(
+                (
+                    WARN,
+                    msg(
+                        "{label}: {count} hook calls came without {items} (latest {at}, {event}) — its payload format may have changed",
+                        label=tool.label,
+                        count=len(calls),
+                        items=", ".join(last.get("missing") or []),
+                        at=last.get("at", "?"),
+                        event=last.get("event", "?"),
+                    ),
+                )
+            )
     return out
 
 

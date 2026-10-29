@@ -39,6 +39,7 @@ class Codex(ClaudeHooks, Tool):
     command_prefix = "$"
     config_paths = (".agents/", ".codex/")
     write_tools = frozenset({"apply_patch"})
+    verified_version = "0.164.0"
 
     def skill_extras(self, src: SkillSource, profile: Profile) -> dict[str, str]:
         r"""Implement Tool.skill_extras: keep manual-only skills out of implicit (model-chosen) invocation.
