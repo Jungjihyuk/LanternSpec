@@ -33,7 +33,7 @@ lantern task add W-012 "<what>" --size S|M|L --ac AC-1 [--after T01] [--screen "
 
 ## 2. Review
 - Does **every acceptance criterion have at least one task**? (`lantern check` reports missing ACs)
-- With **more than 10 tasks**, suggest splitting the work (a new work with `/l-plan`)
+- When a task **falls outside the purpose in the work's name**, take it out and suggest **divide and place** with `/l-plan` (one work = one purpose)
 - Check the order and what is blocked with `lantern task list W-012`
 - If the person wants planned dates, only **suggest** them from the actual average per size: `lantern task estimate W-012 [--from 2026-11-01]` → if they agree, `--apply`
 

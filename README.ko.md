@@ -158,7 +158,7 @@ lantern obsidian plugins     # 두 플러그인의 최신 공식 배포 파일�
 
 | 도구 | 스킬 | 규칙 | 에이전트 hook | MCP (`--mcp`) |
 |---|---|---|---|---|
-| Claude Code | `.claude/skills` | `CLAUDE.md` → `@AGENTS.md` | `.claude/settings.json` | `.mcp.json` |
+| Claude Code | `.claude/skills` | `AGENTS.md` (`CLAUDE.md`가 있으면 `@AGENTS.md`를 넣음) | `.claude/settings.json` | `.mcp.json` |
 | Codex | `.agents/skills` (`$l-…`) | `AGENTS.md` | `.codex/hooks.json` | `.codex/config.toml` |
 | Antigravity CLI (`agy`) | `.agents/skills` | `AGENTS.md` | `.agents/hooks.json` (압축 전 저장 제외 — 압축 hook이 없음) | `.agents/plugins/lanternspec/` |
 

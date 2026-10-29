@@ -104,8 +104,8 @@ class Tool:
     """The contract of an AI tool adapter.
 
     Shared code knows only this class; each tool overrides what its format needs.
-    Methods with a default (skill_meta, skill_extras, install_config, hooks, written_paths) are overridden
-    only by tools that need them.
+    Methods with a default (skill_meta, skill_extras, install_config, check_config, hooks, written_paths) are
+    overridden only by tools that need them.
 
     Attributes:
         name: Key used on the command line and in installed.json, e.g. "claude".
@@ -235,6 +235,21 @@ class Tool:
         Example:
             >>> get("claude").install_config(project, mcp=False)  # doctest: +SKIP
             ['.claude/settings.json (hooks)']
+        """
+        return []
+
+    def check_config(self, project: Project) -> list[tuple[str, str]]:
+        """Check that the tool will actually read our rules in this project (for `lantern doctor`).
+
+        Args:
+            project: The project.
+
+        Returns:
+            (level, message) rows; level is "ok", "info", "warn" or "bad". Nothing to check by default.
+
+        Example:
+            >>> get("codex").check_config(project)  # doctest: +SKIP
+            []
         """
         return []
 

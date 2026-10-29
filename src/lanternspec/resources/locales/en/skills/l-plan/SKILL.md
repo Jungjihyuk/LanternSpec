@@ -18,10 +18,20 @@ Input: `$ARGUMENTS` — `IDEA-014`, or a description.
 - `docs/<<folder.rules>>/<<file.unit_log>>` — why people changed the recommendation before
 
 ## 1. Suggest a work unit → the person chooses
-Check for overlap with open works and present one of three as **a recommendation with the reason**:
-- **New work** — one result the user can see, small enough to finish and ship alone
-- **Add to an existing work** — when an open work changes the same screens or the same data
-- **Split in two** — when it looks like 10+ tasks or it spans several areas
+Why works are divided: grouping work of the same kind **keeps the AI from touching things outside the purpose**, and later anyone can **tell what was done** from the list of works alone.
+
+**Rule — one work = one purpose.** The work's name must say in one line "what changes, and for what". If that line needs an "and", there are two purposes.
+
+Compare with the names and purposes of the open works (`lantern status`) and present one of three as **a recommendation with the reason**:
+- **New work** — when the idea's purpose fits none of the open works' purposes. Create one work for that one purpose (e.g. "Add a job filter to the posting list").
+- **Add to an existing work** — the target is **a work not finished yet** (planning · design · in progress), when the new part is explained without changing that work's name (purpose). The same holds for a new idea and for tasks that turn up while planning or building. Never add to a finished, archived work — make a new one.
+- **Divide and place** — when one idea has several purposes. Show in a table where each piece goes (an existing work / a new work) and why:
+  ```
+  | Piece                  | Goes to                          | Why                                          |
+  | Job · region filter UI | New work "Posting list filter"   | A screen feature — no open work has this purpose |
+  | Region name cleanup    | Existing W-010 "Data cleanup"    | Fits W-010's purpose (standard names)        |
+  ```
+  If the person agrees, create them as shown; otherwise move or merge pieces until it fits.
 
 If the person chooses differently from the recommendation, ask why and record it:
 ```bash
@@ -36,6 +46,7 @@ lantern idea status IDEA-014 "<<idea_status.worked>>" --work W-012
 ```
 - When starting **without an idea**, create the idea card along the way: `lantern scaffold idea "<name>" --raw "<the user's description>" --status "<<idea_status.worked>>"` → `scaffold work --idea` with that ID → `idea status … "<<idea_status.worked>>" --work …`.
 - To **add to an existing work**, don't create a folder; add the scenario and acceptance criteria to that work's `<<file.plan>>`, then `lantern idea status IDEA-014 "<<idea_status.worked>>" --work W-010`.
+- To **divide and place**, do one of the two above for each piece: create a folder for a new-work piece, add an existing-work piece to that work's `<<file.plan>>`. Then run `lantern idea status IDEA-014 "<<idea_status.worked>>" --work W-0NN` once per work (each run adds one work link to the idea).
 
 ## 3. Fill <<file.plan>>
 <<marker.glance>> · what · why · user scenario · **acceptance criteria** · out of scope, and frontmatter `domain` (one word for the feature domain).

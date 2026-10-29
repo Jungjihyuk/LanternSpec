@@ -6,8 +6,8 @@ created: ${today}
 updated: ${today}
 links: ${links}
 template: Tasks
-template_version: 1.0.0
-based_on: 1.0.0
+template_version: 1.0.1
+based_on: 1.0.1
 ---
 # ✅ ${work_id} ${name} — Tasks
 
@@ -20,7 +20,7 @@ based_on: 1.0.0
 > - Planned dates only when a person sets them: `[planned:: 2026-11-01] [due:: 2026-11-03]` (the AI never guesses them)
 > - `[started:: …]` · `[finished:: …]` are stamped by `lantern task start|done`. Don't write them by hand
 > - Screen tasks get `[screen:: screen name]`; if something is unknown, end the line with `❓ Needs answer`
-> - With more than 10 tasks, suggest splitting the work
+> - When a task falls outside the purpose in the work's name, take it out and suggest divide and place with `/l-plan` (one work = one purpose)
 
 ## Tasks
 
@@ -31,3 +31,4 @@ based_on: 1.0.0
 | Version | Date | What changed |
 |---|---|---|
 | 1.0.0 | 2026-10-27 | Base template |
+| 1.0.1 | 2026-10-29 | Divide works by their purpose, not by the number of tasks |

@@ -547,7 +547,14 @@
 "Knowledge store {path} ({type})": {ko: "지식 저장소 {path} ({type})"}
 "Knowledge store path doesn't exist: {path}": {ko: "지식 저장소 경로가 없습니다: {path}"}
 "{count} skills edited by the user (upgrade skips them): ": {ko: "사용자가 고친 스킬 {count}개 (upgrade가 건너뜀): "}
-"CLAUDE.md doesn't load @AGENTS.md": {ko: "CLAUDE.md가 @AGENTS.md를 불러오지 않습니다"}
+"Claude Code doesn't read AGENTS.md: {file} doesn't import it — lantern upgrade": {ko: "Claude Code가 AGENTS.md를 읽지 않습니다: {file} 안에 불러오는 줄이 없음 — lantern upgrade"}
+"delete {file} (it only imports AGENTS.md)": {ko: "{file} 지우기 (AGENTS.md를 불러오는 줄뿐임)"}
+"move the text of {file} into AGENTS.md and delete it": {ko: "{file}의 글을 AGENTS.md로 옮기고 지우기"}
+"Claude Code doesn't read {items} while a CLAUDE.md exists — {fix}": {ko: "CLAUDE.md가 있는 동안 Claude Code는 다음 파일을 읽지 않습니다: {items} — 권장: {fix}"}
+"You can delete {file}: it only imports AGENTS.md, which Claude Code reads itself": {ko: "지워도 되는 파일: {file} — AGENTS.md를 불러오는 줄뿐이고, Claude Code는 AGENTS.md를 직접 읽습니다"}
+"Claude Code reads AGENTS.md through the import in {file}": {ko: "Claude Code가 AGENTS.md를 읽습니다 (불러오는 곳: {file})"}
+"CLAUDE.local.md keeps Claude Code from reading AGENTS.md — set Project instructions to claude-md-and-agents-md in /config (or ~/.claude/settings.json)": {ko: "CLAUDE.local.md가 있으면 Claude Code가 AGENTS.md를 읽지 않습니다 — /config(또는 ~/.claude/settings.json)에서 Project instructions를 claude-md-and-agents-md로 바꾸세요"}
+"Claude Code reads AGENTS.md itself": {ko: "Claude Code가 AGENTS.md를 직접 읽습니다"}
 "{label}: the {launch} command isn't on PATH — can't check its version": {ko: "{label}: {launch} 명령이 PATH에 없어 버전을 확인하지 못했습니다"}
 "{label} {version} is older than {min} — update it (some features won't work)": {ko: "{label} {version}은 {min}보다 낮습니다 — 업데이트하세요 (일부 기능이 동작하지 않습니다)"}
 "{label} {version} is newer than the last checked {verified} — if hooks misbehave, the hook rows below show it": {ko: "{label} {version}은 마지막으로 확인한 {verified}보다 새 버전입니다 — hook이 이상하면 아래 hook 줄에 나타납니다"}

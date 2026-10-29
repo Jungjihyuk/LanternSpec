@@ -123,6 +123,45 @@ def test_install_merges_rules_and_settings_without_clobbering(repo):
     assert set(agy["lanternspec"]) == {"SessionStart", "PreInvocation", "PostToolUse", "PostInvocation", "Stop"}
 
 
+def test_install_creates_no_claude_md_because_claude_reads_agents_md_itself(repo):
+    repo("install")
+    assert (repo.root / "AGENTS.md").exists() and not (repo.root / "CLAUDE.md").exists()
+
+
+def test_a_claude_md_inside_dot_claude_imports_the_root_agents_md(repo):
+    (repo.root / ".claude").mkdir()
+    (repo.root / ".claude/CLAUDE.md").write_text("# 메모\n", encoding="utf-8")
+    repo("install")
+    assert (repo.root / ".claude/CLAUDE.md").read_text(encoding="utf-8") == "@../AGENTS.md\n\n# 메모\n"
+    assert not (repo.root / "CLAUDE.md").exists()
+
+
+def _claude_rows(repo):
+    from lanternspec.core.project import Project
+
+    return tools.get("claude").check_config(Project.load(repo.root))
+
+
+def test_claude_config_check_tells_when_agents_md_is_read(repo):
+    assert [lvl for lvl, _ in _claude_rows(repo)] == ["ok"]  # no CLAUDE.md: read natively
+    (repo.root / "CLAUDE.md").write_text("@AGENTS.md\n", encoding="utf-8")
+    assert [lvl for lvl, _ in _claude_rows(repo)] == ["ok", "info"]  # only our import: may be deleted
+    (repo.root / "CLAUDE.md").write_text("# 우리 메모\n", encoding="utf-8")
+    assert [lvl for lvl, _ in _claude_rows(repo)] == ["warn"]  # no import: AGENTS.md isn't read
+
+
+def test_claude_config_check_warns_about_nested_agents_md_and_claude_local(repo):
+    (repo.root / "CLAUDE.md").write_text("@AGENTS.md\n\n# 우리 메모\n", encoding="utf-8")
+    (repo.root / "backend").mkdir()
+    (repo.root / "backend/AGENTS.md").write_text("# backend\n", encoding="utf-8")
+    rows = _claude_rows(repo)
+    assert [lvl for lvl, _ in rows] == ["warn"] and "backend/AGENTS.md" in rows[0][1]
+    (repo.root / "CLAUDE.md").unlink()
+    assert [lvl for lvl, _ in _claude_rows(repo)] == ["ok"]  # without CLAUDE.md the nested one is read
+    (repo.root / "CLAUDE.local.md").write_text("내 메모\n", encoding="utf-8")
+    assert [lvl for lvl, _ in _claude_rows(repo)] == ["warn"]
+
+
 def test_upgrade_skips_user_edits_and_follows_profile(repo):
     repo("install", "--tools", "claude,codex")
     init_project(repo)

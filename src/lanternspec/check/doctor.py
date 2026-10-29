@@ -20,7 +20,8 @@ from ..tools.rules import AGENTS_START
 from ..tools.skills import SKILL_NAMES
 from . import githooks
 
-OK, WARN, BAD = "✔", "⚠", "✖"
+OK, INFO, WARN, BAD = "✔", "ℹ", "⚠", "✖"
+LEVELS = {"ok": OK, "info": INFO, "warn": WARN, "bad": BAD}  # Tool.check_config levels → icons
 
 
 def run(project: Project) -> list[tuple[str, str]]:
@@ -122,21 +123,18 @@ def run(project: Project) -> list[tuple[str, str]]:
         agents = project.root / "AGENTS.md"
         if not agents.exists() or AGENTS_START not in read(agents):
             out.append((WARN, msg("AGENTS.md has no LanternSpec rules — lantern upgrade")))
-        if "claude" in (st.get("tools") or []):
-            cm = project.root / "CLAUDE.md"
-            if not cm.exists() or "@AGENTS.md" not in read(cm):
-                out.append((WARN, msg("CLAUDE.md doesn't load @AGENTS.md")))
         out += _tool_rows(project, list(st.get("tools") or []))
     return out
 
 
 def _tool_rows(project: Project, names: list[str]) -> list[tuple[str, str]]:
-    """Check each installed AI tool: its version against the checked ones, its hooks still running, odd payloads."""
+    """Check each installed AI tool: it reads our rules, its version against the checked ones, its hooks still running, odd payloads."""
     from ..tools import REGISTRY, health
 
     beats, odd = health.heartbeat(project), health.unexpected(project)
     out: list[tuple[str, str]] = []
     for tool in (REGISTRY[n] for n in names if n in REGISTRY):
+        out += [(LEVELS[level], text) for level, text in tool.check_config(project)]
         version = health.installed_version(tool)
         verdict = health.version_verdict(tool, version) if version else ""
         if version is None:

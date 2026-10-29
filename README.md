@@ -160,7 +160,7 @@ When Obsidian first asks whether to turn on community plugins, turn them on (lea
 
 | Tool | Skills | Rules | Agent hooks | MCP (`--mcp`) |
 |---|---|---|---|---|
-| Claude Code | `.claude/skills` | `CLAUDE.md` → `@AGENTS.md` | `.claude/settings.json` | `.mcp.json` |
+| Claude Code | `.claude/skills` | `AGENTS.md` (an existing `CLAUDE.md` gets `@AGENTS.md`) | `.claude/settings.json` | `.mcp.json` |
 | Codex | `.agents/skills` (`$l-…`) | `AGENTS.md` | `.codex/hooks.json` | `.codex/config.toml` |
 | Antigravity CLI (`agy`) | `.agents/skills` | `AGENTS.md` | `.agents/hooks.json` (no save-before-compaction — there is no compaction hook) | `.agents/plugins/lanternspec/` |
 

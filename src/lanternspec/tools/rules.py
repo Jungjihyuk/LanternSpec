@@ -1,4 +1,4 @@
-"""AGENTS.md — the one rules file every tool reads (Claude Code through CLAUDE.md's `@AGENTS.md`).
+"""AGENTS.md — the one rules file every tool reads (Claude Code too; an existing CLAUDE.md imports it).
 
 Our rules live between `<!-- lanternspec:start -->` and `<!-- lanternspec:end -->`; the rest of
 the file belongs to the project.

@@ -1,4 +1,6 @@
-"""Claude Code — `.claude/skills`, CLAUDE.md → `@AGENTS.md`, hooks in `.claude/settings.json`, MCP in `.mcp.json`.
+"""Claude Code — `.claude/skills`, AGENTS.md read natively (an existing CLAUDE.md gets `@AGENTS.md`), hooks · MCP.
+
+Hooks go into `.claude/settings.json`, the MCP server into `.mcp.json`.
 
 Not here:
     - what a hook does → tools/agent_hooks.py
@@ -7,11 +9,12 @@ Not here:
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from ..core.messages import msg
-from ..core.project import Project, read, write
+from ..core.project import Project, git, read, write
 from .base import HOOK_COMMAND, MCP_NAME, MCP_SERVER, HookInput, HookReply, HookResult, Tool, merge_json_file, replace_hook_entries
 
 if TYPE_CHECKING:
@@ -143,6 +146,7 @@ class ClaudeCode(ClaudeHooks, Tool):
     expands_arguments = True
     config_paths = (".claude/", "CLAUDE.md", ".mcp.json")
     write_tools = frozenset({"Write", "Edit", "MultiEdit", "NotebookEdit"})
+    min_version = "2.1.277"  # reads AGENTS.md itself (no CLAUDE.md needed)
     verified_version = "2.1.308"
 
     def skill_meta(self, src: SkillSource, profile: Profile, prefix: str) -> dict[str, Any]:
@@ -211,7 +215,9 @@ class ClaudeCode(ClaudeHooks, Tool):
     def install_config(self, project: Project, mcp: bool) -> list[str]:
         """Implement Tool.install_config for Claude Code.
 
-        CLAUDE.md imports AGENTS.md, hooks go into `.claude/settings.json`, and the MCP server (when asked) into `.mcp.json`.
+        Claude Code reads AGENTS.md on its own, so no CLAUDE.md is created. An existing CLAUDE.md is
+        kept, and an import of AGENTS.md goes at its top (while a CLAUDE.md exists, Claude reads only
+        CLAUDE.md files). Hooks go into `.claude/settings.json`, the MCP server (when asked) into `.mcp.json`.
 
         Args:
             project: The project.
@@ -222,20 +228,114 @@ class ClaudeCode(ClaudeHooks, Tool):
 
         Example:
             >>> ClaudeCode().install_config(project, mcp=False)  # doctest: +SKIP
-            ['CLAUDE.md (@AGENTS.md)', '.claude/settings.json (에이전트 hook)']
+            ['.claude/settings.json (에이전트 hook)']
         """
         merged = []
-        claude_md = project.root / "CLAUDE.md"
-        text = read(claude_md) if claude_md.exists() else ""
-        if "@AGENTS.md" not in text:
-            write(claude_md, ("@AGENTS.md\n\n" + text) if text.strip() else "@AGENTS.md\n")
-            merged.append("CLAUDE.md (@AGENTS.md)")
+        for rel, line in CLAUDE_FILES.items():
+            path = project.root / rel
+            if path.exists() and not imports_agents(read(path)):
+                text = read(path)
+                write(path, f"{line}\n\n{text}" if text.strip() else f"{line}\n")
+                merged.append(f"{rel} ({line})")
         merge_json_file(project.root / ".claude" / "settings.json", lambda d: replace_hook_entries(d, self.hooks()))
         merged.append(msg(".claude/settings.json (agent hooks)"))
         if mcp:
             merge_json_file(project.root / ".mcp.json", add_mcp_server)
             merged.append(f".mcp.json (MCP {MCP_NAME})")
         return merged
+
+    def check_config(self, project: Project) -> list[tuple[str, str]]:
+        """Implement Tool.check_config: does Claude Code read the root and the nested AGENTS.md?
+
+        Claude reads AGENTS.md itself only while no CLAUDE.md or CLAUDE.local.md exists in the project;
+        otherwise it reads CLAUDE.md files only (the root AGENTS.md through their import, nested ones never).
+
+        Args:
+            project: The project.
+
+        Returns:
+            (level, message) rows.
+
+        Example:
+            >>> ClaudeCode().check_config(project)  # doctest: +SKIP
+            [('ok', 'Claude Code가 AGENTS.md를 직접 읽습니다')]
+        """
+        rows: list[tuple[str, str]] = []
+        present = {rel: read(project.root / rel) for rel in CLAUDE_FILES if (project.root / rel).exists()}
+        only_import = [rel for rel, text in present.items() if text.strip() == CLAUDE_FILES[rel]]
+        for rel, text in present.items():
+            if not imports_agents(text):
+                rows.append(("warn", msg("Claude Code doesn't read AGENTS.md: {file} doesn't import it — lantern upgrade", file=rel)))
+        nested = nested_agents(project)
+        if present and nested:
+            items = ", ".join(nested[:3]) + (" …" if len(nested) > 3 else "")
+            files = ", ".join(present)
+            if len(only_import) == len(present):  # nothing of their own: deleting them is enough
+                fix = msg("delete {file} (it only imports AGENTS.md)", file=files)
+            else:
+                fix = msg("move the text of {file} into AGENTS.md and delete it", file=files)
+            rows.append(("warn", msg("Claude Code doesn't read {items} while a CLAUDE.md exists — {fix}", items=items, fix=fix)))
+        elif only_import:
+            rows.append(
+                (
+                    "info",
+                    msg("You can delete {file}: it only imports AGENTS.md, which Claude Code reads itself", file=", ".join(only_import)),
+                )
+            )
+        if (project.root / "CLAUDE.local.md").exists():
+            rows.append(
+                (
+                    "warn",
+                    msg(
+                        "CLAUDE.local.md keeps Claude Code from reading AGENTS.md — set Project instructions to "
+                        "claude-md-and-agents-md in /config (or ~/.claude/settings.json)"
+                    ),
+                )
+            )
+        if not any(level == "warn" for level, _ in rows):
+            ok = (
+                msg("Claude Code reads AGENTS.md through the import in {file}", file=", ".join(present))
+                if present
+                else msg("Claude Code reads AGENTS.md itself")
+            )
+            rows.insert(0, ("ok", ok))
+        return rows
+
+
+CLAUDE_FILES = {"CLAUDE.md": "@AGENTS.md", ".claude/CLAUDE.md": "@../AGENTS.md"}  # file → the import that reaches the root AGENTS.md
+
+
+def imports_agents(text: str) -> bool:
+    r"""Tell whether a CLAUDE.md text imports the root AGENTS.md.
+
+    Args:
+        text: The CLAUDE.md text.
+
+    Returns:
+        True when a line starts with `@AGENTS.md` or `@../AGENTS.md`.
+
+    Example:
+        >>> imports_agents("@AGENTS.md\n\n# 메모"), imports_agents("AGENTS.md를 읽어라")
+        (True, False)
+    """
+    return re.search(r"^@(\.\./)?AGENTS\.md\b", text, re.M) is not None
+
+
+def nested_agents(project: Project) -> list[str]:
+    """List the AGENTS.md files below the project root (tracked or new, not ignored).
+
+    Args:
+        project: The project.
+
+    Returns:
+        Paths relative to the root, e.g. "backend/app/AGENTS.md".
+
+    Example:
+        >>> nested_agents(project)  # doctest: +SKIP
+        ['backend/app/AGENTS.md']
+    """
+    r = git(["ls-files", "--cached", "--others", "--exclude-standard", "--", "*/AGENTS.md"], project.root)
+    return sorted(line for line in r.stdout.splitlines() if line) if r.returncode == 0 else []
 
 
 def hook_specific_output(event: str, text: str) -> str:

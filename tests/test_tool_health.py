@@ -51,7 +51,8 @@ class _Pinned(Tool):
 def test_versions_below_min_or_past_verified_are_told_apart():
     t = _Pinned()
     assert [health.version_verdict(t, v) for v in ("1.1.9", "1.2.0", "1.4.0", "1.4.1", "")] == ["old", "ok", "ok", "new", ""]
-    assert health.version_verdict(get("claude"), "0.0.1") == "ok"  # no min_version yet: never "old"
+    assert health.version_verdict(get("claude"), "2.1.276") == "old"  # before Claude Code read AGENTS.md itself
+    assert health.version_verdict(get("codex"), "0.0.1") == "ok"  # no known minimum: never "old"
 
 
 def _hook(project, tool, event, data):
