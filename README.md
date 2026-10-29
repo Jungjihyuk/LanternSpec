@@ -50,7 +50,7 @@ Then call `/l-init` inside your AI tool (`$l-init` in Codex).
 - **Language:** documents, skills and rules come in English (`--language en`) or Korean (the default). It is chosen at the first install and kept in `lantern.yaml`.
 - **Using several AI tools:** `lantern install --language en --tools claude,codex,antigravity`
 - **Skills live in your project:** they are written straight into the project, not installed as a plugin. So they are called without a prefix (`/l-init`) and shared with your team through git.
-- **When a new version comes out:** `uv tool upgrade lanternspec` → `lantern upgrade`
+- **When a new version comes out:** `uv tool upgrade lanternspec` → `lantern upgrade`. If the version changed the documents' folder layout, it first shows what would move and stops — check it, then `lantern upgrade --apply` (moved with git so history continues, links rewritten, one commit)
 
 ## Quick start
 

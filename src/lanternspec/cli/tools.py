@@ -77,10 +77,14 @@ def _next_steps(project: Project) -> list[str]:
 
 
 def cmd_upgrade(a: argparse.Namespace) -> int:
-    """`lantern upgrade` — refresh what install wrote, and template copies nobody edited."""
+    """`lantern upgrade` — refresh what install wrote and unedited template copies; move documents to the current layout (--apply)."""
+    from ..check.layout import LayoutError
     from ..tools.install import upgrade
 
-    _print(upgrade(_p(), force=a.force).lines())
+    try:
+        _print(upgrade(_p(), force=a.force, apply=a.apply).lines())
+    except LayoutError as e:
+        raise CliError(str(e)) from e
     return 0
 
 
@@ -161,6 +165,7 @@ def register(add: Add) -> None:
     ci.add_argument("--no-ci", action="store_true", help=msg("Turn off the GitHub Actions check (removes the workflow file if unedited)"))
     p = add("upgrade", cmd_upgrade, msg("Regenerate for a new version · a changed lantern.yaml (edited files are skipped)"))
     p.add_argument("--force", action="store_true")
+    p.add_argument("--apply", action="store_true", help=msg("Move documents to the current layout (git mv · links · one commit)"))
     p = add("build-adapters", cmd_build_adapters, msg("Only write each tool's skill files to a folder (preview)"))
     p.add_argument("--out", required=True)
     p.add_argument("--tools")

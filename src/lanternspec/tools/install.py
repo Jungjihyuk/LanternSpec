@@ -67,6 +67,8 @@ class InstallReport:
         skipped: Files left alone because someone edited them.
         merged: Settings merged into existing files.
         templates: Messages about template copies (upgrade only).
+        layout: Messages about moving documents to the current layout (upgrade only).
+        stopped: The upgrade only showed the moves and changed nothing (it waits for --apply).
 
     Example:
         >>> InstallReport(written=["AGENTS.md"]).lines()
@@ -78,6 +80,8 @@ class InstallReport:
     skipped: list[str] = field(default_factory=list)  # user-modified
     merged: list[str] = field(default_factory=list)
     templates: list[str] = field(default_factory=list)
+    layout: list[str] = field(default_factory=list)  # documents moved to the current layout, or waiting for --apply
+    stopped: bool = False  # the upgrade waits for --apply and changed nothing
 
     def lines(self) -> list[str]:
         """Describe the report for the user.
@@ -89,7 +93,7 @@ class InstallReport:
             >>> InstallReport(skipped=[".claude/skills/l-build/SKILL.md"]).lines()[0]
             '⚠ 사용자가 고친 파일이라 건드리지 않음 1개 (덮어쓰려면 --force):'
         """
-        out = []
+        out = list(self.layout)
         if self.written:
             out.append(msg("✔ Created · updated {count}", count=len(self.written)))
             out += [f"   {p}" for p in self.written[:40]]
@@ -356,22 +360,45 @@ def upgrade_templates(project: Project, force: bool = False) -> list[str]:
     return out
 
 
-def upgrade(project: Project, force: bool = False) -> InstallReport:
+def upgrade(project: Project, force: bool = False, apply: bool = False) -> InstallReport:
     """Re-install with the last choices and refresh template copies (`lantern upgrade`).
+
+    When documents are not where the current layout puts them (check/layout.py), nothing is
+    written unless `apply` is given: the report shows the plan and stops, so generated documents
+    are never written to the new place while the old ones still exist. With `apply`, the documents
+    move first (one commit) and the upgrade goes on.
 
     Args:
         project: The project.
         force: Overwrite files and templates someone edited.
+        apply: Move documents to the current layout (`--apply`).
 
     Returns:
-        What was done, including template messages.
+        What was done, including template and layout messages; `stopped` when the move awaits --apply.
+
+    Raises:
+        LayoutError: apply was asked but the documents have uncommitted changes.
 
     Example:
         >>> upgrade(project).templates  # doctest: +SKIP
         []
     """
+    from ..check import layout
+
+    found = layout.plan(project)
+    notes = layout.describe(project, found)
+    if not found.empty and not apply:
+        return InstallReport(layout=[*notes, msg("→ To move them, run lantern upgrade --apply (nothing was changed)")], stopped=True)
+    moved = layout.apply(project, found) if apply else []
     report = install(project, None, force=force)
     report.templates = upgrade_templates(project, force=force)
+    if moved:
+        from ..report import doc_map
+
+        doc_map.run(project)
+        report.layout = [*notes, *moved]
+    else:
+        report.layout = notes  # nothing to move: at most the conflicts a person must settle
     return report
 
 

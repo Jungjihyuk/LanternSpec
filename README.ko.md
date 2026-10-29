@@ -48,7 +48,7 @@ lantern install                  # 이 프로젝트에 스킬 · 규칙 · hook 
 - **언어:** 문서 · 스킬 · 규칙은 한국어(기본)나 영어(`--language en`)로 만든다. 처음 설치할 때 정하고 `lantern.yaml`에 남는다.
 - **여러 AI 도구를 함께 쓸 때:** `lantern install --tools claude,codex,antigravity`
 - **스킬은 프로젝트 폴더에 들어간다:** 플러그인이 아니라 프로젝트 안에 직접 써 넣는다. 그래서 `/l-init`처럼 접두어 없이 불리고, git으로 팀원과 그대로 공유된다.
-- **새 버전이 나오면:** `uv tool upgrade lanternspec` → `lantern upgrade`
+- **새 버전이 나오면:** `uv tool upgrade lanternspec` → `lantern upgrade`. 문서 폴더 구조가 바뀐 버전이면 옮길 문서를 먼저 보여 주고 멈춥니다 — 확인한 뒤 `lantern upgrade --apply` (git으로 옮겨 이력이 이어지고, 링크도 고치고, 커밋 하나로 남깁니다)
 
 ## 빠른 시작
 

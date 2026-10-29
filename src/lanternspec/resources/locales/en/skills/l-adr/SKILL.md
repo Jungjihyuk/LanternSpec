@@ -1,6 +1,6 @@
 ---
 name: l-adr
-description: Record a decision (ADR) — record a hard-to-reverse decision (database · framework · auth method · outside service · data structure change · public API change · a change of direction) in <<folder.rules>>/ADR-NNN with context · options considered (pros and cons) · decision · consequences · status. Use when an important, hard-to-reverse decision is made, or /l-design · /l-build · /l-sync hit one.
+description: Record a decision (ADR) — record a hard-to-reverse decision (database · framework · auth method · outside service · data structure change · public API change · a change of direction) in <<folder.decisions>>/ADR-NNN with context · options considered (pros and cons) · decision · consequences · status. Use when an important, hard-to-reverse decision is made, or /l-design · /l-build · /l-sync hit one.
 invocation: model
 argument-hint: "<what to decide> [--work W-NNN]"
 ---

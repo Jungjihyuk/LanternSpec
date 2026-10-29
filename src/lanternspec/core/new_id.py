@@ -24,7 +24,7 @@ from .project import Project, nfc, read
 KINDS: dict[str, dict[str, object]] = {
     "idea": {"prefix": "IDEA", "width": 3, "folder": "ideas"},
     "work": {"prefix": "W", "width": 3, "folder": "works"},
-    "adr": {"prefix": "ADR", "width": 3, "folder": "rules"},
+    "adr": {"prefix": "ADR", "width": 3, "folder": "decisions"},
     "debt": {"prefix": "D", "width": 3, "folder": "debt_cards"},
     "meeting": {"prefix": "MTG", "width": 3, "folder": "meetings"},
 }

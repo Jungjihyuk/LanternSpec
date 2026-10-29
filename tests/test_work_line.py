@@ -22,14 +22,14 @@ def test_init_creates_the_profile_structure(repo):
         "3. 현재 상태/프로젝트 정의서.md",
         "3. 현재 상태/데이터/schema.dbml",
         "3. 현재 상태/화면/화면.md",
-        "3. 현재 상태/배포.md",
-        "3. 현재 상태/규칙 · 결정 기록/작업 단위 기록.md",
+        "3. 현재 상태/배포 · 운영/배포.md",
+        "3. 현재 상태/규칙/작업 나누기 기준.md",
         "4. 운영 기록/보고/지난 보고",
     ]:
         assert (d / rel).exists(), rel
     assert not (d / "3. 현재 상태/API.md").exists()  # external server: API only when asked
     assert not (d / "📒 부채").exists()  # no knowledge store → learning line off
-    deploy = (d / "3. 현재 상태/배포.md").read_text(encoding="utf-8")
+    deploy = (d / "3. 현재 상태/배포 · 운영/배포.md").read_text(encoding="utf-8")
     assert "## 모바일" in deploy and "## 웹" not in deploy and "lantern:if" not in deploy
     definition = (d / "3. 현재 상태/프로젝트 정의서.md").read_text(encoding="utf-8")
     assert "| 화면 유형 | 모바일 |" in definition
@@ -54,7 +54,7 @@ def test_rerun_init_adds_new_docs_and_marks_unneeded(repo):
     assert "사용 안 함" in plan
     repo("scaffold", "init")
     assert meta(d / "3. 현재 상태/API.md")["status"] == "사용 안 함"
-    assert meta(d / "3. 현재 상태/배포.md")["status"] == "사용 안 함"
+    assert meta(d / "3. 현재 상태/배포 · 운영/배포.md")["status"] == "사용 안 함"
     # never deleted, and switching back re-enables
     repo("profile", "set", "project.server=custom")
     repo("scaffold", "init")
@@ -236,10 +236,10 @@ def test_close_logs_a_run(repo):
 def test_unit_log_and_adr_and_meta(repo):
     init_project(repo)
     repo("unit-log", "add", "--what", "로그인", "--recommended", "새 작업", "--chosen", "W-001에 넣기", "--reason", "같은 화면")
-    log = (docs(repo) / "3. 현재 상태/규칙 · 결정 기록/작업 단위 기록.md").read_text(encoding="utf-8")
+    log = (docs(repo) / "3. 현재 상태/규칙/작업 나누기 기준.md").read_text(encoding="utf-8")
     assert "| 새 작업 | W-001에 넣기 | 같은 화면 |" in log
     repo("scaffold", "adr", "인증 방식")
-    adr = docs(repo) / "3. 현재 상태/규칙 · 결정 기록/ADR-001 인증 방식.md"
+    adr = docs(repo) / "3. 현재 상태/결정 기록/ADR-001 인증 방식.md"
     assert adr.exists()
     repo("meta", "set", str(adr), "status=채택")
     assert meta(adr)["status"] == "채택"

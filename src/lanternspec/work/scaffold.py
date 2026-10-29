@@ -24,7 +24,7 @@ from ..core import frontmatter, state, templating
 from ..core.messages import msg
 from ..core.names import WORK_DOCS
 from ..core.new_id import next_id
-from ..core.profile import OPTIONAL_DOC_KEYS, DocSpec, client_label, data_variant, enabled_docs
+from ..core.profile import DOC_FOLDERS, OPTIONAL_DOC_KEYS, DocSpec, client_label, data_variant, doc_place, enabled_docs
 from ..core.project import Project, nfc, read, safe_name, today, wikilink, write
 
 # --------------------------------------------------------------------------- templates
@@ -234,11 +234,12 @@ def base_values(project: Project) -> dict[str, Any]:
         project: The project.
 
     Returns:
-        Value name → value: enum names by role, today, project name, owner, the profile table and more.
+        Value name → value: enum names by role, today, project name, owner, the profile table, and
+        `path.<doc>` — where a single document lives, for links (`[[${path.unit_log}]]`).
 
     Example:
-        >>> base_values(project)["work_status.plan"]  # doctest: +SKIP
-        '기획'
+        >>> base_values(project)["path.unit_log"]  # doctest: +SKIP
+        '3. 현재 상태/규칙/작업 나누기 기준'
     """
     p = project.profile
     members = p.get("project.members") or []
@@ -255,6 +256,7 @@ def base_values(project: Project) -> dict[str, Any]:
         "legacy_rows": msg(
             "| {{{{Document}}}} | {{{{What it says}}}} | {{{{Still true?}}}} | {{{{Absorb · Archive · Move}}}} | {{{{New place}}}} |"
         ),
+        **{f"path.{key.replace('-', '_')}": doc_place(project.names, key).removesuffix(".md") for key in DOC_FOLDERS},
     }
 
 
@@ -668,7 +670,7 @@ def new_adr(project: Project, name: str, work_id: str | None = None) -> Path:
         'ADR-004 JWT 대신 세션.md'
     """
     adr_id = next_id(project, "adr")
-    dest = project.folder("rules") / f"{adr_id} {safe_name(name)}.md"
+    dest = project.folder("decisions") / f"{adr_id} {safe_name(name)}.md"
     links: list[str] = []
     if work_id:
         folder = project.find_work(work_id)

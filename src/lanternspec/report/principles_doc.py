@@ -17,6 +17,8 @@ from ..core import names as names_mod
 from ..core.messages import msg
 from ..core.project import Project, read, today, write
 
+DOC_ID = "PRINCIPLES"  # the document's frontmatter id — the layout check finds it by this
+
 
 def doc_path(project: Project) -> Path:
     """Return the path of the design-principles document.
@@ -29,7 +31,7 @@ def doc_path(project: Project) -> Path:
 
     Example:
         >>> project.rel(doc_path(project))  # doctest: +SKIP
-        'docs/3. 현재 상태/규칙 · 결정 기록/개발 원칙.md'
+        'docs/3. 현재 상태/규칙/개발 원칙.md'
     """
     return project.folder("rules") / project.names.file("principles")
 
@@ -116,13 +118,13 @@ def write_doc(project: Project) -> Path | None:
 
     Example:
         >>> project.rel(write_doc(project))  # doctest: +SKIP
-        'docs/3. 현재 상태/규칙 · 결정 기록/개발 원칙.md'
+        'docs/3. 현재 상태/규칙/개발 원칙.md'
     """
     sel = principles.select(project.profile)
     if sel is None or not project.docs.exists():
         return None
     meta = {
-        "id": "PRINCIPLES",
+        "id": DOC_ID,
         "type": "report",
         "status": project.enums.value("current_status", "active"),
         "generated": True,

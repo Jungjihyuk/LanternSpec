@@ -22,6 +22,8 @@ from ..core.messages import msg
 from ..core.new_id import next_id
 from ..core.project import Project, nfc, now_minute, read, safe_name, today, wikilink, write
 
+STATUS_DOC_ID = "DEBT-status"  # frontmatter id of the generated debt status document (the layout check finds it by this)
+
 
 def norm(term: str) -> str:
     """Normalize a term for matching: lower case, NFC, no spaces or separators.
@@ -699,7 +701,7 @@ def write_status(project: Project) -> Path:
         ]
     )
     meta = {
-        "id": "DEBT-status",
+        "id": STATUS_DOC_ID,
         "type": "report",
         "status": project.enums.value("current_status", "active"),
         "generated": True,

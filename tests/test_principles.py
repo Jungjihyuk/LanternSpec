@@ -79,7 +79,7 @@ def test_init_to_agents_block_doc_lint_and_doctor(repo):
     assert "### 개발 원칙 — CLI 도구 · 바깥 연결 · 코드 작음 · 1인" in agents
     assert "- **지킴:** 단순함 (KISS · YAGNI) · 단일 책임 (SRP)" in agents and "확장 지점" in agents
     assert "린트 `uv run ruff check .`" in agents and "<!-- lantern:principles -->" not in agents
-    doc = repo.root / "docs/3. 현재 상태/규칙 · 결정 기록/개발 원칙.md"
+    doc = repo.root / "docs/3. 현재 상태/규칙/개발 원칙.md"
     text = doc.read_text(encoding="utf-8")
     assert "## 코드 컨벤션 — Python" in text and "| 의존 방향 (DIP · 순수한 핵심) | 권장 | CLI 도구 → 권장 |" in text
     repo("upgrade")
@@ -108,7 +108,7 @@ def test_without_kind_nothing_changes(repo):
     repo("install")
     agents = (repo.root / "AGENTS.md").read_text(encoding="utf-8")
     assert "### 개발 원칙" not in agents and "<!-- lantern:principles -->" not in agents
-    assert not (repo.root / "docs/3. 현재 상태/규칙 · 결정 기록/개발 원칙.md").exists()
+    assert not (repo.root / "docs/3. 현재 상태/규칙/개발 원칙.md").exists()
     code, out = repo("principles", "show", ok=False)
     assert code == 1 and "project.kind가 없습니다" in out
 
@@ -125,7 +125,7 @@ def test_comment_language_is_separate_from_document_language(repo):
     agents = (repo.root / "AGENTS.md").read_text(encoding="utf-8")
     # the doc-comment style and example follow the comment language; the guidance stays in Korean
     assert "문서 주석 (Google-style docstrings · 영어)" in agents and "### 개발 원칙" in agents
-    doc = (repo.root / "docs/3. 현재 상태/규칙 · 결정 기록/개발 원칙.md").read_text(encoding="utf-8")
+    doc = (repo.root / "docs/3. 현재 상태/규칙/개발 원칙.md").read_text(encoding="utf-8")
     assert "문서 주석: Google-style docstrings · 영어" in doc and "Rename one value in the text of enums.yaml." in doc
     code, out = repo("profile", "set", "project.comment_language=jp", ok=False)
     assert code == 1 and "comment_language" in out

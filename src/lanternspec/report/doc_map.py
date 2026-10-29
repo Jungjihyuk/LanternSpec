@@ -146,7 +146,7 @@ def build_block(project: Project) -> str:
         lines.append("")
 
     # decisions
-    adrs = [p for p in _md_files(project.folder("rules")) if nfc(p.name).startswith("ADR-")]
+    adrs = [p for p in _md_files(project.folder("decisions")) if nfc(p.name).startswith("ADR-")]
     if adrs:
         lines += [msg("## 📝 Decisions")]
         for p in adrs:

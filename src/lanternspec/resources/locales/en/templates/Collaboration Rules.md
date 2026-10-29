@@ -6,8 +6,8 @@ created: ${today}
 updated: ${today}
 links: []
 template: Collaboration Rules
-template_version: 1.0.0
-based_on: 1.0.0
+template_version: 1.0.1
+based_on: 1.0.1
 ---
 # 📘 Collaboration Rules
 
@@ -26,10 +26,11 @@ ${members_table}
 - One task = one commit (don't mix several tasks in one commit)
 
 ## Work units
-- Why people changed `/l-plan`'s recommendation is collected in [[3. Current State/Rules and Decisions/Work Unit Log]]
+- Why people changed `/l-plan`'s recommendation is collected in [[${path.unit_log}]]
 
 <!-- lantern:template-only -->
 ## Changelog
 | Version | Date | What changed |
 |---|---|---|
 | 1.0.0 | 2026-10-27 | Base template |
+| 1.0.1 | 2026-10-29 | Link to the work division rules through a path token, not a written path |

@@ -1,6 +1,6 @@
 ---
 name: l-adr
-description: 결정 기록(ADR) — 되돌리기 어려운 결정(DB · 프레임워크 · 인증 방식 · 외부 서비스 · 데이터 구조 변경 · 공개 API 변경 · 방향을 바꾼 결정)을 배경 · 검토한 선택지(장단점) · 결정 · 결과/영향 · 상태로 <<folder.rules>>/ADR-NNN 에 남긴다. Use when an important, hard-to-reverse decision is made, or /l-design · /l-build · /l-sync hit one.
+description: 결정 기록(ADR) — 되돌리기 어려운 결정(DB · 프레임워크 · 인증 방식 · 외부 서비스 · 데이터 구조 변경 · 공개 API 변경 · 방향을 바꾼 결정)을 배경 · 검토한 선택지(장단점) · 결정 · 결과/영향 · 상태로 <<folder.decisions>>/ADR-NNN 에 남긴다. Use when an important, hard-to-reverse decision is made, or /l-design · /l-build · /l-sync hit one.
 invocation: model
 argument-hint: "<결정할 일> [--work W-NNN]"
 ---

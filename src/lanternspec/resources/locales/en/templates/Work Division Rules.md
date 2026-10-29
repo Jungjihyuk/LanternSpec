@@ -5,11 +5,11 @@ status: ${current_status.active}
 created: ${today}
 updated: ${today}
 links: []
-template: Work Unit Log
-template_version: 1.0.1
-based_on: 1.0.1
+template: Work Division Rules
+template_version: 1.1.0
+based_on: 1.1.0
 ---
-# 📘 Work Unit Log
+# 📘 Work Division Rules
 
 > [!abstract] At a glance
 > Why people changed the work unit `/l-plan` recommended (new work / add to an existing work / divide and place). The next recommendation reads this and follows how this person or team divides work.
@@ -26,3 +26,4 @@ based_on: 1.0.1
 |---|---|---|
 | 1.0.0 | 2026-10-27 | Base template |
 | 1.0.1 | 2026-10-29 | Choices are new work · add to an existing work · divide and place; default rules follow the purpose |
+| 1.1.0 | 2026-10-29 | Renamed to "Work Division Rules" and moved to the Rules folder |

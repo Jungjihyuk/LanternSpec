@@ -715,6 +715,46 @@ def client_label(client: str) -> str:
     return msg(CLIENT_LABEL[client]) if client in CLIENT_LABEL else client
 
 
+# Where each single document lives: doc key → the names.yaml folders it sits in, outermost first (() = the documents root).
+# The document's name is names.yaml docs[<key with - as _>]. enabled_docs and the layout check both read this table.
+DOC_FOLDERS: dict[str, tuple[str, ...]] = {
+    "moc": (),
+    "project-definition": ("current",),
+    "features": ("current",),
+    "architecture": ("current",),
+    "data": ("current", "data"),
+    "screens": ("current", "screens"),
+    "platform": ("current",),
+    "api": ("current",),
+    "deploy": ("deploy_ops",),
+    "server-ops": ("deploy_ops",),
+    "unit-log": ("rules",),
+    "collab": ("rules",),
+    "principles": ("rules",),
+    "known-tech": ("debt",),
+    "debt-status": ("debt",),
+    "legacy-map": ("legacy",),
+}
+
+
+def doc_place(names: names_mod.Names, key: str) -> str:
+    """Return where a single document lives, from the documents root.
+
+    Args:
+        names: The project's names.
+        key: Doc key, e.g. "deploy" (a key of DOC_FOLDERS).
+
+    Returns:
+        The path with the `.md` file name.
+
+    Example:
+        >>> from .names import load
+        >>> doc_place(load("ko"), "deploy"), doc_place(load("ko"), "data")
+        ('3. 현재 상태/배포 · 운영/배포.md', '3. 현재 상태/데이터/데이터.md')
+    """
+    return "/".join([*(names.folder(f) for f in DOC_FOLDERS[key]), names.file(key.replace("-", "_"))])
+
+
 def enabled_docs(profile: Profile) -> list[DocSpec]:
     """List the documents and folders the answers turn on.
 
@@ -735,9 +775,13 @@ def enabled_docs(profile: Profile) -> list[DocSpec]:
     n = profile.names
     f = n.folder
 
-    def doc(key: str, folder: str, role: str, reason: str, **kw: Any) -> DocSpec:
-        """A document named by its role, created from the template of the same name."""
-        return DocSpec(key, f"{f(folder)}/{n.file(role)}", n.doc(role), reason, **kw)
+    def doc(key: str, reason: str, **kw: Any) -> DocSpec:
+        """A document named by its role, created from the template of the same name, where DOC_FOLDERS puts it."""
+        return DocSpec(key, doc_place(n, key), n.doc(key.replace("-", "_")), reason, **kw)
+
+    def generated(key: str, reason: str) -> DocSpec:
+        """A document lantern writes itself (no template)."""
+        return DocSpec(key, doc_place(n, key), None, reason)
 
     def folder(key: str, reason: str, folder_key: str = "") -> DocSpec:
         """A folder; folder_key names it in names.yaml when it differs from the key."""
@@ -745,51 +789,44 @@ def enabled_docs(profile: Profile) -> list[DocSpec]:
 
     data_dir = f"{f('current')}/{f('data')}"
     out: list[DocSpec] = [
-        DocSpec("moc", n.file("moc"), n.doc("moc"), msg("always")),
+        doc("moc", msg("always")),
         folder("templates", msg("always")),
         folder("ideas", msg("always")),
         folder("works", msg("always")),
         folder("archive", msg("always")),
-        doc("project-definition", "current", "project_definition", msg("always")),
-        doc("features", "current", "features", msg("always")),
-        doc("architecture", "current", "architecture", msg("always")),
-        DocSpec(
-            "data",
-            f"{data_dir}/{n.file('data')}",
-            n.doc("data"),
-            msg("always ({get})", get=data_variant(server)),
-            variant=data_variant(server) if server in DATA_VARIANT else None,
-        ),
+        doc("project-definition", msg("always")),
+        doc("features", msg("always")),
+        doc("architecture", msg("always")),
+        doc("data", msg("always ({get})", get=data_variant(server)), variant=data_variant(server) if server in DATA_VARIANT else None),
         DocSpec("schema", f"{data_dir}/schema.dbml", None, msg("data source (DBML)")),
         folder("rules", msg("always")),
-        doc("unit-log", "rules", "unit_log", msg("always")),
+        folder("decisions", msg("always")),
+        doc("unit-log", msg("always")),
         folder("reports", msg("always"), "past_reports"),
     ]
     if clients:
         labels = ", ".join(client_label(c) for c in clients if c in CLIENT_LABEL)
         out += [
-            DocSpec(
-                "screens", f"{f('current')}/{f('screens')}/{n.file('screens')}", n.doc("screens"), msg("clients: {labels}", labels=labels)
-            ),
-            doc("platform", "current", "platform", msg("clients: {labels}", labels=labels), sections=list(clients)),
-            doc("deploy", "current", "deploy", msg("clients: {labels}", labels=labels), sections=list(clients)),
+            doc("screens", msg("clients: {labels}", labels=labels)),
+            doc("platform", msg("clients: {labels}", labels=labels), sections=list(clients)),
+            doc("deploy", msg("clients: {labels}", labels=labels), sections=list(clients)),
         ]
     if server == "custom" or (server == "external" and "api" in extra):
-        out.append(doc("api", "current", "api", msg("custom server") if server == "custom" else msg("external service + API on")))
+        out.append(doc("api", msg("custom server") if server == "custom" else msg("external service + API on")))
     if server == "custom":
-        out.append(doc("server-ops", "current", "server_ops", msg("custom server")))
+        out.append(doc("server-ops", msg("custom server")))
     if profile.team:
-        out += [doc("collab", "rules", "collab", msg("2 or more people")), folder("meetings", msg("2 or more people"))]
+        out += [doc("collab", msg("2 or more people")), folder("meetings", msg("2 or more people"))]
     if profile.knowledge:
         out += [
             folder("debt-cards", msg("knowledge store (the learning track)"), "debt_cards"),
-            DocSpec("debt-status", f"{f('debt')}/{n.file('debt_status')}", None, msg("knowledge store (generated)")),
-            doc("known-tech", "debt", "known_tech", msg("knowledge store")),
+            generated("debt-status", msg("knowledge store (generated)")),
+            doc("known-tech", msg("knowledge store")),
         ]
     if profile.get("project.kind"):
-        out.append(DocSpec("principles", f"{f('rules')}/{n.file('principles')}", None, msg("project kind set (generated)")))
+        out.append(generated("principles", msg("project kind set (generated)")))
     if profile.brownfield:
-        out += [folder("legacy", msg("brownfield")), doc("legacy-map", "legacy", "legacy_map", msg("brownfield"))]
+        out += [folder("legacy", msg("brownfield")), doc("legacy-map", msg("brownfield"))]
     return out
 
 

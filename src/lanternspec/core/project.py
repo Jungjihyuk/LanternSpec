@@ -16,6 +16,7 @@ from __future__ import annotations
 import datetime as _dt
 import os
 import re
+import shutil
 import subprocess
 import unicodedata
 from collections.abc import Iterator
@@ -167,6 +168,24 @@ def git_out(args: list[str], cwd: Path) -> str:
     """
     r = git(args, cwd)
     return r.stdout.strip() if r.returncode == 0 else ""
+
+
+def move_path(project: Project, src: Path, dest: Path) -> None:
+    """Move a file or folder, with `git mv` when git tracks it (so its history continues), else a plain move.
+
+    Args:
+        project: The project (git runs where its documents live).
+        src: What to move.
+        dest: Where it goes; missing parent folders are created.
+
+    Example:
+        >>> move_path(project, project.docs / "a.md", project.docs / "b/a.md")  # doctest: +SKIP
+    """
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    cwd = project.docs_git_cwd()
+    if git_out(["ls-files", "--", str(src)], cwd) and git(["mv", str(src), str(dest)], cwd).returncode == 0:
+        return
+    shutil.move(str(src), str(dest))
 
 
 def git_version(cwd: Path) -> tuple:

@@ -174,7 +174,7 @@ def test_a_command_that_needs_a_missing_section_explains_instead_of_adding_it(re
     init_project(repo)
     unit = ["unit-log", "add", "--what", "W-001", "--recommended", "할 일 3개", "--chosen", "할 일 2개", "--reason", "버튼은 하나로"]
     repo(*unit)
-    log = docs(repo) / "3. 현재 상태/규칙 · 결정 기록/작업 단위 기록.md"
+    log = docs(repo) / "3. 현재 상태/규칙/작업 나누기 기준.md"
     fill(log, [("## 기록", "## 결정")])
     before = log.read_text(encoding="utf-8")
     code, out = repo(*unit, ok=False)

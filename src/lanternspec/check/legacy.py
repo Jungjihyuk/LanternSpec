@@ -7,12 +7,11 @@ Not here:
 from __future__ import annotations
 
 import re
-import shutil
 from pathlib import Path
 
 from ..core import sections
 from ..core.messages import msg
-from ..core.project import Project, git, git_out, nfc, read, write
+from ..core.project import Project, move_path, nfc, read, write
 
 TODO_RE = re.compile(
     r"(TODO|FIXME|later|someday|to do|idea|needs? improv|나중에|추후|언젠가|해야 할|할 것|아이디어|개선 필요|- \[ \])", re.I
@@ -22,16 +21,6 @@ TODO_RE = re.compile(
 def _ours(project: Project) -> set:
     tops = {nfc(v.split("/")[0]) for v in project.names.folders().values()}
     return tops | {nfc(project.names.file("moc")), ".git", ".obsidian"}
-
-
-def _move(project: Project, src: Path, dest: Path) -> None:
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    tracked = bool(git_out(["ls-files", "--", str(src)], project.root))
-    if tracked:
-        r = git(["mv", str(src), str(dest)], project.root)
-        if r.returncode == 0:
-            return
-    shutil.move(str(src), str(dest))
 
 
 def adopt(project: Project, source: Path | None = None) -> list[str]:
@@ -61,14 +50,14 @@ def adopt(project: Project, source: Path | None = None) -> list[str]:
             if nfc(item.name) in ours or item.name.startswith("."):
                 continue
             dest = legacy / item.name
-            _move(project, item, dest)
+            move_path(project, item, dest)
             moved.append(project.rel(dest))
     else:
         src = source if source.is_absolute() else project.root / source
         if not src.exists():
             raise FileNotFoundError(msg("Not found: {source}", source=source))
         dest = legacy / src.name
-        _move(project, src, dest)
+        move_path(project, src, dest)
         moved.append(project.rel(dest))
     legacy.mkdir(parents=True, exist_ok=True)
     add_map_rows(project)
