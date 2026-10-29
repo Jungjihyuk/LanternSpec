@@ -1,13 +1,13 @@
 ---
 name: l-report
-description: 원하는 보기로 현황 확인 — 작업 폴더 · 현재 상태 · 부채 장부를 읽어 칸반 · 타임라인(Mermaid gantt) · 도메인별 · 추적(아이디어→작업→커밋) · 부채 현황 · 문서-코드 일치를 <<folder.reports>>/<<file.report>>에 만들고, 맨 위에 팀장 보고 3줄을 쓴다. Use when the user asks for status, progress, a kanban, a timeline or a report.
+description: 원하는 보기로 현황 확인 — 작업 폴더 · 현재 상태 · 부채 장부를 읽어 칸반 · 타임라인(Mermaid gantt) · 도메인별 · 추적(아이디어→작업→커밋) · 부채 현황 · 문서-코드 일치를 <<folder.reports>>/<<file.report>>에 만들고, 맨 위에 3줄 요약을 쓴다. Use when the user asks for status, progress, a kanban, a timeline or a report.
 invocation: model
 argument-hint: "[kanban,timeline,domain,trace,debt,sync]"
 ---
 
 # /l-report — 원하는 보기로 현황 확인
 
-**목적:** 문서를 **읽어서** 한 화면에 보여 준다. 표와 Mermaid는 스크립트가 글자로 만들고, 너는 **팀장 보고 3줄만** 쓴다.
+**목적:** 문서를 **읽어서** 한 화면에 보여 준다. 표와 Mermaid는 스크립트가 글자로 만들고, 너는 **3줄 요약만** 쓴다.
 
 입력: `$ARGUMENTS` — 보고 싶은 보기. 없으면 프로필 기본값(<<report.views>>).
 
@@ -27,7 +27,7 @@ argument-hint: "[kanban,timeline,domain,trace,debt,sync]"
    lantern report [--views kanban,timeline,sync]
    ```
 2. 만들어진 `docs/<<folder.reports>>/<<file.report>>`를 읽는다 — 특히 "<<marker.glance>>"와 "지난 보고와 비교".
-3. **팀장 보고 3줄**을 쓴다 (사실만, 숫자로):
+3. **3줄 요약**을 쓴다 (사실만, 숫자로):
    1. 진척 — 끝낸 것 · 진행 중 (예: "W-012 카카오 로그인 할 일 5/7, 지난 보고 대비 +3")
    2. 위험 · 막힌 것 — 설계 승인 대기 · <<marker.unknown>> · 문서-코드 어긋남
    3. 배움 · 다음 — 새 부채 · 해결한 부채 · 다음에 할 일

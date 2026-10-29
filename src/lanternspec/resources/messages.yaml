@@ -451,7 +451,7 @@
 "_This is the first report — comparisons start with the next one._": {ko: "_첫 보고입니다 — 다음 보고부터 비교가 나옵니다._"}
 "# 📊 Status Report": {ko: "# 📊 현황 보고"}
 "> ⚙️ Generated — `lantern report` · **as of {now_minute}** · views: {items}": {ko: "> ⚙️ 자동 생성 — `lantern report` · **기준: {now_minute}** · 보기: {items}"}
-"## 3-line summary for the lead": {ko: "## 팀장 보고 3줄"}
+"## 3-line summary": {ko: "## 3줄 요약"}
 "## Compared with the last report": {ko: "## 지난 보고와 비교"}
 "\n\n> Without planned dates it is drawn from task order and size (S=1 day · M=2 days · L=3 days); once actual times exist, from those.": {ko: "\n\n> 예정일이 없으면 할 일 순서와 크기(S=1일 · M=2일 · L=3일)로, 실제 시간이 생기면 그 시간으로 그린다."}
 "(no domain)": {ko: "(도메인 없음)"}
@@ -829,9 +829,9 @@
 "Update the MOC": {ko: "MOC 갱신"}
 "Evaluate AI work — which setups helped (run records)": {ko: "AI 작업 평가 — 어떤 구성이 결과에 도움이 됐나 (실행 기록)"}
 "Suggest an AI work mode for the project's size (harness · loop · graph)": {ko: "프로젝트 크기에 맞는 AI 작업 방식 추천 (하네스 · 루프 · 그래프)"}
-"Next: 3-line summary for the lead → lantern report --summary \"…\" \"…\" \"…\"": {ko: "다음: 팀장 보고 3줄 → lantern report --summary \"…\" \"…\" \"…\""}
+"Next: 3-line summary → lantern report --summary \"…\" \"…\" \"…\"": {ko: "다음: 3줄 요약 → lantern report --summary \"…\" \"…\" \"…\""}
 "✔ Written to lantern.yaml → lantern upgrade (into the skills)": {ko: "✔ lantern.yaml에 적었습니다 → lantern upgrade (스킬에 반영)"}
-"3-line summary for the lead": {ko: "팀장 보고 3줄"}
+"3-line summary": {ko: "3줄 요약"}
 "git range (e.g. main..HEAD)": {ko: "git 범위 (예: main..HEAD)"}
 "Run acceptance tests with build.test": {ko: "build.test로 수락 기준 테스트"}
 "Why it was changed without a work": {ko: "작업 없이 고친 이유"}

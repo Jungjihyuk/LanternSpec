@@ -492,7 +492,7 @@ def run(project: Project, views: list[str] | None = None, summary: list[str] | N
             msg(" · 🔄 {sync_issues} doc-code mismatches (`/l-sync`)", sync_issues=stats["sync_issues"]) if stats.get("sync_issues") else ""
         ),
         "",
-        msg("## 3-line summary for the lead"),
+        msg("## 3-line summary"),
         SUM_START,
         summary_text,
         SUM_END,

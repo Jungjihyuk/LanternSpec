@@ -17,7 +17,7 @@ def cmd_report(a: argparse.Namespace) -> int:
     cur, past = report.run(project, _csv(a.views) or None, a.summary)
     print(f"✔ {project.rel(cur)}\n✔ {project.rel(past)}")
     if not a.summary:
-        print(msg('Next: 3-line summary for the lead → lantern report --summary "…" "…" "…"'))
+        print(msg('Next: 3-line summary → lantern report --summary "…" "…" "…"'))
     return 0
 
 
@@ -133,7 +133,7 @@ def register(add: Add) -> None:
     """Register the report and sync commands."""
     p = add("report", cmd_report, msg("Make the status report"))
     p.add_argument("--views")
-    p.add_argument("--summary", nargs="+", help=msg("3-line summary for the lead"))
+    p.add_argument("--summary", nargs="+", help=msg("3-line summary"))
     add("status", cmd_status, msg("Where things stand in 3 lines"))
     p = add("obsidian", cmd_obsidian, msg("Download the recommended Obsidian plugins (Dataview · Metadata Menu)"))
     p.add_argument("action", choices=["plugins"])
