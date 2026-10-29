@@ -3,7 +3,7 @@
 Responsibilities:
     - a Metadata Menu fileClass file per document type — status · kind · topic choices come from enums.yaml
     - merge LanternSpec's share of docs/.obsidian settings (other user settings stay)
-    - CSS snippet: folder colors per document stage · callout · quote styles (any theme)
+    - CSS snippet: folder colors per document stage · folder and file icons · callout · quote styles (any theme)
     - download the recommended plugins' official releases (Dataview · Metadata Menu) (install_plugins)
 
 Not here:
@@ -55,7 +55,7 @@ PROPERTY_TYPES = {  # Obsidian Properties field types (types.json)
     "ui": "checkbox",
 }
 APP_DEFAULTS = {"alwaysUpdateLinks": True, "showInlineTitle": True}  # renaming a file updates its [[links]]
-SNIPPET = "lanternspec"  # .obsidian/snippets/lanternspec.css — folder colors · callout · quote styles
+SNIPPET = "lanternspec"  # .obsidian/snippets/lanternspec.css — folder colors · file icons · callout · quote styles
 FOLDER_COLORS = {  # top-level folder → (light color, dark color). A rainbow in stage order
     "debt": ("#d64545", "#f07171"),
     "templates": ("#d9730d", "#f59a4b"),
@@ -135,6 +135,54 @@ def file_class(enums: Enums, doc_type: str) -> str:
     )
 
 
+def _icon(paths: str) -> str:
+    """Make a CSS url() of a 24px stroke icon (Lucide shapes, as Obsidian's own icons) for use as a mask."""
+    svg = (
+        "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' "
+        f"stroke-linecap='round' stroke-linejoin='round'>{paths}</svg>"
+    )
+    return f'url("data:image/svg+xml,{svg}")'
+
+
+ICONS = {
+    "folder": _icon(
+        "<path d='M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z'/>"
+    ),
+    "folder-open": _icon(
+        "<path d='m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9"
+        "a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2'/>"
+    ),
+    "file": _icon(
+        "<path d='M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z'/><path d='M14 2v4a2 2 0 0 0 2 2h4'/>"
+        "<path d='M16 13H8'/><path d='M16 17H8'/><path d='M10 9H8'/>"
+    ),
+}
+
+FILE_ICONS = """
+/* ICON_NOTE */
+.nav-files-container .nav-folder-title .collapse-icon { display: none; }
+.nav-folder:not(.mod-root) .nav-folder > .nav-folder-title {
+  color: var(--ls-folder, var(--nav-item-color));
+  font-weight: 600;
+}
+.nav-file-title-content::before,
+.nav-folder:not(.mod-root) .nav-folder > .nav-folder-title .nav-folder-title-content::before {
+  content: "";
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-inline-end: 6px;
+  vertical-align: -2px;
+  background-color: var(--ls-folder, var(--text-muted));
+  opacity: 0.75;
+  -webkit-mask: var(--ls-icon) no-repeat center / contain;
+  mask: var(--ls-icon) no-repeat center / contain;
+}
+.nav-file-title-content::before { --ls-icon: ICON_FILE; }
+.nav-folder-title-content::before { --ls-icon: ICON_FOLDER; }
+.nav-folder:not(.is-collapsed) > .nav-folder-title .nav-folder-title-content::before { --ls-icon: ICON_FOLDER_OPEN; }
+"""
+
 CALLOUT_AND_QUOTE = """
 /* CALLOUT_NOTE */
 body {
@@ -176,7 +224,7 @@ def class_dir(names: Names) -> str:
 
 
 def snippet_css(names: Names) -> str:
-    """Build the LanternSpec CSS snippet — folder colors per document stage · callouts · quotes (on any theme).
+    """Build the LanternSpec CSS snippet — folder colors per document stage · folder and file icons · callouts · quotes (on any theme).
 
     Args:
         names: The project's names (folder names).
@@ -187,28 +235,39 @@ def snippet_css(names: Names) -> str:
     Example:
         >>> from lanternspec.core.names import load
         >>> css = snippet_css(load("ko"))
-        >>> '.nav-folder-title[data-path="1. 아이디어"]' in css, "--callout-radius" in css
-        (True, True)
+        >>> '.nav-folder-title[data-path="1. 아이디어"]' in css, ".nav-file-title-content::before" in css, "--callout-radius" in css
+        (True, True, True)
     """
     lines = [
-        msg("/* LanternSpec — folder colors · callouts · quote style. Generated (lantern upgrade) — don't edit by hand. */"),
+        msg("/* LanternSpec — folder colors · file icons · callouts · quote style. Generated (lantern upgrade) — don't edit by hand. */"),
         "",
-        msg("/* folder colors by document stage */"),
+        msg("/* folder colors by document stage — the box holds the folder and everything in it */"),
     ]
     for key, (light, dark) in FOLDER_COLORS.items():
-        sel = f'.nav-folder-title[data-path="{names.folder(key)}"]'
+        sel = f'.nav-folder:has(> .nav-folder-title[data-path="{names.folder(key)}"])'
         lines += [f"body {sel} {{ --ls-folder: {light}; }}", f".theme-dark {sel} {{ --ls-folder: {dark}; }}"]
+    boxes = ",\n".join(f'.nav-folder:has(> .nav-folder-title[data-path="{names.folder(k)}"])' for k in FOLDER_COLORS)
     titles = ",\n".join(f'.nav-folder-title[data-path="{names.folder(k)}"]' for k in FOLDER_COLORS)
     lines += [
         "",
-        titles + " {",
+        boxes + " {",
         "  margin: 3px 0;",
         "  border: 1px solid var(--background-modifier-border);",
         "  border-left: 3px solid var(--ls-folder);",
         "  border-radius: 4px;",
+        "  --nav-indentation-guide-color: transparent;",
+        "}",
+        titles + " {",
         "  color: var(--ls-folder);",
         "  font-weight: 600;",
         "}",
+        FILE_ICONS.replace(
+            "ICON_NOTE",
+            msg("folder and file icons — the stage color, no collapse arrow (an open folder shows an open icon). Only CSS, no plugin"),
+        )
+        .replace("ICON_FOLDER_OPEN", ICONS["folder-open"])
+        .replace("ICON_FOLDER", ICONS["folder"])
+        .replace("ICON_FILE", ICONS["file"]),
         CALLOUT_AND_QUOTE.replace(
             "CALLOUT_NOTE",
             msg(
