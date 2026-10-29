@@ -7,6 +7,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-30
+
 **How to move:** the current-state folders changed (`Rules and Decisions/` → `Rules/` · `Decisions/`, `Deployment` · `Server Operations` → `Deployment and Operations/`, `Work Unit Log` → `Work Division Rules`). After `uv tool upgrade lanternspec`, run `lantern upgrade` in each project to see what would move, then `lantern upgrade --apply`. Commit any uncommitted changes in the documents first (in local mode, if the documents were never committed, commit inside `docs/` first).
 
 Upgrade: `uv tool upgrade lanternspec`, then `lantern upgrade` in each project (refreshes skills, rules, templates and the Obsidian snippet)
@@ -81,7 +83,8 @@ First release.
 - **Design principles and code conventions** — design principles chosen from a table by project kind · external integrations · size, and code conventions by language (Python · TypeScript · Swift · Rust · Go) and size, written into `AGENTS.md` and `개발 원칙.md` (`principles`, `lint`)
 - **Ways of working and evaluation** — harness · loop · graph recommendation (`harness suggest`); comparing skills · models · settings from the run log (`eval`)
 
-[Unreleased]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Jungjihyuk/LanternSpec/releases/tag/v0.1.0

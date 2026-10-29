@@ -7,6 +7,8 @@
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-30
+
 **옮기는 법:** 현재 상태 폴더의 구조가 바뀌었다 (`규칙 · 결정 기록/` → `규칙/` · `결정 기록/`, `배포` · `서버 배포 · 운영` → `배포 · 운영/`, `작업 단위 기록` → `작업 나누기 기준`). `uv tool upgrade lanternspec` 뒤 프로젝트마다 `lantern upgrade`로 옮길 문서를 확인하고 `lantern upgrade --apply`. 문서에 커밋하지 않은 변경이 있으면 먼저 커밋한다 (local 모드에서 문서를 한 번도 커밋하지 않았다면 `docs/` 안에서 먼저 커밋).
 
 업그레이드: `uv tool upgrade lanternspec` → 프로젝트마다 `lantern upgrade` (스킬 · 규칙 · 템플릿 · Obsidian 스니펫을 새로 맞춘다)
@@ -90,7 +92,8 @@
   Rust · Go)와 규모로 코드 컨벤션을 기준표대로 골라 `AGENTS.md`와 `개발 원칙.md`에 넣는다 (`principles`, `lint`)
 - **작업 방식 · 평가** — 하네스 · 루프 · 그래프 추천(`harness suggest`), 실행 기록으로 스킬 · 모델 · 설정 비교(`eval`)
 
-[Unreleased]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Jungjihyuk/LanternSpec/releases/tag/v0.1.0
