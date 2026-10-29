@@ -76,7 +76,7 @@ lantern install                  # 이 프로젝트에 스킬 · 규칙 · hook 
 | 명령 | 언제 쓰나 |
 |---|---|
 | `lantern status` | 다시 일을 시작할 때 — 진행 중인 작업, 다음 할 일, 아직 답하지 않은 질문을 세 줄로 보여 준다 |
-| `lantern doctor` | 설치한 직후나 무언가 이상할 때 — 설치 · 설정 · 폴더 구조가 `lantern.yaml`과 맞는지 한 번에 점검한다 |
+| `lantern doctor` | 설치한 직후나 무언가 이상할 때 — 설치 · 설정 · 폴더 구조가 `lantern.yaml`과 맞는지 한 번에 점검한다. 설치한 AI 도구의 버전과 hook이 실제로 도는지도 본다 |
 | `lantern --help` | 명령 이름이 기억나지 않을 때 — 명령마다 옵션은 `lantern <명령> --help` |
 
 ## 흐름과 스킬
@@ -106,7 +106,7 @@ flowchart LR
 | `/l-check` | 양식 검사 (필수 칸 · 값 · 링크 · 버전 · ID · 길이) | — |
 | `/l-sync` | 문서와 코드가 다른 곳을 찾아 맞추기 | — |
 | `/l-map` | MOC(문서 지도) 갱신 | `개발문서 MOC.md` |
-| `/l-adr` | 되돌리기 어려운 결정 기록 | `규칙 · 결정 기록/ADR-001 …` |
+| `/l-adr` | 되돌리기 어려운 결정 기록 | `결정 기록/ADR-001 …` |
 
 ### 이렇게 동작한다
 - **형식은 스크립트가, 내용은 AI가.** 번호 · 파일 · 폴더 · 검사 · 상태 바꾸기는 모두 `lantern` 명령이 하고, AI는 내용만 쓴다.
@@ -127,6 +127,7 @@ docs/
 ├─ 2. 작업/W-001 …/        기획 · 설계 · 할 일 · 기록 — 일하는 동안 고치는 곳은 여기뿐
 │   └─ 보관/
 ├─ 3. 현재 상태/           지금 시스템의 모습 — 작업이 끝날 때만 승인 후 갱신
+│   └─ 규칙/ · 결정 기록/ · 배포 · 운영/ …
 ├─ 4. 운영 기록/           보고 · 세션 기록 · (2인 이상) 회의록
 ├─ 5. 기존 문서/           (기존 프로젝트) 원본 보관 — 고치지 않음
 └─ 📒 부채/               카드 1장 = 부채 1개
@@ -144,7 +145,7 @@ lantern이 읽고 쓰는 칸(보호 칸, 예: 기록의 "지금 상황")도 이�
 ### Obsidian으로 보기
 `docs/` 폴더를 Obsidian에서 볼트로 열면 바로 읽기 좋게 설정이 들어 있다 (`docs/.obsidian/`).
 
-- **폴더 색 · callout · 인용문 모양** — 문서 단계마다 폴더 색이 다르고, callout과 인용문이 깔끔하게 보인다. 어떤 테마 위에서도 동작한다.
+- **폴더 색 · 폴더와 파일 아이콘 · callout · 인용문 모양** — 문서 단계마다 폴더 색이 다르고, 폴더와 파일 앞에 아이콘이 붙고, callout과 인용문이 깔끔하게 보인다. 어떤 테마 위에서도 동작한다.
 - **상태 · 종류 고르기** — 문서 종류마다 그 종류의 선택지만 메뉴로 고른다 (Metadata Menu). 선택지는 `enums.yaml`에서 만들어져, 이름을 바꾸면 같이 바뀐다.
 - **권장 플러그인** — Dataview(할 일의 `[시작:: …]` 표시) · Metadata Menu(선택지 메뉴). `/l-init`이 받을지 묻고, 나중에 받으려면:
 
@@ -242,7 +243,7 @@ Claude Design · Figma · Canva를 각 도구의 MCP로 쓴다.
 ## CLI 한눈에
 
 ```text
-설치     install [--language] [--tools] [--mcp] [--ci|--no-ci] · upgrade · doctor · harness suggest
+설치     install [--language] [--tools] [--mcp] [--ci|--no-ci] · upgrade [--apply] · doctor · harness suggest
 프로필   profile show|docs|write|set · principles show|detect · enums list|rename · sections list|rename|off|on
 문서     scaffold init [--plan] | work | doc | idea | adr | meeting | custom · new-id · map · meta get|set
 검사     check [--changed] [--epic W-012] · lint · check-dbml · dbml render|from-sql|diff

@@ -7,6 +7,25 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+**How to move:** the current-state folders changed (`Rules and Decisions/` → `Rules/` · `Decisions/`, `Deployment` · `Server Operations` → `Deployment and Operations/`, `Work Unit Log` → `Work Division Rules`). After `uv tool upgrade lanternspec`, run `lantern upgrade` in each project to see what would move, then `lantern upgrade --apply`. Commit any uncommitted changes in the documents first (in local mode, if the documents were never committed, commit inside `docs/` first).
+
+Upgrade: `uv tool upgrade lanternspec`, then `lantern upgrade` in each project (refreshes skills, rules, templates and the Obsidian snippet)
+
+### Added
+- **Moving documents to the current layout** — `lantern upgrade` finds documents by their frontmatter id and, when some are not where the current layout puts them, lists the moves and stops. `lantern upgrade --apply` moves them with git (history continues), fixes links that would break and old template names, and makes one commit. It works from any older layout
+- **AI tool check** — `lantern doctor` shows, for each installed AI tool, its version (below or above the checked versions), whether its hooks actually run, and hook calls that came without expected fields
+- **Obsidian folder and file icons** — with the CSS snippet alone (no plugin), sub-folders and files get icons, and each stage box wraps the whole folder
+
+### Changed
+- **Current state folders** — split into `Rules/` (collaboration rules · development principles · work division rules), `Decisions/` (ADRs) and `Deployment and Operations/` (deployment · server operations)
+- **Work Unit Log → Work Division Rules** — renamed and moved to `Rules/`
+- **Work unit choices** — `/l-plan` recommends new work, add to an existing work, or divide and place, judged by one rule: one work = one purpose. Divide and place shows where each piece goes and why. The 10-task limit is gone, from `/l-task` and the Tasks template too
+- **No CLAUDE.md is created** — Claude Code 2.1.277+ reads AGENTS.md itself. An existing CLAUDE.md is kept and only gets `@AGENTS.md` (`@../AGENTS.md` inside `.claude/CLAUDE.md`). `lantern doctor` tells when a CLAUDE.md hides nested AGENTS.md files or a `CLAUDE.local.md` exists
+- **Report summary heading** — "3-line summary for the lead" → "3-line summary"
+
+### Fixed
+- Documents moved with `lantern legacy adopt` in local mode lost their git history
+
 ## [0.1.2] - 2026-10-29
 
 Upgrade: `uv tool upgrade lanternspec`, then `lantern upgrade` in each project (refreshes skills, rules and the AGENTS.md block)

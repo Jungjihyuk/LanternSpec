@@ -7,6 +7,25 @@
 
 ## [Unreleased]
 
+**옮기는 법:** 현재 상태 폴더의 구조가 바뀌었다 (`규칙 · 결정 기록/` → `규칙/` · `결정 기록/`, `배포` · `서버 배포 · 운영` → `배포 · 운영/`, `작업 단위 기록` → `작업 나누기 기준`). `uv tool upgrade lanternspec` 뒤 프로젝트마다 `lantern upgrade`로 옮길 문서를 확인하고 `lantern upgrade --apply`. 문서에 커밋하지 않은 변경이 있으면 먼저 커밋한다 (local 모드에서 문서를 한 번도 커밋하지 않았다면 `docs/` 안에서 먼저 커밋).
+
+업그레이드: `uv tool upgrade lanternspec` → 프로젝트마다 `lantern upgrade` (스킬 · 규칙 · 템플릿 · Obsidian 스니펫을 새로 맞춘다)
+
+### 추가
+- **문서 위치 맞추기** — `lantern upgrade`가 문서를 frontmatter id로 알아보고, 지금 구조와 다른 곳에 있으면 옮길 목록을 보여 주고 멈춘다. `lantern upgrade --apply`는 git으로 옮기고(이력 유지), 깨질 링크와 옛 템플릿 이름을 고치고, 커밋 하나로 남긴다. 어느 옛 버전의 구조에서도 동작한다
+- **AI 도구 점검** — `lantern doctor`가 설치한 AI 도구마다 버전(확인된 버전보다 낮거나 높은지), hook이 실제로 실행되는지, hook 입력에 빠진 값이 있는지 알려 준다
+- **Obsidian 폴더 · 파일 아이콘** — 플러그인 없이 CSS 스니펫만으로 하위 폴더와 파일 앞에 아이콘이 붙고, 단계 상자가 폴더 전체를 감싼다
+
+### 바뀜
+- **현재 상태 폴더 정리** — `규칙/`(협업 규칙 · 개발 원칙 · 작업 나누기 기준), `결정 기록/`(ADR), `배포 · 운영/`(배포 · 서버 배포 · 운영)으로 나뉜다
+- **작업 단위 기록 → 작업 나누기 기준** — 이름을 바꾸고 `규칙/`으로 옮겼다
+- **작업 단위 선택지** — `/l-plan`이 "작업 하나 = 목적 하나"를 기준으로 새 작업 · 기존 작업에 넣기 · 나눠 담기 중에서 추천한다. 나눠 담기는 조각마다 어디로 갈지 이유와 함께 보여 준다. 할 일 10개 기준은 `/l-task` · `할 일` 양식에서도 없앴다
+- **CLAUDE.md를 만들지 않음** — Claude Code 2.1.277+가 AGENTS.md를 직접 읽는다. 이미 있는 CLAUDE.md는 그대로 두고 `@AGENTS.md`만 넣는다(`.claude/CLAUDE.md`에는 `@../AGENTS.md`). CLAUDE.md 때문에 하위 AGENTS.md가 읽히지 않거나 `CLAUDE.local.md`가 있으면 `lantern doctor`가 알린다
+- **보고서 요약 칸 이름** — "팀장 보고 3줄" → "3줄 요약"
+
+### 고침
+- local 모드에서 `lantern legacy adopt`로 옮긴 문서의 git 이력이 끊기던 문제
+
 ## [0.1.2] - 2026-10-29
 
 업그레이드: `uv tool upgrade lanternspec` → 프로젝트마다 `lantern upgrade` (스킬 · 규칙 · AGENTS.md 블록을 새로 맞춘다)

@@ -78,7 +78,7 @@ Then call `/l-init` inside your AI tool (`$l-init` in Codex).
 | Command | When to use it |
 |---|---|
 | `lantern status` | when you pick the work back up — shows the work in progress, the next task and open questions in three lines |
-| `lantern doctor` | right after installing, or when something feels off — checks that install, settings and folders match `lantern.yaml` |
+| `lantern doctor` | right after installing, or when something feels off — checks that install, settings and folders match `lantern.yaml`, and that each installed AI tool's version and hooks are working |
 | `lantern --help` | when you forget a command — options per command with `lantern <command> --help` |
 
 ## Flow and skills
@@ -108,7 +108,7 @@ flowchart LR
 | `/l-check` | format check (required sections · values · links · versions · IDs · length) | — |
 | `/l-sync` | finds where documents and code disagree and brings them back in line | — |
 | `/l-map` | updates the MOC (document map) | `Docs MOC.md` |
-| `/l-adr` | records decisions that are hard to reverse | `Rules and Decisions/ADR-001 …` |
+| `/l-adr` | records decisions that are hard to reverse | `Decisions/ADR-001 …` |
 
 ### How it works
 - **Scripts handle the format, the AI writes the content.** Numbering, files, folders, checks and status changes all go through the `lantern` command; the AI only writes content.
@@ -129,6 +129,7 @@ docs/
 ├─ 2. Work/W-001 …/       plan · design · tasks · log — the only place edited while working
 │   └─ Archive/           archive
 ├─ 3. Current State/     what the system looks like now — updated only when work is done, after approval
+│   └─ Rules/ · Decisions/ · Deployment and Operations/ …
 ├─ 4. Operations/        reports · session logs · (teams of 2+) meeting notes
 ├─ 5. Legacy Docs/       (existing projects) original documents, kept unchanged
 └─ 📒 Debt/              understanding debt — one card per debt
@@ -146,7 +147,7 @@ Sections lantern reads and writes (protected sections, such as "Now" in a log) m
 ### Viewing the docs in Obsidian
 Open the `docs/` folder as a vault in Obsidian and it is already set up for reading (`docs/.obsidian/`).
 
-- **Folder colors, callouts and quotes** — each document stage has its own folder color, and callouts and quotes look clean. Works on top of any theme.
+- **Folder colors, folder and file icons, callouts and quotes** — each document stage has its own folder color, folders and files get icons, and callouts and quotes look clean. Works on top of any theme.
 - **Picking status and kind** — each document type offers only its own choices in a menu (Metadata Menu). The choices are generated from `enums.yaml`, so renaming a value updates them too.
 - **Recommended plugins** — Dataview (shows `[start:: …]` fields in task lists) and Metadata Menu (choice menus). `/l-init` asks whether to download them; to do it later:
 
@@ -244,7 +245,7 @@ Import mockups with `lantern screen import`; `lantern screen compare` finds wher
 ## CLI at a glance
 
 ```text
-setup      install [--language] [--tools] [--mcp] [--ci|--no-ci] · upgrade · doctor · harness suggest
+setup      install [--language] [--tools] [--mcp] [--ci|--no-ci] · upgrade [--apply] · doctor · harness suggest
 profile    profile show|docs|write|set · principles show|detect · enums list|rename · sections list|rename|off|on
 documents  scaffold init [--plan] | work | doc | idea | adr | meeting | custom · new-id · map · meta get|set
 checks     check [--changed] [--epic W-012] · lint · check-dbml · dbml render|from-sql|diff
