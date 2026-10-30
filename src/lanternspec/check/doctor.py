@@ -141,7 +141,9 @@ def _part_rows(project: Project) -> list[tuple[str, str]]:
         out.append(
             (
                 WARN,
-                msg("Folders that could be parts with their own rules, not decided yet: {items} — lantern parts", items=", ".join(open_)),
+                msg(
+                    "Sub-projects that could get their own rules (parts), not decided yet: {items} — lantern parts", items=", ".join(open_)
+                ),
             )
         )
     tools = [REGISTRY[n] for n in state.load(project).get("tools") or [] if n in REGISTRY]

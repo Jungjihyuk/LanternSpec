@@ -113,7 +113,9 @@ def add(project: Project, path: str) -> dict[str, Any]:
     path = path.strip("/")
     found = principles.detect(project.root / path)
     if not found.languages:
-        raise ValueError(msg("{path} has no manifest of a known language — not a part", path=path))
+        raise ValueError(
+            msg("{path} has no package file of a known language (pyproject.toml · package.json …) — it can't be a part", path=path)
+        )
     build = found.commands(fill_defaults=False) or found.commands(fill_defaults=True)
     build.update(_from_root(project, path))  # what a person already set for this folder wins
     part = {"path": path, "languages": found.languages, "build": build}

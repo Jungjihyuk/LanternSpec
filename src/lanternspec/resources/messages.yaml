@@ -579,7 +579,7 @@
 "CLAUDE.local.md keeps Claude Code from reading AGENTS.md — set Project instructions to claude-md-and-agents-md in /config (or ~/.claude/settings.json)": {ko: "CLAUDE.local.md가 있으면 Claude Code가 AGENTS.md를 읽지 않습니다 — /config(또는 ~/.claude/settings.json)에서 Project instructions를 claude-md-and-agents-md로 바꾸세요"}
 "Claude Code reads AGENTS.md itself": {ko: "Claude Code가 AGENTS.md를 직접 읽습니다"}
 "{items}: not handed to {tools} — only the AGENTS.md right in a part's folder is; move what matters there (lantern parts)": {ko: "{items}: {tools}에는 자동으로 전달되지 않습니다 — 영역 폴더 바로 아래의 AGENTS.md만 전달됩니다. 필요한 내용은 거기로 옮기세요 (lantern parts)"}
-"Folders that could be parts with their own rules, not decided yet: {items} — lantern parts": {ko: "자기 규칙을 가질 수 있는 영역 후보를 아직 정하지 않았습니다: {items} — lantern parts"}
+"Sub-projects that could get their own rules (parts), not decided yet: {items} — lantern parts": {ko: "자기 규칙을 둘 만한 하위 프로젝트(영역 후보)를 아직 정하지 않았습니다: {items} — lantern parts"}
 "{label}: the {launch} command isn't on PATH — can't check its version": {ko: "{label}: {launch} 명령이 PATH에 없어 버전을 확인하지 못했습니다"}
 "{label} {version} is older than {min} — update it (some features won't work)": {ko: "{label} {version}은 {min}보다 낮습니다 — 업데이트하세요 (일부 기능이 동작하지 않습니다)"}
 "{label} {version} is newer than the last checked {verified} — if hooks misbehave, the hook rows below show it": {ko: "{label} {version}은 마지막으로 확인한 {verified}보다 새 버전입니다 — hook이 이상하면 아래 hook 줄에 나타납니다"}
@@ -811,16 +811,19 @@
 "--map \"old section=new section\"": {ko: "--map \"옛 칸=새 칸\""}
 
 # cli/core.py
-"Parts with their own toolchain and rules — candidates · add · ignore": {ko: "자기 도구 · 규칙을 가진 영역 — 후보 보기 · 더하기 · 빼기"}
-"No folder with its own toolchain below the root — the project is one part": {ko: "루트 아래에 자기 도구를 가진 폴더가 없습니다 — 프로젝트 전체가 한 영역입니다"}
+"Split the repository into sub-projects (parts), each with its own AI rules (AGENTS.md) — candidates · add · ignore": {ko: "저장소를 하위 프로젝트(영역)로 나누기 — 영역마다 AI 규칙 파일(AGENTS.md)을 따로 둡니다 · 후보 보기 · add · ignore"}
+"A part is a sub-project inside this repository: a folder such as backend (Python) or frontend (TypeScript) with its own language and check commands.": {ko: "영역이란 저장소 안의 하위 프로젝트입니다. backend(Python) · frontend(TypeScript)처럼 언어와 검사 명령이 따로인 폴더를 말합니다."}
+"With two or more parts, each gets its own AGENTS.md, and the AI follows that folder's rules while it works there.": {ko: "영역을 둘 이상 정하면 영역마다 AGENTS.md가 생기고, AI는 그 폴더에서 일할 때 그 폴더의 규칙을 따릅니다."}
+"Candidates — folders with their own package file (pyproject.toml · package.json …):": {ko: "후보 — 패키지 설정 파일(pyproject.toml · package.json 등)이 따로 있는 폴더:"}
+"No sub-folder has its own package file (pyproject.toml · package.json …) — no need to split; the root AGENTS.md covers the whole project": {ko: "패키지 설정 파일(pyproject.toml · package.json 등)을 따로 가진 하위 폴더가 없습니다 — 나눌 필요 없이 루트 AGENTS.md 하나로 프로젝트 전체를 다룹니다"}
 "part": {ko: "영역"}
 "ignored": {ko: "빼 둠"}
 "not decided": {ko: "정하지 않음"}
-"no manifest found any more": {ko: "매니페스트가 더는 없음"}
-"→ lantern parts add <folder> · lantern parts ignore <folder> (two or more parts each get their own AGENTS.md)": {ko: "→ lantern parts add <폴더> · lantern parts ignore <폴더> (영역이 둘 이상이면 영역마다 AGENTS.md가 생깁니다)"}
+"no package file found any more": {ko: "패키지 설정 파일이 더는 없음"}
+"→ make it a part: lantern parts add <folder> · not a part: lantern parts ignore <folder>": {ko: "→ 영역으로 정하기: lantern parts add <폴더> · 영역 아님: lantern parts ignore <폴더>"}
 "✔ Part {path} ({items}) — lantern upgrade writes its AGENTS.md": {ko: "✔ 영역 {path} ({items}) — lantern upgrade가 그 AGENTS.md를 씁니다"}
 "✔ {path} is not a part — not asked again": {ko: "✔ {path}는 영역이 아닙니다 — 다시 묻지 않습니다"}
-"{path} has no manifest of a known language — not a part": {ko: "{path}에 알려진 언어의 매니페스트가 없습니다 — 영역이 아닙니다"}
+"{path} has no package file of a known language (pyproject.toml · package.json …) — it can't be a part": {ko: "{path}에 알려진 언어의 패키지 설정 파일(pyproject.toml · package.json 등)이 없습니다 — 영역이 될 수 없습니다"}
 "{lines:,} lines of code (without tests · docs) → {label} ({size})": {ko: "코드 {lines:,}줄 (테스트 · 문서 빼고) → {label} ({size})"}
 "Next: lantern principles show → lantern upgrade (into AGENTS.md · the principles document)": {ko: "다음: lantern principles show → lantern upgrade (AGENTS.md · 개발 원칙 문서에 반영)"}
 "Show · write · edit lantern.yaml · documents to turn on": {ko: "lantern.yaml 보기 · 쓰기 · 고치기 · 켜질 문서"}
@@ -1005,7 +1008,7 @@
 "lantern work stage W-012 <stage>": {ko: "lantern work stage W-012 <단계>"}
 
 # core/profile.py
-"  # parts with their own toolchain and rules — lantern parts (each gets its own AGENTS.md)": {ko: "  # 자기 도구 · 규칙을 가진 영역 — lantern parts (영역마다 AGENTS.md가 생긴다)"}
+"  # parts = sub-projects with their own package file (pyproject.toml · package.json …) — lantern parts (each gets its own AGENTS.md)": {ko: "  # 영역 = 패키지 설정 파일(pyproject.toml · package.json 등)이 따로 있는 하위 프로젝트 — lantern parts (영역마다 AGENTS.md가 생긴다)"}
 "code.ignored_parts: must be a list of folders": {ko: "code.ignored_parts: 폴더 목록이어야 합니다"}
 "code.parts {path}: '{lang}' is not a known language ({items})": {ko: "code.parts {path}: '{lang}'은 알 수 없는 언어입니다 ({items})"}
 "code.parts: each part needs a folder path inside the project (e.g. path: backend)": {ko: "code.parts: 영역마다 프로젝트 안의 폴더 경로가 필요합니다 (예: path: backend)"}

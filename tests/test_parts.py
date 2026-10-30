@@ -52,7 +52,7 @@ def test_people_decide_which_candidates_are_parts(repo):
     _, out = repo("parts")
     assert "backend  (python) · 정하지 않음 · pyproject.toml" in out and "lantern parts add" in out
     _, doctor = repo("doctor", ok=False)
-    assert "영역 후보를 아직 정하지 않았습니다: analysis, backend, web" in doctor
+    assert "하위 프로젝트(영역 후보)를 아직 정하지 않았습니다: analysis, backend, web" in doctor
     _, out = repo("parts", "add", "backend")
     assert "✔ 영역 backend (python)" in out
     repo("parts", "add", "web")
@@ -63,7 +63,7 @@ def test_people_decide_which_candidates_are_parts(repo):
     _, out = repo("parts")
     assert "analysis  (python) · 빼 둠" in out and "lantern parts add" not in out
     code, out = repo("parts", "add", "docs", ok=False)
-    assert code != 0 and "매니페스트가 없습니다" in out
+    assert code != 0 and "패키지 설정 파일(pyproject.toml · package.json 등)이 없습니다" in out
 
 
 def test_two_parts_get_their_own_agents_md_and_the_root_keeps_a_map(repo):

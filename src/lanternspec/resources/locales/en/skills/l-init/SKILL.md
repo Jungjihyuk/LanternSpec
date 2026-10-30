@@ -75,7 +75,8 @@ lantern scaffold init --plan        # the folders · documents it would create (
 ```
 Tell the user the `principles show` result in a line or two (e.g. "CLI tool · external integrations → single responsibility and extension points are Must; Python uses ruff · pyright").
 
-**Parts (each folder its own rules):** `lantern parts` lists the sub-folders with their own manifest (e.g. `backend` · `frontend/apps/web`) as candidates.
+**Parts (each folder its own rules):** a part is a sub-project inside the repository — a folder with its own language and check commands.
+`lantern parts` lists the sub-folders with their own package file (`pyproject.toml` · `package.json` …, e.g. `backend` · `frontend/apps/web`) as candidates.
 With **two or more**, ask about all of them at once, each with its evidence — "Make this folder a part?" — then `lantern parts add <folder>` · `lantern parts ignore <folder>` as answered.
 Two or more parts each get their own `AGENTS.md` (that language's conventions · that folder's check commands), and the root AGENTS.md keeps a map of the parts. With one candidate or none, don't ask.
 

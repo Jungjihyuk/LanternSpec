@@ -76,7 +76,8 @@ lantern scaffold init --plan        # 만들 폴더 · 문서 목록 (아직 아
 ```
 `principles show` 결과를 한두 줄로 알려 준다 (예: "CLI 도구 · 바깥 연결 → 단일 책임 · 확장 지점은 지킴, Python은 ruff · pyright").
 
-**영역 (폴더마다 자기 규칙):** `lantern parts`가 자기 매니페스트를 가진 하위 폴더(예: `backend` · `frontend/apps/web`)를 후보로 보여 준다.
+**영역 (폴더마다 자기 규칙):** 영역은 저장소 안의 하위 프로젝트다 — 언어와 검사 명령이 따로인 폴더.
+`lantern parts`가 패키지 설정 파일(`pyproject.toml` · `package.json` 등)을 따로 가진 하위 폴더(예: `backend` · `frontend/apps/web`)를 후보로 보여 준다.
 후보가 **둘 이상**이면 각각 근거와 함께 "이 폴더를 영역으로 둘까요?"를 한 번에 묻고, 답대로 `lantern parts add <폴더>` · `lantern parts ignore <폴더>`.
 영역이 둘 이상이면 영역마다 `AGENTS.md`(그 언어의 컨벤션 · 그 폴더의 확인 명령)가 생기고, 루트 AGENTS.md에는 영역 지도가 남는다. 후보가 하나 이하면 묻지 않는다.
 

@@ -599,7 +599,13 @@ def render(data: dict[str, Any]) -> str:
     ]
     code = d.get("code") or {}
     if code.get("parts") or code.get("ignored_parts"):
-        lines += ["code:", msg("  # parts with their own toolchain and rules — lantern parts (each gets its own AGENTS.md)")]
+        lines += [
+            "code:",
+            msg(
+                "  # parts = sub-projects with their own package file (pyproject.toml · package.json …) — "
+                "lantern parts (each gets its own AGENTS.md)"
+            ),
+        ]
         body = yaml.safe_dump(
             {"parts": code.get("parts") or [], "ignored_parts": code.get("ignored_parts") or []}, allow_unicode=True, sort_keys=False
         )
