@@ -7,6 +7,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+Upgrade: `uv tool upgrade lanternspec` → `lantern upgrade` in each project (refreshes the wording of the `/l-init` skill)
+
+### Changed
+- **`lantern parts` explained in plain words** — a part is now described as "a sub-project inside the repository (a folder with its own language and check commands)", and running the command first says what a part is and what deciding one does. "Own toolchain" and "manifest" become "package file (pyproject.toml · package.json …)", and with no candidates it says there is no need to split — the root AGENTS.md covers the whole project (`--help`, `lantern doctor`, the `lantern.yaml` comment and `/l-init` use the same words)
+
 ## [0.2.3] - 2026-10-30
 
 Upgrade: `uv tool upgrade lanternspec`, then `lantern upgrade` in each project (refreshes skills, agent hooks and AGENTS.md rules)

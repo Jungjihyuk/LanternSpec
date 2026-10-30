@@ -7,6 +7,11 @@
 
 ## [Unreleased]
 
+업그레이드: `uv tool upgrade lanternspec` → 프로젝트마다 `lantern upgrade` (`/l-init` 스킬 문구를 새로 맞춘다)
+
+### 바뀜
+- **`lantern parts` 설명을 쉬운 말로** — 영역을 "저장소 안의 하위 프로젝트(언어와 검사 명령이 따로인 폴더)"로 풀어, 실행하면 맨 위에 영역이 무엇이고 정하면 어떻게 되는지 먼저 보여 준다. "자기 도구" · "매니페스트" 대신 "패키지 설정 파일(pyproject.toml · package.json 등)"이라고 쓰고, 후보가 없을 때는 "나눌 필요 없이 루트 AGENTS.md 하나로 프로젝트 전체를 다룹니다"라고 알린다 (`--help` · `lantern doctor` · `lantern.yaml` 주석 · `/l-init`도 같은 말로)
+
 ## [0.2.3] - 2026-10-30
 
 업그레이드: `uv tool upgrade lanternspec` → 프로젝트마다 `lantern upgrade` (스킬 · 에이전트 hook · AGENTS.md 규칙을 새로 맞춘다)

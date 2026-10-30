@@ -224,7 +224,7 @@ Picks design principles and code conventions from a table, based on the project 
 
 - Languages: Python · TypeScript · Swift · Rust · Go
 - The essentials go into `AGENTS.md`; the full explanation goes into `Development Principles.md`.
-- When two or more folders have their own manifest (such as `backend` and `web`, `lantern parts`), each part gets its own `AGENTS.md` with its language conventions and check commands, and hooks hand it to tools that don't read folder `AGENTS.md` files themselves (Codex · Antigravity).
+- When two or more folders have their own package file (`pyproject.toml`, `package.json` …) (such as `backend` and `web`, `lantern parts`), each part gets its own `AGENTS.md` with its language conventions and check commands, and hooks hand it to tools that don't read folder `AGENTS.md` files themselves (Codex · Antigravity).
 - In existing projects, lint and format settings already in use are recorded, never changed.
 - When the code grows past a size boundary, `lantern doctor` asks whether to raise the principles one level.
 - The language of code comments can be set apart from the documents with `project.comment_language`.

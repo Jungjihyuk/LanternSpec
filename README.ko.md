@@ -222,7 +222,7 @@ AI가 쓴 기술 중 모르는 것은 내 지식 저장소의 노트와 비교�
 
 - 언어: Python · TypeScript · Swift · Rust · Go
 - 핵심은 `AGENTS.md`에, 자세한 설명은 `개발 원칙.md`에 넣는다.
-- 자기 매니페스트를 가진 하위 폴더가 둘 이상이면(`backend` · `web` 등, `lantern parts`), 영역마다 그 언어의 컨벤션과 확인 명령이 든 `AGENTS.md`가 생기고, 하위 `AGENTS.md`를 직접 읽지 않는 도구(Codex · Antigravity)에는 hook이 건넨다.
+- 패키지 설정 파일(`pyproject.toml` · `package.json` 등)을 따로 가진 하위 폴더가 둘 이상이면(`backend` · `web` 등, `lantern parts`), 영역마다 그 언어의 컨벤션과 확인 명령이 든 `AGENTS.md`가 생기고, 하위 `AGENTS.md`를 직접 읽지 않는 도구(Codex · Antigravity)에는 hook이 건넨다.
 - 기존 프로젝트는 이미 쓰는 린트 · 포맷 설정을 기록만 하고 바꾸지 않는다.
 - 코드가 자라 규모 경계를 넘으면 `lantern doctor`가 원칙을 한 단계 올릴지 묻는다.
 - 코드 주석 언어는 `project.comment_language`로 문서 언어와 따로 정할 수 있다.
