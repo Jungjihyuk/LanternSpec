@@ -7,6 +7,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Changed
+- **After documents move** — when the rest of the upgrade refreshes documents (templates · MOC · settings) after `lantern upgrade --apply` commits the move, it says how many and asks to review and commit them
+- **Small template changes** — `lantern check` and `lantern template outdated` no longer claim new sections; they point to the template's "Changelog" section for what changed
+- **Antigravity 1.4.10** — its hook format is unchanged, so `lantern doctor` treats 1.4.10 as a checked version
+
 ## [0.2.0] - 2026-10-30
 
 **How to move:** the current-state folders changed (`Rules and Decisions/` → `Rules/` · `Decisions/`, `Deployment` · `Server Operations` → `Deployment and Operations/`, `Work Unit Log` → `Work Division Rules`). After `uv tool upgrade lanternspec`, run `lantern upgrade` in each project to see what would move, then `lantern upgrade --apply`. Commit any uncommitted changes in the documents first (in local mode, if the documents were never committed, commit inside `docs/` first).
