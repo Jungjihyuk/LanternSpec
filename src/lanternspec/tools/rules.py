@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 from .. import resources
 from ..core import principles, templating
 from ..core.profile import Profile
+from ..core.project import Project, git
 from .skills import PROFILE_TOKEN, body_context, command_prefix, rewrite_commands
 
 if TYPE_CHECKING:
@@ -111,3 +112,20 @@ def principles_section(profile: Profile) -> str:
             lines.append(f"- {prefix}{principles.rule_label('type_hints', profile.language)}: {c.rules['type_hints']}")
             lines.append(f"- {prefix}{principles.rule_label('docs', profile.language)} ({c.docs_style} · {language}): {c.rules['docs']}")
     return "\n".join(lines)
+
+
+def nested_agents(project: Project) -> list[str]:
+    """List the AGENTS.md files below the project root (tracked or new, not ignored).
+
+    Args:
+        project: The project.
+
+    Returns:
+        Paths relative to the root, e.g. "backend/app/AGENTS.md".
+
+    Example:
+        >>> nested_agents(project)  # doctest: +SKIP
+        ['backend/app/AGENTS.md']
+    """
+    r = git(["ls-files", "--cached", "--others", "--exclude-standard", "--", "*/AGENTS.md"], project.root)
+    return sorted(line for line in r.stdout.splitlines() if line) if r.returncode == 0 else []

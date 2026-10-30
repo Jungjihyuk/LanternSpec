@@ -123,7 +123,25 @@ def run(project: Project) -> list[tuple[str, str]]:
         agents = project.root / "AGENTS.md"
         if not agents.exists() or AGENTS_START not in read(agents):
             out.append((WARN, msg("AGENTS.md has no LanternSpec rules — lantern upgrade")))
+        out += _budget_rows(project, list(st.get("tools") or []))
         out += _tool_rows(project, list(st.get("tools") or []))
+    return out
+
+
+def _budget_rows(project: Project, names: list[str]) -> list[tuple[str, str]]:
+    """Check the root and every folder's AGENTS.md against the budget the installed AI tools allow."""
+    from ..tools import REGISTRY
+    from ..tools.rules import AGENTS_END, nested_agents
+    from .budget import check, folder_budget, root_budget
+
+    tools = [REGISTRY[n] for n in names if n in REGISTRY]
+    files = [("AGENTS.md", root_budget(tools))] + [(rel, folder_budget(tools)) for rel in nested_agents(project)]
+    out = []
+    for rel, budget in files:
+        path = project.root / rel
+        if path.exists():
+            level, text = check(rel, read(path), budget, AGENTS_START, AGENTS_END)
+            out.append((LEVELS[level], text))
     return out
 
 

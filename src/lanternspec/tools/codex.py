@@ -42,6 +42,8 @@ class Codex(ClaudeHooks, Tool):
     config_paths = (".agents/", ".codex/")
     write_tools = frozenset({"apply_patch"})
     verified_version = "0.164.0"
+    rules_chain_max_bytes = 32 * 1024  # project_doc_max_bytes: the AGENTS.md files from root to working folder together
+    hook_context_max_tokens = 8000  # we set additionalContextLimit (its default 2500 would cut a folder's rules)
 
     def skill_extras(self, src: SkillSource, profile: Profile) -> dict[str, str]:
         r"""Implement Tool.skill_extras: keep manual-only skills out of implicit (model-chosen) invocation.
@@ -150,13 +152,16 @@ class Codex(ClaudeHooks, Tool):
             30
         """
 
-        def entry(event: str, timeout: int) -> dict[str, Any]:
-            return {"hooks": [{"type": "command", "command": self.hook_command(event), "timeout": timeout}]}
+        def entry(event: str, timeout: int, context: bool = False) -> dict[str, Any]:
+            handler: dict[str, Any] = {"type": "command", "command": self.hook_command(event), "timeout": timeout}
+            if context:  # only events that can add context take the limit (others make Codex warn)
+                handler["additionalContextLimit"] = self.hook_context_max_tokens
+            return {"hooks": [handler]}
 
         return {
-            "SessionStart": [entry("session-start", 10)],
-            "UserPromptSubmit": [entry("prompt", 10)],
-            "PostToolUse": [entry("post-tool", 30)],
+            "SessionStart": [entry("session-start", 10, context=True)],
+            "UserPromptSubmit": [entry("prompt", 10, context=True)],
+            "PostToolUse": [entry("post-tool", 30, context=True)],
             "PreCompact": [entry("pre-compact", 10)],
             "Stop": [entry("stop", 10)],
         }

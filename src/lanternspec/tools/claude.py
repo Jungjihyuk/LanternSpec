@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from ..core.messages import msg
-from ..core.project import Project, git, read, write
+from ..core.project import Project, read, write
 from .base import (
     HOOK_COMMAND,
     MCP_NAME,
@@ -28,6 +28,7 @@ from .base import (
     merge_json_file,
     replace_hook_entries,
 )
+from .rules import nested_agents
 
 if TYPE_CHECKING:
     from ..core.profile import Profile
@@ -161,6 +162,7 @@ class ClaudeCode(ClaudeHooks, Tool):
     write_tools = frozenset({"Write", "Edit", "MultiEdit", "NotebookEdit"})
     min_version = "2.1.277"  # reads AGENTS.md itself (no CLAUDE.md needed)
     verified_version = "2.1.308"
+    rules_max_lines = 200  # its docs: keep each instruction file under 200 lines, longer ones are followed less
 
     def skill_meta(self, src: SkillSource, profile: Profile, prefix: str) -> dict[str, Any]:
         """Implement Tool.skill_meta with Claude Code's extra frontmatter keys.
@@ -370,23 +372,6 @@ def imports_agents(text: str) -> bool:
         (True, False)
     """
     return re.search(r"^@(\.\./)?AGENTS\.md\b", text, re.M) is not None
-
-
-def nested_agents(project: Project) -> list[str]:
-    """List the AGENTS.md files below the project root (tracked or new, not ignored).
-
-    Args:
-        project: The project.
-
-    Returns:
-        Paths relative to the root, e.g. "backend/app/AGENTS.md".
-
-    Example:
-        >>> nested_agents(project)  # doctest: +SKIP
-        ['backend/app/AGENTS.md']
-    """
-    r = git(["ls-files", "--cached", "--others", "--exclude-standard", "--", "*/AGENTS.md"], project.root)
-    return sorted(line for line in r.stdout.splitlines() if line) if r.returncode == 0 else []
 
 
 def hook_specific_output(event: str, text: str) -> str:

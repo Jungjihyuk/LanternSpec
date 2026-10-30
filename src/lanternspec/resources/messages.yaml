@@ -488,6 +488,11 @@
 "🔄 Doc-code alignment": {ko: "🔄 문서-코드 일치"}
 "📊 AI work evaluation": {ko: "📊 AI 작업 평가"}
 
+# check/budget.py
+"{name} {kb:.1f}KB · {lines} lines (budget {budget})": {ko: "{name} {kb:.1f}KB · {lines}줄 (예산 {budget})"}
+"{count} lines": {ko: "{count}줄"}
+" — over budget: LanternSpec's block {block:.1f}KB · your own text {own:.1f}KB; move details into documents and link them": {ko: " — 예산을 넘었습니다: LanternSpec 블록 {block:.1f}KB · 직접 쓴 글 {own:.1f}KB. 자세한 내용은 문서로 옮기고 링크로 남기세요"}
+
 # check/check_docs.py
 " (line {line})": {ko: " (줄 {line})"}
 "The '{title}' section is missing. This section {feature}. Did you change it on purpose?": {ko: "'{title}' 칸이 없습니다. 이 칸은 {feature}. 일부러 바꾸셨나요?"}

@@ -20,6 +20,7 @@ from dataclasses import dataclass, field
 import yaml
 
 from .. import __version__
+from ..check import budget
 from ..check.check_docs import version_gap
 from ..core import messages, principles, state
 from ..core.messages import msg
@@ -69,6 +70,7 @@ class InstallReport:
         templates: Messages about template copies (upgrade only).
         layout: Messages about moving documents to the current layout (upgrade only).
         stopped: The upgrade only showed the moves and changed nothing (it waits for --apply).
+        warnings: Problems found in what was written, such as an AGENTS.md over budget.
 
     Example:
         >>> InstallReport(written=["AGENTS.md"]).lines()
@@ -82,6 +84,7 @@ class InstallReport:
     templates: list[str] = field(default_factory=list)
     layout: list[str] = field(default_factory=list)  # documents moved to the current layout, or waiting for --apply
     stopped: bool = False  # the upgrade waits for --apply and changed nothing
+    warnings: list[str] = field(default_factory=list)  # e.g. AGENTS.md grew past what the installed tools read well
 
     def lines(self) -> list[str]:
         """Describe the report for the user.
@@ -107,6 +110,7 @@ class InstallReport:
             out.append(msg("⚠ Left {count} files alone because the user edited them (to overwrite, --force):", count=len(self.skipped)))
             out += [f"   {p}" for p in self.skipped]
         out += self.templates
+        out += self.warnings
         return out
 
 
@@ -277,6 +281,9 @@ def install(
     agents = project.root / "AGENTS.md"
     write(agents, rules.merge_block(read(agents) if agents.exists() else "", rules.agents_block(project.profile, chosen, project.enums)))
     report.merged.append("AGENTS.md")
+    level, said = budget.check("AGENTS.md", read(agents), budget.root_budget(chosen), rules.AGENTS_START, rules.AGENTS_END)
+    if level != "ok":
+        report.warnings.append(f"⚠ {said}")
     doc = principles_doc.write_doc(project)  # the details behind the AGENTS.md summary — always from the same tables
     if doc:
         report.written.append(project.rel(doc))

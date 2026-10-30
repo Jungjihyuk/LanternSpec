@@ -144,6 +144,10 @@ class Tool:
         write_tools: Tool names that write files (checked after they run).
         min_version: The oldest version with every feature we rely on ("" = not known, not checked).
         verified_version: The newest version whose formats were checked against its docs ("" = not checked).
+        rules_max_lines: Lines of one rules file the tool reads well (0 = no limit known).
+        rules_max_bytes: Bytes of one rules file the tool reads in full (0 = no limit known).
+        rules_chain_max_bytes: Bytes of all rules files read together, root to working folder (0 = no limit known).
+        hook_context_max_tokens: Tokens of text one hook call can add to the conversation (0 = no limit known).
 
     Example:
         >>> from lanternspec.tools import get
@@ -162,6 +166,10 @@ class Tool:
     write_tools: frozenset[str] = frozenset()  # tool names that write files (checked right after)
     min_version = ""  # oldest version with every feature we rely on; "" = not known
     verified_version = ""  # newest version checked against its docs; "" = not checked
+    rules_max_lines = 0  # lines of one rules file the tool reads well; 0 = no limit known
+    rules_max_bytes = 0  # bytes of one rules file the tool reads in full
+    rules_chain_max_bytes = 0  # bytes of all rules files read together (root → working folder)
+    hook_context_max_tokens = 0  # tokens one hook call can add to the conversation
 
     # ---- skills
     def skill_meta(self, src: SkillSource, profile: Profile, prefix: str) -> dict[str, Any]:

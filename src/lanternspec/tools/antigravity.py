@@ -44,6 +44,7 @@ class Antigravity(Tool):
         {"write_file", "edit_file", "create_file", "write_to_file", "replace_file_content", "multi_replace_file_content"}
     )
     verified_version = "1.4.10"
+    rules_max_bytes = 24_000  # its guide: each rules file is cut at 24,000 bytes
 
     # ---- config
     def hooks(self) -> dict[str, Any]:
