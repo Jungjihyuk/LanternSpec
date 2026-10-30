@@ -575,10 +575,11 @@ def check_file(project: Project, path: Path, text: str, ctx: _Ctx) -> list[Findi
                         rel,
                         "template-minor",
                         msg(
-                            "Template '{tname}' has new sections ({get} → {value})",
+                            "Template '{tname}' changed ({get} → {value}) — its '{section}' section says what changed",
                             tname=tname,
                             get=meta.get("template_version"),
                             value=ctx.templates.versions[tname],
+                            section=project.names.marker("changelog"),
                         ),
                         1,
                     )

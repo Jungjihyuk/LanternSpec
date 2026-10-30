@@ -44,7 +44,7 @@ def test_check_structure_length_and_template_versions(repo):
     fill(plan, [("## 이유", "## 왜")])
     fill(tmpl, [("template_version: 2.0.0", "template_version: 1.1.0")])
     _, out = repo("check", str(plan))
-    assert "새 칸이 생겼습니다" in out
+    assert "양식 '기획'이 바뀌었습니다 (1.0.0 → 1.1.0) — 무엇이 바뀌었는지는 양식의 '변경 기록' 칸에" in out
 
 
 def test_check_task_file_rules(repo):

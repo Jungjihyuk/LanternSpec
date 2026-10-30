@@ -274,6 +274,25 @@ def describe(project: Project, result: LayoutPlan) -> list[str]:
     return out
 
 
+def changed_documents(project: Project) -> list[str]:
+    """List the uncommitted changes under the documents root (where the documents' git runs).
+
+    Args:
+        project: The project.
+
+    Returns:
+        One `git status --porcelain` line per changed file; empty outside git.
+
+    Example:
+        >>> changed_documents(project)  # doctest: +SKIP
+        [' M 개발문서 MOC.md']
+    """
+    cwd = project.docs_git_cwd()
+    if git(["rev-parse", "--git-dir"], cwd).returncode != 0:
+        return []
+    return [line for line in git_out(["status", "--porcelain", "--", str(project.docs)], cwd).splitlines() if line]
+
+
 def apply(project: Project, result: LayoutPlan) -> list[str]:
     """Carry out a plan: rewrite links and template values, move with `git mv`, then commit once.
 
@@ -302,8 +321,7 @@ def apply(project: Project, result: LayoutPlan) -> list[str]:
         if git(["rev-parse", "--verify", "-q", "HEAD"], cwd).returncode != 0:
             raise LayoutError(msg("The documents have never been committed — commit them once, then run lantern upgrade --apply again"))
         staged = git_out(["diff", "--cached", "--name-only"], cwd)
-        dirty = git_out(["status", "--porcelain", "--", str(project.docs)], cwd)
-        if staged or dirty:
+        if staged or changed_documents(project):
             raise LayoutError(msg("Commit or stash the changes in the documents first, then run lantern upgrade --apply again"))
     edits: dict[Path, str] = {}
     for path, old, new in result.links:

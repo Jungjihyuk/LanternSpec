@@ -397,6 +397,11 @@ def upgrade(project: Project, force: bool = False, apply: bool = False) -> Insta
 
         doc_map.run(project)
         report.layout = [*notes, *moved]
+        refreshed = layout.changed_documents(project)  # the upgrade after the move commit refreshes templates · MOC · settings
+        if refreshed:
+            report.layout.append(
+                msg("ℹ {count} documents were refreshed after the move commit — review them, then commit", count=len(refreshed))
+            )
     else:
         report.layout = notes  # nothing to move: at most the conflicts a person must settle
     return report

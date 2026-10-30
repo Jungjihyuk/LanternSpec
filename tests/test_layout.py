@@ -88,6 +88,7 @@ def test_apply_moves_with_history_rewrites_links_and_commits_once(repo):
     changed = _git(repo, "-c", "core.quotepath=false", "show", "--name-only", "--format=", "HEAD").splitlines()
     assert changed and all(p.startswith("docs/") for p in changed)  # the commit holds only the move
     assert (repo.root / "AGENTS.md").exists()  # then the usual upgrade went on
+    assert "옮기기 커밋 뒤에 문서" in out and "확인한 뒤 커밋하세요" in out  # what the upgrade refreshed afterwards is pointed out
     _, again = repo("upgrade")
     assert "📦" not in again and "--apply" not in again
 

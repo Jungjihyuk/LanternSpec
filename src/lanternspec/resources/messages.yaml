@@ -512,7 +512,7 @@
 "{id}: acceptance criterion {ac} is not in {name}": {ko: "{id}: 수락 기준 {ac}이 {name}에 없습니다"}
 "Prerequisite tasks form a cycle: {items}": {ko: "먼저 끝나야 할 일이 순환합니다: {items}"}
 "Task ID {id} is also in {seen}": {ko: "할 일 ID {id}가 {seen}에도 있습니다"}
-"Template '{tname}' has new sections ({get} → {value})": {ko: "양식 '{tname}'에 새 칸이 생겼습니다 ({get} → {value})"}
+"Template '{tname}' changed ({get} → {value}) — its '{section}' section says what changed": {ko: "양식 '{tname}'이 바뀌었습니다 ({get} → {value}) — 무엇이 바뀌었는지는 양식의 '{section}' 칸에 있습니다"}
 "{id}: lists itself as a prerequisite": {ko: "{id}: 자기 자신을 먼저로 지정했습니다"}
 "ID {doc_id} is shared with other documents: {others}": {ko: "ID {doc_id}가 다른 문서와 겹칩니다: {others}"}
 
@@ -723,6 +723,7 @@
 "✔ Committed the documents on the code branch": {ko: "✔ 코드 브랜치에 문서 커밋"}
 
 # tools/install.py
+"ℹ {count} documents were refreshed after the move commit — review them, then commit": {ko: "ℹ 옮기기 커밋 뒤에 문서 {count}개가 갱신됐습니다 — 확인한 뒤 커밋하세요"}
 "→ To move them, run lantern upgrade --apply (nothing was changed)": {ko: "→ 옮기려면 lantern upgrade --apply (아직 아무것도 바꾸지 않았습니다)"}
 "      # Project tools · dependencies — from lantern.yaml project.languages and the lock files (kept in step by lantern upgrade)\n": {ko: "      # 프로젝트 도구 · 의존성 준비 — lantern.yaml project.languages와 lock 파일에서 (lantern upgrade가 맞춘다)\n"}
 "      # Once the languages (lantern.yaml project.languages) are set, lantern upgrade puts the project tool setup steps here\n": {ko: "      # 언어(lantern.yaml project.languages)가 정해지면 lantern upgrade가 프로젝트 도구 준비 단계를 여기에 넣는다\n"}
@@ -776,7 +777,7 @@
 "→ suggest migrate": {ko: "→ migrate 제안"}
 " · finished": {ko: " · 끝난 문서"}
 "refined": {ko: "다듬음"}
-"ℹ new sections": {ko: "ℹ 새 칸"}
+"ℹ changed": {ko: "ℹ 바뀜"}
 "unchanged": {ko: "그대로"}
 "lantern template new <name> --from <draft file>": {ko: "lantern template new <이름> --from <시안 파일>"}
 "\n(preview — once approved, --apply)": {ko: "\n(미리보기 — 승인되면 --apply)"}

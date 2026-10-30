@@ -67,7 +67,7 @@ def cmd_template(a: argparse.Namespace) -> int:
         if not rows:
             print(msg("No documents on an old template version"))
         for o in rows:
-            hint = msg("→ suggest migrate") if o.gap == "major" else (msg("ℹ new sections") if o.gap == "minor" else msg("unchanged"))
+            hint = msg("→ suggest migrate") if o.gap == "major" else (msg("ℹ changed") if o.gap == "minor" else msg("unchanged"))
             print(f"{project.rel(o.path)}  {o.template} {o.have} → {o.current} ({o.gap}) {hint}{'' if o.active else msg(' · finished')}")
     elif a.action == "diff":
         print(tc.diff_base(project, a.name))
