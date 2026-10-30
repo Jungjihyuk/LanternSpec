@@ -7,6 +7,8 @@
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-10-30
+
 업그레이드: `uv tool upgrade lanternspec` → 프로젝트마다 `lantern upgrade` (스킬 · 에이전트 hook · AGENTS.md 규칙을 새로 맞춘다)
 
 ### 추가
@@ -116,7 +118,8 @@
   Rust · Go)와 규모로 코드 컨벤션을 기준표대로 골라 `AGENTS.md`와 `개발 원칙.md`에 넣는다 (`principles`, `lint`)
 - **작업 방식 · 평가** — 하네스 · 루프 · 그래프 추천(`harness suggest`), 실행 기록으로 스킬 · 모델 · 설정 비교(`eval`)
 
-[Unreleased]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.3...HEAD
+[0.2.3]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.1.2...v0.2.0
