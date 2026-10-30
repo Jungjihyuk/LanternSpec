@@ -47,7 +47,7 @@ class ClaudeHooks:
     """
 
     # the event name Claude Code expects back in hookSpecificOutput
-    EVENT_NAMES = {"session-start": "SessionStart", "prompt": "UserPromptSubmit", "post-tool": "PostToolUse"}
+    EVENT_NAMES = {"session-start": "SessionStart", "prompt": "UserPromptSubmit", "pre-tool": "PreToolUse", "post-tool": "PostToolUse"}
 
     def parse_hook(self, event: str, data: dict[str, Any]) -> HookInput:
         """Implement Tool.parse_hook for Claude Code's payload (snake_case keys).
@@ -163,6 +163,8 @@ class ClaudeCode(ClaudeHooks, Tool):
     min_version = "2.1.277"  # reads AGENTS.md itself (no CLAUDE.md needed)
     verified_version = "2.1.308"
     rules_max_lines = 200  # its docs: keep each instruction file under 200 lines, longer ones are followed less
+    reads_nested_rules = True  # a folder's AGENTS.md loads when it opens a file there (no CLAUDE.md in the project)
+    restores_after_compaction = True  # SessionStart with source compact
 
     def skill_meta(self, src: SkillSource, profile: Profile, prefix: str) -> dict[str, Any]:
         """Implement Tool.skill_meta with Claude Code's extra frontmatter keys.

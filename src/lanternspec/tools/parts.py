@@ -7,6 +7,7 @@ the ways of working and a map of the parts. With fewer than two parts nothing ch
 Responsibilities:
     - list the candidates (from the files git knows) with what was decided about each
     - record a decision in lantern.yaml: add a part (with its detected languages and check commands) or ignore it
+    - tell which part a file belongs to
 
 Not here:
     - telling a candidate from its files → core/principles.py (part_candidates)
@@ -16,6 +17,7 @@ Not here:
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from ..core import principles
@@ -90,8 +92,9 @@ def statuses(project: Project) -> list[PartStatus]:
 def add(project: Project, path: str) -> dict[str, Any]:
     """Record a folder as a part, with the languages and check commands found in it.
 
-    Check commands already configured in the folder are recorded as they are; a folder with none
-    gets each language's default (to run from inside the folder).
+    Commands the root's lantern.yaml already runs in this folder (`cd backend && …`) are taken over,
+    without the `cd`; otherwise the tools configured in the folder are recorded as they are, and a
+    folder with none gets each language's default (to run from inside the folder).
 
     Args:
         project: The project.
@@ -112,11 +115,23 @@ def add(project: Project, path: str) -> dict[str, Any]:
     if not found.languages:
         raise ValueError(msg("{path} has no manifest of a known language — not a part", path=path))
     build = found.commands(fill_defaults=False) or found.commands(fill_defaults=True)
+    build.update(_from_root(project, path))  # what a person already set for this folder wins
     part = {"path": path, "languages": found.languages, "build": build}
     parts = [p for p in recorded(project) if p["path"] != path] + [part]
     ignored = [p for p in project.profile.get("code.ignored_parts") or [] if p != path]
     _save(project, sorted(parts, key=lambda p: p["path"]), ignored)
     return part
+
+
+def _from_root(project: Project, path: str) -> dict[str, str]:
+    """The root's check commands that run in this folder (`cd <folder> && …`), without the `cd`."""
+    prefix = f"cd {path} && "
+    out = {}
+    for role in (*principles.COMMAND_ROLES, "test"):
+        command = str(project.profile.get(f"build.{role}") or "")
+        if command.startswith(prefix) and "&&" not in command[len(prefix) :]:
+            out[role] = command[len(prefix) :]
+    return out
 
 
 def ignore(project: Project, path: str) -> None:
@@ -138,3 +153,29 @@ def ignore(project: Project, path: str) -> None:
 def _save(project: Project, parts: list[dict[str, Any]], ignored: list[str]) -> None:
     profile_mod.update(project.root, {"code.parts": parts, "code.ignored_parts": ignored})
     project.profile = profile_mod.load(project.root)
+
+
+def part_of(project: Project, path: str, cwd: str = "") -> str | None:
+    """Tell which part a file belongs to.
+
+    Args:
+        project: The project.
+        path: The file, absolute or relative to cwd.
+        cwd: The folder the agent works in (the project root when empty).
+
+    Returns:
+        The part's folder (the deepest that holds the file); None outside every part or with fewer than two parts.
+
+    Example:
+        >>> part_of(project, "backend/app/main.py")  # doctest: +SKIP
+        'backend'
+    """
+    from .rules import active_parts
+
+    target = Path(path) if Path(path).is_absolute() else Path(cwd or project.root) / path
+    try:
+        rel = target.resolve().relative_to(project.root.resolve()).as_posix()
+    except ValueError:
+        return None
+    inside = [p["path"] for p in active_parts(project.profile) if rel == p["path"] or rel.startswith(p["path"] + "/")]
+    return max(inside, key=len) if inside else None

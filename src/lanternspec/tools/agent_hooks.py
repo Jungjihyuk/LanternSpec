@@ -4,7 +4,9 @@ What each hook does, for every tool alike (a tool adapter only reads its payload
 
 session-start  put the three-line status into the conversation (right after compaction, also the saved progress)
 prompt         which skill started the turn (run log) · tech-question detection · idea detection
+pre-tool       (Codex) before the first edit in a part, hand over that part's AGENTS.md
 post-tool      check the format as soon as a docs/ document is written → fix it on the spot if broken
+               (tools without pre-tool) hand over a part's AGENTS.md after its first edit
                count tool calls (run log)
 feedback       (Antigravity) deliver the document-check result that post-tool could not say right away
 stop           one run-log line per finished answer
@@ -24,7 +26,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from ..core.messages import msg
-from ..core.project import Project
+from ..core.project import Project, read
 from . import health, runlog, sessions
 from .base import HookInput, HookReply, HookResult, Tool, hook_state_dir
 
@@ -94,6 +96,7 @@ def session_start(project: Project, tool: Tool, inp: HookInput) -> HookResult:
     ]
     if inp.source == "compact":
         out += _saved_progress(project, inp.session)
+        out += [line for line in (_part_line(project, inp.session),) if line]
     return HookResult(context="\n".join(out))
 
 
@@ -115,7 +118,7 @@ def pre_compact(project: Project, tool: Tool, inp: HookInput) -> HookResult:
 
     Example:
         >>> pre_compact(project, tool, HookInput(session="s1"))  # doctest: +SKIP
-        HookResult(context='', block='', notice='')
+        HookResult(context='', block='', notice='', reminder='')
     """
     from ..work.progress import save_before_compact
 
@@ -170,6 +173,7 @@ def post_tool(project: Project, tool: Tool, inp: HookInput) -> HookResult:
     runlog.tool(project, inp.session, inp.tool, inp.tool_input)
     if inp.tool not in tool.write_tools:
         return HookResult()
+    rules = part_rules(project, tool, inp)  # tools without a pre-tool hook get a part's rules after its first edit
     from ..check import check_docs
 
     hard_msgs: list[str] = []
@@ -197,7 +201,7 @@ def post_tool(project: Project, tool: Tool, inp: HookInput) -> HookResult:
             ]
         if soft:
             soft_msgs.append(msg("LanternSpec note ({rel}): ", rel=rel) + " · ".join(f.message for f in soft[:5]))
-    return HookResult(block="\n".join(hard_msgs), context="" if hard_msgs else "\n".join(soft_msgs))
+    return HookResult(block="\n".join(hard_msgs), context="\n\n".join(x for x in (rules, "" if hard_msgs else "\n".join(soft_msgs)) if x))
 
 
 def feedback(project: Project, tool: Tool, inp: HookInput) -> HookResult:
@@ -213,7 +217,7 @@ def feedback(project: Project, tool: Tool, inp: HookInput) -> HookResult:
 
     Example:
         >>> feedback(None, None, HookInput())
-        HookResult(context='', block='', notice='')
+        HookResult(context='', block='', notice='', reminder='')
     """
     return HookResult()  # the tool adapter delivers what post-tool held back
 
@@ -238,13 +242,14 @@ def prompt(project: Project, tool: Tool, inp: HookInput) -> HookResult:
         >>> prompt(project, tool, HookInput(prompt="JWT가 뭐야?")).context  # doctest: +SKIP
         "LanternSpec 기술 질문: 사용자가 기술 'JWT'을(를) 물었습니다. …"
     """
+    reminder = "" if tool.restores_after_compaction else _reminder(project, inp.session)
     if not inp.turn_start:
-        return HookResult()
+        return HookResult(reminder=reminder)
     runlog.prompt(project, inp.session, inp.prompt)
     if not project.profile.exists or inp.prompt.lstrip().startswith(("/", "$")):
-        return HookResult()  # explicit commands are handled by their skill
+        return HookResult(reminder=reminder)  # explicit commands are handled by their skill
     notes = [n for n in (learn_detect(project, inp.session, inp.prompt), idea_detect(project, inp.session, inp.prompt)) if n]
-    return HookResult(context="\n".join(notes))
+    return HookResult(context="\n".join(notes), reminder=reminder)
 
 
 _PARTICLE = r"(?:이|가|은|는|이란|란|라는\s*게|란\s*게)?"
@@ -484,9 +489,102 @@ def sync_nudge(project: Project, session: str) -> str:
     return ""
 
 
+# --------------------------------------------------------------------------- parts: each folder's rules
+
+
+def pre_tool(project: Project, tool: Tool, inp: HookInput) -> HookResult:
+    """Before a tool writes in a part for the first time in this conversation, hand over that part's AGENTS.md.
+
+    Args:
+        project: The project.
+        tool: The tool that called.
+        inp: The hook call.
+
+    Returns:
+        The part's rules as context; empty when there is nothing new to hand over.
+
+    Example:
+        >>> pre_tool(project, get("codex"), HookInput(session="s1", tool="apply_patch")).context  # doctest: +SKIP
+        ''
+    """
+    return HookResult(context=part_rules(project, tool, inp) if inp.tool in tool.write_tools else "")
+
+
+def part_rules(project: Project, tool: Tool, inp: HookInput) -> str:
+    r"""Hand over the AGENTS.md of the part a tool call writes in — once per part and conversation, if the tool won't read it.
+
+    A tool started inside the part's folder read it at the start, and a tool that reads a folder's
+    AGENTS.md by itself needs nothing. The part is remembered for the reminder after compaction.
+
+    Args:
+        project: The project.
+        tool: The tool that called.
+        inp: The hook call.
+
+    Returns:
+        The part's AGENTS.md with a one-line heading; "" otherwise.
+
+    Example:
+        >>> part_rules(project, get("codex"), HookInput(session="s1", tool_input={"input": "*** Update File: api/x.py"}))  # doctest: +SKIP
+        '[LanternSpec] api 영역의 규칙 (api/AGENTS.md):\n…'
+    """
+    from .parts import part_of
+
+    found = [p for p in (part_of(project, f, inp.cwd) for f in tool.written_paths(inp)) if p]
+    if not found:
+        return ""
+    part = found[0]
+    state = _parts_state(project, inp.session)
+    state["current"] = part
+    rules_file = project.root / part / "AGENTS.md"
+    started_inside = bool(inp.cwd) and part_of(project, inp.cwd) == part
+    give = not tool.reads_nested_rules and not started_inside and part not in state["sent"] and rules_file.exists()
+    if give:
+        state["sent"].append(part)
+    _save_parts_state(project, inp.session, state)
+    if not give:
+        return ""
+    return msg("[LanternSpec] rules of part {part} ({file}):", part=part, file=project.rel(rules_file)) + "\n" + read(rules_file)
+
+
+def _parts_file(project: Project, session: str) -> Path:
+    return hook_state_dir(project) / f"parts-{re.sub(r'[^\w.-]', '_', session or 'unknown')[:80]}.json"
+
+
+def _parts_state(project: Project, session: str) -> dict:
+    path = _parts_file(project, session)
+    try:
+        data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    except (OSError, ValueError):
+        data = {}
+    return {"current": data.get("current") or "", "sent": list(data.get("sent") or [])}
+
+
+def _save_parts_state(project: Project, session: str, state: dict) -> None:
+    _parts_file(project, session).write_text(json.dumps(state, ensure_ascii=False), encoding="utf-8")
+
+
+def _part_line(project: Project, session: str) -> str:
+    """Which part the conversation was working in, for the note after compaction."""
+    part = _parts_state(project, session)["current"]
+    return msg("Part in progress: {part} — its rules are in {part}/AGENTS.md", part=part) if part else ""
+
+
+def _reminder(project: Project, session: str) -> str:
+    """A one- or two-line "where we are" note, for tools that can't restore it after compaction."""
+    if not project.profile.exists:
+        return ""
+    from ..report.status import lines
+
+    now = lines(project)[:1]
+    part = _part_line(project, session)
+    return "\n".join([msg("[LanternSpec now]"), *now, *([part] if part else [])])
+
+
 HANDLERS: dict[str, Callable[[Project, Tool, HookInput], HookResult]] = {
     "session-start": session_start,
     "prompt": prompt,
+    "pre-tool": pre_tool,
     "post-tool": post_tool,
     "feedback": feedback,
     "stop": stop,

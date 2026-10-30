@@ -216,7 +216,7 @@ class Antigravity(Tool):
                     ensure_ascii=False,
                 )
             )
-        return _inject(result.context)
+        return _inject(result.context, result.reminder)
 
     # document-check results wait here between PostToolUse and PostInvocation
     def _pending(self, project: Project) -> Path:
@@ -238,7 +238,9 @@ class Antigravity(Tool):
         return "\n".join(held)
 
 
-def _inject(text: str) -> HookReply:
-    if not text:
-        return HookReply(stdout="{}")
-    return HookReply(stdout=json.dumps({"injectSteps": [{"systemMessage": {"systemMessage": text}}]}, ensure_ascii=False))
+def _inject(text: str, reminder: str = "") -> HookReply:
+    """Context stays in the conversation (systemMessage); a reminder is for this call only (ephemeralMessage)."""
+    steps: list[dict[str, Any]] = [{"systemMessage": {"systemMessage": text}}] if text else []
+    if reminder:
+        steps.append({"ephemeralMessage": reminder})
+    return HookReply(stdout=json.dumps({"injectSteps": steps}, ensure_ascii=False) if steps else "{}")

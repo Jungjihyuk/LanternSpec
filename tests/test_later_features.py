@@ -328,7 +328,7 @@ def _hook_as(root, name, agent, payload, cwd=None):
 def test_codex_agent_hooks(repo, vault):
     repo("install", "--tools", "claude,codex")
     codex = json.loads((repo.root / ".codex/hooks.json").read_text(encoding="utf-8"))
-    assert set(codex["hooks"]) == {"SessionStart", "UserPromptSubmit", "PostToolUse", "PreCompact", "Stop"}
+    assert set(codex["hooks"]) == {"SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "PreCompact", "Stop"}
     assert "--agent codex" in codex["hooks"]["PostToolUse"][0]["hooks"][0]["command"]
     repo("install")  # idempotent: no duplicated lantern entries
     codex = json.loads((repo.root / ".codex/hooks.json").read_text(encoding="utf-8"))
@@ -382,9 +382,10 @@ def test_antigravity_agent_hooks(repo, vault):
     hook("post-tool", stepIdx=4, toolCall={"name": "edit_file", "args": {"Path": str(plan), "Target": "a", "Replacement": "b"}})
     # later model calls in the same turn are not new prompts
     repo("profile", "set", "learn.detect=ask")
-    assert json.loads(hook("prompt", invocationNum=1, lastUserInput="JWT가 뭐야?").stdout) == {}
+    later = json.loads(hook("prompt", invocationNum=1, lastUserInput="JWT가 뭐야?").stdout)["injectSteps"]
+    assert later == [{"ephemeralMessage": "[LanternSpec 지금 상황]\n📦 진행 중: W-001 작업 (기획)"}]  # only the reminder, every call
     steps = json.loads(hook("prompt", invocationNum=0, lastUserInput="JWT가 뭐야?").stdout)["injectSteps"]
-    assert "LanternSpec 기술 질문" in steps[0]["systemMessage"]["systemMessage"]
+    assert "LanternSpec 기술 질문" in steps[0]["systemMessage"]["systemMessage"] and "ephemeralMessage" in steps[1]
     # sync suggestion at Stop: keep going once so the agent tells the user; never on errors
     repo("work", "stage", "W-001", "구현")
     repo.git("add", "-A")

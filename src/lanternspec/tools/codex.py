@@ -44,6 +44,7 @@ class Codex(ClaudeHooks, Tool):
     verified_version = "0.164.0"
     rules_chain_max_bytes = 32 * 1024  # project_doc_max_bytes: the AGENTS.md files from root to working folder together
     hook_context_max_tokens = 8000  # we set additionalContextLimit (its default 2500 would cut a folder's rules)
+    restores_after_compaction = True  # SessionStart with source compact
 
     def skill_extras(self, src: SkillSource, profile: Profile) -> dict[str, str]:
         r"""Implement Tool.skill_extras: keep manual-only skills out of implicit (model-chosen) invocation.
@@ -161,6 +162,7 @@ class Codex(ClaudeHooks, Tool):
         return {
             "SessionStart": [entry("session-start", 10, context=True)],
             "UserPromptSubmit": [entry("prompt", 10, context=True)],
+            "PreToolUse": [entry("pre-tool", 10, context=True)],  # a part's rules before its first edit
             "PostToolUse": [entry("post-tool", 30, context=True)],
             "PreCompact": [entry("pre-compact", 10)],
             "Stop": [entry("stop", 10)],

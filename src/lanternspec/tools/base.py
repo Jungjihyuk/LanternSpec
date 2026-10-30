@@ -95,6 +95,7 @@ class HookResult:
         context: Text to add to the model's context (status, notes, detected questions or ideas).
         block: The document just written is broken — the agent must fix it now.
         notice: A one-line suggestion when the turn ends.
+        reminder: A short "where we are" note for tools without a hook after compaction; used for that call only.
 
     Example:
         >>> HookResult(notice="/l-sync 할까요?").block
@@ -104,6 +105,7 @@ class HookResult:
     context: str = ""
     block: str = ""
     notice: str = ""
+    reminder: str = ""
 
 
 @dataclass
@@ -148,6 +150,8 @@ class Tool:
         rules_max_bytes: Bytes of one rules file the tool reads in full (0 = no limit known).
         rules_chain_max_bytes: Bytes of all rules files read together, root to working folder (0 = no limit known).
         hook_context_max_tokens: Tokens of text one hook call can add to the conversation (0 = no limit known).
+        reads_nested_rules: Whether the tool reads a folder's AGENTS.md by itself when it works there.
+        restores_after_compaction: Whether the tool has a hook right after it summarizes a long conversation.
 
     Example:
         >>> from lanternspec.tools import get
@@ -170,6 +174,8 @@ class Tool:
     rules_max_bytes = 0  # bytes of one rules file the tool reads in full
     rules_chain_max_bytes = 0  # bytes of all rules files read together (root → working folder)
     hook_context_max_tokens = 0  # tokens one hook call can add to the conversation
+    reads_nested_rules = False  # reads a folder's AGENTS.md by itself (else hooks hand it over)
+    restores_after_compaction = False  # has a hook right after compaction (else a short reminder goes with every call)
 
     # ---- skills
     def skill_meta(self, src: SkillSource, profile: Profile, prefix: str) -> dict[str, Any]:
@@ -296,7 +302,7 @@ class Tool:
         Example:
             >>> from lanternspec.tools import get
             >>> sorted(get("codex").hooks())
-            ['PostToolUse', 'PreCompact', 'SessionStart', 'Stop', 'UserPromptSubmit']
+            ['PostToolUse', 'PreCompact', 'PreToolUse', 'SessionStart', 'Stop', 'UserPromptSubmit']
         """
         return {}
 

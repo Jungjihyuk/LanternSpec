@@ -99,3 +99,12 @@ def test_a_folder_that_stops_being_a_part_loses_only_our_block(repo):
     assert not (repo.root / "analysis/AGENTS.md").exists()  # it held only our block
     assert not Path(repo.root / "backend/AGENTS.md").exists()  # one part left: back to the whole project
     assert "### 코드 컨벤션" in (repo.root / "AGENTS.md").read_text(encoding="utf-8")
+
+
+def test_check_commands_a_person_set_for_the_folder_are_taken_over(repo):
+    _two_parts(repo)
+    repo("profile", "set", "build.lint=cd backend && uv run ruff check app/", "build.test=cd backend && uv run pytest")
+    repo("parts", "add", "backend")
+    build = yaml.safe_load((repo.root / "lantern.yaml").read_text(encoding="utf-8"))["code"]["parts"][0]["build"]
+    assert build["lint"] == "uv run ruff check app/" and build["test"] == "uv run pytest"
+    assert build["format"] == "uv run ruff format ."  # nothing set for it: the folder's configured tool

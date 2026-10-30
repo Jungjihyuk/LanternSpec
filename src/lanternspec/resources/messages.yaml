@@ -689,6 +689,8 @@
 # tools/agent_hooks.py
 "LanternSpec tech question: no card for '{term}'. After answering, suggest in one line \"📒 Make a debt card?\" (/l-learn {term}).": {ko: "LanternSpec 기술 질문: '{term}' 카드가 없습니다. 답한 뒤 한 줄로 \"📒 부채 카드를 만들까요?\"라고 제안하세요 (/l-learn {term})."}
 "LanternSpec idea: something sounds like an idea. Without stopping the current work, record it right away by the /l-idea rules: lantern scaffold idea \"<title>\" --kind <kind> --raw \"<original words>\" --auto → mention it in one line only.": {ko: "LanternSpec 아이디어: 아이디어 같은 말이 있습니다. 하던 일은 멈추지 말고 /l-idea 규칙대로 바로 기록한다: lantern scaffold idea \"<제목>\" --kind <유형> --raw \"<원문>\" --auto → 한 줄로만 알림."}
+"[LanternSpec] rules of part {part} ({file}):": {ko: "[LanternSpec] {part} 영역의 규칙 ({file}):"}
+"Part in progress: {part} — its rules are in {part}/AGENTS.md": {ko: "지금 영역: {part} — 규칙은 {part}/AGENTS.md에"}
 "[LanternSpec now]": {ko: "[LanternSpec 지금 상황]"}
 "(open {file} · {file2} in the work folder only when you need the details)": {ko: "(자세한 내용은 해당 작업 폴더의 {file} · {file2}를 필요할 때만 연다)"}
 "[LanternSpec progress before compaction — saved to the documents]": {ko: "[LanternSpec 압축 전 진행 상황 — 문서에 저장됨]"}
