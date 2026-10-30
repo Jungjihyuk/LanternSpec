@@ -6,7 +6,7 @@ the installer wrote and nobody edited since.
 
 Responsibilities:
     - write the skill files and the optional CI workflow, skipping files someone edited
-    - merge the AGENTS.md block and each tool's settings; refresh generated documents
+    - merge the AGENTS.md block (and each part's) and each tool's settings; refresh generated documents
     - refresh unedited template copies on upgrade; report drift for doctor
 
 Not here:
@@ -284,6 +284,7 @@ def install(
     level, said = budget.check("AGENTS.md", read(agents), budget.root_budget(chosen), rules.AGENTS_START, rules.AGENTS_END)
     if level != "ok":
         report.warnings.append(f"⚠ {said}")
+    st["parts"] = _write_parts(project, chosen, list(st.get("parts") or []), report)
     doc = principles_doc.write_doc(project)  # the details behind the AGENTS.md summary — always from the same tables
     if doc:
         report.written.append(project.rel(doc))
@@ -300,6 +301,32 @@ def install(
     st["version"] = __version__
     state.save(project, st)
     return report
+
+
+def _write_parts(project: Project, chosen: list[Tool], before: list[str], report: InstallReport) -> list[str]:
+    """Write each part's AGENTS.md block; take it out of folders that are no longer parts. Returns the parts written."""
+    parts = rules.active_parts(project.profile)
+    for part in parts:
+        path = project.root / part["path"] / "AGENTS.md"
+        text = rules.merge_block(read(path) if path.exists() else "", rules.part_block(project.profile, part))
+        if not path.exists() or read(path) != text:
+            write(path, text)
+            report.written.append(project.rel(path))
+        level, said = budget.check(project.rel(path), text, budget.folder_budget(chosen), rules.AGENTS_START, rules.AGENTS_END)
+        if level != "ok":
+            report.warnings.append(f"⚠ {said}")
+    now = [p["path"] for p in parts]
+    for old in before:
+        path = project.root / old / "AGENTS.md"
+        if old in now or not path.exists():
+            continue
+        rest = rules.remove_block(read(path))
+        if rest:
+            write(path, rest)
+        else:
+            path.unlink()
+        report.written.append(project.rel(path))
+    return now
 
 
 def _language(project: Project, st: dict, language: str | None) -> str:

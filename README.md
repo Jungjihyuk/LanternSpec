@@ -247,7 +247,7 @@ Import mockups with `lantern screen import`; `lantern screen compare` finds wher
 
 ```text
 setup      install [--language] [--tools] [--mcp] [--ci|--no-ci] · upgrade [--apply] · doctor · harness suggest
-profile    profile show|docs|write|set · principles show|detect · enums list|rename · sections list|rename|off|on
+profile    profile show|docs|write|set · principles show|detect · parts [add|ignore] · enums list|rename · sections list|rename|off|on
 documents  scaffold init [--plan] | work | doc | idea | adr | meeting | custom · new-id · map · meta get|set
 checks     check [--changed] [--epic W-012] · lint · check-dbml · dbml render|from-sql|diff
 work       task next [--all]|start|done|ac|list|estimate · task add [--parallel] · pack · screen import|compare

@@ -7,6 +7,7 @@ Responsibilities:
     - pick code conventions by language and size
     - turn line and people counts into sizes (small · medium · large)
     - detect languages, runners and tools already in use from the project's top-level files
+    - find folders with their own manifest (candidates for parts with their own rules)
 
 Not here:
     - counting lines of code → report/harness.py (code_lines)
@@ -402,15 +403,39 @@ def select(profile: Profile) -> Selection | None:
         note = str(p.get("data_note") or "") if kind == "data" else ""
         principles.append(Principle(pid, p["name"], level, why, p["explain"], tuple(p["rules"]), note))
     always = tuple((a["name"], tuple(a["rules"])) for a in t["always"].values())
-    docs_size = t["kinds"][kind].get("docs") or code
-    convs = []
-    for lang in profile.get("project.languages") or []:
+    convs = conventions_for(profile, list(profile.get("project.languages") or []))
+    return Selection(kind, external, code, people, tuple(principles), always, convs, locale)
+
+
+def conventions_for(profile: Profile, languages: list[str]) -> tuple[Convention, ...]:
+    """Pick the code conventions of some languages for the project's size (and kind, for doc comments).
+
+    Args:
+        profile: Project profile (code size · kind · languages of documents and comments).
+        languages: Programming languages, e.g. the languages of one part of the project.
+
+    Returns:
+        One convention per known language, in the given order.
+
+    Example:
+        >>> from lanternspec.core.profile import DEFAULTS, Profile
+        >>> [c.label for c in conventions_for(Profile(DEFAULTS), ["typescript", "cobol"])]
+        ['TypeScript']
+    """
+    locale = profile.language
+    code = str(profile.get("project.code_size") or SIZES[0])
+    kind = profile.get("project.kind")
+    docs_size = (table(locale)["kinds"][kind].get("docs") if kind else None) or code
+    out = []
+    for lang in languages:
+        if lang not in language_names():
+            continue
         c = conventions(lang, locale, profile.comment_language)
         rules = dict(c["levels"][code])
         rules["docs"] = c["levels"][docs_size]["docs"]
         tools = {role: (spec["name"], _default_command(c, role)) for role, spec in c["tools"].items()}
-        convs.append(Convention(lang, c["label"], code, tools, rules, c["docs"]["style"], c["docs"]["example"]))
-    return Selection(kind, external, code, people, tuple(principles), always, tuple(convs), locale)
+        out.append(Convention(lang, c["label"], code, tools, rules, c["docs"]["style"], c["docs"]["example"]))
+    return tuple(out)
 
 
 @dataclass
@@ -498,6 +523,80 @@ def detect(root: Path) -> Detected:
                     roles[role] = (cand["name"], out.runners[lang] + cand["command"], ev)
                     break
         out.existing[lang] = roles
+    return out
+
+
+# A folder that groups other packages (a workspace root) is not a part itself; its members are.
+WORKSPACE_MARKS = (
+    "pnpm-workspace.yaml",
+    "go.work",
+    "lerna.json",
+    'package.json:"workspaces"',
+    "pyproject.toml:[tool.uv.workspace]",
+    "Cargo.toml:[workspace]",
+)
+PART_DEPTH = 3  # how deep below the root a part's folder may be
+
+
+@dataclass
+class PartCandidate:
+    """A folder that looks like a part of the project with its own toolchain (its own manifest).
+
+    Attributes:
+        path: The folder, relative to the project root ("backend").
+        languages: Languages whose manifest is in it.
+        evidence: The manifest files that show it.
+
+    Example:
+        >>> PartCandidate("backend", ["python"], ["pyproject.toml"]).path
+        'backend'
+    """
+
+    path: str
+    languages: list[str]
+    evidence: list[str]
+
+
+def part_candidates(root: Path, files: list[str]) -> list[PartCandidate]:
+    """Find the folders below the root that carry their own manifest — candidates for a part with its own rules.
+
+    Only the given file list is searched (the caller passes what git tracks, so ignored folders such
+    as node_modules never show up). A workspace root is left out when its members are candidates.
+
+    Args:
+        root: Project root (manifests are read to tell workspace roots).
+        files: Paths relative to the root, with "/" separators.
+
+    Returns:
+        The candidates, sorted by path; the root itself is never one.
+
+    Example:
+        >>> found = part_candidates(Path("/nowhere"), ["backend/pyproject.toml", "web/package.json", "web/tsconfig.json", "README.md"])
+        >>> [(c.path, c.languages) for c in found]
+        [('backend', ['python']), ('web', ['typescript'])]
+    """
+    from fnmatch import fnmatch
+    from pathlib import PurePosixPath
+
+    patterns = {lang: [str(pat).partition(":")[0] for pat in conventions(lang)["detect"]] for lang in language_names()}
+    found: dict[str, dict[str, str]] = {}
+    for rel in files:
+        path = PurePosixPath(rel)
+        parts = path.parts
+        for i in range(len(parts)):  # a manifest file, or a bundle folder such as App.xcodeproj
+            folder, name = "/".join(parts[:i]), parts[i]
+            if not folder or len(PurePosixPath(folder).parts) > PART_DEPTH:
+                continue
+            for lang, pats in patterns.items():
+                if any(fnmatch(name, pat) for pat in pats) and (i == len(parts) - 1 or "*" in "".join(pats)):
+                    found.setdefault(folder, {}).setdefault(lang, name)
+    workspaces = {d for d in found if any(_found(root / d, mark) for mark in WORKSPACE_MARKS)}
+    out = []
+    for folder in sorted(found):
+        if folder in workspaces and any(other.startswith(folder + "/") for other in found):
+            continue  # its members are the parts
+        langs = [lang for lang in language_names() if lang in found[folder]]
+        out.append(PartCandidate(folder, langs, [found[folder][lang] for lang in langs]))
     return out
 
 

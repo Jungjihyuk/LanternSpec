@@ -71,6 +71,12 @@ agents:                    # AGENTS.md의 개발 원칙 · 코드 컨벤션 부�
   ways_of_working: {ko: 작업 방식, en: Ways of working}
   conventions_title: {ko: "### 코드 컨벤션 — {languages}", en: "### Code conventions — {languages}"}
   checks: {ko: "고친 뒤 돌리고 모두 통과해야 끝: {commands} — 린트 · 타입 검사는 `lantern lint`로 한 번에", en: "Run after every change; done only when all pass: {commands} — lint and type check together with `lantern lint`"}
+  parts_title: {ko: "### 영역 — 폴더마다 자기 규칙", en: "### Parts — each folder has its own rules"}
+  parts_header: {ko: "| 영역 | 언어 | 규칙 |", en: "| Part | Languages | Rules |"}
+  parts_rule: {ko: "그 영역의 파일을 고치기 전에 그 영역의 AGENTS.md를 먼저 읽는다. 언어 컨벤션 · 확인 명령은 거기에 있다", en: "Before changing a file in a part, read that part's AGENTS.md first — its language conventions and check commands are there"}
+  part_title: {ko: "## 영역 {path} — 이 폴더의 규칙", en: "## Part {path} — rules for this folder"}
+  part_root: {ko: "일하는 방식 · 설계 원칙은 루트 AGENTS.md를 따른다. 아래는 이 폴더에만 해당한다.", en: "Ways of working and design principles follow the root AGENTS.md. What follows applies to this folder only."}
+  part_checks: {ko: "이 폴더에서 실행하고, 고친 뒤 모두 통과해야 끝: {commands}", en: "Run from this folder; done only when all pass after a change: {commands}"}
 
 comment_languages:          # lantern.yaml project.comment_language로 고를 수 있는 언어
   - {code: ko, name: {ko: 한국어, en: Korean}}

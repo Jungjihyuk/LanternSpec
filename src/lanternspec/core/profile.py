@@ -56,6 +56,7 @@ DEFAULTS: dict[str, Any] = {
     "build": {"report_cycle": "work", "merge_approval": "required", "loop": "off", "loop_limit": 3},
     "check": {"max_lines": 300},
     "report": {"views": ["kanban", "timeline", "debt"]},
+    "code": {"parts": [], "ignored_parts": []},  # parts with their own toolchain and rules (lantern parts)
 }
 
 KNOWLEDGE_DEFAULTS: dict[str, Any] = {"type": "obsidian", "path": "", "areas_from": None, "write": "direct"}
@@ -339,10 +340,37 @@ def validate(data: dict[str, Any]) -> list[str]:
         if not isinstance(k, dict) or not k.get("path"):
             problems.append(msg("knowledge.path: the knowledge store path is empty (delete the knowledge block if there is none)"))
     problems += _section_problems(data)
+    problems += _part_problems(data)
     if get_path(data, "project.team") == "team" and not get_path(data, "project.members"):
         problems.append(msg("project.members: for a team (2 or more), list the owner candidates"))
     if get_path(data, "lantern") != PROFILE_VERSION:
         problems.append(msg("lantern: the file format version must be {profile_version}", profile_version=PROFILE_VERSION))
+    return problems
+
+
+def _part_problems(data: dict[str, Any]) -> list[str]:
+    """Check code.parts (folders with their own rules) and code.ignored_parts."""
+    problems: list[str] = []
+    parts = get_path(data, "code.parts") or []
+    if not isinstance(parts, list):
+        return [msg("code.parts: must be a list of parts (e.g. - path: backend)")]
+    for part in parts:
+        path = part.get("path") if isinstance(part, dict) else None
+        if not isinstance(path, str) or not path or path.startswith(("/", ".")) or ".." in path.split("/"):
+            problems.append(msg("code.parts: each part needs a folder path inside the project (e.g. path: backend)"))
+            continue
+        for lang in part.get("languages") or []:
+            if lang not in principles.language_names():
+                problems.append(
+                    msg(
+                        "code.parts {path}: '{lang}' is not a known language ({items})",
+                        path=path,
+                        lang=lang,
+                        items=", ".join(principles.language_names()),
+                    )
+                )
+    if not isinstance(get_path(data, "code.ignored_parts") or [], list):
+        problems.append(msg("code.ignored_parts: must be a list of folders"))
     return problems
 
 
@@ -568,8 +596,15 @@ def render(data: dict[str, Any]) -> str:
         msg("  max_lines: {s}            # warn to split when longer (doesn't block)", s=s(d["check"]["max_lines"])),
         "report:",
         f"  views: {s(d['report']['views'])}",
-        "",
     ]
+    code = d.get("code") or {}
+    if code.get("parts") or code.get("ignored_parts"):
+        lines += ["code:", msg("  # parts with their own toolchain and rules — lantern parts (each gets its own AGENTS.md)")]
+        body = yaml.safe_dump(
+            {"parts": code.get("parts") or [], "ignored_parts": code.get("ignored_parts") or []}, allow_unicode=True, sort_keys=False
+        )
+        lines += ["  " + line for line in body.rstrip("\n").split("\n")]
+    lines.append("")
     return "\n".join(lines)
 
 
@@ -623,8 +658,9 @@ def update(root: Path, updates: dict[str, Any]) -> None:
         raise ValueError("\n".join(problems))
     text: str | None = path.read_text(encoding="utf-8")
     for k, v in updates.items():
-        # a mapping spans several lines: render the whole file again instead of editing one line
-        text = set_in_text(text, k, v) if text is not None and not isinstance(v, dict) else None
+        # a mapping (or a list of them) spans several lines: render the whole file again instead of editing one line
+        flat = not isinstance(v, dict) and not (isinstance(v, list) and any(isinstance(x, dict) for x in v))
+        text = set_in_text(text, k, v) if text is not None and flat else None
     if text is None:  # a key not written in the file yet: render the whole file again
         save(root, data)
     else:

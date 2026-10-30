@@ -1,0 +1,140 @@
+"""Which folders of the project get their own rules (parts): find the candidates and record what the person decides.
+
+A part is a folder with its own toolchain (its own manifest, e.g. backend/pyproject.toml). It gets
+its own AGENTS.md with its language conventions and its own check commands; the root AGENTS.md keeps
+the ways of working and a map of the parts. With fewer than two parts nothing changes.
+
+Responsibilities:
+    - list the candidates (from the files git knows) with what was decided about each
+    - record a decision in lantern.yaml: add a part (with its detected languages and check commands) or ignore it
+
+Not here:
+    - telling a candidate from its files → core/principles.py (part_candidates)
+    - writing each part's AGENTS.md → tools/rules.py · tools/install.py
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any
+
+from ..core import principles
+from ..core import profile as profile_mod
+from ..core.messages import msg
+from ..core.project import Project, git_out
+
+
+@dataclass
+class PartStatus:
+    """A candidate or recorded part, and what was decided about it.
+
+    Attributes:
+        path: The folder, relative to the project root.
+        languages: Its languages.
+        evidence: The manifest files that show it ([] for a recorded part no longer found).
+        state: "added", "ignored" or "new" (not decided yet).
+
+    Example:
+        >>> PartStatus("backend", ["python"], ["pyproject.toml"], "new").state
+        'new'
+    """
+
+    path: str
+    languages: list[str]
+    evidence: list[str]
+    state: str
+
+
+def recorded(project: Project) -> list[dict[str, Any]]:
+    """The parts recorded in lantern.yaml.
+
+    Args:
+        project: The project.
+
+    Returns:
+        Each part as written (path · languages · build).
+
+    Example:
+        >>> [p["path"] for p in recorded(project)]  # doctest: +SKIP
+        ['backend', 'frontend/apps/web']
+    """
+    return [p for p in project.profile.get("code.parts") or [] if isinstance(p, dict) and p.get("path")]
+
+
+def statuses(project: Project) -> list[PartStatus]:
+    """List every candidate and recorded part with what was decided.
+
+    Args:
+        project: The project.
+
+    Returns:
+        Sorted by path.
+
+    Example:
+        >>> [(s.path, s.state) for s in statuses(project)]  # doctest: +SKIP
+        [('analysis', 'ignored'), ('backend', 'added'), ('frontend/apps/web', 'new')]
+    """
+    files = git_out(["ls-files", "--cached", "--others", "--exclude-standard"], project.root).splitlines()
+    found = {c.path: c for c in principles.part_candidates(project.root, files)}
+    added = {p["path"]: p for p in recorded(project)}
+    ignored = set(project.profile.get("code.ignored_parts") or [])
+    out = []
+    for path in sorted(set(found) | set(added)):
+        cand = found.get(path)
+        langs = list(added[path].get("languages") or []) if path in added else cand.languages if cand else []
+        state = "added" if path in added else "ignored" if path in ignored else "new"
+        out.append(PartStatus(path, langs, cand.evidence if cand else [], state))
+    return out
+
+
+def add(project: Project, path: str) -> dict[str, Any]:
+    """Record a folder as a part, with the languages and check commands found in it.
+
+    Check commands already configured in the folder are recorded as they are; a folder with none
+    gets each language's default (to run from inside the folder).
+
+    Args:
+        project: The project.
+        path: The folder, relative to the project root.
+
+    Returns:
+        The recorded part.
+
+    Raises:
+        ValueError: The folder has no manifest of a known language.
+
+    Example:
+        >>> add(project, "backend")["build"]["lint"]  # doctest: +SKIP
+        'uv run ruff check .'
+    """
+    path = path.strip("/")
+    found = principles.detect(project.root / path)
+    if not found.languages:
+        raise ValueError(msg("{path} has no manifest of a known language — not a part", path=path))
+    build = found.commands(fill_defaults=False) or found.commands(fill_defaults=True)
+    part = {"path": path, "languages": found.languages, "build": build}
+    parts = [p for p in recorded(project) if p["path"] != path] + [part]
+    ignored = [p for p in project.profile.get("code.ignored_parts") or [] if p != path]
+    _save(project, sorted(parts, key=lambda p: p["path"]), ignored)
+    return part
+
+
+def ignore(project: Project, path: str) -> None:
+    """Record that a folder is not a part (it is no longer asked about; a recorded part is dropped).
+
+    Args:
+        project: The project.
+        path: The folder, relative to the project root.
+
+    Example:
+        >>> ignore(project, "analysis")  # doctest: +SKIP
+    """
+    path = path.strip("/")
+    parts = [p for p in recorded(project) if p["path"] != path]
+    ignored = sorted({*(str(x) for x in project.profile.get("code.ignored_parts") or []), path})
+    _save(project, parts, ignored)
+
+
+def _save(project: Project, parts: list[dict[str, Any]], ignored: list[str]) -> None:
+    profile_mod.update(project.root, {"code.parts": parts, "code.ignored_parts": ignored})
+    project.profile = profile_mod.load(project.root)

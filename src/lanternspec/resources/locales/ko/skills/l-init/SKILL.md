@@ -76,6 +76,10 @@ lantern scaffold init --plan        # 만들 폴더 · 문서 목록 (아직 아
 ```
 `principles show` 결과를 한두 줄로 알려 준다 (예: "CLI 도구 · 바깥 연결 → 단일 책임 · 확장 지점은 지킴, Python은 ruff · pyright").
 
+**영역 (폴더마다 자기 규칙):** `lantern parts`가 자기 매니페스트를 가진 하위 폴더(예: `backend` · `frontend/apps/web`)를 후보로 보여 준다.
+후보가 **둘 이상**이면 각각 근거와 함께 "이 폴더를 영역으로 둘까요?"를 한 번에 묻고, 답대로 `lantern parts add <폴더>` · `lantern parts ignore <폴더>`.
+영역이 둘 이상이면 영역마다 `AGENTS.md`(그 언어의 컨벤션 · 그 폴더의 확인 명령)가 생기고, 루트 AGENTS.md에는 영역 지도가 남는다. 후보가 하나 이하면 묻지 않는다.
+
 **도구 설정 파일:**
 - 🏠 brownfield: `detect`가 찾은 **이미 쓰는 설정은 기록만** 한다 — 설정 파일(`pyproject.toml` · `.eslintrc` 등)을 바꾸거나 다른 도구로 갈아타자고 하지 않는다. 컨벤션에 있는데 설정이 없는 도구는 "들일까요?"만 묻는다.
 - 🌱 greenfield: 컨벤션의 도구를 개발 의존성에 넣고(예: `uv add --dev ruff pyright` · `pnpm add -D @biomejs/biome typescript`) 설정(예: `pyproject.toml`의 `[tool.ruff]` · `[tool.pyright]`)을 만들지 **묻고, 승인하면** 한다. 개발 의존성에 있어야 CI에서도 같은 도구가 설치된다. 거절하면 `lantern profile set build.lint= build.typecheck=`로 비운다.

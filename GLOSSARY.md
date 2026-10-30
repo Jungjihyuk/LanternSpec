@@ -37,6 +37,7 @@ LanternSpec이 이름을 쓰는 여러 곳(lantern.yaml 키 · enums.yaml 목록
 | `debt_card` · `debt_cards` | 부채 카드 — 부채 하나 = 문서 하나 | 문서 · 폴더 |
 | `adr` | 결정 기록 (ADR) | 문서 · 스킬 |
 | `map` | 문서 지도 (MOC) 갱신 | CLI · 스킬 |
+| `part` · `parts` | 영역 — 자기 도구(매니페스트)와 자기 AGENTS.md를 가진 폴더. 둘 이상일 때만 영역마다 규칙이 생긴다. 지식 저장소의 `areas`와는 다른 말 | lantern.yaml(`code.parts`) · CLI(`lantern parts`) |
 | `resume` | 지난 대화 이어 가기 — 어느 AI 도구의 대화든 멈춘 곳부터 | CLI(`lantern resume`) · 스킬(`/l-resume`) |
 | `sync` | 문서와 코드 맞추기 | CLI · 스킬 |
 | `template` · `templates` | 양식 | 폴더 · CLI · 스킬 |

@@ -9,7 +9,7 @@ Not here:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from .. import resources
 from ..core import principles, templating
@@ -45,7 +45,7 @@ def agents_block(profile: Profile, tools: list[Tool], enums: Enums | None = None
     ctx = body_context(profile, "agents", enums)
     text = rewrite_commands(templating.apply_conditions(text, ctx), command_prefix(tools))
     text = PROFILE_TOKEN.sub(lambda m: str(ctx.get(m.group(1), m.group(0))), text)
-    section = principles_section(profile)
+    section = "\n\n".join(x for x in (principles_section(profile), parts_section(profile)) if x)
     text = text.replace(f"\n{PRINCIPLES_SLOT}\n", f"\n{section}\n" if section else "")
     return f"{AGENTS_START}\n{text.strip()}\n{AGENTS_END}"
 
@@ -100,7 +100,7 @@ def principles_section(profile: Profile) -> str:
             lines.append(f"- **{names[level]}:** " + " · ".join(p.name for p in chosen))
     lines.append(f"- {t['priority']}")
     lines.append(f"- **{say['ways_of_working']}:** " + " · ".join(name for name, _ in sel.always))
-    if sel.conventions:
+    if sel.conventions and not active_parts(profile):  # with parts, conventions and checks live in each part's AGENTS.md
         lines += ["", say["conventions_title"].format(languages=" · ".join(c.label for c in sel.conventions))]
         cmds = [(principles.role_label(r, profile.language), profile.get(f"build.{r}")) for r in (*principles.COMMAND_ROLES, "test")]
         cmds = [f"{label} `{cmd}`" for label, cmd in cmds if cmd]
@@ -129,3 +129,100 @@ def nested_agents(project: Project) -> list[str]:
     """
     r = git(["ls-files", "--cached", "--others", "--exclude-standard", "--", "*/AGENTS.md"], project.root)
     return sorted(line for line in r.stdout.splitlines() if line) if r.returncode == 0 else []
+
+
+def active_parts(profile: Profile) -> list[dict[str, Any]]:
+    """The parts that get their own AGENTS.md — only when there are two or more (one part is the whole project).
+
+    Args:
+        profile: The project's settings (code.parts).
+
+    Returns:
+        The recorded parts, or [] with fewer than two.
+
+    Example:
+        >>> active_parts(Profile(data={"code": {"parts": [{"path": "backend"}]}}))
+        []
+    """
+    parts = [p for p in profile.get("code.parts") or [] if isinstance(p, dict) and p.get("path")]
+    return parts if len(parts) >= 2 else []
+
+
+def parts_section(profile: Profile) -> str:
+    """Build the map of parts for the root AGENTS.md block.
+
+    Args:
+        profile: The project's settings.
+
+    Returns:
+        The section; "" without two or more parts.
+
+    Example:
+        >>> data = {"code": {"parts": [{"path": "api", "languages": ["python"]}, {"path": "web", "languages": ["typescript"]}]}}
+        >>> parts_section(Profile(data=data)).splitlines()[3]
+        '| `api` | Python | `api/AGENTS.md` |'
+    """
+    parts = active_parts(profile)
+    if not parts:
+        return ""
+    say = principles.table(profile.language)["agents"]
+    lines = [say["parts_title"], say["parts_header"], "|---|---|---|"]
+    for part in parts:
+        labels = " · ".join(c.label for c in principles.conventions_for(profile, list(part.get("languages") or []))) or "-"
+        lines.append(f"| `{part['path']}` | {labels} | `{part['path']}/AGENTS.md` |")
+    lines.append(f"- {say['parts_rule']}")
+    return "\n".join(lines)
+
+
+def part_block(profile: Profile, part: dict[str, Any]) -> str:
+    """Render the block of one part's AGENTS.md: its language conventions and its own check commands.
+
+    Args:
+        profile: The project's settings.
+        part: The part as recorded in lantern.yaml (path · languages · build).
+
+    Returns:
+        The block, with its start and end marks.
+
+    Example:
+        >>> block = part_block(Profile(data={}), {"path": "api", "languages": ["python"], "build": {"lint": "uv run ruff check ."}})
+        >>> block.splitlines()[1], "`uv run ruff check .`" in block
+        ('## 영역 api — 이 폴더의 규칙', True)
+    """
+    lang = profile.language
+    t = principles.table(lang)
+    say = t["agents"]
+    lines = [say["part_title"].format(path=part["path"]), "", say["part_root"]]
+    convs = principles.conventions_for(profile, list(part.get("languages") or []))
+    if convs:
+        lines += ["", say["conventions_title"].format(languages=" · ".join(c.label for c in convs))]
+    build = part.get("build") or {}
+    cmds = [f"{principles.role_label(r, lang)} `{build[r]}`" for r in (*principles.COMMAND_ROLES, "test") if build.get(r)]
+    if cmds:
+        lines.append("- " + say["part_checks"].format(commands=" · ".join(cmds)))
+    comment = principles.comment_languages(lang).get(profile.comment_language, profile.comment_language)
+    for c in convs:
+        prefix = f"{c.label} " if len(convs) > 1 else ""
+        lines.append(f"- {prefix}{principles.rule_label('type_hints', lang)}: {c.rules['type_hints']}")
+        lines.append(f"- {prefix}{principles.rule_label('docs', lang)} ({c.docs_style} · {comment}): {c.rules['docs']}")
+    return f"{AGENTS_START}\n" + "\n".join(lines) + f"\n{AGENTS_END}"
+
+
+def remove_block(text: str) -> str:
+    r"""Take our block out of an AGENTS.md text; the person's own lines stay.
+
+    Args:
+        text: The AGENTS.md text.
+
+    Returns:
+        The text without the block ("" when nothing else was in it).
+
+    Example:
+        >>> remove_block("# 우리 규칙\n\n<!-- lanternspec:start -->\n…\n<!-- lanternspec:end -->\n")
+        '# 우리 규칙\n'
+    """
+    s, e = text.find(AGENTS_START), text.find(AGENTS_END)
+    if s == -1 or e < s:
+        return text
+    rest = (text[:s].rstrip("\n") + "\n" + text[e + len(AGENTS_END) :].lstrip("\n")).strip("\n")
+    return rest + "\n" if rest and rest != "# AGENTS.md" else ""

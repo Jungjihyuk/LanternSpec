@@ -75,6 +75,10 @@ lantern scaffold init --plan        # the folders · documents it would create (
 ```
 Tell the user the `principles show` result in a line or two (e.g. "CLI tool · external integrations → single responsibility and extension points are Must; Python uses ruff · pyright").
 
+**Parts (each folder its own rules):** `lantern parts` lists the sub-folders with their own manifest (e.g. `backend` · `frontend/apps/web`) as candidates.
+With **two or more**, ask about all of them at once, each with its evidence — "Make this folder a part?" — then `lantern parts add <folder>` · `lantern parts ignore <folder>` as answered.
+Two or more parts each get their own `AGENTS.md` (that language's conventions · that folder's check commands), and the root AGENTS.md keeps a map of the parts. With one candidate or none, don't ask.
+
 **Tool settings files:**
 - 🏠 brownfield: settings `detect` finds **already in use are only recorded** — don't change settings files (`pyproject.toml` · `.eslintrc` …) or suggest switching tools. For a tool in the conventions that has no settings, only ask "add it?".
 - 🌱 greenfield: **ask** whether to add the convention's tools as dev dependencies (e.g. `uv add --dev ruff pyright` · `pnpm add -D @biomejs/biome typescript`) and create their settings (e.g. `[tool.ruff]` · `[tool.pyright]` in `pyproject.toml`), and **do it once approved**. They must be dev dependencies so CI installs the same tools. If declined, clear them with `lantern profile set build.lint= build.typecheck=`.

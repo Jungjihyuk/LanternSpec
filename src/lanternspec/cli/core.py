@@ -102,6 +102,36 @@ def cmd_profile(a: argparse.Namespace) -> int:
     return 1
 
 
+def cmd_parts(a: argparse.Namespace) -> int:
+    """`lantern parts [add|ignore <folder>]` — folders that get their own rules: candidates and decisions."""
+    from ..tools import parts
+
+    project = _p()
+    try:
+        if a.action == "add":
+            part = parts.add(project, a.path)
+            print(
+                msg("✔ Part {path} ({items}) — lantern upgrade writes its AGENTS.md", path=part["path"], items=", ".join(part["languages"]))
+            )
+        elif a.action == "ignore":
+            parts.ignore(project, a.path)
+            print(msg("✔ {path} is not a part — not asked again", path=a.path))
+    except ValueError as e:
+        raise CliError(str(e)) from e
+    if a.action:
+        return 0
+    found = parts.statuses(project)
+    if not found:
+        print(msg("No folder with its own toolchain below the root — the project is one part"))
+    label = {"added": msg("part"), "ignored": msg("ignored"), "new": msg("not decided")}
+    for s in found:
+        why = ", ".join(s.evidence) or msg("no manifest found any more")
+        print(f"  {s.path}  ({', '.join(s.languages) or '-'}) · {label[s.state]} · {why}")
+    if any(s.state == "new" for s in found):
+        print(msg("→ lantern parts add <folder> · lantern parts ignore <folder> (two or more parts each get their own AGENTS.md)"))
+    return 0
+
+
 def cmd_principles(a: argparse.Namespace) -> int:
     """`lantern principles show|detect` — show the chosen design principles · detect languages and tools already in use."""
     from ..core import principles
@@ -338,6 +368,9 @@ def register(add: Add) -> None:
     ):
         p.add_argument(f"--{flag}")
     p.add_argument("--external", choices=["yes", "no"], help=msg("Connects to outside tools · services"))
+    p = add("parts", cmd_parts, msg("Parts with their own toolchain and rules — candidates · add · ignore"))
+    p.add_argument("action", nargs="?", choices=["add", "ignore"])
+    p.add_argument("path", nargs="?")
     p = add("principles", cmd_principles, msg("Design principles · code conventions — show the choice · detect languages and tools in use"))
     p.add_argument("action", choices=["show", "detect"])
     p.add_argument("--write", action="store_true", help=msg("detect: write code size · languages · check commands to lantern.yaml"))

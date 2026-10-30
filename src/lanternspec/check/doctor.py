@@ -123,9 +123,23 @@ def run(project: Project) -> list[tuple[str, str]]:
         agents = project.root / "AGENTS.md"
         if not agents.exists() or AGENTS_START not in read(agents):
             out.append((WARN, msg("AGENTS.md has no LanternSpec rules — lantern upgrade")))
+        out += _part_rows(project)
         out += _budget_rows(project, list(st.get("tools") or []))
         out += _tool_rows(project, list(st.get("tools") or []))
     return out
+
+
+def _part_rows(project: Project) -> list[tuple[str, str]]:
+    """Ask about part candidates nobody decided yet (only when there could be two or more parts)."""
+    from ..tools.parts import statuses
+
+    found = statuses(project)
+    open_ = [s.path for s in found if s.state == "new"]
+    if not open_ or sum(1 for s in found if s.state != "ignored") < 2:
+        return []
+    return [
+        (WARN, msg("Folders that could be parts with their own rules, not decided yet: {items} — lantern parts", items=", ".join(open_)))
+    ]
 
 
 def _budget_rows(project: Project, names: list[str]) -> list[tuple[str, str]]:

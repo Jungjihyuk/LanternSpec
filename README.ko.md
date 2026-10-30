@@ -245,7 +245,7 @@ Claude Design · Figma · Canva를 각 도구의 MCP로 쓴다.
 
 ```text
 설치     install [--language] [--tools] [--mcp] [--ci|--no-ci] · upgrade [--apply] · doctor · harness suggest
-프로필   profile show|docs|write|set · principles show|detect · enums list|rename · sections list|rename|off|on
+프로필   profile show|docs|write|set · principles show|detect · parts [add|ignore] · enums list|rename · sections list|rename|off|on
 문서     scaffold init [--plan] | work | doc | idea | adr | meeting | custom · new-id · map · meta get|set
 검사     check [--changed] [--epic W-012] · lint · check-dbml · dbml render|from-sql|diff
 일       task next [--all]|start|done|ac|list|estimate · task add [--parallel] · pack · screen import|compare
