@@ -578,6 +578,7 @@
 "Claude Code reads AGENTS.md through the import in {file}": {ko: "Claude Code가 AGENTS.md를 읽습니다 (불러오는 곳: {file})"}
 "CLAUDE.local.md keeps Claude Code from reading AGENTS.md — set Project instructions to claude-md-and-agents-md in /config (or ~/.claude/settings.json)": {ko: "CLAUDE.local.md가 있으면 Claude Code가 AGENTS.md를 읽지 않습니다 — /config(또는 ~/.claude/settings.json)에서 Project instructions를 claude-md-and-agents-md로 바꾸세요"}
 "Claude Code reads AGENTS.md itself": {ko: "Claude Code가 AGENTS.md를 직접 읽습니다"}
+"{items}: not handed to {tools} — only the AGENTS.md right in a part's folder is; move what matters there (lantern parts)": {ko: "{items}: {tools}에는 자동으로 전달되지 않습니다 — 영역 폴더 바로 아래의 AGENTS.md만 전달됩니다. 필요한 내용은 거기로 옮기세요 (lantern parts)"}
 "Folders that could be parts with their own rules, not decided yet: {items} — lantern parts": {ko: "자기 규칙을 가질 수 있는 영역 후보를 아직 정하지 않았습니다: {items} — lantern parts"}
 "{label}: the {launch} command isn't on PATH — can't check its version": {ko: "{label}: {launch} 명령이 PATH에 없어 버전을 확인하지 못했습니다"}
 "{label} {version} is older than {min} — update it (some features won't work)": {ko: "{label} {version}은 {min}보다 낮습니다 — 업데이트하세요 (일부 기능이 동작하지 않습니다)"}

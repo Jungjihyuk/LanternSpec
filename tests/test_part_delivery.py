@@ -75,3 +75,23 @@ def test_the_note_after_compaction_says_which_part_was_in_progress(repo):
     _run(project, "codex", "pre-tool", call)
     after = _run(project, "codex", "session-start", {"session_id": "x3", "source": "compact"})
     assert "지금 영역: backend — 규칙은 backend/AGENTS.md에" in json.loads(after)["hookSpecificOutput"]["additionalContext"]
+
+
+def test_an_agents_md_deeper_than_a_part_folder_is_said_not_to_reach_codex(repo):
+    _project(repo)
+    (repo.root / "backend/app").mkdir()
+    (repo.root / "backend/app/AGENTS.md").write_text("# 앱 규칙\n", encoding="utf-8")
+    _, doctor = repo("doctor", ok=False)
+    assert "backend/app/AGENTS.md: Codex · Antigravity CLI에는 자동으로 전달되지 않습니다" in doctor
+    _, upgrade = repo("upgrade")
+    assert "⚠ backend/app/AGENTS.md: Codex · Antigravity CLI에는 자동으로 전달되지 않습니다" in upgrade
+    assert "backend/AGENTS.md: " not in doctor  # the part's own AGENTS.md is handed over
+
+
+def test_claude_alone_needs_no_such_note(repo):
+    init_project(repo)
+    repo("install", "--tools", "claude")
+    (repo.root / "lib").mkdir()
+    (repo.root / "lib/AGENTS.md").write_text("# lib\n", encoding="utf-8")
+    _, doctor = repo("doctor", ok=False)
+    assert "자동으로 전달되지 않습니다" not in doctor

@@ -7,7 +7,7 @@ the ways of working and a map of the parts. With fewer than two parts nothing ch
 Responsibilities:
     - list the candidates (from the files git knows) with what was decided about each
     - record a decision in lantern.yaml: add a part (with its detected languages and check commands) or ignore it
-    - tell which part a file belongs to
+    - tell which part a file belongs to · which folder AGENTS.md files the hooks don't hand over
 
 Not here:
     - telling a candidate from its files → core/principles.py (part_candidates)
@@ -179,3 +179,31 @@ def part_of(project: Project, path: str, cwd: str = "") -> str | None:
         return None
     inside = [p["path"] for p in active_parts(project.profile) if rel == p["path"] or rel.startswith(p["path"] + "/")]
     return max(inside, key=len) if inside else None
+
+
+def unseen_rules(project: Project, tools: list[Any]) -> tuple[list[str], list[str]]:
+    """Find the folder AGENTS.md files that some installed tools never get.
+
+    Only a part's own AGENTS.md (right in the part's folder) is handed over by the hooks. Any other
+    AGENTS.md below the root reaches a tool that doesn't read folder rules by itself only when the
+    tool happens to start in that folder — so people should not count on it.
+
+    Args:
+        project: The project.
+        tools: The installed tool adapters.
+
+    Returns:
+        (the AGENTS.md files, the names of the tools that won't get them); both empty when all is seen.
+
+    Example:
+        >>> unseen_rules(project, resolve(["codex"]))  # doctest: +SKIP
+        (['backend/app/AGENTS.md'], ['Codex'])
+    """
+    from .rules import active_parts, nested_agents
+
+    blind = [t.label for t in tools if not t.reads_nested_rules]
+    if not blind:
+        return [], []
+    roots = {f"{p['path']}/AGENTS.md" for p in active_parts(project.profile)}
+    unseen = [rel for rel in nested_agents(project) if rel not in roots]
+    return (unseen, blind) if unseen else ([], [])

@@ -130,16 +130,46 @@ def run(project: Project) -> list[tuple[str, str]]:
 
 
 def _part_rows(project: Project) -> list[tuple[str, str]]:
-    """Ask about part candidates nobody decided yet (only when there could be two or more parts)."""
-    from ..tools.parts import statuses
+    """Ask about undecided part candidates, and point out folder AGENTS.md files some tools never get."""
+    from ..tools import REGISTRY
+    from ..tools.parts import statuses, unseen_rules
 
+    out = []
     found = statuses(project)
     open_ = [s.path for s in found if s.state == "new"]
-    if not open_ or sum(1 for s in found if s.state != "ignored") < 2:
-        return []
-    return [
-        (WARN, msg("Folders that could be parts with their own rules, not decided yet: {items} — lantern parts", items=", ".join(open_)))
-    ]
+    if open_ and sum(1 for s in found if s.state != "ignored") >= 2:
+        out.append(
+            (
+                WARN,
+                msg("Folders that could be parts with their own rules, not decided yet: {items} — lantern parts", items=", ".join(open_)),
+            )
+        )
+    tools = [REGISTRY[n] for n in state.load(project).get("tools") or [] if n in REGISTRY]
+    unseen, blind = unseen_rules(project, tools)
+    if unseen:
+        out.append((WARN, unseen_note(unseen, blind)))
+    return out
+
+
+def unseen_note(files: list[str], tools: list[str]) -> str:
+    """Say which folder AGENTS.md files some tools never get, and where to put what matters.
+
+    Args:
+        files: The AGENTS.md files.
+        tools: The tools that won't get them.
+
+    Returns:
+        One line.
+
+    Example:
+        >>> unseen_note(["backend/app/AGENTS.md"], ["Codex"]).split(":")[0]
+        'backend/app/AGENTS.md'
+    """
+    return msg(
+        "{items}: not handed to {tools} — only the AGENTS.md right in a part's folder is; move what matters there (lantern parts)",
+        items=", ".join(files),
+        tools=" · ".join(tools),
+    )
 
 
 def _budget_rows(project: Project, names: list[str]) -> list[tuple[str, str]]:

@@ -27,6 +27,7 @@ from ..core.messages import msg
 from ..core.project import Project, read, write
 from ..report import obsidian, principles_doc, sections_doc
 from ..work.scaffold import base_template_names, base_template_text, project_template_path, template_version
+from . import parts as parts_mod
 from . import resolve as resolve_tools
 from . import rules, skills
 from .base import Tool
@@ -285,6 +286,11 @@ def install(
     if level != "ok":
         report.warnings.append(f"⚠ {said}")
     st["parts"] = _write_parts(project, chosen, list(st.get("parts") or []), report)
+    unseen, blind = parts_mod.unseen_rules(project, chosen)
+    if unseen:
+        from ..check.doctor import unseen_note
+
+        report.warnings.append(f"⚠ {unseen_note(unseen, blind)}")
     doc = principles_doc.write_doc(project)  # the details behind the AGENTS.md summary — always from the same tables
     if doc:
         report.written.append(project.rel(doc))
