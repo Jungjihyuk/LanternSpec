@@ -7,6 +7,8 @@
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-30
+
 ### 바뀜
 - **문서를 옮긴 뒤의 안내** — `lantern upgrade --apply`가 옮기기 커밋을 한 뒤 이어지는 갱신(템플릿 · MOC · 설정)으로 바뀐 문서가 있으면, 몇 개인지 알리고 확인 후 커밋하라고 안내한다
 - **템플릿이 조금 바뀌었을 때의 안내** — `lantern check`와 `lantern template outdated`가 "새 칸이 생겼다"고 단정하지 않고, 무엇이 바뀌었는지 양식의 '변경 기록' 칸을 보라고 안내한다
@@ -97,7 +99,8 @@
   Rust · Go)와 규모로 코드 컨벤션을 기준표대로 골라 `AGENTS.md`와 `개발 원칙.md`에 넣는다 (`principles`, `lint`)
 - **작업 방식 · 평가** — 하네스 · 루프 · 그래프 추천(`harness suggest`), 실행 기록으로 스킬 · 모델 · 설정 비교(`eval`)
 
-[Unreleased]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.1.0...v0.1.1
