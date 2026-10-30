@@ -7,6 +7,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+Upgrade: `uv tool upgrade lanternspec`, then `lantern upgrade` in each project (installs the new `/l-resume` skill and adds the conversation records folder to `.lantern/.gitignore`)
+
+### Added
+- **Carry on an earlier conversation (`/l-resume` · `lantern resume`)** — whichever tool it was in (Claude Code · Codex · Antigravity), whether it was cut off or finished, shows where it stopped (the last requests · the AI's last words or what it was doing · changed files · uncommitted changes · work in progress) and continues from there. The hooks note each conversation's transcript, so nobody has to find it. Cut-off conversations are marked "⚠ cut off"; only the tail is shown by default, and `--more` reads further back. Conversations are recorded from the moment you upgrade to this version
+
+### Fixed
+- `.lantern/.gitignore` was written only when first created, so a personal records folder added by a newer version could show up in git — missing entries are now added
+
 ## [0.2.1] - 2026-10-30
 
 ### Changed
