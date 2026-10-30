@@ -7,6 +7,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+Upgrade: `uv tool upgrade lanternspec`, then `lantern upgrade` in each project (refreshes skills, agent hooks and AGENTS.md rules)
+
+### Added
+- **Rules per folder (`lantern parts`)** — finds folders below the root that have their own manifest (such as `backend` or `frontend/apps/web`) as candidates, and lets you decide with `lantern parts add <folder>` and `lantern parts ignore <folder>` (`/l-init` asks when there are two or more candidates, and `lantern doctor` reminds about undecided ones). With two or more parts, each folder gets an `AGENTS.md` block with its language conventions and check commands, and the root `AGENTS.md` keeps a map of the parts instead of the conventions (with one or none, nothing changes)
+- **Handing part rules to tools that don't read folder `AGENTS.md` files** — Claude Code reads folder `AGENTS.md` files itself; for Codex (a `PreToolUse` hook right before the first edit in that part) and Antigravity (the next call after the first edit, plus a short where-we-are reminder on every call since it has no compaction hook), the hooks hand over that part's `AGENTS.md` once per conversation. When there are other folder `AGENTS.md` files not right in a part's folder, `lantern doctor` and `lantern upgrade` name the tools that won't receive them
+- **`AGENTS.md` length budget check** — compares the root and every folder's `AGENTS.md` against a budget with margin under what the installed AI tools read in full (Claude Code's 200-line guideline · Codex's 32 KiB · Antigravity's 24,000 bytes per file, and raises the context a Codex hook may add to 8,000 tokens); `lantern doctor` shows each file against the budget and, when over, how much is LanternSpec's block and how much is your own text (`lantern upgrade` warns the same way without stopping)
+
 ## [0.2.2] - 2026-10-30
 
 Upgrade: `uv tool upgrade lanternspec`, then `lantern upgrade` in each project (installs the new `/l-resume` skill and adds the conversation records folder to `.lantern/.gitignore`)

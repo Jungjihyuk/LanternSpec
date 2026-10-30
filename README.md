@@ -166,7 +166,7 @@ When Obsidian first asks whether to turn on community plugins, turn them on (lea
 | Codex | `.agents/skills` (`$l-…`) | `AGENTS.md` | `.codex/hooks.json` | `.codex/config.toml` |
 | Antigravity CLI (`agy`) | `.agents/skills` | `AGENTS.md` | `.agents/hooks.json` (no save-before-compaction — there is no compaction hook) | `.agents/plugins/lanternspec/` |
 
-- **Rules live in `AGENTS.md`.** LanternSpec manages only the `<!-- lanternspec:start -->` block inside it and leaves everything outside the block alone.
+- **Rules live in `AGENTS.md`.** LanternSpec manages only the `<!-- lanternspec:start -->` block inside it and leaves everything outside the block alone. When a file goes past what the installed tools read in full, `lantern doctor` tells you.
 - **Codex and Antigravity share the skills folder.** When you use both, skill bodies say `/l-build`, and `AGENTS.md` tells Codex to use `$` instead.
 
 ## Keeping documents and code in line
@@ -224,6 +224,7 @@ Picks design principles and code conventions from a table, based on the project 
 
 - Languages: Python · TypeScript · Swift · Rust · Go
 - The essentials go into `AGENTS.md`; the full explanation goes into `Development Principles.md`.
+- When two or more folders have their own manifest (such as `backend` and `web`, `lantern parts`), each part gets its own `AGENTS.md` with its language conventions and check commands, and hooks hand it to tools that don't read folder `AGENTS.md` files themselves (Codex · Antigravity).
 - In existing projects, lint and format settings already in use are recorded, never changed.
 - When the code grows past a size boundary, `lantern doctor` asks whether to raise the principles one level.
 - The language of code comments can be set apart from the documents with `project.comment_language`.

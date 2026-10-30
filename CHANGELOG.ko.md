@@ -7,6 +7,13 @@
 
 ## [Unreleased]
 
+업그레이드: `uv tool upgrade lanternspec` → 프로젝트마다 `lantern upgrade` (스킬 · 에이전트 hook · AGENTS.md 규칙을 새로 맞춘다)
+
+### 추가
+- **폴더마다 자기 규칙 두기 (`lantern parts`)** — 루트 아래에 자기 매니페스트를 가진 폴더(예: `backend` · `frontend/apps/web`)를 후보로 찾아 보여 주고, `lantern parts add <폴더>` · `lantern parts ignore <폴더>`로 정한다 (`/l-init`은 후보가 둘 이상일 때 묻고, 정하지 않은 후보는 `lantern doctor`가 알린다). 영역이 둘 이상이면 폴더마다 그 언어의 컨벤션과 확인 명령이 든 `AGENTS.md` 블록이 생기고, 루트 `AGENTS.md`에는 컨벤션 대신 영역 지도가 들어간다 (하나 이하면 전과 같다)
+- **하위 `AGENTS.md`를 직접 읽지 않는 도구에 영역 규칙 전달** — Claude Code는 하위 `AGENTS.md`를 직접 읽고, 그렇지 않은 Codex(`PreToolUse` hook으로 그 영역을 처음 고치기 직전)와 Antigravity(처음 고친 뒤 다음 호출, 그리고 압축 hook이 없어 매 호출마다 지금 어디까지 왔는지 짧은 안내)에는 hook이 그 영역의 `AGENTS.md`를 대화당 한 번 건넨다. 영역 폴더 바로 아래가 아닌 다른 하위 `AGENTS.md`가 있으면 어느 도구가 읽지 못하는지 `lantern doctor`와 `lantern upgrade`가 알려 준다
+- **`AGENTS.md` 길이 예산 점검** — 설치한 AI 도구가 끝까지 읽는 한도(Claude Code 200줄 권장 · Codex 32KiB · Antigravity 파일당 24,000바이트, Codex hook이 더하는 문맥 한도는 8,000토큰으로 높임)에 여유를 둔 예산과 루트 · 하위 `AGENTS.md`를 비교해 `lantern doctor`가 보여 주고, 넘으면 LanternSpec 블록과 직접 쓴 글이 각각 얼마인지 알려 준다 (`lantern upgrade`도 멈추지 않고 같이 알린다)
+
 ## [0.2.2] - 2026-10-30
 
 업그레이드: `uv tool upgrade lanternspec` → 프로젝트마다 `lantern upgrade` (새 스킬 `/l-resume`을 설치하고, `.lantern/.gitignore`에 대화 기록 폴더를 더한다)
