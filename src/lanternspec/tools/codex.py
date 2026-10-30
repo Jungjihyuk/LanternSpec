@@ -7,11 +7,12 @@ protocol comes from claude.ClaudeHooks; only what differs is written here.
 from __future__ import annotations
 
 import re
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from ..core.messages import msg
 from ..core.project import Project, read, write
-from .base import MCP_NAME, HookInput, HookReply, Tool, merge_json_file, replace_hook_entries
+from .base import MCP_NAME, HookInput, HookReply, Tool, Turn, jsonl_records, merge_json_file, replace_hook_entries
 from .claude import ClaudeHooks, hook_specific_output
 
 if TYPE_CHECKING:
@@ -19,6 +20,7 @@ if TYPE_CHECKING:
     from .skills import SkillSource
 
 PATCH_FILE = re.compile(r"^\*\*\* (?:Add|Update) File: (.+)$", re.M)
+INJECTED = ("# AGENTS.md", "<")  # starts of text Codex adds to user messages itself (AGENTS.md, environment context)
 
 
 class Codex(ClaudeHooks, Tool):
@@ -77,6 +79,50 @@ class Codex(ClaudeHooks, Tool):
             if isinstance(v, str) and "*** " in v:
                 paths += [m.strip() for m in PATCH_FILE.findall(v)]
         return paths
+
+    def read_transcript(self, path: Path) -> list[Turn] | None:
+        r"""Implement Tool.read_transcript for Codex's rollout JSON lines (`response_item` · `event_msg`).
+
+        Codex shares Claude Code's hook payload but not its transcript. Text Codex adds to user
+        messages itself (AGENTS.md, environment context) is left out. User messages were seen in a
+        real rollout; assistant messages and tool calls follow Codex's documented item types
+        (`message` · `function_call` · `custom_tool_call`), and the final answer of a turn
+        (`task_complete`) fills in when no assistant message was kept.
+
+        Args:
+            path: The transcript file.
+
+        Returns:
+            The messages, oldest first.
+
+        Example:
+            >>> Codex().read_transcript(Path("…/rollout-….jsonl"))[0].role  # doctest: +SKIP
+            'user'
+        """
+        turns: list[Turn] = []
+        for d in jsonl_records(path):
+            item = d.get("payload")
+            item = item if isinstance(item, dict) else {}
+            kind, at = item.get("type"), str(d.get("timestamp") or "")
+            if d.get("type") == "response_item" and kind == "message" and item.get("role") in ("user", "assistant"):
+                raw_parts = item.get("content")
+                parts = raw_parts if isinstance(raw_parts, list) else []
+                texts = [str(c.get("text") or "") for c in parts if isinstance(c, dict)]
+                texts = [t for t in texts if t.strip() and not (item.get("role") == "user" and t.lstrip().startswith(INJECTED))]
+                if texts:
+                    turns.append(Turn(str(item["role"]), "\n".join(texts).strip(), at=at))
+            elif d.get("type") == "response_item" and kind in ("function_call", "custom_tool_call", "local_shell_call"):
+                raw = item.get("input") or item.get("arguments") or ""
+                name = str(item.get("name") or kind)
+                if not turns or turns[-1].role != "assistant":
+                    turns.append(Turn("assistant", "", at=at))
+                turns[-1].tools.append(name)
+                if isinstance(raw, str):
+                    turns[-1].files += [m.strip() for m in PATCH_FILE.findall(raw)]
+            elif d.get("type") == "event_msg" and kind == "task_complete" and isinstance(item.get("last_agent_message"), str):
+                if not turns or turns[-1].role != "assistant" or not turns[-1].text:
+                    turns.append(Turn("assistant", item["last_agent_message"].strip(), at=at))
+        return turns
 
     def session_context_reply(self, text: str) -> HookReply:
         """Answer session-start in hookSpecificOutput form (Codex does not take plain stdout as context).

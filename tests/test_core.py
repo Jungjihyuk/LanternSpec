@@ -156,7 +156,7 @@ def test_ids_are_sequential_and_typed(repo):
 def test_skill_names_follow_the_rule():
     from lanternspec.tools.skills import SKILL_NAMES, validate_name
 
-    assert len(SKILL_NAMES) == 13
+    assert len(SKILL_NAMES) == 14
     for n in SKILL_NAMES:
         validate_name(n)
     for bad in ("l:init", "-l", "l--x", "L-init", "x" * 65):

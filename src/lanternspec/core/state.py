@@ -21,12 +21,7 @@ from .project import Project
 
 INSTALLED = "installed.json"
 
-STATE_GITIGNORE = """# {note}
-runs.jsonl
-runs-state/
-hook-state/
-pack/
-"""
+IGNORED = ("runs.jsonl", "runs-state/", "hook-state/", "pack/", "sessions/")  # personal records, never committed
 
 
 def sha256_text(text: str) -> str:
@@ -65,7 +60,9 @@ def sha256_file(path: Path) -> str:
 
 
 def ensure_state_dir(project: Project) -> Path:
-    """Create the `.lantern` folder (with a .gitignore for personal records) when missing.
+    """Create the `.lantern` folder when missing, and make its .gitignore cover every personal record.
+
+    An existing .gitignore keeps its lines; entries a newer version added are appended.
 
     Args:
         project: The project.
@@ -79,8 +76,12 @@ def ensure_state_dir(project: Project) -> Path:
     """
     project.state.mkdir(parents=True, exist_ok=True)
     gi = project.state / ".gitignore"
-    if not gi.exists():
-        gi.write_text(STATE_GITIGNORE.format(note=msg("LanternSpec local state — personal records are not committed")), encoding="utf-8")
+    text = (
+        gi.read_text(encoding="utf-8") if gi.exists() else "# " + msg("LanternSpec local state — personal records are not committed") + "\n"
+    )
+    missing = [entry for entry in IGNORED if entry not in text.splitlines()]
+    if missing or not gi.exists():
+        gi.write_text(text.rstrip("\n") + "\n" + "".join(f"{entry}\n" for entry in missing), encoding="utf-8")
     return project.state
 
 

@@ -45,6 +45,7 @@ class HookInput:
         cwd: The folder the agent works in.
         turn_start: For prompt: whether this is the first model call of a user turn.
         finished: For stop: whether the turn ended normally (not an error or a cancel).
+        transcript: Where the tool keeps this conversation's transcript ("" when it didn't say).
 
     Example:
         >>> HookInput(session="s1", prompt="/l-build W-012").prompt
@@ -60,6 +61,30 @@ class HookInput:
     cwd: str = ""
     turn_start: bool = True  # prompt: the first model call of a user turn
     finished: bool = True  # stop: the turn ended normally (not an error or a cancel)
+    transcript: str = ""  # the tool's transcript file for this conversation
+
+
+@dataclass
+class Turn:
+    """One message of a transcript, in LanternSpec's words (each tool reads its own transcript format into this).
+
+    Attributes:
+        role: "user" or "assistant".
+        text: What was written (tool calls not included).
+        tools: Names of the tools the message called.
+        files: Files those calls wrote.
+        at: When, as the transcript wrote it ("" when it didn't).
+
+    Example:
+        >>> Turn("user", "로그인 버튼 고쳐 줘").role
+        'user'
+    """
+
+    role: str
+    text: str
+    tools: list[str] = field(default_factory=list)
+    files: list[str] = field(default_factory=list)
+    at: str = ""
 
 
 @dataclass
@@ -104,8 +129,8 @@ class Tool:
     """The contract of an AI tool adapter.
 
     Shared code knows only this class; each tool overrides what its format needs.
-    Methods with a default (skill_meta, skill_extras, install_config, check_config, hooks, written_paths) are
-    overridden only by tools that need them.
+    Methods with a default (skill_meta, skill_extras, install_config, check_config, hooks, written_paths,
+    read_transcript) are overridden only by tools that need them.
 
     Attributes:
         name: Key used on the command line and in installed.json, e.g. "claude".
@@ -327,6 +352,21 @@ class Tool:
         """
         return []
 
+    def read_transcript(self, path: Path) -> list[Turn] | None:
+        """Read the tool's transcript of one conversation.
+
+        Args:
+            path: The transcript file the tool named in its hook calls.
+
+        Returns:
+            The messages, oldest first; None when this tool's transcript format is not known.
+
+        Example:
+            >>> get("claude").read_transcript(Path("…/s1.jsonl"))[-1].role  # doctest: +SKIP
+            'assistant'
+        """
+        return None
+
     def respond(self, project: Project, event: str, result: HookResult) -> HookReply:
         """Write a hook result back in the form the tool accepts. Must work for any result, even an empty one.
 
@@ -435,3 +475,29 @@ def hook_state_dir(project: Project) -> Path:
     p = project.state / "hook-state"
     p.mkdir(parents=True, exist_ok=True)
     return p
+
+
+def jsonl_records(path: Path) -> list[dict[str, Any]]:
+    """Read a JSON-lines file, skipping lines that are not JSON objects (a transcript may end mid-write).
+
+    Args:
+        path: The file.
+
+    Returns:
+        The objects, in file order; empty when the file is missing.
+
+    Example:
+        >>> jsonl_records(Path("/no/such/file.jsonl"))
+        []
+    """
+    if not path.exists():
+        return []
+    out = []
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        try:
+            data = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(data, dict):
+            out.append(data)
+    return out

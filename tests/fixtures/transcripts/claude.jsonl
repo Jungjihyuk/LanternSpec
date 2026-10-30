@@ -1,0 +1,8 @@
+{"type": "queue-operation", "operation": "enqueue", "sessionId": "c1", "timestamp": "2026-10-30T10:00:00Z"}
+{"type": "user", "sessionId": "c1", "isSidechain": false, "timestamp": "2026-10-30T10:00:01Z", "message": {"role": "user", "content": "로그인 버튼 색을 바꿔 줘"}}
+{"type": "assistant", "sessionId": "c1", "isSidechain": false, "timestamp": "2026-10-30T10:00:05Z", "message": {"role": "assistant", "content": [{"type": "thinking", "thinking": "…"}, {"type": "text", "text": "버튼 파일을 고치겠습니다."}, {"type": "tool_use", "id": "t1", "name": "Edit", "input": {"file_path": "src/Button.tsx", "old_string": "a", "new_string": "b"}}]}}
+{"type": "user", "sessionId": "c1", "isSidechain": false, "timestamp": "2026-10-30T10:00:06Z", "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "t1", "content": "ok"}]}}
+{"type": "assistant", "sessionId": "c1", "isSidechain": true, "timestamp": "2026-10-30T10:00:07Z", "message": {"role": "assistant", "content": [{"type": "text", "text": "하위 에이전트의 말"}]}}
+{"type": "assistant", "sessionId": "c1", "isSidechain": false, "timestamp": "2026-10-30T10:00:09Z", "message": {"role": "assistant", "content": [{"type": "text", "text": "색을 파란색으로 바꿨습니다."}]}}
+{"type": "user", "sessionId": "c1", "isSidechain": false, "timestamp": "2026-10-30T10:01:00Z", "message": {"role": "user", "content": "테스트도 돌려 줘"}}
+{"type": "assistant", "half written

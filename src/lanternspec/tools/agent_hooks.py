@@ -12,7 +12,8 @@ stop           one run-log line per finished answer
 pre-compact    save progress into "지금 상황" of `기록.md` (or the session document) before compaction; session-start puts it back
 
 Every handler takes (project, tool, hook call) and returns a HookResult; it never stops the agent.
-Every call is also noted in the hook-run record (tools/health.py), so a hook that stops running shows up.
+Every call is also noted in the hook-run record (tools/health.py), so a hook that stops running shows up,
+and in the conversation record (tools/sessions.py), so `lantern resume` can carry a conversation on in any tool.
 """
 
 from __future__ import annotations
@@ -24,7 +25,7 @@ from pathlib import Path
 
 from ..core.messages import msg
 from ..core.project import Project
-from . import health, runlog
+from . import health, runlog, sessions
 from .base import HookInput, HookReply, HookResult, Tool, hook_state_dir
 
 STRUCTURE_CODES = {"frontmatter", "common-fields", "enum", "broken-link", "dup-id", "task-dup", "task-cycle", "template-structure"}
@@ -58,6 +59,7 @@ def run(project: Project, event: str, tool: Tool, raw: str) -> HookReply:
     data = data if isinstance(data, dict) else {}
     inp = tool.parse_hook(event, data)
     health.record(project, tool, event, inp, data)
+    sessions.record(project, tool, event, inp)
     return tool.respond(project, event, HANDLERS[event](project, tool, inp))
 
 

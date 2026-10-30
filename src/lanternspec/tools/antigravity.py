@@ -13,15 +13,17 @@ Checked against agy 1.4.7 (its built-in agy-customizations guide and a live run)
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 
 from ..core.messages import msg
 from ..core.project import Project, write
-from .base import MCP_NAME, MCP_SERVER, HookInput, HookReply, HookResult, Tool, hook_state_dir, merge_json_file
+from .base import MCP_NAME, MCP_SERVER, HookInput, HookReply, HookResult, Tool, Turn, hook_state_dir, jsonl_records, merge_json_file
 
 HOOK_NAME = "lanternspec"
 PLUGIN_DIR = ".agents/plugins/lanternspec"
+USER_REQUEST = re.compile(r"</?USER_REQUEST>")  # agy wraps what the user wrote in these tags
 PATH_ARGS = ("Path", "TargetFile", "AbsolutePath", "FilePath", "path", "file_path")
 
 
@@ -130,6 +132,7 @@ class Antigravity(Tool):
             # PreInvocation fires before every model call; the turn starts at call 0
             turn_start=int(data.get("invocationNum") or 0) == 0,
             finished=str(data.get("terminationReason") or "NO_TOOL_CALL") == "NO_TOOL_CALL",
+            transcript=str(data.get("transcriptPath") or ""),
         )
 
     def written_paths(self, inp: HookInput) -> list[str]:
@@ -146,6 +149,41 @@ class Antigravity(Tool):
             ['docs/a.md']
         """
         return [str(inp.tool_input[k]) for k in PATH_ARGS if inp.tool_input.get(k)]
+
+    def read_transcript(self, path: Path) -> list[Turn] | None:
+        """Implement Tool.read_transcript for agy's transcript steps (`USER_INPUT` · `PLANNER_RESPONSE`).
+
+        The `<USER_REQUEST>` wrapper agy puts around what the user wrote is taken off.
+
+        Args:
+            path: The transcript file.
+
+        Returns:
+            The messages, oldest first.
+
+        Example:
+            >>> Antigravity().read_transcript(Path("…/transcript.jsonl"))[0].role  # doctest: +SKIP
+            'user'
+        """
+        turns: list[Turn] = []
+        for d in jsonl_records(path):
+            at = str(d.get("created_at") or "")
+            raw = d.get("content")
+            content = raw if isinstance(raw, str) else ""
+            if d.get("type") == "USER_INPUT" and content.strip():
+                turns.append(Turn("user", USER_REQUEST.sub("", content).strip(), at=at))
+            elif d.get("type") == "PLANNER_RESPONSE":
+                calls = [c for c in d.get("tool_calls") or [] if isinstance(c, dict)]
+                if not content.strip() and not calls:
+                    continue
+                files = [
+                    f
+                    for c in calls
+                    if c.get("name") in self.write_tools
+                    for f in self.written_paths(HookInput(tool_input=c.get("args") or {}))
+                ]
+                turns.append(Turn("assistant", content.strip(), [str(c.get("name")) for c in calls], files, at))
+        return turns
 
     def respond(self, project: Project, event: str, result: HookResult) -> HookReply:
         """Implement Tool.respond for Antigravity.

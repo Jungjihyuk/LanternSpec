@@ -21,6 +21,14 @@ def cmd_report(a: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_resume(a: argparse.Namespace) -> int:
+    """`lantern resume` — sum up an earlier conversation so any AI tool can carry it on."""
+    from ..report.resume import summary
+
+    _print(summary(_p(), a.session, a.more))
+    return 0
+
+
 def cmd_status(a: argparse.Namespace) -> int:
     """`lantern status` — print the three-line current status."""
     from ..report.status import lines
@@ -135,6 +143,9 @@ def register(add: Add) -> None:
     p.add_argument("--views")
     p.add_argument("--summary", nargs="+", help=msg("3-line summary"))
     add("status", cmd_status, msg("Where things stand in 3 lines"))
+    p = add("resume", cmd_resume, msg("Carry on an earlier conversation in any AI tool — where it stopped, even if it was cut off"))
+    p.add_argument("--session", help=msg("Which conversation: its number in the list or the start of its id"))
+    p.add_argument("--more", type=int, default=0, help=msg("Show this many pages further back"))
     p = add("obsidian", cmd_obsidian, msg("Download the recommended Obsidian plugins (Dataview · Metadata Menu)"))
     p.add_argument("action", choices=["plugins"])
     p = add("scan", cmd_scan, msg("Find doc-code mismatches"))

@@ -50,7 +50,7 @@ def test_generated_skills_have_no_leftover_marks_for_every_tool_and_profile():
                 if names == ["codex"]:
                     assert not re.search(r"(?<![\w/$.-])/l-[a-z]+\b", text), f"codex file keeps /l- call: {rel}"
         # Codex and Antigravity share .agents/skills: one set of 13, not two
-        assert len([k for k in gen(prof, tools.NAMES) if k.endswith("SKILL.md")]) == 13 * 2
+        assert len([k for k in gen(prof, tools.NAMES) if k.endswith("SKILL.md")]) == 14 * 2
 
 
 def test_adapter_shapes():
@@ -373,7 +373,7 @@ def test_doctor_reports(repo):
     assert "lantern upgrade" in out  # skills were rendered before the profile existed
     repo("upgrade")
     code, out = repo("doctor")
-    assert "문서 저장 방식 shared — 구조가 맞음" in out and "스킬 13개 최신" in out
+    assert "문서 저장 방식 shared — 구조가 맞음" in out and "스킬 14개 최신" in out
 
 
 def test_h7_sync_nudge_once_per_work_and_h8_compact_roundtrip(repo):

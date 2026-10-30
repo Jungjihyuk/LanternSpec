@@ -109,6 +109,7 @@ flowchart LR
 | `/l-sync` | finds where documents and code disagree and brings them back in line | — |
 | `/l-map` | updates the MOC (document map) | `Docs MOC.md` |
 | `/l-adr` | records decisions that are hard to reverse | `Decisions/ADR-001 …` |
+| `/l-resume` | carries on an earlier conversation — from any AI tool, from where it stopped even if it was cut off | — |
 
 ### How it works
 - **Scripts handle the format, the AI writes the content.** Numbering, files, folders, checks and status changes all go through the `lantern` command; the AI only writes content.
@@ -252,7 +253,7 @@ checks     check [--changed] [--epic W-012] · lint · check-dbml · dbml render
 work       task next [--all]|start|done|ac|list|estimate · task add [--parallel] · pack · screen import|compare
            work branch|start|list|finish|archive|stage · design approve · unit-log add · idea find|status
 learning   knowledge search|read|propose|write|areas · debt find|new|ask|resolve|promote|practice|known|status|list · mcp
-reports    report [--views] [--summary] · status · scan [--tests] · sync adopt · eval · obsidian plugins
+reports    report [--views] [--summary] · status · resume [--session] [--more] · scan [--tests] · sync adopt · eval · obsidian plugins
 templates  template list|lint|level|bump|outdated|diff|usage|new|migrate · legacy adopt|todos
 git        hooks install|uninstall|status · docs-mode local|shared
 wrap-up    close <skill>

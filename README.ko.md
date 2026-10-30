@@ -107,6 +107,7 @@ flowchart LR
 | `/l-sync` | 문서와 코드가 다른 곳을 찾아 맞추기 | — |
 | `/l-map` | MOC(문서 지도) 갱신 | `개발문서 MOC.md` |
 | `/l-adr` | 되돌리기 어려운 결정 기록 | `결정 기록/ADR-001 …` |
+| `/l-resume` | 지난 대화 이어 가기 — 어느 AI 도구에서 하던 대화든, 중간에 끊겼어도 멈춘 곳부터 | — |
 
 ### 이렇게 동작한다
 - **형식은 스크립트가, 내용은 AI가.** 번호 · 파일 · 폴더 · 검사 · 상태 바꾸기는 모두 `lantern` 명령이 하고, AI는 내용만 쓴다.
@@ -250,7 +251,7 @@ Claude Design · Figma · Canva를 각 도구의 MCP로 쓴다.
 일       task next [--all]|start|done|ac|list|estimate · task add [--parallel] · pack · screen import|compare
          work branch|start|list|finish|archive|stage · design approve · unit-log add · idea find|status
 배움     knowledge search|read|propose|write|areas · debt find|new|ask|resolve|promote|practice|known|status|list · mcp
-보고     report [--views] [--summary] · status · scan [--tests] · sync adopt · eval · obsidian plugins
+보고     report [--views] [--summary] · status · resume [--session] [--more] · scan [--tests] · sync adopt · eval · obsidian plugins
 양식     template list|lint|level|bump|outdated|diff|usage|new|migrate · legacy adopt|todos
 git      hooks install|uninstall|status · docs-mode local|shared
 마무리   close <스킬>

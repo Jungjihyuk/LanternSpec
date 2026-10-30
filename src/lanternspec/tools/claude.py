@@ -15,7 +15,19 @@ from typing import TYPE_CHECKING, Any
 
 from ..core.messages import msg
 from ..core.project import Project, git, read, write
-from .base import HOOK_COMMAND, MCP_NAME, MCP_SERVER, HookInput, HookReply, HookResult, Tool, merge_json_file, replace_hook_entries
+from .base import (
+    HOOK_COMMAND,
+    MCP_NAME,
+    MCP_SERVER,
+    HookInput,
+    HookReply,
+    HookResult,
+    Tool,
+    Turn,
+    jsonl_records,
+    merge_json_file,
+    replace_hook_entries,
+)
 
 if TYPE_CHECKING:
     from ..core.profile import Profile
@@ -66,6 +78,7 @@ class ClaudeHooks:
             tool=str(data.get("tool_name") or ""),
             tool_input=tool_input if isinstance(tool_input, dict) else {},
             cwd=str(data.get("cwd") or ""),
+            transcript=str(data.get("transcript_path") or ""),
         )
 
     def written_paths(self, inp: HookInput) -> list[str]:
@@ -244,6 +257,44 @@ class ClaudeCode(ClaudeHooks, Tool):
             merged.append(f".mcp.json (MCP {MCP_NAME})")
         return merged
 
+    def read_transcript(self, path: Path) -> list[Turn] | None:
+        r"""Implement Tool.read_transcript for Claude Code's JSON lines (`type` user · assistant, `message.content`).
+
+        Subagent lines and user lines that only carry tool results are left out.
+
+        Args:
+            path: The transcript file.
+
+        Returns:
+            The messages, oldest first.
+
+        Example:
+            >>> ClaudeCode().read_transcript(Path("…/s1.jsonl"))[0].text  # doctest: +SKIP
+            '로그인 버튼 고쳐 줘'
+        """
+        turns: list[Turn] = []
+        for d in jsonl_records(path):
+            role = d.get("type")
+            message = d.get("message")
+            if role not in ("user", "assistant") or d.get("isSidechain") or not isinstance(message, dict):
+                continue
+            content = message.get("content")
+            blocks = [{"type": "text", "text": content}] if isinstance(content, str) else content if isinstance(content, list) else []
+            texts = [str(b.get("text") or "") for b in blocks if isinstance(b, dict) and b.get("type") == "text"]
+            calls = [b for b in blocks if isinstance(b, dict) and b.get("type") == "tool_use"]
+            if not any(t.strip() for t in texts) and not calls:
+                continue  # tool results, thinking only
+            files = [
+                f
+                for c in calls
+                if c.get("name") in self.write_tools
+                for f in self.written_paths(HookInput(tool_input=_dict(c.get("input"))))
+            ]
+            turns.append(
+                Turn(str(role), "\n".join(texts).strip(), [str(c.get("name")) for c in calls], files, str(d.get("timestamp") or ""))
+            )
+        return turns
+
     def check_config(self, project: Project) -> list[tuple[str, str]]:
         """Implement Tool.check_config: does Claude Code read the root and the nested AGENTS.md?
 
@@ -398,3 +449,8 @@ def model_from_transcript(path: str) -> str:
         if entry.get("type") == "assistant" and isinstance(msg, dict) and msg.get("model"):
             return str(msg["model"])
     return ""
+
+
+def _dict(value: Any) -> dict[str, Any]:
+    """The value when it is a mapping, else an empty one (a transcript is not checked input)."""
+    return value if isinstance(value, dict) else {}
