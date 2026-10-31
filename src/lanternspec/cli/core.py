@@ -141,7 +141,8 @@ def cmd_parts(a: argparse.Namespace) -> int:
     label = {"added": msg("part"), "ignored": msg("ignored"), "new": msg("not decided")}
     for s in found:
         why = ", ".join(s.evidence) or msg("no package file found any more")
-        print(f"  {s.path}  ({', '.join(s.languages) or '-'}) · {label[s.state]} · {why}")
+        state = msg("inside part {path}", path=s.owner) if s.state == "inside" else label[s.state]
+        print(f"  {s.path}  ({', '.join(s.languages) or '-'}) · {state} · {why}")
     if any(s.state == "new" for s in found):
         print(msg("→ make it a part: lantern parts add <folder> · not a part: lantern parts ignore <folder>"))
     return 0

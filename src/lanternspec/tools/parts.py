@@ -23,7 +23,7 @@ from typing import Any
 from ..core import principles
 from ..core import profile as profile_mod
 from ..core.messages import msg
-from ..core.project import Project, git_out
+from ..core.project import Project, worktree_files
 
 
 @dataclass
@@ -34,7 +34,8 @@ class PartStatus:
         path: The folder, relative to the project root.
         languages: Its languages.
         evidence: The manifest files that show it ([] for a recorded part no longer found).
-        state: "added", "ignored" or "new" (not decided yet).
+        state: "added", "ignored", "new" (not decided yet) or "inside" (a folder inside a recorded part).
+        owner: For "inside", the part that holds it.
 
     Example:
         >>> PartStatus("backend", ["python"], ["pyproject.toml"], "new").state
@@ -45,6 +46,7 @@ class PartStatus:
     languages: list[str]
     evidence: list[str]
     state: str
+    owner: str = ""
 
 
 def recorded(project: Project) -> list[dict[str, Any]]:
@@ -72,21 +74,34 @@ def statuses(project: Project) -> list[PartStatus]:
     Returns:
         Sorted by path.
 
+    A candidate inside a recorded part (e.g. the member frontend/apps/web of the recorded workspace
+    frontend) is not asked about: the part that holds it already decides its rules.
+
     Example:
         >>> [(s.path, s.state) for s in statuses(project)]  # doctest: +SKIP
-        [('analysis', 'ignored'), ('backend', 'added'), ('frontend/apps/web', 'new')]
+        [('analysis', 'ignored'), ('backend', 'added'), ('frontend', 'added'), ('frontend/apps/web', 'inside')]
     """
-    files = git_out(["ls-files", "--cached", "--others", "--exclude-standard"], project.root).splitlines()
+    files = worktree_files(project.root)
     found = {c.path: c for c in principles.part_candidates(project.root, files)}
     added = {p["path"]: p for p in recorded(project)}
     ignored = set(project.profile.get("code.ignored_parts") or [])
     out = []
     for path in sorted(set(found) | set(added)):
-        cand = found.get(path)
-        langs = list(added[path].get("languages") or []) if path in added else cand.languages if cand else []
-        state = "added" if path in added else "ignored" if path in ignored else "new"
-        out.append(PartStatus(path, langs, cand.evidence if cand else [], state))
+        owner = max((a for a in added if path.startswith(a + "/")), key=len, default="")
+        if path in added:
+            langs, evidence, state = list(added[path].get("languages") or []), _own_manifests(project, files, path), "added"
+        else:
+            cand = found[path]  # only recorded parts can be missing from the candidates
+            langs, evidence = cand.languages, cand.evidence
+            state = "inside" if owner else "ignored" if path in ignored else "new"
+        out.append(PartStatus(path, langs, evidence, state, owner if state == "inside" else ""))
     return out
+
+
+def _own_manifests(project: Project, files: list[str], path: str) -> list[str]:
+    """The manifest files right in a folder (also for a workspace root, whose members are the usual candidates)."""
+    own = [f for f in files if f.startswith(path + "/") and "/" not in f[len(path) + 1 :]]
+    return next((c.evidence for c in principles.part_candidates(project.root, own) if c.path == path), [])
 
 
 def add(project: Project, path: str) -> dict[str, Any]:

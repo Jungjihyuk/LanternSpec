@@ -137,7 +137,7 @@ def _part_rows(project: Project) -> list[tuple[str, str]]:
     out = []
     found = statuses(project)
     open_ = [s.path for s in found if s.state == "new"]
-    if open_ and sum(1 for s in found if s.state != "ignored") >= 2:
+    if open_ and sum(1 for s in found if s.state in ("added", "new")) >= 2:
         out.append(
             (
                 WARN,

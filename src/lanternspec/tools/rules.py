@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any
 from .. import resources
 from ..core import principles, templating
 from ..core.profile import Profile
-from ..core.project import Project, git
+from ..core.project import Project, worktree_files
 from .skills import PROFILE_TOKEN, body_context, command_prefix, rewrite_commands
 
 if TYPE_CHECKING:
@@ -115,7 +115,7 @@ def principles_section(profile: Profile) -> str:
 
 
 def nested_agents(project: Project) -> list[str]:
-    """List the AGENTS.md files below the project root (tracked or new, not ignored).
+    """List the AGENTS.md files below the project root (tracked or new, not ignored, not deleted).
 
     Args:
         project: The project.
@@ -127,8 +127,7 @@ def nested_agents(project: Project) -> list[str]:
         >>> nested_agents(project)  # doctest: +SKIP
         ['backend/app/AGENTS.md']
     """
-    r = git(["ls-files", "--cached", "--others", "--exclude-standard", "--", "*/AGENTS.md"], project.root)
-    return sorted(line for line in r.stdout.splitlines() if line) if r.returncode == 0 else []
+    return sorted(worktree_files(project.root, "*/AGENTS.md"))
 
 
 def active_parts(profile: Profile) -> list[dict[str, Any]]:

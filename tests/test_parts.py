@@ -108,3 +108,36 @@ def test_check_commands_a_person_set_for_the_folder_are_taken_over(repo):
     build = yaml.safe_load((repo.root / "lantern.yaml").read_text(encoding="utf-8"))["code"]["parts"][0]["build"]
     assert build["lint"] == "uv run ruff check app/" and build["test"] == "uv run pytest"
     assert build["format"] == "uv run ruff format ."  # nothing set for it: the folder's configured tool
+
+
+def test_a_recorded_workspace_root_covers_its_members(repo):
+    _two_parts(repo)
+    (repo.root / "frontend/apps/web").mkdir(parents=True)
+    (repo.root / "frontend/package.json").write_text('{"name": "front"}\n', encoding="utf-8")
+    (repo.root / "frontend/pnpm-workspace.yaml").write_text("packages: [apps/*]\n", encoding="utf-8")
+    (repo.root / "frontend/apps/web/package.json").write_text('{"name": "web"}\n', encoding="utf-8")
+    repo("parts", "add", "backend")
+    repo("parts", "add", "frontend")
+    repo("parts", "ignore", "web")
+    repo("parts", "ignore", "analysis")
+    _, out = repo("parts")
+    assert "frontend  (typescript) · 영역 · package.json" in out  # its own manifest, though its member is the usual candidate
+    assert "frontend/apps/web  (typescript) · 영역 frontend에 포함" in out and "lantern parts add" not in out
+    _, doctor = repo("doctor", ok=False)
+    assert "아직 정하지 않았습니다" not in doctor
+
+
+def test_a_deleted_folder_agents_md_is_no_longer_warned_about(repo):
+    _two_parts(repo)
+    repo("install", "--tools", "claude,codex")
+    repo("parts", "add", "backend")
+    repo("parts", "add", "web")
+    (repo.root / "backend/app").mkdir()
+    (repo.root / "backend/app/AGENTS.md").write_text("# 앱 규칙\n", encoding="utf-8")
+    repo.git("add", "-A")
+    repo.git("commit", "-qm", "nested rules")
+    _, doctor = repo("doctor", ok=False)
+    assert "backend/app/AGENTS.md: " in doctor
+    (repo.root / "backend/app/AGENTS.md").unlink()  # deleted, not committed yet
+    _, doctor = repo("doctor", ok=False)
+    assert "backend/app/AGENTS.md" not in doctor

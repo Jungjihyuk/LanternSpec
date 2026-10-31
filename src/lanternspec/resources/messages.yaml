@@ -819,6 +819,7 @@
 "part": {ko: "영역"}
 "ignored": {ko: "빼 둠"}
 "not decided": {ko: "정하지 않음"}
+"inside part {path}": {ko: "영역 {path}에 포함"}
 "no package file found any more": {ko: "패키지 설정 파일이 더는 없음"}
 "→ make it a part: lantern parts add <folder> · not a part: lantern parts ignore <folder>": {ko: "→ 영역으로 정하기: lantern parts add <폴더> · 영역 아님: lantern parts ignore <폴더>"}
 "✔ Part {path} ({items}) — lantern upgrade writes its AGENTS.md": {ko: "✔ 영역 {path} ({items}) — lantern upgrade가 그 AGENTS.md를 씁니다"}

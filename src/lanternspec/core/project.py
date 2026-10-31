@@ -152,6 +152,27 @@ def git(args: list[str], cwd: Path, check: bool = False, env: dict | None = None
     )
 
 
+def worktree_files(root: Path, *pathspec: str) -> list[str]:
+    """List the files git knows in the working tree: tracked or new, not ignored, not deleted.
+
+    A file deleted but not yet committed is left out, so it stops counting as soon as it is gone.
+
+    Args:
+        root: Folder to run in.
+        *pathspec: git pathspecs to narrow the list (e.g. "*/AGENTS.md"); all files when empty.
+
+    Returns:
+        Paths relative to the root; [] when git failed.
+
+    Example:
+        >>> worktree_files(Path("."), "*/AGENTS.md")  # doctest: +SKIP
+        ['backend/AGENTS.md']
+    """
+    listed = git_out(["ls-files", "--cached", "--others", "--exclude-standard", "--", *pathspec], root).splitlines()
+    gone = set(git_out(["ls-files", "--deleted", "--", *pathspec], root).splitlines())
+    return [f for f in listed if f and f not in gone]
+
+
 def git_out(args: list[str], cwd: Path) -> str:
     """Run a git command and return its trimmed output.
 
