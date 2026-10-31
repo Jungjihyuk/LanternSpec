@@ -1,6 +1,6 @@
 ---
 name: l-ref
-description: 참고 자료 들이기 — 사내 규칙 · 용어집 · 도메인 지식(법령 · 정책 · 명세)을 프로젝트 안이든 밖이든 들여와, 구조를 보고 색인한 뒤 절마다 꼬리표를 제안해 승인받는다. Use when the user wants to bring in company rules, a glossary, or domain documents for the AI to follow.
+description: 참고 자료 들이기 — 사내 규칙 · 용어집 · 도메인 지식(법령 · 정책 · 명세)을 프로젝트 안이든 밖이든 들여와, 구조를 보고 색인한 뒤 절마다 쓰임(사내 규칙이면 적용 범위 · 강도)을 제안해 승인받는다. Use when the user wants to bring in company rules, a glossary, or domain documents for the AI to follow.
 invocation: manual
 argument-hint: "[rules|terms|domain] <경로>"
 ---
@@ -44,7 +44,7 @@ lantern ref index <종류> <경로>
 - 경로가 아직 목록에 없으면 더해진다: 안의 경로는 `lantern.yaml` `references.<종류>`(팀이 같이 씀), 밖의 경로는 `.lantern/references.yaml`(나만).
 - 출력의 `+`는 새 절, `~`는 바뀐 절, `-`는 사라진 절이다. 다음 단계는 `+` · `~` 절만 다룬다 — 다시 들일 때 이미 승인한 절을 또 묻지 않는다.
 
-## 4. 꼬리표
+## 4. 종류별로 정하기
 이 폴더의 그 종류 파일만 읽고 따른다: `rules.md` · `terms.md` · `domain.md`.
 
 ## 5. 마무리

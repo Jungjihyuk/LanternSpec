@@ -25,13 +25,14 @@ AGENTS_START, AGENTS_END = "<!-- lanternspec:start -->", "<!-- lanternspec:end -
 PRINCIPLES_SLOT = "<!-- lantern:principles -->"
 
 
-def agents_block(profile: Profile, tools: list[Tool], enums: Enums | None = None) -> str:
+def agents_block(profile: Profile, tools: list[Tool], enums: Enums | None = None, company: str = "") -> str:
     """Render our AGENTS.md block: the rules source filled with profile values, plus the design principles.
 
     Args:
         profile: The project's settings.
         tools: The installed tools (they decide the command form).
         enums: The project's choice lists; the bundled ones when None.
+        company: The company-rules section (refs/rules.py), put at the end; "" for none.
 
     Returns:
         The block, with its start and end marks.
@@ -47,7 +48,8 @@ def agents_block(profile: Profile, tools: list[Tool], enums: Enums | None = None
     text = PROFILE_TOKEN.sub(lambda m: str(ctx.get(m.group(1), m.group(0))), text)
     section = "\n\n".join(x for x in (principles_section(profile), parts_section(profile)) if x)
     text = text.replace(f"\n{PRINCIPLES_SLOT}\n", f"\n{section}\n" if section else "")
-    return f"{AGENTS_START}\n{text.strip()}\n{AGENTS_END}"
+    text = text.strip() + (f"\n\n{company}" if company else "")
+    return f"{AGENTS_START}\n{text}\n{AGENTS_END}"
 
 
 def merge_block(existing: str, block: str) -> str:
@@ -173,12 +175,13 @@ def parts_section(profile: Profile) -> str:
     return "\n".join(lines)
 
 
-def part_block(profile: Profile, part: dict[str, Any]) -> str:
-    """Render the block of one part's AGENTS.md: its language conventions and its own check commands.
+def part_block(profile: Profile, part: dict[str, Any], company: str = "") -> str:
+    """Render the block of one part's AGENTS.md: its language conventions, its own check commands and its company rules.
 
     Args:
         profile: The project's settings.
         part: The part as recorded in lantern.yaml (path · languages · build).
+        company: The part's company-rules section (refs/rules.py); "" for none.
 
     Returns:
         The block, with its start and end marks.
@@ -204,6 +207,8 @@ def part_block(profile: Profile, part: dict[str, Any]) -> str:
         prefix = f"{c.label} " if len(convs) > 1 else ""
         lines.append(f"- {prefix}{principles.rule_label('type_hints', lang)}: {c.rules['type_hints']}")
         lines.append(f"- {prefix}{principles.rule_label('docs', lang)} ({c.docs_style} · {comment}): {c.rules['docs']}")
+    if company:
+        lines += ["", company]
     return f"{AGENTS_START}\n" + "\n".join(lines) + f"\n{AGENTS_END}"
 
 

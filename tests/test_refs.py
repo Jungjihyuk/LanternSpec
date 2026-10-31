@@ -5,6 +5,9 @@ stays out of git, so a private document's titles never reach the repository. `la
 one way the AI reads a section — outside material is never opened by the AI's own file tools.
 """
 
+import json
+import subprocess
+import sys
 from pathlib import Path
 
 import yaml
@@ -120,3 +123,120 @@ def test_an_outside_path_written_in_lantern_yaml_is_moved_out_of_git(repo):
     assert "company" not in (repo.root / "lantern.yaml").read_text(encoding="utf-8")
     _, out = repo("ref")
     assert "✔ terms  ~/company  (밖) · 문서 1개 · 색인됨" in out
+
+
+RULES = """# API 규칙
+
+## 오류 응답
+늘 problem+json으로 답한다.
+
+### 예시
+```
+# 이 줄은 제목이 아니다
+```
+
+## 이름 짓기
+엔드포인트는 복수 명사로 쓴다.
+
+## 로그
+개인정보를 로그에 남기지 않는다.
+"""
+
+
+def _parts_with_rules(repo):
+    init_project(repo, "--kind", "service", "--external", "no", "--languages", "python,typescript")
+    for part, manifest in (("backend", "pyproject.toml"), ("web", "package.json")):
+        (repo.root / part).mkdir()
+        (repo.root / part / manifest).write_text("[project]\nname='b'\n" if part == "backend" else '{"name": "w"}\n', encoding="utf-8")
+    repo("install")
+    repo("parts", "add", "backend")
+    repo("parts", "add", "web")
+    (repo.root / "rules").mkdir()
+    (repo.root / "rules/API.md").write_text(RULES, encoding="utf-8")
+    repo("ref", "index", "rules", "rules")
+
+
+def test_approved_inside_rules_go_word_for_word_into_the_agents_md_of_their_scope(repo):
+    _parts_with_rules(repo)
+    _, out = repo("ref", "tag", "API#오류 응답", "--scope", "backend", "--strength", "must")
+    assert "✔ API#API 규칙#오류 응답: backend · must → lantern upgrade" in out
+    repo("ref", "tag", "API#이름 짓기", "--scope", "all", "--strength", "should")
+    repo("ref", "tag", "API#로그", "--scope", "typescript")
+    code, out = repo("ref", "tag", "API#로그", "--scope", "go", ok=False)
+    assert code != 0 and "모르는 범위 go" in out
+    repo("upgrade")
+    backend = (repo.root / "backend/AGENTS.md").read_text(encoding="utf-8")
+    assert "## 사내 규칙" in backend and "### 반드시 지킴" in backend
+    assert (
+        "#### 오류 응답\n늘 problem+json으로 답한다.\n\n##### 예시\n```\n# 이 줄은 제목이 아니다\n```" in backend
+    )  # headings moved down, code kept
+    assert "이름 짓기" not in backend and "로그" not in backend
+    root = (repo.root / "AGENTS.md").read_text(encoding="utf-8")
+    assert "### 되도록 따름" in root and "#### 이름 짓기\n엔드포인트는 복수 명사로 쓴다." in root and "오류 응답" not in root
+    web = (repo.root / "web/AGENTS.md").read_text(encoding="utf-8")
+    assert "개인정보를 로그에 남기지 않는다." in web  # a language rule goes to the parts of that language
+    assert "lantern ref rules" not in root + backend + web  # nothing outside: no pointer
+    _, doctor = repo("doctor", ok=False)
+    assert "사내 규칙이 승인한 것과 다릅니다" not in doctor
+
+    (repo.root / "rules/API.md").write_text(RULES.replace("problem+json", "RFC 9457"), encoding="utf-8")
+    _, doctor = repo("doctor", ok=False)
+    assert "backend/AGENTS.md: 사내 규칙이 승인한 것과 다릅니다 — lantern upgrade" in doctor
+    repo("ref", "index", "rules", "rules")  # the approvals survive a new index
+    repo("ref", "exclude", "API#로그")
+    repo("upgrade")
+    assert "RFC 9457" in (repo.root / "backend/AGENTS.md").read_text(encoding="utf-8")
+    assert "로그에 남기지" not in (repo.root / "web/AGENTS.md").read_text(encoding="utf-8")
+    assert yaml.safe_load((repo.root / "lantern.yaml").read_text(encoding="utf-8"))["references"]["exclude"] == ["API#로그"]
+
+
+def test_outside_rules_stay_out_of_committed_files_and_are_printed_on_request(repo):
+    _parts_with_rules(repo)
+    folder = Path.home() / "company"
+    folder.mkdir(exist_ok=True)
+    (folder / "보안.md").write_text("# 보안\n## 비밀 값\n비밀 값은 코드에 두지 않는다.\n## 검토\n두 사람이 본다.\n", encoding="utf-8")
+    repo("ref", "index", "rules", "~/company")
+    repo("ref", "tag", "보안#비밀 값", "--scope", "all", "--strength", "must")
+    repo("ref", "tag", "보안#검토", "--scope", "backend", "--strength", "should")
+    repo("ref", "exclude", "보안#없는 절", ok=False)
+    repo("upgrade")
+    committed = "".join((repo.root / p).read_text(encoding="utf-8") for p in ("AGENTS.md", "backend/AGENTS.md", "lantern.yaml"))
+    assert "비밀 값" not in committed and "검토" not in committed and "company" not in committed and "보안" not in committed
+    assert "`lantern ref rules`를 실행해" in (repo.root / "AGENTS.md").read_text(encoding="utf-8")
+    assert "`lantern ref rules backend`를 실행해" in (repo.root / "backend/AGENTS.md").read_text(encoding="utf-8")
+    _, out = repo("ref", "rules")
+    assert "비밀 값은 코드에 두지 않는다." in out and "두 사람이 본다." not in out
+    _, out = repo("ref", "rules", "backend")
+    assert "### 비밀 값" not in out and "### 되도록 따름" not in out and "## 되도록 따름" in out and "두 사람이 본다." in out
+
+    hook = subprocess.run(
+        [sys.executable, "-m", "lanternspec", "hook", "session-start"],
+        cwd=str(repo.root),
+        input=json.dumps({"session_id": "s", "source": "compact"}),
+        capture_output=True,
+        text=True,
+    )
+    assert "[프로젝트 밖에 둔 사내 규칙 — 반드시 지킴]" in hook.stdout and "비밀 값은 코드에 두지 않는다." in hook.stdout
+    assert "두 사람이 본다." not in hook.stdout
+
+    repo("ref", "exclude", "보안#검토")
+    assert "보안#검토" in (repo.root / ".lantern/references.yaml").read_text(encoding="utf-8")  # an outside title stays out of git
+    _, out = repo("ref", "rules", "backend")
+    assert "이 컴퓨터에는 프로젝트 밖에 둔 사내 규칙이 없습니다" in out
+
+    (repo.root / ".lantern/references.yaml").unlink()  # a teammate without the outside material
+    repo("upgrade")
+    assert "`lantern ref rules`를 실행해" in (repo.root / "AGENTS.md").read_text(encoding="utf-8")  # the pointer stays
+
+
+def test_should_rules_become_pointers_when_agents_md_is_over_budget(repo):
+    _parts_with_rules(repo)
+    long = "# 긴 규칙\n## 반드시\n짧다.\n## 참고\n" + "되도록 이렇게 한다.\n" * 600
+    (repo.root / "rules/긴.md").write_text(long, encoding="utf-8")
+    repo("ref", "index", "rules", "rules")
+    repo("ref", "tag", "긴#반드시", "--scope", "backend", "--strength", "must")
+    repo("ref", "tag", "긴#참고", "--scope", "backend", "--strength", "should")
+    repo("upgrade")
+    backend = (repo.root / "backend/AGENTS.md").read_text(encoding="utf-8")
+    assert "#### 반드시\n짧다." in backend
+    assert '- 참고 — `lantern ref read "긴#긴 규칙#참고"`' in backend and "되도록 이렇게 한다." not in backend

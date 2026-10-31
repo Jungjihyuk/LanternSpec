@@ -1124,7 +1124,32 @@
 "references.{kind}: {path} is outside the project, but lantern.yaml goes into git — lantern ref index {kind} {path} moves it to .lantern/": {ko: "references.{kind}: {path}는 프로젝트 밖의 자료인데 lantern.yaml은 git에 올라갑니다 — lantern ref index {kind} {path}로 .lantern/에 옮기세요"}
 "⚠ Changed since it was indexed (or never indexed) — the index may be behind: /l-ref {kind}": {ko: "⚠ 색인 뒤에 바뀌었습니다 (또는 색인한 적이 없음) — 색인이 늦었을 수 있습니다: /l-ref {kind}"}
 "{count} lines — read one part:": {ko: "{count}줄입니다 — 한 부분씩 읽으세요:"}
-"check: a file or folder · index: rules | terms | domain · read: document#section": {ko: "check: 파일이나 폴더 · index: rules | terms | domain · read: 문서#절"}
+"check: a file or folder · index: rules | terms | domain · read · tag · exclude: document#section · rules: a part (optional)": {ko: "check: 파일이나 폴더 · index: rules | terms | domain · read · tag · exclude: 문서#절 · rules: 영역 (없으면 전체)"}
+"{path}: the company rules differ from the approved ones — lantern upgrade": {ko: "{path}: 사내 규칙이 승인한 것과 다릅니다 — lantern upgrade"}
+"No company rules from outside the project on this computer — nothing to follow here": {ko: "이 컴퓨터에는 프로젝트 밖에 둔 사내 규칙이 없습니다 — 따를 것이 없습니다"}
+"Nothing to change: {address}": {ko: "바꿀 것이 없습니다: {address}"}
+"exclude: bring it back": {ko: "exclude: 뺀 것을 되돌리기"}
+"lantern ref tag <document#section> --scope <all|part|language> --strength <must|should>": {ko: "lantern ref tag <문서#절> --scope <all|영역|언어> --strength <must|should>"}
+"rules: must rules only": {ko: "rules: 반드시 지킬 규칙만"}
+"tag: must or should": {ko: "tag: must(반드시) · should(되도록)"}
+"tag: take the approval away": {ko: "tag: 승인 거두기"}
+"tag: where the rule applies — all, a part's folder or a language": {ko: "tag: 규칙이 적용되는 곳 — all(전체) · 영역 폴더 · 언어"}
+"{place} is not a part — lantern parts": {ko: "{place}는 영역이 아닙니다 — lantern parts"}
+"✔ Approval taken away: {address}": {ko: "✔ 승인을 거둠: {address}"}
+"✔ Brought back: {address}": {ko: "✔ 되돌림: {address}"}
+"✔ Left out of this project: {address}": {ko: "✔ 이 프로젝트에서 뺌: {address}"}
+"✔ {address}: {scope} · {strength}": {ko: "✔ {address}: {scope} · {strength}"}
+"Name a section, not a whole document: {address}#<title>": {ko: "문서 전체가 아니라 절을 지정하세요: {address}#<제목>"}
+"Unknown scope {scope} — one of {items}": {ko: "모르는 범위 {scope} — {items} 중 하나"}
+"Unknown strength {strength} — must or should": {ko: "모르는 강도 {strength} — must 또는 should"}
+"{doc} is not a company-rules document (references.rules)": {ko: "{doc}는 사내 규칙 문서가 아닙니다 (references.rules)"}
+"{doc} isn't indexed yet — lantern ref index rules <path>": {ko: "{doc}는 아직 색인되지 않았습니다 — lantern ref index rules <경로>"}
+"## Company rules": {ko: "## 사내 규칙"}
+"Rules the company set — written as they are; follow them over the project's own rules.": {ko: "회사가 정한 규칙 — 원문 그대로 옮겼다. 프로젝트 규칙과 부딪히면 이쪽을 따른다."}
+"- Company rules kept outside the project: run `{command}` and follow what it prints (nothing printed = none).": {ko: "- 프로젝트 밖에 둔 사내 규칙: `{command}`를 실행해 나오는 것을 따른다 (안 나오면 없는 것)."}
+"Must follow": {ko: "반드시 지킴"}
+"Follow where you can": {ko: "되도록 따름"}
+"[Company rules kept outside the project — must follow]": {ko: "[프로젝트 밖에 둔 사내 규칙 — 반드시 지킴]"}
 "index: the file or folder to index (relative = inside, ~/… = outside)": {ko: "index: 색인할 파일이나 폴더 (상대 경로 = 안, ~/… = 밖)"}
 "lantern ref index <rules|terms|domain> <path>": {ko: "lantern ref index <rules|terms|domain> <경로>"}
 "doesn't exist": {ko: "없음"}

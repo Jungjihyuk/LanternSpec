@@ -8,10 +8,12 @@ is, its titles, its index — reaches the repository. Only `lantern` writes thes
 Responsibilities:
     - index one source, and list its path (inside → lantern.yaml `references`, outside → `.lantern/references.yaml`)
     - tell which documents changed, or were never indexed, since
+    - store what the person approved for a company-rules section (scope · strength), and exclusions
 
 Not here:
     - finding the documents and sections → refs/sources.py
-    - what the AI writes about each section (what · when to read · strength) → the /l-ref skill
+    - which approved rules go where → refs/rules.py
+    - proposing the scope and strength of each section → the /l-ref skill
 """
 
 from __future__ import annotations
@@ -117,15 +119,35 @@ def outside_paths(project: Project) -> dict[str, list[str]]:
     return {k: [str(x) for x in listed.get(k) or []] for k in src_mod.KINDS}
 
 
-def _save(project: Project, outside: bool, docs: dict[str, Any], paths: dict[str, list[str]] | None = None) -> None:
+def outside_exclude(project: Project) -> list[str]:
+    """Read the exclusions of outside material, kept in `.lantern/references.yaml` so their titles stay out of git.
+
+    Args:
+        project: The project.
+
+    Returns:
+        Addresses ("문서#절").
+
+    Example:
+        >>> outside_exclude(project)  # doctest: +SKIP
+        ['개인정보#파기']
+    """
+    return [str(x) for x in _file(project, True).get("exclude") or []]
+
+
+def _save(project: Project, outside: bool, docs: dict[str, Any], **keep: Any) -> None:
+    """Write one index; the outside one also keeps its paths and exclusions (given ones replace them)."""
     path = index_file(project, outside)
     data: dict[str, Any] = {}
     if outside:
         from ..core.state import ensure_state_dir
 
         ensure_state_dir(project)
-        paths = paths if paths is not None else outside_paths(project)
+        paths = keep.get("sources") or outside_paths(project)
+        excluded = keep["exclude"] if "exclude" in keep else outside_exclude(project)
         data["sources"] = {k: v for k, v in paths.items() if v}
+        if excluded:
+            data["exclude"] = excluded
     data["documents"] = dict(sorted(docs.items()))
     path.parent.mkdir(parents=True, exist_ok=True)
     head = "# " + msg("Written by lantern ref index — don't edit by hand") + "\n"
@@ -207,8 +229,12 @@ def index(project: Project, kind: str, entry: str) -> IndexResult:
     result = IndexResult(source, len(docs), 0, registered=registered, moved=moved)
     for doc in docs:
         new = entry_for(doc)
-        before = (old.pop(doc.shown, None) or {}).get("sections") or {}
+        rec = old.pop(doc.shown, None) or {}
+        before = rec.get("sections") or {}
         now = new["sections"]
+        applies = {a: tag for a, tag in (rec.get("applies") or {}).items() if a in now}  # approvals of sections still there
+        if applies:
+            new["applies"] = applies
         result.sections += len(now)
         result.added += [f"{doc.name}#{a}" for a in now if a not in before]
         result.changed += [f"{doc.name}#{a}" for a in now if a in before and before[a] != now[a]]
@@ -217,8 +243,92 @@ def index(project: Project, kind: str, entry: str) -> IndexResult:
     for gone, rec in old.items():  # documents no longer in the source
         result.removed += [f"{Path(gone).stem}#{a}" for a in (rec.get("sections") or {})]
         stored.pop(gone)
-    _save(project, source.outside, stored, paths if source.outside else None)
+    if source.outside:
+        _save(project, True, stored, sources=paths)
+    else:
+        _save(project, False, stored)
     return result
+
+
+def tag(project: Project, address: str, scope: str, strength: str) -> str:
+    """Store where an approved company rule applies and how strongly; an empty scope takes the approval away.
+
+    Args:
+        project: The project.
+        address: The section ("문서#절"); the document must be indexed.
+        scope: "all", a part's folder or a language (see refs/rules.py `scopes`); "" to take it away.
+        strength: "must" or "should".
+
+    Returns:
+        The section's full address.
+
+    Raises:
+        LookupError: The section isn't found.
+        ValueError: The document isn't a company-rules document or isn't indexed, or the scope or strength is unknown.
+
+    Example:
+        >>> tag(project, "API#오류 응답", "backend", "must")  # doctest: +SKIP
+        'API#API#오류 응답'
+    """
+    from . import rules as rules_mod
+
+    doc, section = src_mod.locate(project, address)
+    if section is None:
+        raise ValueError(msg("Name a section, not a whole document: {address}#<title>", address=address))
+    if doc.source.kind != "rules":
+        raise ValueError(msg("{doc} is not a company-rules document (references.rules)", doc=doc.name))
+    if scope and scope not in rules_mod.scopes(project):
+        raise ValueError(msg("Unknown scope {scope} — one of {items}", scope=scope, items=", ".join(rules_mod.scopes(project))))
+    if strength not in rules_mod.STRENGTHS:
+        raise ValueError(msg("Unknown strength {strength} — must or should", strength=strength))
+    stored = load(project, doc.source.outside)
+    rec = stored.get(doc.shown)
+    if rec is None:
+        raise ValueError(msg("{doc} isn't indexed yet — lantern ref index rules <path>", doc=doc.name))
+    applies = dict(rec.get("applies") or {})
+    if scope:
+        applies[section.address] = {"scope": scope, "strength": strength}
+    else:
+        applies.pop(section.address, None)
+    rec["applies"] = applies
+    if not applies:
+        rec.pop("applies")
+    _save(project, doc.source.outside, stored)
+    return f"{doc.name}#{section.address}"
+
+
+def exclude(project: Project, address: str, undo: bool = False) -> bool:
+    """Leave a section (or a document) out of this project, or bring it back.
+
+    The exclusion of inside material goes into lantern.yaml `references.exclude`, for the team; of
+    outside material into `.lantern/references.yaml`, so its title stays out of git.
+
+    Args:
+        project: The project.
+        address: "문서" or "문서#절".
+        undo: True to bring it back.
+
+    Returns:
+        True when something changed.
+
+    Raises:
+        LookupError: The address isn't found.
+
+    Example:
+        >>> exclude(project, "개인정보#파기")  # doctest: +SKIP
+        True
+    """
+    doc, _ = src_mod.locate(project, address)
+    listed = outside_exclude(project) if doc.source.outside else [str(x) for x in project.profile.get("references.exclude") or []]
+    now = [x for x in listed if x != address] if undo else (listed if address in listed else [*listed, address])
+    if now == listed:
+        return False
+    if doc.source.outside:
+        _save(project, True, load(project, True), exclude=now)
+    else:
+        profile_mod.update(project.root, {"references.exclude": now})
+        project.profile = profile_mod.load(project.root)
+    return True
 
 
 @dataclass

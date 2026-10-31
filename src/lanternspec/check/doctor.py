@@ -198,8 +198,26 @@ def _reference_rows(project: Project) -> list[tuple[str, str]]:
             src_mod.locate(project, address)
         except LookupError:
             out.append((WARN, msg("references.exclude: {address} matches no section any more (renamed?)", address=address)))
+    out += _company_rule_rows(project)
     if found and not out:
         out.append((OK, msg("References: {count} sources, indexes up to date", count=len(found))))
+    return out
+
+
+def _company_rule_rows(project: Project) -> list[tuple[str, str]]:
+    """Say which AGENTS.md doesn't hold the approved company rules as they are now."""
+    from ..refs import rules as company
+    from ..tools.rules import active_parts
+
+    out = []
+    for place in ["", *(p["path"] for p in active_parts(project.profile))]:
+        path = project.root / place / "AGENTS.md"
+        want = company.agents_section(project, place)
+        if not want:
+            continue
+        have = read(path) if path.exists() else ""
+        if want not in have and company.agents_section(project, place, pointers=True) not in have:
+            out.append((WARN, msg("{path}: the company rules differ from the approved ones — lantern upgrade", path=project.rel(path))))
     return out
 
 

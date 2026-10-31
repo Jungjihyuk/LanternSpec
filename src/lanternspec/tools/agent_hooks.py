@@ -71,6 +71,9 @@ def run(project: Project, event: str, tool: Tool, raw: str) -> HookReply:
 def session_start(project: Project, tool: Tool, inp: HookInput) -> HookResult:
     """Put the three-line status into the conversation; after compaction, also the progress saved before it.
 
+    Company must-rules kept outside the project go in too, at the start and after compaction — they
+    are in no committed file, so nothing else brings them back.
+
     Args:
         project: The project.
         tool: The tool that called.
@@ -97,7 +100,16 @@ def session_start(project: Project, tool: Tool, inp: HookInput) -> HookResult:
     if inp.source == "compact":
         out += _saved_progress(project, inp.session)
         out += [line for line in (_part_line(project, inp.session),) if line]
+    out += _outside_must_rules(project)
     return HookResult(context="\n".join(out))
+
+
+def _outside_must_rules(project: Project) -> list[str]:
+    """The whole-project must rules kept outside the project (never in a committed file), word for word."""
+    from ..refs.rules import outside_rules
+
+    text = outside_rules(project, "", "must")
+    return ["", msg("[Company rules kept outside the project — must follow]"), text] if text else []
 
 
 def _compact_file(project: Project, session: str) -> Path:

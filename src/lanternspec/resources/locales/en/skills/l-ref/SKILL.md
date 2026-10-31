@@ -1,6 +1,6 @@
 ---
 name: l-ref
-description: Bring in references — company rules, a glossary or domain knowledge (laws · policies · specs), inside the project or outside it; check their structure, index them, then propose tags per section for approval. Use when the user wants to bring in company rules, a glossary, or domain documents for the AI to follow.
+description: Bring in references — company rules, a glossary or domain knowledge (laws · policies · specs), inside the project or outside it; check their structure, index them, then propose per section how it is used (for company rules, scope and strength) for approval. Use when the user wants to bring in company rules, a glossary, or domain documents for the AI to follow.
 invocation: manual
 argument-hint: "[rules|terms|domain] <path>"
 ---
@@ -44,7 +44,7 @@ lantern ref index <kind> <path>
 - A path not listed yet is added: an inside path to `lantern.yaml` `references.<kind>` (shared with the team), an outside path to `.lantern/references.yaml` (yours only).
 - In the output, `+` is a new section, `~` a changed one, `-` one that is gone. The next step handles only `+` · `~` — bringing the material in again doesn't ask about sections already approved.
 
-## 4. Tags
+## 4. Choose by kind
 Read and follow only that kind's file in this folder: `rules.md` · `terms.md` · `domain.md`.
 
 ## 5. Finish

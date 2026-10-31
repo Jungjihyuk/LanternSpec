@@ -15,6 +15,7 @@ Not here:
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 import yaml
@@ -280,9 +281,17 @@ def install(
         if not path.exists() or not _ours(rel, chosen):
             records.pop(rel)
     agents = project.root / "AGENTS.md"
-    write(agents, rules.merge_block(read(agents) if agents.exists() else "", rules.agents_block(project.profile, chosen, project.enums)))
+    text = _fit(
+        project,
+        "",
+        budget.root_budget(chosen),
+        lambda company: rules.merge_block(
+            read(agents) if agents.exists() else "", rules.agents_block(project.profile, chosen, project.enums, company)
+        ),
+    )
+    write(agents, text)
     report.merged.append("AGENTS.md")
-    level, said = budget.check("AGENTS.md", read(agents), budget.root_budget(chosen), rules.AGENTS_START, rules.AGENTS_END)
+    level, said = budget.check("AGENTS.md", text, budget.root_budget(chosen), rules.AGENTS_START, rules.AGENTS_END)
     if level != "ok":
         report.warnings.append(f"⚠ {said}")
     st["parts"] = _write_parts(project, chosen, list(st.get("parts") or []), report)
@@ -309,12 +318,29 @@ def install(
     return report
 
 
+def _fit(project: Project, place: str, room: budget.Budget, build: Callable[[str], str]) -> str:
+    """Build a rules file with its company rules word for word; over budget, should rules become pointers (must rules never)."""
+    from ..refs import rules as company
+
+    text = build(company.agents_section(project, place))
+    if budget.check("", text, room, rules.AGENTS_START, rules.AGENTS_END)[0] == "ok":
+        return text
+    return build(company.agents_section(project, place, pointers=True))
+
+
 def _write_parts(project: Project, chosen: list[Tool], before: list[str], report: InstallReport) -> list[str]:
     """Write each part's AGENTS.md block; take it out of folders that are no longer parts. Returns the parts written."""
     parts = rules.active_parts(project.profile)
     for part in parts:
         path = project.root / part["path"] / "AGENTS.md"
-        text = rules.merge_block(read(path) if path.exists() else "", rules.part_block(project.profile, part))
+        text = _fit(
+            project,
+            part["path"],
+            budget.folder_budget(chosen),
+            lambda company, path=path, part=part: rules.merge_block(
+                read(path) if path.exists() else "", rules.part_block(project.profile, part, company)
+            ),
+        )
         if not path.exists() or read(path) != text:
             write(path, text)
             report.written.append(project.rel(path))

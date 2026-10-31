@@ -1,4 +1,4 @@
-"""References commands: ref (list · check · index · read)."""
+"""References commands: ref (list · check · index · read · tag · exclude · rules)."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ from ..core import outline
 from ..core.messages import msg
 from ..core.project import Project, read
 from ..refs import index as index_mod
+from ..refs import rules as rules_mod
 from ..refs import sources as src_mod
 from .common import Add, CliError, _p
 
@@ -15,10 +16,12 @@ READ_MAX_LINES = 300  # a longer section shows its sub-sections to pick from ins
 
 
 def cmd_ref(a: argparse.Namespace) -> int:
-    """`lantern ref [list|check|index|read]` — references: what is listed · structure · index · read one section."""
+    """`lantern ref [list|check|index|read|tag|exclude|rules]` — references: listed · structure · index · read · approve · leave out."""
     project = _p()
     if a.action in (None, "list"):
         return _list(project)
+    if a.action == "rules":
+        return _rules(project, a.arg or "", a.must)
     if not a.arg:
         raise CliError(msg("lantern ref {action} needs a path or an address", action=a.action))
     if a.action == "check":
@@ -27,7 +30,39 @@ def cmd_ref(a: argparse.Namespace) -> int:
         if not a.path:
             raise CliError(msg("lantern ref index <rules|terms|domain> <path>"))
         return _index(project, a.arg, a.path)
+    if a.action == "tag":
+        return _tag(project, a.arg, a.scope or "", a.strength, a.off)
+    if a.action == "exclude":
+        changed = index_mod.exclude(project, a.arg, a.undo)
+        said = msg("✔ Brought back: {address}", address=a.arg) if a.undo else msg("✔ Left out of this project: {address}", address=a.arg)
+        print((said if changed else msg("Nothing to change: {address}", address=a.arg)) + (" → lantern upgrade" if changed else ""))
+        return 0
     return _read(project, a.arg)
+
+
+def _tag(project: Project, address: str, scope: str, strength: str, off: bool) -> int:
+    """Store an approved company rule's scope and strength (or take the approval away) and say what to run next."""
+    if off:
+        scope = ""
+    elif not scope:
+        raise CliError(msg("lantern ref tag <document#section> --scope <all|part|language> --strength <must|should>"))
+    full = index_mod.tag(project, address, scope, strength)
+    if scope:
+        print(msg("✔ {address}: {scope} · {strength}", address=full, scope=scope, strength=strength) + " → lantern upgrade")
+    else:
+        print(msg("✔ Approval taken away: {address}", address=full) + " → lantern upgrade")
+    return 0
+
+
+def _rules(project: Project, place: str, must: bool) -> int:
+    """Print the company rules kept outside the project for the root or one part, word for word."""
+    from ..tools.rules import active_parts
+
+    if place and place not in [p["path"] for p in active_parts(project.profile)]:
+        raise CliError(msg("{place} is not a part — lantern parts", place=place))
+    text = rules_mod.outside_rules(project, place, "must" if must else "")
+    print(text or msg("No company rules from outside the project on this computer — nothing to follow here"))
+    return 0
 
 
 def _list(project: Project) -> int:
@@ -132,6 +167,17 @@ def _parts(text: str, section: outline.Section | None) -> list[outline.Section]:
 def register(add: Add) -> None:
     """Register the references commands."""
     p = add("ref", cmd_ref, msg("References (company rules · terms · domain knowledge): list · check · index · read"))
-    p.add_argument("action", nargs="?", choices=["list", "check", "index", "read"])
-    p.add_argument("arg", nargs="?", help=msg("check: a file or folder · index: rules | terms | domain · read: document#section"))
+    p.add_argument("action", nargs="?", choices=["list", "check", "index", "read", "tag", "exclude", "rules"])
+    p.add_argument(
+        "arg",
+        nargs="?",
+        help=msg(
+            "check: a file or folder · index: rules | terms | domain · read · tag · exclude: document#section · rules: a part (optional)"
+        ),
+    )
     p.add_argument("path", nargs="?", help=msg("index: the file or folder to index (relative = inside, ~/… = outside)"))
+    p.add_argument("--scope", help=msg("tag: where the rule applies — all, a part's folder or a language"))
+    p.add_argument("--strength", choices=list(rules_mod.STRENGTHS), default="must", help=msg("tag: must or should"))
+    p.add_argument("--off", action="store_true", help=msg("tag: take the approval away"))
+    p.add_argument("--undo", action="store_true", help=msg("exclude: bring it back"))
+    p.add_argument("--must", action="store_true", help=msg("rules: must rules only"))
