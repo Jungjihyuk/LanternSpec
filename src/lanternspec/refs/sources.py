@@ -1,12 +1,13 @@
-r"""Where the references are: the paths in lantern.yaml `references`, their documents, and one section by its address.
+r"""Where the references are: their paths, their documents, and one section by its address.
 
-A relative path is inside the project; `~/…` and absolute paths are outside (an absolute path into
-the project still counts as inside). Material outside is never opened by the AI's own file tools —
-some tools ask before every read outside the working folder, and a run nobody watches can't answer —
-so it reaches the AI through `lantern ref read`.
+A relative path is inside the project and is listed in lantern.yaml `references`, for the team;
+`~/…` and absolute paths are outside (an absolute path into the project still counts as inside) and
+are listed in `.lantern/references.yaml`, out of git. Material outside is never opened by the AI's
+own file tools — some tools ask before every read outside the working folder, and a run nobody
+watches can't answer — so it reaches the AI through `lantern ref read`, which never prints where it is.
 
 Responsibilities:
-    - resolve each `references` entry and list its Markdown documents
+    - resolve each listed path and list its Markdown documents
     - find a document and a section from an address ("문서#제목", "문서#위#아래")
 
 Not here:
@@ -60,6 +61,9 @@ class Document:
         >>> src = Source("domain", "docs/법", Path("/p/docs/법"), False)
         >>> Document(src, Path("/p/docs/법/개인정보.md"), "docs/법/개인정보.md").name
         '개인정보'
+        >>> far = Source("domain", "~/company", Path("/Users/me/company"), True)
+        >>> Document(far, Path("/Users/me/company/법/개인정보.md"), "~/company/법/개인정보.md").label
+        '법/개인정보.md'
     """
 
     source: Source
@@ -70,6 +74,15 @@ class Document:
     def name(self) -> str:
         """The file name without `.md` — the document part of an address."""
         return self.path.stem
+
+    @property
+    def label(self) -> str:
+        """How it is written for the AI: `shown` inside; outside, only the part below its source folder."""
+        if not self.source.outside:
+            return self.shown
+        if self.path != self.source.path and self.path.is_relative_to(self.source.path):
+            return self.path.relative_to(self.source.path).as_posix()
+        return self.path.name
 
 
 def resolve(project: Project, entry: str) -> Source | None:
@@ -95,7 +108,7 @@ def resolve(project: Project, entry: str) -> Source | None:
 
 
 def sources(project: Project) -> list[Source]:
-    """List every entry of lantern.yaml `references`, resolved, in the order rules · terms · domain.
+    """List every reference path, resolved, in the order rules · terms · domain (lantern.yaml's, then `.lantern/`'s).
 
     Args:
         project: The project.
@@ -107,9 +120,12 @@ def sources(project: Project) -> list[Source]:
         >>> [(s.kind, s.outside) for s in sources(project)]  # doctest: +SKIP
         [('rules', True), ('terms', False)]
     """
+    from .index import outside_paths
+
+    far = outside_paths(project)
     out = []
     for kind in KINDS:
-        for entry in project.profile.get(f"references.{kind}") or []:
+        for entry in [*(project.profile.get(f"references.{kind}") or []), *far[kind]]:
             src = resolve(project, str(entry))
             if src:
                 out.append(Source(kind, src.entry, src.path, src.outside))
@@ -201,11 +217,15 @@ def find_document(project: Project, name: str) -> Document:
     """
     want = name.strip().removesuffix(".md")
     docs = all_documents(project)
-    hits = [d for d in docs if d.name == want or d.shown.removesuffix(".md") == want or d.shown.removesuffix(".md").endswith("/" + want)]
+    hits = [
+        d
+        for d in docs
+        if d.name == want or any(x.removesuffix(".md") == want or x.removesuffix(".md").endswith("/" + want) for x in (d.shown, d.label))
+    ]
     if len(hits) == 1:
         return hits[0]
     if hits:
-        raise LookupError(msg("Several reference documents are called {name}: {items}", name=name, items=", ".join(d.shown for d in hits)))
+        raise LookupError(msg("Several reference documents are called {name}: {items}", name=name, items=", ".join(d.label for d in hits)))
     if not docs:
         raise LookupError(msg("No references yet — bring company rules · terms · domain knowledge in with /l-ref"))
     raise LookupError(
@@ -255,4 +275,4 @@ def locate(project: Project, address: str) -> tuple[Document, outline.Section | 
         if close
         else msg("the document may have changed since it was indexed — /l-ref")
     )
-    raise LookupError(msg("No section '{title}' in {doc} — {hint}", title=query, doc=doc.shown, hint=hint))
+    raise LookupError(msg("No section '{title}' in {doc} — {hint}", title=query, doc=doc.label, hint=hint))

@@ -73,8 +73,19 @@ def _check(project: Project, path: str) -> int:
 def _index(project: Project, kind: str, path: str) -> int:
     """Index one source and say which sections are new · changed · gone (the skill tags only those)."""
     r = index_mod.index(project, kind, path)
-    if r.registered:
+    if r.registered and r.source.outside:
+        print(
+            msg(
+                "✔ Listed in {file} (outside material stays out of git): {kind} {path}",
+                file=project.rel(index_mod.index_file(project, True)),
+                kind=kind,
+                path=path,
+            )
+        )
+    elif r.registered:
         print(msg("✔ Added to lantern.yaml references.{kind}: {path}", kind=kind, path=path))
+    if r.moved:
+        print(msg("✔ Taken out of lantern.yaml, which goes into git: references.{kind} {path}", kind=kind, path=path))
     print(
         msg(
             "✔ {kind} {path}: {docs} documents · {sections} sections (new {added} · changed {changed} · gone {removed})",
@@ -98,7 +109,7 @@ def _read(project: Project, address: str) -> int:
     doc, section = src_mod.locate(project, address)
     text = read(doc.path)
     body = (outline.cut(text, section) if section else text).rstrip("\n")
-    print(f"<!-- {doc.name}{' › ' + section.address if section else ''} ({doc.shown}) -->")
+    print(f"<!-- {doc.name}{' › ' + section.address if section else ''} ({doc.label}) -->")
     if index_mod.changed_since_indexed(project, doc, section):
         print(msg("⚠ Changed since it was indexed (or never indexed) — the index may be behind: /l-ref {kind}", kind=doc.source.kind))
     parts = _parts(text, section)

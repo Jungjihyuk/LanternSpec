@@ -37,16 +37,17 @@ def test_outside_material_is_indexed_out_of_git_and_read_by_section(repo):
     init_project(repo)
     folder = _outside()
     _, out = repo("ref", "index", "domain", "~/company")
-    assert "✔ lantern.yaml references.domain에 더함: ~/company" in out
+    assert "✔ .lantern/references.yaml에 적음 (밖의 자료는 git에 올리지 않음): domain ~/company" in out
     assert "문서 1개 · 절 6개 (새로 6 · 바뀜 0 · 사라짐 0)" in out and "+ 개인정보#개인정보 처리 지침#파기" in out
-    assert yaml.safe_load((repo.root / "lantern.yaml").read_text(encoding="utf-8"))["references"]["domain"] == ["~/company"]
-    private = repo.root / ".lantern/references.yaml"
-    assert "~/company/개인정보.md" in private.read_text(encoding="utf-8")
+    assert "company" not in (repo.root / "lantern.yaml").read_text(encoding="utf-8")  # the outside path stays out of git
+    private = yaml.safe_load((repo.root / ".lantern/references.yaml").read_text(encoding="utf-8"))
+    assert private["sources"] == {"domain": ["~/company"]} and "~/company/개인정보.md" in private["documents"]
     assert not (repo.root / "docs/0. 템플릿/_meta/references.yaml").exists()  # nothing about it inside the project
     assert "references.yaml" in (repo.root / ".lantern/.gitignore").read_text(encoding="utf-8").splitlines()
 
     _, out = repo("ref", "read", "개인정보#주문#보관 기간")
     assert "5년 동안 둔다." in out and "30일" not in out and "⚠" not in out
+    assert "(개인정보.md) -->" in out and "company" not in out  # where it lives isn't printed
     code, out = repo("ref", "read", "개인정보#보관 기간", ok=False)
     assert code != 0 and "2번 나옵니다" in out and "개인정보#개인정보 처리 지침#회원#보관 기간" in out
     code, out = repo("ref", "read", "개인정보#보관기한", ok=False)
@@ -105,5 +106,17 @@ def test_doctor_notices_missing_paths_and_exclusions_that_match_nothing(repo):
     repo("profile", "set", "references.rules=[~/없는 폴더]", "references.exclude=[개인정보#없는 절, 개인정보#파기]")
     _, doctor = repo("doctor", ok=False)
     assert "references.rules: ~/없는 폴더가 없습니다" in doctor
+    assert "references.rules: ~/없는 폴더는 프로젝트 밖의 자료인데 lantern.yaml은 git에 올라갑니다" in doctor
     assert "references.exclude: 개인정보#없는 절에 맞는 절이 더는 없습니다" in doctor
     assert "개인정보#파기에 맞는" not in doctor
+
+
+def test_an_outside_path_written_in_lantern_yaml_is_moved_out_of_git(repo):
+    init_project(repo)
+    _outside()
+    repo("profile", "set", "references.terms=[~/company]")
+    _, out = repo("ref", "index", "terms", "~/company")
+    assert "✔ git에 올라가는 lantern.yaml에서 뺌: references.terms ~/company" in out
+    assert "company" not in (repo.root / "lantern.yaml").read_text(encoding="utf-8")
+    _, out = repo("ref")
+    assert "✔ terms  ~/company  (밖) · 문서 1개 · 색인됨" in out

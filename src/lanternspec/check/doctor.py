@@ -155,7 +155,7 @@ def _part_rows(project: Project) -> list[tuple[str, str]]:
 
 
 def _reference_rows(project: Project) -> list[tuple[str, str]]:
-    """Check the references: missing paths, an outside index in git, indexes behind their documents, exclusions matching nothing."""
+    """Check the references: missing paths, outside material in git, indexes behind their documents, exclusions matching nothing."""
     from ..refs import index as index_mod
     from ..refs import sources as src_mod
 
@@ -164,6 +164,20 @@ def _reference_rows(project: Project) -> list[tuple[str, str]]:
     if not found and not excluded:
         return []
     out = [(BAD, msg("references.{kind}: {path} doesn't exist", kind=s.kind, path=s.entry)) for s in found if not s.path.exists()]
+    for kind in src_mod.KINDS:
+        for entry in project.profile.get(f"references.{kind}") or []:
+            if (r := src_mod.resolve(project, str(entry))) and r.outside:
+                out.append(
+                    (
+                        WARN,
+                        msg(
+                            "references.{kind}: {path} is outside the project, but lantern.yaml goes into git — "
+                            "lantern ref index {kind} {path} moves it to .lantern/",
+                            kind=kind,
+                            path=entry,
+                        ),
+                    )
+                )
     private = index_mod.index_file(project, True)
     if git(["ls-files", "--error-unmatch", str(private)], project.root).returncode == 0:
         out.append(

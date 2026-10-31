@@ -23,10 +23,11 @@ Without a kind, skim the material, recommend one from the table and confirm.
 ## Material outside is never opened directly
 A `~/…` or absolute path is **outside** the project. Don't open such files with the file-reading tool; read them only through `lantern ref check` · `lantern ref read "<document>#<section>"`.
 Some AI tools ask permission for every read outside the working folder, and a run nobody watches simply fails.
+Never copy an outside document's path, titles or text into files that go into git (documents · code · commit messages).
 
 ## 1. Receive
 - Check the path. Convert PDF · HWP · Word to Markdown (`.md`) **in the same folder** and keep the original (the index reads only `.md`).
-- The person decides whether it lives inside the project or outside. Keep material that must not be published outside — its index stays out of git too.
+- The person decides whether it lives inside the project or outside. Keep material that must not be published outside — neither its path nor its index goes into git (`.lantern/references.yaml`).
 
 ## 2. Look at the structure
 ```bash
@@ -40,7 +41,7 @@ lantern ref check <path>
 ```bash
 lantern ref index <kind> <path>
 ```
-- The path is added to `lantern.yaml` `references.<kind>` when it isn't there.
+- A path not listed yet is added: an inside path to `lantern.yaml` `references.<kind>` (shared with the team), an outside path to `.lantern/references.yaml` (yours only).
 - In the output, `+` is a new section, `~` a changed one, `-` one that is gone. The next step handles only `+` · `~` — bringing the material in again doesn't ask about sections already approved.
 
 ## 4. Tags

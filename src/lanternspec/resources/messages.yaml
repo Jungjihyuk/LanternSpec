@@ -1119,6 +1119,9 @@
 "{path} doesn't exist": {ko: "{path}가 없습니다"}
 "{path} holds no Markdown document — convert PDF · HWP to .md first (keep the original)": {ko: "{path}에 Markdown 문서가 없습니다 — PDF · HWP는 먼저 .md로 바꾸세요 (원본은 남겨 두기)"}
 "✔ Added to lantern.yaml references.{kind}: {path}": {ko: "✔ lantern.yaml references.{kind}에 더함: {path}"}
+"✔ Listed in {file} (outside material stays out of git): {kind} {path}": {ko: "✔ {file}에 적음 (밖의 자료는 git에 올리지 않음): {kind} {path}"}
+"✔ Taken out of lantern.yaml, which goes into git: references.{kind} {path}": {ko: "✔ git에 올라가는 lantern.yaml에서 뺌: references.{kind} {path}"}
+"references.{kind}: {path} is outside the project, but lantern.yaml goes into git — lantern ref index {kind} {path} moves it to .lantern/": {ko: "references.{kind}: {path}는 프로젝트 밖의 자료인데 lantern.yaml은 git에 올라갑니다 — lantern ref index {kind} {path}로 .lantern/에 옮기세요"}
 "⚠ Changed since it was indexed (or never indexed) — the index may be behind: /l-ref {kind}": {ko: "⚠ 색인 뒤에 바뀌었습니다 (또는 색인한 적이 없음) — 색인이 늦었을 수 있습니다: /l-ref {kind}"}
 "{count} lines — read one part:": {ko: "{count}줄입니다 — 한 부분씩 읽으세요:"}
 "check: a file or folder · index: rules | terms | domain · read: document#section": {ko: "check: 파일이나 폴더 · index: rules | terms | domain · read: 문서#절"}
@@ -1131,8 +1134,8 @@
 "No headings in {count} lines — add `##` headings so one part can be read alone": {ko: "{count}줄에 제목이 없습니다 — 한 부분만 읽을 수 있게 `##` 제목을 더하세요"}
 "'{title}': a heading level is skipped ({a} → {b})": {ko: "'{title}': 제목 급을 건너뛰었습니다 ({a} → {b})"}
 "'{title}' runs {count} lines without a sub-heading — split it so it can be read in parts": {ko: "'{title}'가 하위 제목 없이 {count}줄입니다 — 나눠 읽을 수 있게 쪼개세요"}
-"  # material people bring in — relative path = inside the project, ~/… or absolute = outside (/l-ref)": {ko: "  # 사람이 넣는 참고 자료 — 상대 경로 = 프로젝트 안, ~/… · 절대 경로 = 밖 (/l-ref)"}
-"references.{key}: must be a list of paths (e.g. [~/company/glossary.md])": {ko: "references.{key}: 경로 목록이어야 합니다 (예: [~/company/용어집.md])"}
+"  # material people bring in, inside the project — outside paths stay in .lantern/references.yaml (/l-ref)": {ko: "  # 사람이 넣는 참고 자료 중 프로젝트 안의 것 — 밖의 경로는 .lantern/references.yaml에 둔다 (/l-ref)"}
+"references.{key}: must be a list of paths (e.g. [docs/glossary.md])": {ko: "references.{key}: 경로 목록이어야 합니다 (예: [docs/용어집.md])"}
 "Written by lantern ref index — don't edit by hand": {ko: "lantern ref index가 쓴 파일 — 손으로 고치지 않는다"}
 "Unknown kind {kind} — one of {items}": {ko: "모르는 종류 {kind} — {items} 중 하나"}
 "No reference document {name} — documents: {items}": {ko: "참고 자료에 {name} 문서가 없습니다 — 있는 문서: {items}"}

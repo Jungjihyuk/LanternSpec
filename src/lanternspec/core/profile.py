@@ -356,7 +356,7 @@ def _reference_problems(data: dict[str, Any]) -> list[str]:
     for key in ("rules", "terms", "domain", "exclude"):
         value = get_path(data, f"references.{key}") or []
         if not isinstance(value, list) or not all(isinstance(x, str) and x.strip() for x in value):
-            problems.append(msg("references.{key}: must be a list of paths (e.g. [~/company/glossary.md])", key=key))
+            problems.append(msg("references.{key}: must be a list of paths (e.g. [docs/glossary.md])", key=key))
     return problems
 
 
@@ -626,7 +626,7 @@ def render(data: dict[str, Any]) -> str:
     if any(refs.get(k) for k in ("rules", "terms", "domain", "exclude")):
         lines += [
             "references:",
-            msg("  # material people bring in — relative path = inside the project, ~/… or absolute = outside (/l-ref)"),
+            msg("  # material people bring in, inside the project — outside paths stay in .lantern/references.yaml (/l-ref)"),
             *(
                 f"  {k}: " + yaml.safe_dump(list(refs.get(k) or []), allow_unicode=True, default_flow_style=True, width=10_000).strip()
                 for k in ("rules", "terms", "domain", "exclude")

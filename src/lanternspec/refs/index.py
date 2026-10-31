@@ -1,11 +1,12 @@
 r"""The index of the references: a hash per document and per section, to tell what changed since it was brought in.
 
 Material inside the project is indexed in `docs/0. 템플릿/_meta/references.yaml` (committed, so the
-team gets the same verdict); material outside in `.lantern/references.yaml` (never committed, so a
-private document's titles don't leak into the repository). Only `lantern` writes these files.
+team gets the same verdict); material outside in `.lantern/references.yaml` (never committed). The
+outside file also holds the outside paths themselves, so nothing about private material — where it
+is, its titles, its index — reaches the repository. Only `lantern` writes these files.
 
 Responsibilities:
-    - index one source (and add it to lantern.yaml `references` when it isn't there yet)
+    - index one source, and list its path (inside → lantern.yaml `references`, outside → `.lantern/references.yaml`)
     - tell which documents changed, or were never indexed, since
 
 Not here:
@@ -41,7 +42,8 @@ class IndexResult:
         added: Sections new since the last run ("문서#제목").
         changed: Sections whose text changed.
         removed: Sections gone.
-        registered: True when the path was just added to lantern.yaml.
+        registered: True when the path was just listed (in lantern.yaml, or in `.lantern/` for outside material).
+        moved: True when an outside path was taken out of lantern.yaml (which goes into git).
 
     Example:
         >>> IndexResult(src_mod.Source("terms", "용어집.md", Path("용어집.md"), False), 1, 3).changed
@@ -55,6 +57,7 @@ class IndexResult:
     changed: list[str] = field(default_factory=list)
     removed: list[str] = field(default_factory=list)
     registered: bool = False
+    moved: bool = False
 
 
 def index_file(project: Project, outside: bool) -> Path:
@@ -74,6 +77,12 @@ def index_file(project: Project, outside: bool) -> Path:
     return project.state / FILE if outside else project.templates_dir / "_meta" / FILE
 
 
+def _file(project: Project, outside: bool) -> dict[str, Any]:
+    path = index_file(project, outside)
+    data = yaml.safe_load(read(path)) if path.exists() else None
+    return data if isinstance(data, dict) else {}
+
+
 def load(project: Project, outside: bool) -> dict[str, Any]:
     """Read one index.
 
@@ -88,21 +97,39 @@ def load(project: Project, outside: bool) -> dict[str, Any]:
         >>> load(project, False)["docs/3. 현재 상태/규칙/용어집.md"]["kind"]  # doctest: +SKIP
         'terms'
     """
-    path = index_file(project, outside)
-    data = yaml.safe_load(read(path)) if path.exists() else None
-    return dict((data or {}).get("documents") or {})
+    return dict(_file(project, outside).get("documents") or {})
 
 
-def _save(project: Project, outside: bool, docs: dict[str, Any]) -> None:
+def outside_paths(project: Project) -> dict[str, list[str]]:
+    """Read the outside paths, kept in `.lantern/references.yaml` instead of lantern.yaml so they stay out of git.
+
+    Args:
+        project: The project.
+
+    Returns:
+        Kind → paths as written; [] for a kind with none.
+
+    Example:
+        >>> outside_paths(project)["terms"]  # doctest: +SKIP
+        ['~/company/용어집.md']
+    """
+    listed = _file(project, True).get("sources") or {}
+    return {k: [str(x) for x in listed.get(k) or []] for k in src_mod.KINDS}
+
+
+def _save(project: Project, outside: bool, docs: dict[str, Any], paths: dict[str, list[str]] | None = None) -> None:
     path = index_file(project, outside)
+    data: dict[str, Any] = {}
     if outside:
         from ..core.state import ensure_state_dir
 
         ensure_state_dir(project)
+        paths = paths if paths is not None else outside_paths(project)
+        data["sources"] = {k: v for k, v in paths.items() if v}
+    data["documents"] = dict(sorted(docs.items()))
     path.parent.mkdir(parents=True, exist_ok=True)
     head = "# " + msg("Written by lantern ref index — don't edit by hand") + "\n"
-    body = yaml.safe_dump({"documents": dict(sorted(docs.items()))}, allow_unicode=True, sort_keys=False)
-    path.write_text(head + body, encoding="utf-8")
+    path.write_text(head + yaml.safe_dump(data, allow_unicode=True, sort_keys=False), encoding="utf-8")
 
 
 def entry_for(doc: src_mod.Document) -> dict[str, Any]:
@@ -126,7 +153,10 @@ def entry_for(doc: src_mod.Document) -> dict[str, Any]:
 
 
 def index(project: Project, kind: str, entry: str) -> IndexResult:
-    """Index one source, and add it to lantern.yaml `references.<kind>` when it isn't listed yet.
+    """Index one source, and list its path when it isn't listed yet.
+
+    An inside path is listed in lantern.yaml `references.<kind>`, for the team; an outside path in
+    `.lantern/references.yaml`, and taken out of lantern.yaml if someone wrote it there.
 
     Args:
         project: The project.
@@ -152,15 +182,29 @@ def index(project: Project, kind: str, entry: str) -> IndexResult:
     docs = src_mod.documents(project, source)
     if not docs:
         raise ValueError(msg("{path} holds no Markdown document — convert PDF · HWP to .md first (keep the original)", path=entry))
-    listed = [str(x) for x in project.profile.get(f"references.{kind}") or []]
-    registered = not any((r := src_mod.resolve(project, x)) and r.path == source.path for x in listed)
-    if registered:
-        profile_mod.update(project.root, {f"references.{kind}": [*listed, entry]})
-        project.profile = profile_mod.load(project.root)
+
+    def same(x: str) -> bool:
+        return bool((r := src_mod.resolve(project, x)) and r.path == source.path)
+
+    shared = [str(x) for x in project.profile.get(f"references.{kind}") or []]
+    paths = outside_paths(project)
+    moved = False
+    if source.outside:
+        registered = not any(same(x) for x in paths[kind])
+        if registered:
+            paths[kind].append(entry)
+        moved = any(same(x) for x in shared)
+        if moved:
+            profile_mod.update(project.root, {f"references.{kind}": [x for x in shared if not same(x)]})
+    else:
+        registered = not any(same(x) for x in shared)
+        if registered:
+            profile_mod.update(project.root, {f"references.{kind}": [*shared, entry]})
+    project.profile = profile_mod.load(project.root)
     stored = load(project, source.outside)
     prefix = src_mod.shown(project, source.path)
     old = {k: v for k, v in stored.items() if k == prefix or k.startswith(prefix.rstrip("/") + "/")}
-    result = IndexResult(source, len(docs), 0, registered=registered)
+    result = IndexResult(source, len(docs), 0, registered=registered, moved=moved)
     for doc in docs:
         new = entry_for(doc)
         before = (old.pop(doc.shown, None) or {}).get("sections") or {}
@@ -173,7 +217,7 @@ def index(project: Project, kind: str, entry: str) -> IndexResult:
     for gone, rec in old.items():  # documents no longer in the source
         result.removed += [f"{Path(gone).stem}#{a}" for a in (rec.get("sections") or {})]
         stored.pop(gone)
-    _save(project, source.outside, stored)
+    _save(project, source.outside, stored, paths if source.outside else None)
     return result
 
 
