@@ -7,6 +7,8 @@
 
 ## [Unreleased]
 
+## [0.2.5] - 2026-10-31
+
 ### 고침
 - **영역 안의 폴더를 다시 묻지 않음** — 여러 앱을 묶는 폴더(예: `pnpm-workspace.yaml`이 있는 `frontend`)를 영역으로 정하면, 그 안의 앱(`frontend/apps/web`)을 더는 정하지 않은 후보로 묻지 않고 `lantern parts`에 "영역 frontend에 포함"으로 보여 준다. 그 영역의 근거도 "패키지 설정 파일이 더는 없음" 대신 자기 `package.json`으로 나온다
 - **지운 하위 `AGENTS.md`를 더는 경고하지 않음** — 지웠지만 아직 커밋하지 않은 하위 `AGENTS.md`가 `lantern doctor` · `lantern upgrade`에서 "자동으로 전달되지 않습니다" 경고와 길이 예산 점검에 계속 나오던 문제를 고쳤다
@@ -129,7 +131,8 @@
   Rust · Go)와 규모로 코드 컨벤션을 기준표대로 골라 `AGENTS.md`와 `개발 원칙.md`에 넣는다 (`principles`, `lint`)
 - **작업 방식 · 평가** — 하네스 · 루프 · 그래프 추천(`harness suggest`), 실행 기록으로 스킬 · 모델 · 설정 비교(`eval`)
 
-[Unreleased]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.4...HEAD
+[Unreleased]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.5...HEAD
+[0.2.5]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.4...v0.2.5
 [0.2.4]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.1...v0.2.2

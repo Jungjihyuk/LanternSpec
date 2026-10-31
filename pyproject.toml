@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lanternspec"
-version = "0.2.4"
+version = "0.2.5"
 description = "Spec-driven development for agentic software engineering"
 readme = "README.md"
 requires-python = ">=3.12"
