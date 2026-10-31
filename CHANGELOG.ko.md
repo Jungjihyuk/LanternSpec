@@ -7,6 +7,10 @@
 
 ## [Unreleased]
 
+### 고침
+- **영역 안의 폴더를 다시 묻지 않음** — 여러 앱을 묶는 폴더(예: `pnpm-workspace.yaml`이 있는 `frontend`)를 영역으로 정하면, 그 안의 앱(`frontend/apps/web`)을 더는 정하지 않은 후보로 묻지 않고 `lantern parts`에 "영역 frontend에 포함"으로 보여 준다. 그 영역의 근거도 "패키지 설정 파일이 더는 없음" 대신 자기 `package.json`으로 나온다
+- **지운 하위 `AGENTS.md`를 더는 경고하지 않음** — 지웠지만 아직 커밋하지 않은 하위 `AGENTS.md`가 `lantern doctor` · `lantern upgrade`에서 "자동으로 전달되지 않습니다" 경고와 길이 예산 점검에 계속 나오던 문제를 고쳤다
+
 ## [0.2.4] - 2026-10-30
 
 업그레이드: `uv tool upgrade lanternspec` → 프로젝트마다 `lantern upgrade` (`/l-init` 스킬 문구를 새로 맞춘다)

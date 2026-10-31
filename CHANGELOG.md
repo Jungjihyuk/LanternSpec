@@ -7,6 +7,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed
+- **Folders inside a part are no longer asked about** — when a folder that groups several apps (e.g. `frontend` with `pnpm-workspace.yaml`) is made a part, the app inside it (`frontend/apps/web`) is no longer asked about as an undecided candidate; `lantern parts` shows it as "inside part frontend", and the part's evidence is its own `package.json` instead of "no package file found any more"
+- **Deleted folder `AGENTS.md` files are no longer warned about** — a folder `AGENTS.md` deleted but not yet committed kept showing in `lantern doctor` and `lantern upgrade`, both in the "not handed to" warning and in the length budget check
+
 ## [0.2.4] - 2026-10-30
 
 Upgrade: `uv tool upgrade lanternspec` → `lantern upgrade` in each project (refreshes the wording of the `/l-init` skill)
