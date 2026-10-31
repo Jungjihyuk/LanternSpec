@@ -42,6 +42,7 @@
   | `core/` | 문서 형식의 바탕 (프로필 · frontmatter · 템플릿 채우기 · ID · enums …) | 문서와 프로필의 *형식*이 바뀔 때 |
   | `work/` | 일하는 선로 (아이디어 → 기획 → 설계 → 할 일 → 구현) | 일하는 순서나 단계의 규칙이 바뀔 때 |
   | `learn/` | 배우는 선로 (부채 장부 · 지식 연결기) | 부채를 세는 규칙, 지식 저장소와 주고받는 방식이 바뀔 때 |
+  | `refs/` | 사람이 들이는 참고 자료 (사내 규칙 · 용어 · 도메인 지식 — 위치 · 색인 · 절 읽기) | 참고 자료를 찾고 · 색인하고 · AI에게 건네는 방식이 바뀔 때 |
   | `report/` | 읽어서 보여 주기 (보고 · 지금 상황 · 문서-코드 어긋남 · MOC) | 무엇을 어떻게 보여 줄지가 바뀔 때 |
   | `check/` | 검사와 양식 관리 (양식 검사 · git hook · doctor · 템플릿 버전) | "맞다 · 틀리다"의 기준이 바뀔 때 |
   | `tools/` | AI 도구 연결 (스킬 · 규칙 · 에이전트 hook 설치와 처리) | AI 도구의 형식이 바뀔 때 |
@@ -107,7 +108,7 @@
   | 지식 저장소 | obsidian · folder · notion | `learn/knowledge/<저장소>.py`(`Adapter` 구현) + `adapter_for`의 분기 + `core/profile.py`의 선택지 (아직 한 곳으로 모이지 않음) |
   | 상태 · 종류 값 | `enums.yaml`의 목록들 | `enums.yaml`에 한 줄 (코드 수정 없음) |
   | 언어 | ko · en | `resources/locales/<언어>/` 폴더 하나(`skills/` · `templates/` · `agents/AGENTS.md`) + `names.yaml` · `principles.yaml` · `conventions/*.yaml` · `messages.yaml`의 글마다 그 언어 칸 |
-  | CLI 명령 | 6개 그룹 | 그룹 파일의 `register()`에 추가 |
+  | CLI 명령 | 7개 그룹 | 그룹 파일의 `register()`에 추가 |
 
 - **계약을 지키는 법:**
   - 같은 계약의 구현은 **어디에 끼워도** 같은 약속을 지킨다.

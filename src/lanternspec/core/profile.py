@@ -57,6 +57,7 @@ DEFAULTS: dict[str, Any] = {
     "check": {"max_lines": 300},
     "report": {"views": ["kanban", "timeline", "debt"]},
     "code": {"parts": [], "ignored_parts": []},  # parts with their own toolchain and rules (lantern parts)
+    "references": {"rules": [], "terms": [], "domain": [], "exclude": []},  # material people bring in (lantern ref · /l-ref)
 }
 
 KNOWLEDGE_DEFAULTS: dict[str, Any] = {"type": "obsidian", "path": "", "areas_from": None, "write": "direct"}
@@ -341,10 +342,21 @@ def validate(data: dict[str, Any]) -> list[str]:
             problems.append(msg("knowledge.path: the knowledge store path is empty (delete the knowledge block if there is none)"))
     problems += _section_problems(data)
     problems += _part_problems(data)
+    problems += _reference_problems(data)
     if get_path(data, "project.team") == "team" and not get_path(data, "project.members"):
         problems.append(msg("project.members: for a team (2 or more), list the owner candidates"))
     if get_path(data, "lantern") != PROFILE_VERSION:
         problems.append(msg("lantern: the file format version must be {profile_version}", profile_version=PROFILE_VERSION))
+    return problems
+
+
+def _reference_problems(data: dict[str, Any]) -> list[str]:
+    """Check that each list under references holds paths (or, for exclude, addresses)."""
+    problems = []
+    for key in ("rules", "terms", "domain", "exclude"):
+        value = get_path(data, f"references.{key}") or []
+        if not isinstance(value, list) or not all(isinstance(x, str) and x.strip() for x in value):
+            problems.append(msg("references.{key}: must be a list of paths (e.g. [~/company/glossary.md])", key=key))
     return problems
 
 
@@ -610,6 +622,16 @@ def render(data: dict[str, Any]) -> str:
             {"parts": code.get("parts") or [], "ignored_parts": code.get("ignored_parts") or []}, allow_unicode=True, sort_keys=False
         )
         lines += ["  " + line for line in body.rstrip("\n").split("\n")]
+    refs = d.get("references") or {}
+    if any(refs.get(k) for k in ("rules", "terms", "domain", "exclude")):
+        lines += [
+            "references:",
+            msg("  # material people bring in — relative path = inside the project, ~/… or absolute = outside (/l-ref)"),
+            *(
+                f"  {k}: " + yaml.safe_dump(list(refs.get(k) or []), allow_unicode=True, default_flow_style=True, width=10_000).strip()
+                for k in ("rules", "terms", "domain", "exclude")
+            ),
+        ]
     lines.append("")
     return "\n".join(lines)
 

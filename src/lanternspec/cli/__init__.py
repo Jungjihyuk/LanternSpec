@@ -11,10 +11,10 @@ import sys
 
 from .. import __version__
 from ..core.messages import msg
-from . import check, core, learn, report, tools, work
+from . import check, core, learn, refs, report, tools, work
 from .common import CliError, Handler
 
-GROUPS = (tools, core, work, learn, report, check)  # order of the help list
+GROUPS = (tools, core, work, learn, refs, report, check)  # order of the help list
 
 
 def build_parser() -> argparse.ArgumentParser:

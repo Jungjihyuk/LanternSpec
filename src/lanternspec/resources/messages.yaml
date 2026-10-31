@@ -1101,3 +1101,43 @@
 
 # core/state.py
 "LanternSpec local state — personal records are not committed": {ko: "LanternSpec 로컬 상태 — 개인 기록은 올리지 않는다"}
+
+# refs/ · cli/refs.py · core/outline.py — references
+"references.{kind}: {path} doesn't exist": {ko: "references.{kind}: {path}가 없습니다"}
+"{path} is in git — it holds the titles of material outside the project; git rm --cached it": {ko: "{path}가 git에 올라가 있습니다 — 프로젝트 밖 자료의 제목이 들어 있습니다. git rm --cached로 빼세요"}
+"{kind}: changed or never indexed since /l-ref: {items} — /l-ref {kind}": {ko: "{kind}: 색인 뒤에 바뀌었거나 색인한 적이 없는 문서: {items} — /l-ref {kind}"}
+"References: {count} sources, indexes up to date": {ko: "참고 자료 {count}곳 — 색인이 최신입니다"}
+"references.exclude: {address} matches no section any more (renamed?)": {ko: "references.exclude: {address}에 맞는 절이 더는 없습니다 (제목이 바뀌었나요?)"}
+"✔ {kind} {path}: {docs} documents · {sections} sections (new {added} · changed {changed} · gone {removed})": {ko: "✔ {kind} {path}: 문서 {docs}개 · 절 {sections}개 (새로 {added} · 바뀜 {changed} · 사라짐 {removed})"}
+"References (company rules · terms · domain knowledge): list · check · index · read": {ko: "참고 자료(사내 규칙 · 용어 · 도메인 지식): 목록 · 구조 점검 · 색인 · 절 읽기"}
+"lantern ref {action} needs a path or an address": {ko: "lantern ref {action}에는 경로나 주소가 필요합니다"}
+"No references yet — bring company rules · terms · domain knowledge in with /l-ref": {ko: "아직 참고 자료가 없습니다 — 사내 규칙 · 용어 · 도메인 지식은 /l-ref로 들입니다"}
+"outside": {ko: "밖"}
+"inside": {ko: "안"}
+"{count} not indexed or changed": {ko: "{count}개 색인 안 됨 · 바뀜"}
+"indexed": {ko: "색인됨"}
+"{path} doesn't exist": {ko: "{path}가 없습니다"}
+"{path} holds no Markdown document — convert PDF · HWP to .md first (keep the original)": {ko: "{path}에 Markdown 문서가 없습니다 — PDF · HWP는 먼저 .md로 바꾸세요 (원본은 남겨 두기)"}
+"✔ Added to lantern.yaml references.{kind}: {path}": {ko: "✔ lantern.yaml references.{kind}에 더함: {path}"}
+"⚠ Changed since it was indexed (or never indexed) — the index may be behind: /l-ref {kind}": {ko: "⚠ 색인 뒤에 바뀌었습니다 (또는 색인한 적이 없음) — 색인이 늦었을 수 있습니다: /l-ref {kind}"}
+"{count} lines — read one part:": {ko: "{count}줄입니다 — 한 부분씩 읽으세요:"}
+"check: a file or folder · index: rules | terms | domain · read: document#section": {ko: "check: 파일이나 폴더 · index: rules | terms | domain · read: 문서#절"}
+"index: the file or folder to index (relative = inside, ~/… = outside)": {ko: "index: 색인할 파일이나 폴더 (상대 경로 = 안, ~/… = 밖)"}
+"lantern ref index <rules|terms|domain> <path>": {ko: "lantern ref index <rules|terms|domain> <경로>"}
+"doesn't exist": {ko: "없음"}
+"{count} documents": {ko: "문서 {count}개"}
+"{count} sections": {ko: "절 {count}개"}
+"({count} lines)": {ko: "({count}줄)"}
+"No headings in {count} lines — add `##` headings so one part can be read alone": {ko: "{count}줄에 제목이 없습니다 — 한 부분만 읽을 수 있게 `##` 제목을 더하세요"}
+"'{title}': a heading level is skipped ({a} → {b})": {ko: "'{title}': 제목 급을 건너뛰었습니다 ({a} → {b})"}
+"'{title}' runs {count} lines without a sub-heading — split it so it can be read in parts": {ko: "'{title}'가 하위 제목 없이 {count}줄입니다 — 나눠 읽을 수 있게 쪼개세요"}
+"  # material people bring in — relative path = inside the project, ~/… or absolute = outside (/l-ref)": {ko: "  # 사람이 넣는 참고 자료 — 상대 경로 = 프로젝트 안, ~/… · 절대 경로 = 밖 (/l-ref)"}
+"references.{key}: must be a list of paths (e.g. [~/company/glossary.md])": {ko: "references.{key}: 경로 목록이어야 합니다 (예: [~/company/용어집.md])"}
+"Written by lantern ref index — don't edit by hand": {ko: "lantern ref index가 쓴 파일 — 손으로 고치지 않는다"}
+"Unknown kind {kind} — one of {items}": {ko: "모르는 종류 {kind} — {items} 중 하나"}
+"No reference document {name} — documents: {items}": {ko: "참고 자료에 {name} 문서가 없습니다 — 있는 문서: {items}"}
+"close titles: {items}": {ko: "비슷한 제목: {items}"}
+"the document may have changed since it was indexed — /l-ref": {ko: "색인 뒤에 문서가 바뀌었을 수 있습니다 — /l-ref"}
+"No section '{title}' in {doc} — {hint}": {ko: "{doc}에 '{title}' 절이 없습니다 — {hint}"}
+"Several reference documents are called {name}: {items}": {ko: "{name}이라는 참고 자료 문서가 여럿입니다: {items}"}
+"'{title}' appears {count} times in {doc} — add a title above it: {items}": {ko: "{doc}에 '{title}'가 {count}번 나옵니다 — 위 제목을 붙여 고르세요: {items}"}

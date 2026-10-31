@@ -97,6 +97,7 @@ def run(project: Project) -> list[tuple[str, str]]:
                 if path.exists()
                 else (BAD, msg("Knowledge store path doesn't exist: {path}", path=path))
             )
+    out += _reference_rows(project)
     st = state.load(project)
     if not st.get("version"):
         out.append((WARN, msg("Skills are not installed — lantern install")))
@@ -150,6 +151,41 @@ def _part_rows(project: Project) -> list[tuple[str, str]]:
     unseen, blind = unseen_rules(project, tools)
     if unseen:
         out.append((WARN, unseen_note(unseen, blind)))
+    return out
+
+
+def _reference_rows(project: Project) -> list[tuple[str, str]]:
+    """Check the references: missing paths, an outside index in git, indexes behind their documents, exclusions matching nothing."""
+    from ..refs import index as index_mod
+    from ..refs import sources as src_mod
+
+    found = src_mod.sources(project)
+    excluded = [str(x) for x in project.profile.get("references.exclude") or []]
+    if not found and not excluded:
+        return []
+    out = [(BAD, msg("references.{kind}: {path} doesn't exist", kind=s.kind, path=s.entry)) for s in found if not s.path.exists()]
+    private = index_mod.index_file(project, True)
+    if git(["ls-files", "--error-unmatch", str(private)], project.root).returncode == 0:
+        out.append(
+            (
+                BAD,
+                msg(
+                    "{path} is in git — it holds the titles of material outside the project; git rm --cached it", path=project.rel(private)
+                ),
+            )
+        )
+    by_kind: dict[str, list[str]] = {}
+    for s in index_mod.stale(project):
+        by_kind.setdefault(s.document.source.kind, []).append(s.document.name + ("" if s.never else f" ({len(s.changed)})"))
+    for kind, docs in by_kind.items():
+        out.append((WARN, msg("{kind}: changed or never indexed since /l-ref: {items} — /l-ref {kind}", kind=kind, items=", ".join(docs))))
+    for address in excluded:
+        try:
+            src_mod.locate(project, address)
+        except LookupError:
+            out.append((WARN, msg("references.exclude: {address} matches no section any more (renamed?)", address=address)))
+    if found and not out:
+        out.append((OK, msg("References: {count} sources, indexes up to date", count=len(found))))
     return out
 
 

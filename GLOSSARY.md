@@ -17,6 +17,7 @@ LanternSpec이 이름을 쓰는 여러 곳(lantern.yaml 키 · enums.yaml 목록
 | `area` · `areas` | enums.yaml `area` = 부채의 주제 분류. `Adapter.areas()` = 지식 저장소 안의 영역(폴더) 목록 | enums.yaml · 지식 `Adapter` |
 | `name` | lantern.yaml `project.name` = 프로젝트 이름. `Tool.name` · `Adapter.name` = 도구 · 저장소를 가리키는 키 (claude · obsidian) | lantern.yaml · `Tool` · `Adapter` |
 | `hook` · `hooks` | `lantern hook` = AI 도구 · git이 부르는 내부 명령. `lantern hooks` = git hook 설치. lantern.yaml `git.hooks` = git hook의 세기 (warn · block). `Tool.hooks()` = AI 도구 설정에 넣는 hook 항목 | CLI · lantern.yaml · `Tool` |
+| `rules` | lantern.yaml `references.rules` = 사람이 들이는 사내 규칙 자료의 경로 (안 · 밖). names.yaml 폴더 `rules` = 문서 폴더 `3. 현재 상태/규칙` (협업 규칙 · 개발 원칙 같은 이 프로젝트의 규칙 문서) | lantern.yaml · names.yaml folders |
 | `debt_status` | enums.yaml `debt_status` = 부채 카드 하나의 상태 값 목록. 문서 `debt_status` = 부채 전체를 보여 주는 자동 생성 문서 "부채 현황" | enums.yaml · names.yaml docs |
 
 ## 한 개념, 여러 곳
@@ -37,7 +38,8 @@ LanternSpec이 이름을 쓰는 여러 곳(lantern.yaml 키 · enums.yaml 목록
 | `debt_card` · `debt_cards` | 부채 카드 — 부채 하나 = 문서 하나 | 문서 · 폴더 |
 | `adr` | 결정 기록 (ADR) | 문서 · 스킬 |
 | `map` | 문서 지도 (MOC) 갱신 | CLI · 스킬 |
-| `part` · `parts` | 영역 — 자기 도구(매니페스트)와 자기 AGENTS.md를 가진 폴더. 둘 이상일 때만 영역마다 규칙이 생긴다. 지식 저장소의 `areas`와는 다른 말 | lantern.yaml(`code.parts`) · CLI(`lantern parts`) |
+| `part` · `parts` | 영역 — 저장소 안의 하위 프로젝트: 패키지 설정 파일(pyproject.toml · package.json 등)과 자기 AGENTS.md를 가진 폴더. 둘 이상일 때만 영역마다 규칙이 생긴다. 지식 저장소의 `areas`와는 다른 말 | lantern.yaml(`code.parts`) · CLI(`lantern parts`) |
+| `ref` · `references` | 참고 자료 — 사람이 들이는 사내 규칙 · 용어 · 도메인 지식 (안 · 밖 경로). 개인 지식 저장소 `knowledge`와는 다른 것 | lantern.yaml(`references.*`) · CLI(`lantern ref`) · 스킬(`/l-ref`) |
 | `resume` | 지난 대화 이어 가기 — 어느 AI 도구의 대화든 멈춘 곳부터 | CLI(`lantern resume`) · 스킬(`/l-resume`) |
 | `sync` | 문서와 코드 맞추기 | CLI · 스킬 |
 | `template` · `templates` | 양식 | 폴더 · CLI · 스킬 |

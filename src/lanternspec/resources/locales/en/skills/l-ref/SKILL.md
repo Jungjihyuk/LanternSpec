@@ -1,0 +1,52 @@
+---
+name: l-ref
+description: Bring in references — company rules, a glossary or domain knowledge (laws · policies · specs), inside the project or outside it; check their structure, index them, then propose tags per section for approval. Use when the user wants to bring in company rules, a glossary, or domain documents for the AI to follow.
+invocation: manual
+argument-hint: "[rules|terms|domain] <path>"
+---
+
+# /l-ref — bring in references
+
+**Purpose:** leave people's material as it is, in whatever form, and index it so the AI can find and read just the section it needs.
+The original is not changed (except adding headings to material inside the project, with approval).
+
+Input: `$ARGUMENTS` — `<kind> <path>`. The kind matches the keys of `references` in `lantern.yaml`.
+
+| Kind | What material | When it reaches the AI |
+|---|---|---|
+| `rules` | Company rules — must be followed, short | Always (verbatim in AGENTS.md) |
+| `terms` | Glossary — what words mean · words not to use | Only a one-line rule always; the table when needed |
+| `domain` | Domain knowledge — large, many documents, needed now and then | Only when needed (just that section, found through the index) |
+
+Without a kind, skim the material, recommend one from the table and confirm.
+
+## Material outside is never opened directly
+A `~/…` or absolute path is **outside** the project. Don't open such files with the file-reading tool; read them only through `lantern ref check` · `lantern ref read "<document>#<section>"`.
+Some AI tools ask permission for every read outside the working folder, and a run nobody watches simply fails.
+
+## 1. Receive
+- Check the path. Convert PDF · HWP · Word to Markdown (`.md`) **in the same folder** and keep the original (the index reads only `.md`).
+- The person decides whether it lives inside the project or outside. Keep material that must not be published outside — its index stays out of git too.
+
+## 2. Look at the structure
+```bash
+lantern ref check <path>
+```
+- A ⚠ means the document is hard to read section by section (no headings · a skipped heading level · a very long section).
+  - **Inside:** keep the content and propose only `##` headings to add → add them once approved.
+  - **Outside:** don't change the original. Say what the problem is; the person decides whether to fix the original or leave it.
+
+## 3. Index
+```bash
+lantern ref index <kind> <path>
+```
+- The path is added to `lantern.yaml` `references.<kind>` when it isn't there.
+- In the output, `+` is a new section, `~` a changed one, `-` one that is gone. The next step handles only `+` · `~` — bringing the material in again doesn't ask about sections already approved.
+
+## 4. Tags
+Read and follow only that kind's file in this folder: `rules.md` · `terms.md` · `domain.md`.
+
+## 5. Finish
+```bash
+lantern close l-ref
+```
