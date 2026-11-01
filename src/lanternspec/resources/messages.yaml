@@ -1200,13 +1200,13 @@
 "No section '{title}' in {doc} — {hint}": {ko: "{doc}에 '{title}' 절이 없습니다 — {hint}"}
 "Several reference documents are called {name}: {items}": {ko: "{name}이라는 참고 자료 문서가 여럿입니다: {items}"}
 "'{title}' appears {count} times in {doc} — add a title above it: {items}": {ko: "{doc}에 '{title}'가 {count}번 나옵니다 — 위 제목을 붙여 고르세요: {items}"}
-"✔ Attached to {work_id}: {address} — written in {path}": {ko: "✔ {work_id}에 걸었습니다: {address} — {path}에 적음"}
-"📚 Domain knowledge {work_id} uses — read each right before the task that needs it:": {ko: "📚 {work_id}에 걸린 도메인 지식 — 그것이 필요한 할 일을 시작할 때 읽으세요:"}
+"✔ Attached to {work_id}: {address} — written in {path}": {ko: "✔ {work_id}에 연결했습니다: {address} — {path}에 적음"}
+"📚 Domain knowledge {work_id} uses — read each right before the task that needs it:": {ko: "📚 {work_id}에 연결된 도메인 지식 — 그것이 필요한 할 일을 시작할 때 읽으세요:"}
 "lantern ref describe <document#section> --what \"…\" --when \"…\" [--keys \"a, b\"] [--verbatim]": {ko: "lantern ref describe <문서#절> --what \"…\" --when \"…\" [--keys \"가, 나\"] [--verbatim]"}
 "✔ Description taken away: {address}": {ko: "✔ 설명을 거뒀습니다: {address}"}
 "✔ Described: {address}": {ko: "✔ 설명을 넣었습니다: {address}"}
 "lantern ref attach <document#section> --work W-012 [--task T03] [--note \"…\"]": {ko: "lantern ref attach <문서#절> --work W-012 [--task T03] [--note \"…\"]"}
-"{work_id} uses no domain knowledge — lantern ref domain lists what there is": {ko: "{work_id}에 걸린 도메인 지식이 없습니다 — 무엇이 있는지는 lantern ref domain"}
+"{work_id} uses no domain knowledge — lantern ref domain lists what there is": {ko: "{work_id}에 연결된 도메인 지식이 없습니다 — 무엇이 있는지는 lantern ref domain"}
 "describe: its topic only — never the rule itself": {ko: "describe: 주제만 — 규칙의 내용(숫자 · 기한)은 쓰지 않음"}
 "describe: the situation to read it in": {ko: "describe: 읽어야 하는 상황"}
 "describe: its key terms, \"word, word\"": {ko: "describe: 핵심 용어, \"말, 말\""}

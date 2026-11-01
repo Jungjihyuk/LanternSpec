@@ -14,7 +14,7 @@ argument-hint: "W-NNN"
 ## 0. 시작 전
 - `<<file.plan>>`를 읽는다. **`<<marker.unknown>>`가 남아 있으면 먼저 묻는다** (최대 <<plan.max_questions>>개, 영향 큰 순).
 - 현재 상태에서 관련된 부분만 읽는다: `<<folder.current>>/<<file.architecture>>` · `<<folder.screens>>/` · `<<folder.data>>/schema.dbml`.
-- 설계 판단이 도메인 규칙에 달렸으면 `lantern ref domain --work W-012`에 걸린 절만 `lantern ref read`로 읽는다 (색인 전체를 다시 훑지 않는다).
+- 설계 판단이 도메인 규칙에 달렸으면 `lantern ref domain --work W-012`에 연결된 절만 `lantern ref read`로 읽는다 (색인 전체를 다시 훑지 않는다).
 
 ## 1. <<file.design>> 만들기 · 칸 고르기
 ```bash
@@ -67,7 +67,7 @@ lantern design approve W-012 --by "<승인한 사람>"     # auto로 통과했�
 ```
 고칠 곳을 들으면 고치고 다시 요약을 보여 준다.
 
-도메인 지식이 있는 프로젝트면(`lantern ref domain`이 비어 있지 않으면) 승인 화면에 한 줄 더한다: `📚 참고한 도메인 지식 N개 — 필요한데 빠진 것이 있나요?` 빠진 것을 들으면 `lantern ref attach`로 건다.
+도메인 지식이 있는 프로젝트면(`lantern ref domain`이 비어 있지 않으면) 승인 화면에 한 줄 더한다: `📚 참고한 도메인 지식 N개 — 필요한데 빠진 것이 있나요?` 빠진 것을 들으면 `lantern ref attach`로 연결한다.
 
 <!-- lantern:if knowledge -->
 ## 7. 모르는 기술 → /l-learn 후보
