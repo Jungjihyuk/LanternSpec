@@ -88,7 +88,7 @@ def test_an_english_project_end_to_end(repo):
     repo("task", "start", "W-001-T01")
     assert "[started:: " in (work / "Tasks.md").read_text(encoding="utf-8")
     _, out = repo("check", str(work / "Plan.md"))
-    assert "At a glance (required)" in out
+    assert "What this work does and why, in one sentence (required)" in out
 
     # what lantern says and writes is English too
     outputs = {"check": out, "status": repo("status")[1], "map": repo("map")[1]}

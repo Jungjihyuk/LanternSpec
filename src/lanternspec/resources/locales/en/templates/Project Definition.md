@@ -6,8 +6,8 @@ created: ${today}
 updated: ${today}
 links: []
 template: Project Definition
-template_version: 1.0.0
-based_on: 1.0.0
+template_version: 1.0.1
+based_on: 1.0.1
 code: []
 checked_commit: ""
 ---
@@ -17,27 +17,30 @@ checked_commit: ""
 > {{This project in one sentence (required)}}
 
 ## What kind of project
-> [!guide] ⚙️ Generated section · Copied from the answers in `lantern.yaml`. To change it, run `/l-init` again (don't edit it here).
+> [!guide] ⚙️ A table copied from your answers to `/l-init` (`lantern.yaml`).
+> Don't edit it here; to change it, run `/l-init` again.
 
 ${profile_table}
 
 ## Who it is for
-> [!guide] 🟦 Source section · The main users and the problem they have.
+> [!guide] Who mainly uses it, and what problem those people have today.
 
 {{Main users and their problem (required)}}
 
 ## Goals
-> [!guide] 🟦 Source section · 2–4 results that would let you call this project a success. Make them checkable.
+> [!guide] 2–4 results that would let you call this project a success. Write them so you can check whether they were reached (e.g. "sign-up finishes within 3 minutes").
 
 - {{Goal (required)}}
 
 ## Not doing
-> [!guide] 🟦 Source section · Out of scope. Things for later become ideas.
+> [!guide] What this project has decided not to do. If it might happen someday, keep it as an idea (`/l-idea`) instead of here.
 
 - {{Not doing}}
 
 ## Key terms
-> [!guide] 🟦 Source section · So the team and the AI call things by the same names.
+> [!guide] Only the few words needed to understand this project.
+> The full list of terms and the 'words to avoid' go in [[${path.glossary}]].
+> `lantern check` reads only the glossary.
 
 | Term | Meaning |
 |---|---|
@@ -48,3 +51,4 @@ ${profile_table}
 | Version | Date | What changed |
 |---|---|---|
 | 1.0.0 | 2026-10-27 | Base template |
+| 1.0.1 | 2026-11-02 | Clearer writing guides (long ones split into lines, symbols and internal names in words) |

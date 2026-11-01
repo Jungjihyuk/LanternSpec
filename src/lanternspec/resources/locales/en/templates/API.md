@@ -6,8 +6,8 @@ created: ${today}
 updated: ${today}
 links: []
 template: API
-template_version: 1.0.0
-based_on: 1.0.0
+template_version: 1.0.1
+based_on: 1.0.1
 code: []
 checked_commit: ""
 ---
@@ -16,7 +16,9 @@ checked_commit: ""
 > [!abstract] At a glance
 > {{The API style and how it authenticates, in one sentence (required)}}
 
-> [!guide] For the details of each endpoint, **the code is the reference**. If they can be generated from the code (OpenAPI …), link the generated output; keep only the list and the rules here.
+> [!guide] The exact shape of requests and responses: **the code is the reference**.
+> - If documentation can be generated from the code (OpenAPI …), link the result
+> - Keep only the list of endpoints and the common rules here
 
 ## Common rules
 - Authentication: {{Authentication}}
@@ -32,3 +34,4 @@ checked_commit: ""
 | Version | Date | What changed |
 |---|---|---|
 | 1.0.0 | 2026-10-27 | Base template |
+| 1.0.1 | 2026-11-02 | Clearer writing guides (long ones split into lines, symbols and internal names in words) |

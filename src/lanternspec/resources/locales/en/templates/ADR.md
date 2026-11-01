@@ -6,8 +6,8 @@ created: ${today}
 updated: ${today}
 links: ${links}
 template: ADR
-template_version: 1.0.0
-based_on: 1.0.0
+template_version: 1.0.1
+based_on: 1.0.1
 superseded_by: ""
 ---
 # 📝 ${id} ${name}
@@ -16,12 +16,12 @@ superseded_by: ""
 > {{The decision in one line (required)}}
 
 ## Context
-> [!guide] 🟦 Source section · What had to be decided, and why now. Check question: "in six months, will someone ask 'why did we do this?'"
+> [!guide] What had to be decided, and why now. A decision worth recording is one where, six months later, someone might ask "why did we do this?"
 
 {{Context (required)}}
 
 ## Options considered
-> [!guide] 🟦 Source section · Pros and cons of each option. Keep the ones not chosen too.
+> [!guide] The pros and cons of each option. Keep the options not chosen too.
 
 | Option | Pros | Cons |
 |---|---|---|
@@ -29,12 +29,12 @@ superseded_by: ""
 | {{Option B}} | {{Pros}} | {{Cons}} |
 
 ## Decision
-> [!guide] 🟦 Source section · What was chosen and the deciding reason. Who decided, and when.
+> [!guide] What was chosen, the biggest reason for it, and who decided when.
 
 {{Decision (required)}}
 
 ## Consequences
-> [!guide] 🟦 Source section · What gets easier · what gets harder · which documents change.
+> [!guide] What this decision makes easier, what it makes harder, and which documents must change with it.
 
 {{Consequences}}
 
@@ -43,3 +43,4 @@ superseded_by: ""
 | Version | Date | What changed |
 |---|---|---|
 | 1.0.0 | 2026-10-27 | Base template |
+| 1.0.1 | 2026-11-02 | Clearer writing guides (long ones split into lines, symbols and internal names in words) |

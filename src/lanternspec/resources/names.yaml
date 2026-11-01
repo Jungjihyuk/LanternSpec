@@ -144,7 +144,7 @@ sections:
   domain_refs:
     docs: [plan]
     since: "1.1.0"
-    ko: {title: "참고한 도메인 지식", feature: "/l-plan이 이 작업에 쓸 도메인 지식의 절을 이 칸에 고르고, /l-build가 그 할 일을 시작할 때 거기 걸린 절만 읽습니다"}
+    ko: {title: "참고한 도메인 지식", feature: "/l-plan이 이 작업에 쓸 도메인 지식의 절을 이 칸에 고르고, /l-build가 그 할 일을 시작할 때 거기 연결된 절만 읽습니다"}
     en: {title: "Domain Knowledge Used", feature: "/l-plan picks here the domain-knowledge sections this work needs, and /l-build reads only the ones tied to a task when it starts that task"}
   legacy_docs:
     docs: [legacy_map]

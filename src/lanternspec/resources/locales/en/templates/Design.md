@@ -6,8 +6,8 @@ created: ${today}
 updated: ${today}
 links: ${links}
 template: Design
-template_version: 1.0.0
-based_on: 1.0.0
+template_version: 1.0.1
+based_on: 1.0.1
 parts: []
 approved: ""
 adr: []
@@ -15,12 +15,15 @@ adr: []
 # 📐 ${work_id} ${name} — Design
 
 > [!abstract] At a glance
-> {{At a glance (required)}}
+> {{How you decided to build it, in one sentence (required)}}
 
-> [!guide] Write **only what changes** in this work. Of the three sections (🏗 Structure · 🎨 Screens · 🗄 Data), delete the ones you don't need, and list the ones you keep in frontmatter `parts` (e.g. `[structure, data]`). Once approved: `approved: "date name"`.
+> [!guide] Write **only what changes** in this work.
+> - Of 🏗 Structure · 🎨 Screens · 🗄 Data, delete the sections you don't need
+> - List the ones you keep in the `parts` property at the top (e.g. `[structure, data]`)
+> - When a person approves it, `lantern design approve` writes the date and name into `approved`
 
 ## 🏗 Structure
-> [!guide] 🟦 Source section · The parts and flows that change, as Mermaid. The text explains the diagram.
+> [!guide] Draw the parts and flows that change with Mermaid; the text explains the diagram.
 
 ```mermaid
 flowchart LR
@@ -30,14 +33,18 @@ flowchart LR
 {{Structure notes}}
 
 ## 🎨 Screens
-> [!guide] 🟦 Source section · Mockups come only as **files** (images · HTML exports) under the work's `Screens/` folder. Share links are not accepted. **The picture is the source**; the text explains it.
+> [!guide] The **picture** is the reference; the text explains it.
+> - Keep mockups as files (images · HTML exports) under the work's `Screens/` folder and link them
+> - Don't use share links such as Figma's. They may change or stop opening later
 
 | Screen | Mockup file | Notes |
 |---|---|---|
 | {{Screen name}} | `Screens/{{File}}` | {{Notes}} |
 
 ## 🗄 Data
-> [!guide] 🟦 Source section · Only the **changes** against the current ERD (`3. Current State/Data/schema.dbml`), in DBML. `/l-build` merges them into the source when done. Check with `lantern check-dbml`.
+> [!guide] Write in DBML **only the tables and columns that change** from the current data structure (`3. Current State/Data/schema.dbml`).
+> - When the work is done, `/l-build` merges them into `schema.dbml`
+> - Check the syntax with `lantern check-dbml`
 
 ```dbml
 // {{Tables that change}}
@@ -50,7 +57,8 @@ flowchart LR
 **Migration plan:** {{Migration plan}}
 
 ## Hard-to-reverse choices
-> [!guide] If this changes a database, framework, auth method, outside service, data structure or public API, write it here and record the decision with `/l-adr`. Otherwise "None".
+> [!guide] If there is a choice that will be hard to undo later, write it here and record the decision with `/l-adr`. Otherwise "None".
+> For example: choosing or changing a database · framework · auth method · outside service, or changing the data structure or a public API
 
 {{Hard-to-reverse choices}}
 
@@ -59,3 +67,4 @@ flowchart LR
 | Version | Date | What changed |
 |---|---|---|
 | 1.0.0 | 2026-10-27 | Base template |
+| 1.0.1 | 2026-11-02 | Clearer writing guides (long ones split into lines, symbols and internal names in words) |

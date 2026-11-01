@@ -99,8 +99,19 @@ def has(text: str, titles: Iterable[str]) -> bool:
     return find(text, titles) is not None
 
 
+def _split_guides(content: str) -> tuple[list[str], list[str]]:
+    """Split a section's lines into guide callouts (a `> [!guide]` line and the `>` lines right after it) and the rest."""
+    guides: list[str] = []
+    rest: list[str] = []
+    in_guide = False
+    for line in content.split("\n"):
+        in_guide = line.startswith("> [!guide]") or (in_guide and line.startswith(">"))
+        (guides if in_guide else rest).append(line)
+    return guides, rest
+
+
 def body(text: str, titles: Iterable[str]) -> str:
-    r"""Return a section's content without `> [!guide]` lines.
+    r"""Return a section's content without its `> [!guide]` callouts (every `>` line of the callout).
 
     Args:
         text: The whole document.
@@ -110,13 +121,13 @@ def body(text: str, titles: Iterable[str]) -> str:
         The content, stripped; "" when the section is missing.
 
     Example:
-        >>> body("## 지금 상황\n> [!guide] 덮어쓴다\n- 진행: A\n", ["지금 상황"])
+        >>> body("## 지금 상황\n> [!guide] 덮어쓴다\n> - 3~5줄\n- 진행: A\n", ["지금 상황"])
         '- 진행: A'
     """
     m = find(text, titles)
     if m is None:
         return ""
-    return "\n".join(l for l in m.group(2).split("\n") if not l.startswith("> [!guide]")).strip()
+    return "\n".join(_split_guides(m.group(2))[1]).strip()
 
 
 def replace(text: str, titles: Iterable[str], content: str) -> tuple[str, str] | None:
@@ -131,12 +142,13 @@ def replace(text: str, titles: Iterable[str], content: str) -> tuple[str, str] |
         (new document, previous content); None when the section is missing.
 
     Example:
-        >>> new, old = replace("## 지금 상황\n> [!guide] 덮어쓴다\n- A\n## 증거\n", ["지금 상황"], "- B")
+        >>> new, old = replace("## 지금 상황\n> [!guide] 덮어쓴다\n> - 3~5줄\n- A\n## 증거\n", ["지금 상황"], "- B")
         >>> old
         '- A'
         >>> print(new, end="")
         ## 지금 상황
         > [!guide] 덮어쓴다
+        > - 3~5줄
         <BLANKLINE>
         - B
         <BLANKLINE>
@@ -146,7 +158,7 @@ def replace(text: str, titles: Iterable[str], content: str) -> tuple[str, str] |
     m = find(text, titles)
     if m is None:
         return None
-    guides = [l for l in m.group(2).split("\n") if l.startswith("> [!guide]")]
+    guides = _split_guides(m.group(2))[0]
     old = body(text, titles)
     block = "\n".join(guides) + ("\n\n" if guides else "") + content.strip() + "\n\n"
     return text[: m.start(2)] + block + text[m.end(2) :], old

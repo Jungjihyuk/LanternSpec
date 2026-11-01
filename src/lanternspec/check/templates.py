@@ -585,7 +585,7 @@ def skeleton_from(project: Project, name: str, source: Path) -> str:
             out += [
                 "",
                 f"{m.group(1)} {current}",
-                msg("> [!guide] 🟦 Original section · one line on what goes in '{current}'", current=current),
+                msg("> [!guide] One line on what goes in '{current}'", current=current),
                 "",
             ]
             filled, table_state = False, ""

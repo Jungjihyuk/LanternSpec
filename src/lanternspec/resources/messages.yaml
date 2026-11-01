@@ -669,7 +669,7 @@
 "No '> [!guide]' writing notes at all": {ko: "작성 안내 '> [!guide]'가 하나도 없습니다"}
 "No earlier version to compare with (never committed)": {ko: "비교할 이전 버전이 없습니다 (커밋된 적 없음)"}
 "Nothing changed — the version stays": {ko: "바뀐 내용이 없습니다 — 버전을 올리지 않습니다"}
-"> [!guide] 🟦 Original section · one line on what goes in '{current}'": {ko: "> [!guide] 🟦 원본 칸 · '{current}'에 무엇을 쓰는지 한 줄 안내"}
+"> [!guide] One line on what goes in '{current}'": {ko: "> [!guide] '{current}'에 무엇을 쓰는지 한 줄 안내"}
 "--to also needs --dest (the new document's path)": {ko: "--to를 쓰면 --dest(새 문서 경로)도 필요합니다"}
 "✔ Created": {ko: "✔ 만들었습니다"}
 "⚠ {rel}: a document without template — migrate it with --to <template> --dest <path>": {ko: "⚠ {rel}: template이 없는 문서 — --to <양식> --dest <경로>로 옮기세요"}

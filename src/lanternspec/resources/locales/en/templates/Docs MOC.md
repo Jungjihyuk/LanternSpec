@@ -6,15 +6,16 @@ created: ${today}
 updated: ${today}
 links: []
 template: Docs MOC
-template_version: 1.0.0
-based_on: 1.0.0
+template_version: 1.0.1
+based_on: 1.0.1
 ---
 # 🗺 ${project} Docs MOC
 
 > [!abstract] At a glance
-> The map of this project's documents. Read in this order: **MOC → 3. Current State → (only the features you care about) 2. Work folders**.
+> The map of this project's documents (MOC, Map of Content).
+> If you are new, read in this order: **this map → 3. Current State → the 2. Work folder of the feature you care about**.
 
-> [!guide] Between the `l-map` marks below, `lantern map` rewrites everything. Put what people write **outside** the marks.
+> [!guide] ⚙️ `lantern map` rewrites the map below every time. Put your own writing above or below the map (outside the `l-map` marks you see in the editor).
 
 <!-- l-map:start -->
 <!-- l-map:end -->
@@ -24,3 +25,4 @@ based_on: 1.0.0
 | Version | Date | What changed |
 |---|---|---|
 | 1.0.0 | 2026-10-27 | Base template |
+| 1.0.1 | 2026-11-02 | Clearer writing guides (long ones split into lines, symbols and internal names in words) |

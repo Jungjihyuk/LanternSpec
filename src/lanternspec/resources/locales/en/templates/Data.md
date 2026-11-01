@@ -6,8 +6,8 @@ created: ${today}
 updated: ${today}
 links: []
 template: Data
-template_version: 1.0.0
-based_on: 1.0.0
+template_version: 1.0.1
+based_on: 1.0.1
 code: []
 checked_commit: ""
 storage: ${variant}
@@ -17,7 +17,9 @@ storage: ${variant}
 > [!abstract] At a glance
 > {{Where and how data is stored, in one sentence (required)}}
 
-> [!guide] The source is `schema.dbml` in this folder (where people and the AI edit). The ERD and data dictionary below are **generated** from the DBML by `lantern dbml render`; don't edit them by hand. In an existing codebase the migrations and the real database are the reference, and the DBML is rebuilt from them (`lantern dbml from-sql`).
+> [!guide] The data structure is edited in one place: `schema.dbml` in this folder.
+> - The ERD and data dictionary below are made from `schema.dbml` by `lantern dbml render`. Don't edit them by hand
+> - In an existing project the real database (its migration files) is the reference; `schema.dbml` is made from it with `lantern dbml from-sql`
 
 ## Where it is stored
 - Kind: ${variant}
@@ -36,3 +38,4 @@ storage: ${variant}
 | Version | Date | What changed |
 |---|---|---|
 | 1.0.0 | 2026-10-27 | Base template |
+| 1.0.1 | 2026-11-02 | Clearer writing guides (long ones split into lines, symbols and internal names in words) |

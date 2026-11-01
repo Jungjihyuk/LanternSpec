@@ -7,10 +7,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
-Upgrade: `uv tool upgrade lanternspec` → `lantern upgrade` in each project (regenerates the Obsidian CSS snippet)
+Upgrade: `uv tool upgrade lanternspec` → `lantern upgrade` in each project (refreshes the default templates, the `/l-template` skill and the Obsidian CSS snippet)
 
 ### Changed
 - **Clearer template version notice** — `lantern check`'s "template changed" notice now says it is the template's own version, not LanternSpec's ("changed since this document was made … template version 1.0.0 → 1.1.0, not the LanternSpec version"), and shows the command that brings the document along (`lantern template migrate`)
+- **Easier-to-read template guides** — the guide boxes of all 22 default templates were reworded. Long guides keep the key sentence on the first line and list the rest; symbols such as ✕ ○ ✚ and setting keys or internal names are said in words; the unexplained "🟦 Source section" mark is gone (only ⚙️ for sections lantern fills and 🔗 for link-only sections remain). The "At a glance" blanks of Plan · Design · Tasks · Log now say what to write. Templates whose wording alone changed get a patch bump, so `lantern check` doesn't flag existing documents
+- **Collaboration Rules' "Work units" section is now "Work division"** — matching the `Work Division Rules` document (template 1.1.0)
+- **Multi-line guides in sections lantern reads** — in sections lantern reads and writes, such as "Now" and "Domain Knowledge Used", the `>` lines continuing a `> [!guide]` are treated as the guide, not as content
 
 ### Fixed
 - **The domain-knowledge folder gets a color too** — in Obsidian's file list, `📚 Domain Knowledge` was the only folder without a colored box. With eight folders the colors shift by one in list order: red · orange · yellow · green · teal · blue · violet · pink (`📒 Debt` stays red, `5. Legacy Docs` becomes pink)

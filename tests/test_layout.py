@@ -155,6 +155,6 @@ def test_a_renamed_template_copy_follows_and_is_refreshed_when_nobody_edited_it(
     repo("upgrade", "--apply")
     assert not (d / "0. 템플릿/작업 단위 기록.md").exists()
     copy = (d / "0. 템플릿/작업 나누기 기준.md").read_text(encoding="utf-8")
-    assert "template: 작업 나누기 기준" in copy and "template_version: 1.1.0" in copy
+    assert "template: 작업 나누기 기준" in copy and "template_version: 1.1.1" in copy
     _, out = repo("template", "list")
-    assert "작업 나누기 기준  v1.1.0  (기본 양식)" in out and "작업 단위 기록" not in out
+    assert "작업 나누기 기준  v1.1.1  (기본 양식)" in out and "작업 단위 기록" not in out

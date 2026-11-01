@@ -460,7 +460,7 @@ def test_a_plan_made_before_the_section_existed_gets_it_and_is_not_asked_about_i
     path = repo.root / "docs/2. 작업/W-001 옛 작업/기획.md"
     text = path.read_text(encoding="utf-8")
     start = text.index("## 참고한 도메인 지식")
-    old = (text[:start] + text[text.index("## 확인 필요") :]).replace("template_version: 1.1.0", "template_version: 1.0.0")
+    old = (text[:start] + text[text.index("## 확인 필요") :]).replace("template_version: 1.1.1", "template_version: 1.0.0")
     path.write_text(old, encoding="utf-8")
     _, out = repo("check", str(path), ok=False)
     assert "참고한 도메인 지식" not in out

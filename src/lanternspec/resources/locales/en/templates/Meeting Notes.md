@@ -6,8 +6,8 @@ created: ${today}
 updated: ${today}
 links: []
 template: Meeting Notes
-template_version: 1.0.0
-based_on: 1.0.0
+template_version: 1.0.1
+based_on: 1.0.1
 attendees: []
 ---
 # 🗣 ${today} ${name}
@@ -22,7 +22,7 @@ attendees: []
 - {{Decision}}
 
 ## Action items
-> [!guide] Move action items from the meeting into ideas (`/l-idea`) or work tasks, and link them.
+> [!guide] Don't leave action items here: move them into ideas (`/l-idea`) or a work's tasks, then link where they went.
 
 - {{Action item}}
 
@@ -31,3 +31,4 @@ attendees: []
 | Version | Date | What changed |
 |---|---|---|
 | 1.0.0 | 2026-10-27 | Base template |
+| 1.0.1 | 2026-11-02 | Clearer writing guides (long ones split into lines, symbols and internal names in words) |

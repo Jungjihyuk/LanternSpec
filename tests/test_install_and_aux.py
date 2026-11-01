@@ -203,17 +203,17 @@ def test_upgrade_refreshes_untouched_templates_only(repo, monkeypatch):
     def newer(name, language="ko"):
         text = orig(name, language)
         if name == "ADR":
-            text = text.replace("template_version: 1.0.0", "template_version: 1.1.0").replace("based_on: 1.0.0", "based_on: 1.1.0")
+            text = text.replace("template_version: 1.0.1", "template_version: 1.1.0").replace("based_on: 1.0.1", "based_on: 1.1.0")
         if name == "기획":
-            text = text.replace("template_version: 1.1.0", "template_version: 1.2.0").replace("based_on: 1.1.0", "based_on: 1.2.0")
+            text = text.replace("template_version: 1.1.1", "template_version: 1.2.0").replace("based_on: 1.1.1", "based_on: 1.2.0")
         return text
 
     monkeypatch.setattr("lanternspec.tools.install.base_template_text", newer)
     plan_t = docs(repo) / "0. 템플릿/기획.md"
     fill(plan_t, [("## 범위 밖", "## 범위 밖 (다듬음)")])
     _, out = repo("upgrade")
-    assert "양식 'ADR' 1.0.0 → 1.1.0" in out
-    assert "양식 '기획': 기본 양식이 1.1.0 → 1.2.0로 바뀌었지만 다듬은 양식이라 그대로 둠" in out
+    assert "양식 'ADR' 1.0.1 → 1.1.0" in out
+    assert "양식 '기획': 기본 양식이 1.1.1 → 1.2.0로 바뀌었지만 다듬은 양식이라 그대로 둠" in out
     assert "template_version: 1.1.0" in (docs(repo) / "0. 템플릿/ADR.md").read_text(encoding="utf-8")
     assert "(다듬음)" in plan_t.read_text(encoding="utf-8")
 
@@ -276,7 +276,7 @@ def test_template_lint_level_bump_usage_new(repo, tmp_path):
     repo.git("commit", "-qm", "docs: 준비")
     _, out = repo("template", "level", "기획")
     assert "바뀐 것 없음" in out
-    fill(t, [("> [!guide] 🟦 원본 칸 · 이번에", "> [!guide] 🟦 원본 칸 · 이번 작업에서")])
+    fill(t, [("> [!guide] 이번에", "> [!guide] 이번 작업에서")])
     assert "patch" in repo("template", "level", "기획")[1]
     fill(t, [("## 확인 필요", "## 위험\n{{위험}}\n\n## 확인 필요")])
     assert "minor" in repo("template", "level", "기획")[1]
@@ -309,11 +309,11 @@ def test_template_migrate_keeps_every_line(repo):
     plan = docs(repo) / "2. 작업/W-001 작업/기획.md"
     fill(plan, [("- {{범위 밖}}", "- 애플 로그인"), ("## 확인 필요", "## 메모\n남기고 싶은 메모\n\n## 확인 필요")])
     t = docs(repo) / "0. 템플릿/기획.md"
-    fill(t, [("## 범위 밖", "## 하지 않는 것"), ("template_version: 1.1.0", "template_version: 2.0.0")])
+    fill(t, [("## 범위 밖", "## 하지 않는 것"), ("template_version: 1.1.1", "template_version: 2.0.0")])
     _, out = repo("template", "outdated")
-    assert "1.1.0 → 2.0.0 (major)" in out
+    assert "1.1.1 → 2.0.0 (major)" in out
     _, preview = repo("template", "migrate", "기획", "--map", "범위 밖=하지 않는 것")
-    assert "미리보기" in preview and "template_version: 1.1.0" in plan.read_text(encoding="utf-8")
+    assert "미리보기" in preview and "template_version: 1.1.1" in plan.read_text(encoding="utf-8")
     repo("template", "migrate", "기획", "--map", "범위 밖=하지 않는 것", "--apply")
     text = plan.read_text(encoding="utf-8")
     assert "## 하지 않는 것\n" in text and "- 애플 로그인" in text
