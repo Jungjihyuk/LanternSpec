@@ -1150,6 +1150,9 @@
 "Must follow": {ko: "반드시 지킴"}
 "Follow where you can": {ko: "되도록 따름"}
 "[Company rules kept outside the project — must follow]": {ko: "[프로젝트 밖에 둔 사내 규칙 — 반드시 지킴]"}
+"This project follows company rules kept outside it, but this computer has none yet — ask who looks after them where they are, then bring them in with /l-ref rules <path>": {ko: "이 프로젝트는 밖에 둔 사내 규칙을 따르는데 이 컴퓨터에는 아직 없습니다 — 담당자에게 자료 위치를 받아 /l-ref rules <경로>로 들이세요"}
+"references.outside_rules: must be true or false": {ko: "references.outside_rules: true나 false여야 합니다"}
+"    # follows company rules kept outside the project (no path or title here) — false to stop": {ko: "    # 밖에 둔 사내 규칙을 따른다 (경로 · 제목은 여기 없음) — 그만 따르려면 false"}
 "index: the file or folder to index (relative = inside, ~/… = outside)": {ko: "index: 색인할 파일이나 폴더 (상대 경로 = 안, ~/… = 밖)"}
 "lantern ref index <rules|terms|domain> <path>": {ko: "lantern ref index <rules|terms|domain> <경로>"}
 "doesn't exist": {ko: "없음"}

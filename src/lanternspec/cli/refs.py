@@ -61,6 +61,9 @@ def _rules(project: Project, place: str, must: bool) -> int:
     if place and place not in [p["path"] for p in active_parts(project.profile)]:
         raise CliError(msg("{place} is not a part — lantern parts", place=place))
     text = rules_mod.outside_rules(project, place, "must" if must else "")
+    if not text and rules_mod.missing_outside(project):
+        print(msg(rules_mod.MISSING))
+        return 1
     print(text or msg("No company rules from outside the project on this computer — nothing to follow here"))
     return 0
 

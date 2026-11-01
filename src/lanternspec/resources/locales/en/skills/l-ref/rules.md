@@ -36,4 +36,5 @@ lantern upgrade
 ```
 - Inside rules go word for word into the "Company rules" section of their scope's AGENTS.md.
 - Outside rules put only a `lantern ref rules` line into AGENTS.md, with no content. Their words are printed by that command, on this computer only.
+  The first approved outside rule sets `references.outside_rules: true` in `lantern.yaml` (only the fact that such rules exist — no path or title). Teammates see the same line, and one without the material is told how to get it. To stop following them, a person sets it to `false`.
 - A ⚠ about the budget means should rules already became titles only. Look with the person at whether there are too many must rules.

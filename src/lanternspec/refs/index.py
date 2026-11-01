@@ -253,6 +253,9 @@ def index(project: Project, kind: str, entry: str) -> IndexResult:
 def tag(project: Project, address: str, scope: str, strength: str) -> str:
     """Store where an approved company rule applies and how strongly; an empty scope takes the approval away.
 
+    The first approved rule outside the project turns on lantern.yaml `references.outside_rules`, so
+    AGENTS.md tells every teammate there are such rules; turning it off is left to people.
+
     Args:
         project: The project.
         address: The section ("문서#절"); the document must be indexed.
@@ -288,6 +291,9 @@ def tag(project: Project, address: str, scope: str, strength: str) -> str:
     applies = dict(rec.get("applies") or {})
     if scope:
         applies[section.address] = {"scope": scope, "strength": strength}
+        if doc.source.outside and not project.profile.get("references.outside_rules"):  # say so in lantern.yaml, without path or title
+            profile_mod.update(project.root, {"references.outside_rules": True})
+            project.profile = profile_mod.load(project.root)
     else:
         applies.pop(section.address, None)
     rec["applies"] = applies

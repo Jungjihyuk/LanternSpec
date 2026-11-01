@@ -57,7 +57,8 @@ DEFAULTS: dict[str, Any] = {
     "check": {"max_lines": 300},
     "report": {"views": ["kanban", "timeline", "debt"]},
     "code": {"parts": [], "ignored_parts": []},  # parts with their own toolchain and rules (lantern parts)
-    "references": {"rules": [], "terms": [], "domain": [], "exclude": []},  # material people bring in (lantern ref · /l-ref)
+    # material people bring in (lantern ref · /l-ref); outside_rules says the project follows company rules kept outside it
+    "references": {"rules": [], "terms": [], "domain": [], "exclude": [], "outside_rules": False},
 }
 
 KNOWLEDGE_DEFAULTS: dict[str, Any] = {"type": "obsidian", "path": "", "areas_from": None, "write": "direct"}
@@ -357,6 +358,8 @@ def _reference_problems(data: dict[str, Any]) -> list[str]:
         value = get_path(data, f"references.{key}") or []
         if not isinstance(value, list) or not all(isinstance(x, str) and x.strip() for x in value):
             problems.append(msg("references.{key}: must be a list of paths (e.g. [docs/glossary.md])", key=key))
+    if not isinstance(get_path(data, "references.outside_rules", False), bool):
+        problems.append(msg("references.outside_rules: must be true or false"))
     return problems
 
 
@@ -623,7 +626,7 @@ def render(data: dict[str, Any]) -> str:
         )
         lines += ["  " + line for line in body.rstrip("\n").split("\n")]
     refs = d.get("references") or {}
-    if any(refs.get(k) for k in ("rules", "terms", "domain", "exclude")):
+    if any(refs.get(k) for k in ("rules", "terms", "domain", "exclude", "outside_rules")):
         lines += [
             "references:",
             msg("  # material people bring in, inside the project — outside paths stay in .lantern/references.yaml (/l-ref)"),
@@ -631,6 +634,8 @@ def render(data: dict[str, Any]) -> str:
                 f"  {k}: " + yaml.safe_dump(list(refs.get(k) or []), allow_unicode=True, default_flow_style=True, width=10_000).strip()
                 for k in ("rules", "terms", "domain", "exclude")
             ),
+            f"  outside_rules: {'true' if refs.get('outside_rules') else 'false'}"
+            + msg("    # follows company rules kept outside the project (no path or title here) — false to stop"),
         ]
     lines.append("")
     return "\n".join(lines)

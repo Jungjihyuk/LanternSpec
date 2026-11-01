@@ -161,7 +161,7 @@ def _reference_rows(project: Project) -> list[tuple[str, str]]:
 
     found = src_mod.sources(project)
     excluded = [str(x) for x in project.profile.get("references.exclude") or []]
-    if not found and not excluded:
+    if not found and not excluded and not project.profile.get("references.outside_rules"):
         return []
     out = [(BAD, msg("references.{kind}: {path} doesn't exist", kind=s.kind, path=s.entry)) for s in found if not s.path.exists()]
     for kind in src_mod.KINDS:
@@ -199,6 +199,10 @@ def _reference_rows(project: Project) -> list[tuple[str, str]]:
         except LookupError:
             out.append((WARN, msg("references.exclude: {address} matches no section any more (renamed?)", address=address)))
     out += _company_rule_rows(project)
+    from ..refs.rules import MISSING, missing_outside
+
+    if missing_outside(project):
+        out.append((WARN, msg(MISSING)))
     if found and not out:
         out.append((OK, msg("References: {count} sources, indexes up to date", count=len(found))))
     return out

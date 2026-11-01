@@ -30,6 +30,10 @@ from . import sources as src_mod
 ALL = "all"  # the scope of a rule for the whole project
 STRENGTHS = ("must", "should")
 OUTSIDE_LINE = "lantern ref rules"  # the command AGENTS.md points at for rules kept outside the project
+MISSING = (
+    "This project follows company rules kept outside it, but this computer has none yet — "
+    "ask who looks after them where they are, then bring them in with /l-ref rules <path>"
+)
 _HEADING = re.compile(r"^(#{1,6})(?=[ \t])")
 
 
@@ -194,8 +198,8 @@ def agents_section(project: Project, place: str, pointers: bool = False) -> str:
     """Build the company-rules section of one AGENTS.md.
 
     Inside rules are written word for word; rules outside the project are only pointed at with
-    `lantern ref rules`, so nothing of them goes into the repository. Once AGENTS.md said so, the
-    pointer stays — a teammate without the outside material must not take it out again.
+    `lantern ref rules`, so nothing of them goes into the repository. The pointer follows lantern.yaml
+    `references.outside_rules`, never what this computer holds, so every teammate writes the same file.
 
     Args:
         project: The project.
@@ -212,13 +216,12 @@ def agents_section(project: Project, place: str, pointers: bool = False) -> str:
     """
     rules = [r for r in approved(project) if place in places(project, r)]
     inside = [r for r in rules if not r.document.source.outside]
-    path = project.root / place / "AGENTS.md"
     command = f"{OUTSIDE_LINE} {place}".strip()
-    pointed = path.exists() and f"`{command}`" in read(path)
-    if not inside and not pointed and not any(r.document.source.outside for r in rules):
+    pointed = bool(project.profile.get("references.outside_rules"))
+    if not inside and not pointed:
         return ""
     lines = [msg("## Company rules"), msg("Rules the company set — written as they are; follow them over the project's own rules.")]
-    if pointed or any(r.document.source.outside for r in rules):
+    if pointed:
         lines.append(
             msg(
                 "- Company rules kept outside the project: run `{command}` and follow what it prints (nothing printed = none).",
@@ -227,6 +230,22 @@ def agents_section(project: Project, place: str, pointers: bool = False) -> str:
         )
     lines += _render(project, inside, 4, pointers)
     return "\n".join(lines)
+
+
+def missing_outside(project: Project) -> bool:
+    """Tell whether the project follows company rules kept outside it but this computer has none listed.
+
+    Args:
+        project: The project.
+
+    Returns:
+        True when lantern.yaml `references.outside_rules` is on and no outside company-rules path is listed here.
+
+    Example:
+        >>> missing_outside(project)  # doctest: +SKIP
+        True
+    """
+    return bool(project.profile.get("references.outside_rules")) and not index_mod.outside_paths(project)["rules"]
 
 
 def outside_rules(project: Project, place: str, strength: str = "") -> str:

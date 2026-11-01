@@ -201,6 +201,7 @@ def test_outside_rules_stay_out_of_committed_files_and_are_printed_on_request(re
     repo("ref", "exclude", "보안#없는 절", ok=False)
     repo("upgrade")
     committed = "".join((repo.root / p).read_text(encoding="utf-8") for p in ("AGENTS.md", "backend/AGENTS.md", "lantern.yaml"))
+    assert yaml.safe_load((repo.root / "lantern.yaml").read_text(encoding="utf-8"))["references"]["outside_rules"] is True
     assert "비밀 값" not in committed and "검토" not in committed and "company" not in committed and "보안" not in committed
     assert "`lantern ref rules`를 실행해" in (repo.root / "AGENTS.md").read_text(encoding="utf-8")
     assert "`lantern ref rules backend`를 실행해" in (repo.root / "backend/AGENTS.md").read_text(encoding="utf-8")
@@ -226,7 +227,15 @@ def test_outside_rules_stay_out_of_committed_files_and_are_printed_on_request(re
 
     (repo.root / ".lantern/references.yaml").unlink()  # a teammate without the outside material
     repo("upgrade")
-    assert "`lantern ref rules`를 실행해" in (repo.root / "AGENTS.md").read_text(encoding="utf-8")  # the pointer stays
+    assert "`lantern ref rules`를 실행해" in (repo.root / "AGENTS.md").read_text(encoding="utf-8")  # the same AGENTS.md for everyone
+    code, out = repo("ref", "rules", ok=False)
+    assert code == 1 and "이 컴퓨터에는 아직 없습니다 — 담당자에게 자료 위치를 받아 /l-ref rules <경로>로 들이세요" in out
+    _, doctor = repo("doctor", ok=False)
+    assert "이 프로젝트는 밖에 둔 사내 규칙을 따르는데" in doctor
+
+    repo("profile", "set", "references.outside_rules=false")  # people turn it off
+    repo("upgrade")
+    assert "lantern ref rules" not in (repo.root / "AGENTS.md").read_text(encoding="utf-8")
 
 
 def test_should_rules_become_pointers_when_agents_md_is_over_budget(repo):
