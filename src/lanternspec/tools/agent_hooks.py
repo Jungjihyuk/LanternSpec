@@ -238,7 +238,10 @@ def feedback(project: Project, tool: Tool, inp: HookInput) -> HookResult:
 
 
 def prompt(project: Project, tool: Tool, inp: HookInput) -> HookResult:
-    """At the start of a user turn: log which skill started it, then look for a tech question or an idea.
+    """At the start of a user turn: log which skill started it, then look for a question about a word or an idea.
+
+    A word in the glossary, or one the project's documents use, is this project's word: it goes to
+    the glossary (term_detect). Anything else is a tech question for the learning track (learn_detect).
 
     Explicit commands (`/…`, `$…`) are left to their skill.
 
@@ -260,7 +263,9 @@ def prompt(project: Project, tool: Tool, inp: HookInput) -> HookResult:
     runlog.prompt(project, inp.session, inp.prompt)
     if not project.profile.exists or inp.prompt.lstrip().startswith(("/", "$")):
         return HookResult(reminder=reminder)  # explicit commands are handled by their skill
-    notes = [n for n in (learn_detect(project, inp.session, inp.prompt), idea_detect(project, inp.session, inp.prompt)) if n]
+    word = term_detect(project, inp.session, inp.prompt)  # a word of this project goes to the glossary, not to debt
+    learned = "" if word else learn_detect(project, inp.session, inp.prompt)
+    notes = [n for n in (word, learned, idea_detect(project, inp.session, inp.prompt)) if n]
     return HookResult(context="\n".join(notes), reminder=reminder)
 
 
@@ -304,6 +309,63 @@ def tech_term(text: str) -> str:
                 if 1 <= len(term) <= 40:
                     return term
     return ""
+
+
+def term_detect(project: Project, session: str, text: str) -> str:
+    """React to a question about a word that belongs to this project, according to `references.terms_detect`.
+
+    In the glossary: remind the model of its meaning. Used by the project's documents but not in the
+    glossary: manual · nothing, ask · ask in one line, auto · collect it as a glossary candidate (approved at wrap-up).
+
+    Args:
+        project: The project.
+        session: The conversation.
+        text: The user's message.
+
+    Returns:
+        A note for the model; "" when the word isn't this project's (the learning track may take it).
+
+    Example:
+        >>> term_detect(project, "s1", "정산 주기가 뭐야?")  # doctest: +SKIP
+        "LanternSpec 용어: '정산 주기'는 이 프로젝트 문서에 나오지만 용어집에 없습니다. …"
+    """
+    word = tech_term(text)
+    if not word:
+        return ""
+    from ..refs import terms
+
+    known = terms.find(project, word)
+    if known is not None:
+        return msg(
+            "LanternSpec term: '{term}' is in the glossary — {meaning}. Answer with this meaning (lantern ref terms).",
+            term=known.term,
+            meaning=known.meaning or "-",
+        )
+    mode = project.profile.get("references.terms_detect")
+    if mode == "manual":
+        return ""
+    if project.profile.knowledge:
+        from ..learn import debt
+
+        if debt.is_known(project, word) or debt.find(project, word):  # a technology the learning track already follows
+            return ""
+    if not terms.in_documents(project, word):
+        return ""
+    if mode == "ask":
+        if not _once(project, f"term:{session}:{word.casefold()}"):
+            return ""
+        return msg(
+            "LanternSpec term: '{term}' is used in this project's documents but not in the glossary. After answering, ask in one line "
+            '"📘 Add it to the glossary?" — if yes, lantern ref glossary "{term}" --meaning "…".',
+            term=word,
+        )
+    count = terms.add_candidate(project, word)
+    return msg(
+        "LanternSpec term: '{term}' is used in this project's documents but not in the glossary — kept as a glossary candidate "
+        "({count} asks; approved at wrap-up). Answer from the documents.",
+        term=word,
+        count=count,
+    )
 
 
 def _once(project: Project, key: str) -> bool:

@@ -21,7 +21,15 @@ from .project import Project
 
 INSTALLED = "installed.json"
 
-IGNORED = ("runs.jsonl", "runs-state/", "hook-state/", "pack/", "sessions/", "references.yaml")  # personal records, never committed
+IGNORED = (
+    "runs.jsonl",
+    "runs-state/",
+    "hook-state/",
+    "pack/",
+    "sessions/",
+    "references.yaml",
+    "term-candidates.json",
+)  # personal records, never committed
 
 
 def sha256_text(text: str) -> str:

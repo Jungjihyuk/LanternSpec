@@ -322,3 +322,49 @@ def test_an_existing_project_gets_the_glossary_on_upgrade(repo):
     assert "ℹ 새로 만들 문서: 3. 현재 상태/규칙/용어집.md → lantern scaffold init" in out and not path.exists()
     repo("scaffold", "init")
     assert "## 용어" in path.read_text(encoding="utf-8")
+
+
+def _prompt(root, text, session="s"):
+    r = subprocess.run(
+        [sys.executable, "-m", "lanternspec", "hook", "prompt"],
+        cwd=str(root),
+        input=json.dumps({"session_id": session, "prompt": text}),
+        capture_output=True,
+        text=True,
+    )
+    return json.loads(r.stdout or "{}").get("hookSpecificOutput", {}).get("additionalContext", "")
+
+
+def test_asking_about_a_project_word_makes_it_a_glossary_candidate_approved_at_wrap_up(repo):
+    init_project(repo)
+    _glossary(repo)
+    features = repo.root / "docs/3. 현재 상태/기능 목록.md"
+    features.write_text(features.read_text(encoding="utf-8") + "\n정산 주기마다 가맹점에 돈을 보낸다.\n", encoding="utf-8")
+
+    assert "'회원'는 용어집에 있습니다 — 가입한 사람" in _prompt(repo.root, "회원이 뭐야?")
+    ctx = _prompt(repo.root, "정산 주기가 뭐야?")
+    assert "'정산 주기'는 이 프로젝트 문서에 나오지만 용어집에 없습니다 — 용어집 후보로 모았습니다 (1번 물음" in ctx
+    assert "2번 물음" in _prompt(repo.root, "정산 주기가 뭐야?", "s2")
+    assert not _prompt(repo.root, "Kafka가 뭐야?")  # not in the documents: left to the learning track
+    assert "term-candidates.json" in (repo.root / ".lantern/.gitignore").read_text(encoding="utf-8")
+
+    _, out = repo("close", "l-build")
+    assert "📘 용어집 후보 — 물어본 말 중 문서에 나오는 것: 정산 주기 (2)" in out
+    _, out = repo("ref", "glossary", "정산 주기", "--meaning", "가맹점에 돈을 보내는 간격", "--avoid", "정산일")
+    assert "✔ docs/3. 현재 상태/규칙/용어집.md에 더함: 정산 주기" in out
+    _, out = repo("ref", "terms")
+    assert "| 정산 주기 | 가맹점에 돈을 보내는 간격 | 정산일 | all | 프로젝트 |" in out and "용어집 후보" not in out
+    repo("ref", "glossary", "정산 주기", "--meaning", "한 달에 한 번 보내는 간격")  # the same term replaces its row
+    text = (repo.root / "docs/3. 현재 상태/규칙/용어집.md").read_text(encoding="utf-8")
+    assert text.count("| 정산 주기 |") == 1 and "한 달에 한 번" in text
+    _, out = repo("close", "l-build")
+    assert "용어집 후보" not in out
+
+    repo("profile", "set", "references.terms_detect=ask")
+    features.write_text(features.read_text(encoding="utf-8") + "\n가맹점 등급에 따라 수수료가 다르다.\n", encoding="utf-8")
+    assert '"📘 용어집에 넣을까요?"' in _prompt(repo.root, "가맹점 등급이 뭐야?")
+    repo("profile", "set", "references.terms_detect=manual")
+    assert not _prompt(repo.root, "가맹점 등급이 뭐야?", "s3")
+    repo("ref", "candidate", "가맹점 등급")
+    _, out = repo("ref", "candidate", "가맹점 등급", "--drop")
+    assert "✔ 후보에서 뺌: 가맹점 등급" in out

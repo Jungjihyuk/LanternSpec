@@ -19,3 +19,13 @@ lantern ref terms                                   # 합친 표 보기
 ```
 - 문서 이름은 색인 출력의 문서 이름(`.md` 없이)이다. 원문에 없는 용어는 저장되지 않는다.
 - 쓰지 말 표현이 있는 용어는 `lantern check`가 문서에서 찾아 알린다 (`docs/`만, 코드 블록 · 인라인 코드는 빼고).
+
+## 3. 프로젝트 용어집 후보
+대화 중 사용자가 "X가 뭐야"라고 물은 말이 이 프로젝트 문서에 나오는데 용어집에 없으면 후보로 모인다 (`lantern.yaml` `references.terms_detect`: `auto` 모으기 · `ask` 그때 묻기 · `manual` 안 함).
+`lantern ref terms` 맨 위와 `lantern close`가 후보를 보여 준다.
+- 후보마다 문서에서 뜻 초안을 한 줄로 만들어 보여 주고 승인받는다. 문서에서 뜻을 알 수 없으면 사람에게 묻는다 — 짐작으로 채우지 않는다.
+```bash
+lantern ref glossary "<용어>" --meaning "뜻 한 줄" [--avoid "표현, 표현"] [--scope <범위>]   # 프로젝트 용어집에 한 줄
+lantern ref candidate "<용어>" --drop                                                        # 이 프로젝트의 말이 아님
+```
+- 이 프로젝트의 말이 아니라 일반 기술이면 `--drop`하고, 배우는 선로를 쓰면 `/l-learn <용어>`를 권한다.

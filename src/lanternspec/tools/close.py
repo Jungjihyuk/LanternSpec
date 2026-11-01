@@ -18,7 +18,7 @@ def close(
     check: bool = True,
     do_map: bool = True,
 ) -> list[str]:
-    """Close a skill run: check the changed documents, refresh the MOC and debt status, and log the run.
+    """Close a skill run: check the changed documents, refresh the MOC and debt status, show glossary candidates, and log the run.
 
     Args:
         project: The project.
@@ -61,6 +61,19 @@ def close(
         from ..learn.debt import write_status
 
         write_status(project)
+    from ..refs.terms import candidates
+
+    waiting = candidates(project)
+    if waiting:
+        items = ", ".join(f"{c['term']} ({c['asked']})" for c in waiting[:5])
+        lines.append(
+            msg(
+                "📘 Glossary candidates — words asked about that the documents use: {items}. "
+                'Show each with a draft meaning and ask; approved → lantern ref glossary "<term>" --meaning "…", '
+                'not a project word → lantern ref candidate "<term>" --drop',
+                items=items,
+            )
+        )
     from ..report.evaluate import config_snapshot
 
     runlog.skill_run(project, skill, start, model, {"work": work, "check": counts, "config": config_snapshot(project)})

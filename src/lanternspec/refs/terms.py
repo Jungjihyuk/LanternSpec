@@ -8,9 +8,11 @@ the company's wins.
 Responsibilities:
     - read the project glossary and the approved company terms, and merge them (company first)
     - find the words to avoid in a document's text (outside code and frontmatter)
+    - keep the glossary candidates (words people asked about that the documents use) and add approved ones to the glossary
 
 Not here:
     - storing approved company terms → refs/index.py (set_term)
+    - noticing a question about a word in conversation → tools/agent_hooks.py (term_detect)
     - reporting them as document findings → check/check_docs.py
 """
 
@@ -267,3 +269,184 @@ def table(project: Project) -> str:
     if clash:
         lines += ["", msg("⚠ Also in the project glossary with another meaning — the company's wins: {items}", items=", ".join(clash))]
     return "\n".join(lines)
+
+
+CANDIDATES = "term-candidates.json"  # in .lantern/ — words people asked about, waiting for approval
+
+
+def find(project: Project, word: str) -> Term | None:
+    """Find a term in the merged glossary (company first).
+
+    Args:
+        project: The project.
+        word: The word asked about.
+
+    Returns:
+        The term; None when neither glossary has it.
+
+    Example:
+        >>> find(project, "회원").meaning  # doctest: +SKIP
+        '가입한 사람'
+    """
+    want = _key(word)
+    return next((t for t in merged(project)[0] if _key(t.term) == want), None)
+
+
+def in_documents(project: Project, word: str) -> bool:
+    """Tell whether the project's own documents use a word (templates, legacy originals and the debt ledger aside).
+
+    Args:
+        project: The project.
+        word: The word.
+
+    Returns:
+        True when some document mentions it.
+
+    Example:
+        >>> in_documents(project, "정산 주기")  # doctest: +SKIP
+        True
+    """
+    pat = _pattern(word)
+    glossary = glossary_path(project).resolve()
+    debt = project.folder("debt").resolve()  # the learning track's own cards are about technologies, not the project
+    for p in project.iter_docs():
+        if (
+            p.resolve() != glossary
+            and debt not in p.resolve().parents
+            and any(pat.search(line) for _, line in _visible(unicodedata.normalize("NFC", read(p))))
+        ):
+            return True
+    return False
+
+
+def _candidate_file(project: Project) -> Path:
+    return project.state / CANDIDATES
+
+
+def candidates(project: Project) -> list[dict]:
+    """List the glossary candidates: words people asked about that the project's documents use.
+
+    Args:
+        project: The project.
+
+    Returns:
+        {term, asked, last} entries, most asked first.
+
+    Example:
+        >>> candidates(project)  # doctest: +SKIP
+        [{'term': '정산 주기', 'asked': 2, 'last': '2026-11-01'}]
+    """
+    import json
+
+    try:
+        data = json.loads(read(_candidate_file(project)))
+    except (OSError, ValueError):
+        return []
+    items = [x for x in data if isinstance(x, dict) and x.get("term")] if isinstance(data, list) else []
+    return sorted(items, key=lambda x: -int(x.get("asked") or 0))
+
+
+def _save_candidates(project: Project, items: list[dict]) -> None:
+    import json
+
+    from ..core.state import ensure_state_dir
+
+    ensure_state_dir(project)
+    _candidate_file(project).write_text(json.dumps(items, ensure_ascii=False, indent=1), encoding="utf-8")
+
+
+def add_candidate(project: Project, word: str) -> int:
+    """Count one more ask of a word as a glossary candidate.
+
+    Args:
+        project: The project.
+        word: The word.
+
+    Returns:
+        How many times it has been asked.
+
+    Example:
+        >>> add_candidate(project, "정산 주기")  # doctest: +SKIP
+        1
+    """
+    from ..core.project import today
+
+    items = candidates(project)
+    hit = next((x for x in items if _key(x["term"]) == _key(word)), None)
+    if hit is None:
+        hit = {"term": word, "asked": 0}
+        items.append(hit)
+    hit["asked"] = int(hit.get("asked") or 0) + 1
+    hit["last"] = today()
+    _save_candidates(project, items)
+    return hit["asked"]
+
+
+def drop_candidate(project: Project, word: str) -> bool:
+    """Forget a glossary candidate.
+
+    Args:
+        project: The project.
+        word: The word.
+
+    Returns:
+        True when it was a candidate.
+
+    Example:
+        >>> drop_candidate(project, "정산 주기")  # doctest: +SKIP
+        True
+    """
+    items = candidates(project)
+    rest = [x for x in items if _key(x["term"]) != _key(word)]
+    if len(rest) == len(items):
+        return False
+    _save_candidates(project, rest)
+    return True
+
+
+def add_to_glossary(project: Project, term: str, meaning: str, avoid: list[str], scope: str = "") -> Path:
+    """Add one row to the project glossary (or replace the row of the same term), and drop it from the candidates.
+
+    Args:
+        project: The project.
+        term: The term.
+        meaning: What it means, in one line.
+        avoid: Words not to use for it.
+        scope: "all" (or ""), a part's folder or a language.
+
+    Returns:
+        The glossary document.
+
+    Raises:
+        sections.SectionMissing: The glossary has no terms section any more (the message says what to do).
+
+    Example:
+        >>> add_to_glossary(project, "정산 주기", "가맹점에 돈을 보내는 간격", ["정산일"])  # doctest: +SKIP
+        PosixPath('…/3. 현재 상태/규칙/용어집.md')
+    """
+    from ..core import frontmatter
+    from ..core.project import write
+
+    path = glossary_path(project)
+    if not path.exists():
+        from ..work.scaffold import create_from_template
+
+        create_from_template(project, project.names.doc("glossary"), path)
+    text = read(path)
+    m = sections.find(text, project.names.titles("glossary"))
+    if m is None:
+        raise sections.SectionMissing(project.names, "glossary", path)
+    clean = [c.replace("|", "/").replace("\n", " ").strip() for c in (term, meaning, ", ".join(avoid), scope if scope != "all" else "")]
+    row = "| " + " | ".join(clean) + " |"
+    lines = m.group(2).split("\n")
+    rows = [i for i, line in enumerate(lines) if line.strip().startswith("|")][2:]  # past the header and the separator
+    same = next((i for i in rows if _key(lines[i].strip().strip("|").split("|")[0]) == _key(term)), None)
+    if same is not None:
+        lines[same] = row
+    else:
+        last = max((i for i, line in enumerate(lines) if line.strip().startswith("|")), default=None)
+        lines.insert(0 if last is None else last + 1, row)
+    text = text[: m.start(2)] + "\n".join(lines) + text[m.end(2) :]
+    write(path, frontmatter.set_fields(text, {}))
+    drop_candidate(project, term)
+    return path

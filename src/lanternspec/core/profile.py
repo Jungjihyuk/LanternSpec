@@ -58,7 +58,8 @@ DEFAULTS: dict[str, Any] = {
     "report": {"views": ["kanban", "timeline", "debt"]},
     "code": {"parts": [], "ignored_parts": []},  # parts with their own toolchain and rules (lantern parts)
     # material people bring in (lantern ref · /l-ref); outside_rules says the project follows company rules kept outside it
-    "references": {"rules": [], "terms": [], "domain": [], "exclude": [], "outside_rules": False},
+    # terms_detect: what a question about a word the documents use does (manual · ask · auto = collect as a glossary candidate)
+    "references": {"rules": [], "terms": [], "domain": [], "exclude": [], "outside_rules": False, "terms_detect": "auto"},
 }
 
 KNOWLEDGE_DEFAULTS: dict[str, Any] = {"type": "obsidian", "path": "", "areas_from": None, "write": "direct"}
@@ -80,6 +81,7 @@ CHOICES: dict[str, tuple[str, ...]] = {
     "plan.ac_format": ("gwt", "simple"),
     "plan.ui_reference": ("off", "required"),
     "learn.detect": ("manual", "ask", "auto"),
+    "references.terms_detect": ("manual", "ask", "auto"),
     "learn.verify": ("self", "explain"),
     "build.report_cycle": ("work", "criterion", "task"),
     "build.merge_approval": ("required", "auto"),
@@ -626,7 +628,7 @@ def render(data: dict[str, Any]) -> str:
         )
         lines += ["  " + line for line in body.rstrip("\n").split("\n")]
     refs = d.get("references") or {}
-    if any(refs.get(k) for k in ("rules", "terms", "domain", "exclude", "outside_rules")):
+    if any(refs.get(k) for k in ("rules", "terms", "domain", "exclude", "outside_rules")) or refs.get("terms_detect", "auto") != "auto":
         lines += [
             "references:",
             msg("  # material people bring in, inside the project — outside paths stay in .lantern/references.yaml (/l-ref)"),
@@ -636,6 +638,11 @@ def render(data: dict[str, Any]) -> str:
             ),
             f"  outside_rules: {'true' if refs.get('outside_rules') else 'false'}"
             + msg("    # follows company rules kept outside the project (no path or title here) — false to stop"),
+            msg(
+                "  terms_detect: {s}       # asked about a word the documents use: manual (nothing) | ask (ask in one line) | "
+                "auto (collect as a glossary candidate, approved at wrap-up)",
+                s=s(refs.get("terms_detect", "auto")),
+            ),
         ]
     lines.append("")
     return "\n".join(lines)
