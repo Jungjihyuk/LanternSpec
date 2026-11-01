@@ -7,6 +7,21 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+Upgrade: `uv tool upgrade lanternspec` → `lantern upgrade` in each project (installs the new `/l-ref` and `/l-domain` skills, plan template 1.1.0, and refreshes AGENTS.md rules) → `lantern scaffold init` if you want the glossary and the domain-knowledge folder
+
+### Added
+- **Bringing in references (`/l-ref` · `lantern ref`)** — company rules, glossaries and domain knowledge stay where they are, inside the project (relative path) or outside it (`~/…` or an absolute path), and are indexed section by section. `lantern ref index <rules|terms|domain> <path>` shows the new, changed and removed sections, and `lantern ref read "<document>#<section>"` reads just that section (a long one lists the parts to read instead). `lantern ref check` points out structure that is hard to read in parts, such as no headings or skipped heading levels. For outside material, paths, titles and the index all stay in `.lantern/` and never reach git
+- **Company rules into AGENTS.md (`lantern ref tag` · `rules` · `exclude`)** — once each section's scope (all · a part folder · a language) and strength (must · should) are approved, inside rules go word for word into the matching root or part `AGENTS.md` (over the length budget, "should" rules keep only their title and the command that reads them). Outside rules leave one content-free line in `AGENTS.md` and are shown by `lantern ref rules <part>`, and the hooks hand the "must" rules over again at the start of a conversation and right after compaction. Sections that don't fit this project are left out with `lantern ref exclude`
+- **Glossary and words to avoid (`lantern ref terms` · `glossary` · `term`)** — the project glossary (`3. Current State/Glossary.md`) and the approved company terms show as one table; when a term is in both, the company's wins. Give a term "words to avoid" and `lantern check` finds them in the documents, e.g. "'posting' — write 'job listing'". When a conversation asks what a term means, the hook hands over the glossary's meaning
+- **Collecting term candidates (`references.terms_detect`)** — questions about what a word used in the documents means are collected as candidates, and the skill wrap-up (`lantern close`) and `lantern ref terms` ask whether to add them to the glossary (`lantern ref candidate` adds one, `--drop` removes it). The default is `auto`; `ask` and `manual` are also available
+- **Domain knowledge (`📚 Domain Knowledge/` · `lantern ref domain` · `describe`)** — laws, policies and business-rule documents put in this folder are indexed without registering them. Note for each section what it covers, when to read it, its key terms and whether its exact words must be followed, and `lantern ref domain` shows the index the AI picks from while `Domain Knowledge MOC.md` shows the same index in Obsidian. Verbatim sections are marked 📌 when read, and right after compaction the hook lists the domain knowledge read today
+- **Connecting domain knowledge to a work (`lantern ref attach`)** — `/l-plan` picks the sections a work needs and links them in the plan's new "Domain Knowledge Used" section, `/l-task` assigns each section to the tasks that use it, and `/l-design` reads only the attached sections and asks once whether anything is missing. `/l-build` reads only the sections attached to a task when it starts that task (`lantern ref domain --work W-012 --task T03`). Outside material is never written into the plan, only into `.lantern/`
+- **`/l-domain` skill** — when a question or design choice outside the work track depends on domain rules, the AI finds the matching section in the index on its own and reads just that section word for word
+
+### Changed
+- **Plan template 1.1.0** — adds the "Domain Knowledge Used" section. Plans made from an older template are not asked about it by `lantern check`, and get the section at the end on their first attach
+- **A CLAUDE.md that only imports AGENTS.md is deleted** — `lantern install` and `lantern upgrade` delete a `CLAUDE.md` or `.claude/CLAUDE.md` holding nothing but `@AGENTS.md`, since while one exists Claude Code doesn't read the part `AGENTS.md` files. One with your own text, or any when a `CLAUDE.local.md` exists, is kept
+
 ## [0.2.5] - 2026-10-31
 
 ### Fixed

@@ -108,6 +108,8 @@ flowchart LR
 | `/l-map` | MOC(문서 지도) 갱신 | `개발문서 MOC.md` |
 | `/l-adr` | 되돌리기 어려운 결정 기록 | `결정 기록/ADR-001 …` |
 | `/l-resume` | 지난 대화 이어 가기 — 어느 AI 도구에서 하던 대화든, 중간에 끊겼어도 멈춘 곳부터 | — |
+| `/l-ref` | 사내 규칙 · 용어집 · 도메인 지식을 들여와 절 단위로 색인하고, 절마다 쓰임을 승인받는다 | 색인, `AGENTS.md`의 사내 규칙, `용어집.md` |
+| `/l-domain` | 도메인 규칙이 필요할 때 색인에서 맞는 절만 찾아 원문으로 읽는다 | (기획의 "참고한 도메인 지식") |
 
 ### 이렇게 동작한다
 - **형식은 스크립트가, 내용은 AI가.** 번호 · 파일 · 폴더 · 검사 · 상태 바꾸기는 모두 `lantern` 명령이 하고, AI는 내용만 쓴다.
@@ -128,10 +130,11 @@ docs/
 ├─ 2. 작업/W-001 …/        기획 · 설계 · 할 일 · 기록 — 일하는 동안 고치는 곳은 여기뿐
 │   └─ 보관/
 ├─ 3. 현재 상태/           지금 시스템의 모습 — 작업이 끝날 때만 승인 후 갱신
-│   └─ 규칙/ · 결정 기록/ · 배포 · 운영/ …
+│   └─ 규칙/ · 결정 기록/ · 배포 · 운영/ · 용어집 …
 ├─ 4. 운영 기록/           보고 · 세션 기록 · (2인 이상) 회의록
 ├─ 5. 기존 문서/           (기존 프로젝트) 원본 보관 — 고치지 않음
-└─ 📒 부채/               카드 1장 = 부채 1개
+├─ 📒 부채/               카드 1장 = 부채 1개
+└─ 📚 도메인 지식/         법령 · 정책 · 업무 규칙 (도메인 지식 MOC가 색인을 보여 줌)
 ```
 
 어떤 문서를 쓸지는 `/l-init`의 답(`lantern.yaml`)에 따라 정해진다 (`lantern profile docs`로 확인).
@@ -189,6 +192,19 @@ LanternSpec은 이 기능에 검사를 연결해, 일하는 단계마다 문서�
 lantern hooks install            # 커밋 · push 단계 검사를 켠다 (/l-init이 묻고 설치)
 lantern install --ci             # GitHub에서도 검사한다 (끄기: --no-ci)
 ```
+
+## 참고 자료 — 사내 규칙 · 용어 · 도메인 지식
+
+사람이 가진 자료를 형식 그대로 두고 절 단위로 색인해, AI가 필요한 절만 읽게 한다 (`/l-ref`). 자료는 프로젝트 안이든 밖(`~/…`)이든 둘 수 있다.
+
+| 자료 | 언제 읽나 | 어떻게 |
+|---|---|---|
+| 사내 규칙 | 늘 | 절마다 적용 범위 · 강도를 승인받아 맞는 `AGENTS.md`에 원문 그대로 넣는다 |
+| 용어 | 필요할 때 | 용어집의 "쓰지 말 표현"을 `lantern check`가 문서에서 찾는다 |
+| 도메인 지식 | 필요할 때 그 절만 | `📚 도메인 지식/`의 색인에서 작업에 맞는 절을 골라 기획에 연결하고, 그 할 일을 시작할 때 읽는다 |
+
+- **밖에 둔 자료는 git에 올라가지 않는다.** 경로 · 제목 · 색인까지 `.lantern/`에만 둔다.
+- **절은 주소로 읽는다.** `lantern ref read "개인정보#보관 기간"`
 
 ## 모르는 기술 관리 — 지식 저장소와 이해 부채
 
@@ -254,6 +270,7 @@ Claude Design · Figma · Canva를 각 도구의 MCP로 쓴다.
 배움     knowledge search|read|propose|write|areas · debt find|new|ask|resolve|promote|practice|known|status|list · mcp
 보고     report [--views] [--summary] · status · resume [--session] [--more] · scan [--tests] · sync adopt · eval · obsidian plugins
 양식     template list|lint|level|bump|outdated|diff|usage|new|migrate · legacy adopt|todos
+참고     ref list|check|index|read · tag|exclude|rules · terms|term|glossary|candidate · domain|describe|attach
 git      hooks install|uninstall|status · docs-mode local|shared
 마무리   close <스킬>
 ```

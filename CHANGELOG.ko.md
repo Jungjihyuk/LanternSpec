@@ -7,6 +7,21 @@
 
 ## [Unreleased]
 
+업그레이드: `uv tool upgrade lanternspec` → 프로젝트마다 `lantern upgrade` (새 스킬 `/l-ref` · `/l-domain`, 기획 양식 1.1.0, AGENTS.md 규칙을 새로 맞춘다) → 용어집 · 도메인 지식 폴더가 필요하면 `lantern scaffold init`
+
+### 추가
+- **참고 자료 들이기 (`/l-ref` · `lantern ref`)** — 사내 규칙 · 용어집 · 도메인 지식을 프로젝트 안(상대 경로)이든 밖(`~/…` · 절대 경로)이든 그대로 두고 절 단위로 색인한다. `lantern ref index <rules|terms|domain> <경로>`가 새로 생긴 · 바뀐 · 사라진 절을 보여 주고, `lantern ref read "<문서>#<절>"`이 그 절만 읽는다 (긴 절은 나눠 읽을 부분을 안내). `lantern ref check`는 제목이 없거나 급을 건너뛴 문서처럼 나눠 읽기 어려운 구조를 알린다. 밖의 자료는 경로 · 제목 · 색인까지 모두 `.lantern/`에만 두어 git에 올라가지 않는다
+- **사내 규칙을 AGENTS.md로 (`lantern ref tag` · `rules` · `exclude`)** — 절마다 적용 범위(전체 · 영역 폴더 · 언어)와 강도(반드시 · 되도록)를 승인받으면, 안의 규칙은 맞는 루트 · 영역 `AGENTS.md`에 원문 그대로 들어간다 (길이 예산을 넘으면 "되도록" 규칙은 제목과 읽는 명령만 남긴다). 밖의 규칙은 `AGENTS.md`에 내용 없는 한 줄만 두고 `lantern ref rules <영역>`이 보여 주며, 대화 시작과 요약 직후 hook이 "반드시" 규칙을 다시 건넨다. 이 프로젝트에 맞지 않는 절은 `lantern ref exclude`로 뺀다
+- **용어집과 쓰지 말 표현 (`lantern ref terms` · `glossary` · `term`)** — 프로젝트 용어집(`3. 현재 상태/용어집.md`)과 승인한 사내 용어를 한 표로 보여 주고, 같은 용어가 둘 다에 있으면 사내 것을 따른다. 용어마다 "쓰지 말 표현"을 두면 `lantern check`가 문서에서 그 말을 찾아 "'포스팅' — '채용 공고'로 쓰세요"처럼 알린다. 대화에서 용어의 뜻을 물으면 hook이 용어집의 뜻을 함께 건넨다
+- **용어 후보 모으기 (`references.terms_detect`)** — 문서에 쓰인 말의 뜻을 물으면 후보로 모아 두고, 스킬 마무리(`lantern close`)와 `lantern ref terms`에서 용어집에 넣을지 묻는다 (`lantern ref candidate`로 넣거나 `--drop`으로 뺀다). 기본은 `auto`, `ask` · `manual`로 바꿀 수 있다
+- **도메인 지식 (`📚 도메인 지식/` · `lantern ref domain` · `describe`)** — 법령 · 정책 · 업무 규칙 문서를 이 폴더에 넣으면 따로 등록하지 않아도 색인된다. 절마다 무엇 · 언제 읽나 · 핵심 용어 · 원문 필수 여부를 적어 두면, `lantern ref domain`이 AI가 고를 색인을 보여 주고 `도메인 지식 MOC.md`가 Obsidian에서 같은 색인을 보여 준다. 원문 필수 절은 읽을 때 📌 표시가 붙고, 요약 직후 hook이 오늘 읽은 도메인 지식을 다시 알려 준다
+- **작업에 도메인 지식 연결 (`lantern ref attach`)** — `/l-plan`이 필요한 절을 골라 기획의 새 칸 "참고한 도메인 지식"에 링크로 남기고, `/l-task`가 절마다 쓰는 할 일을 정하며, `/l-design`은 연결된 절만 읽고 빠진 것이 있는지 한 번 묻는다. `/l-build`는 할 일을 시작할 때 그 할 일에 연결된 절만 읽는다 (`lantern ref domain --work W-012 --task T03`). 밖의 자료는 기획 문서에 적지 않고 `.lantern/`에만 둔다
+- **`/l-domain` 스킬** — 작업 선로 밖의 질문이나 설계 판단이 도메인 규칙에 달렸을 때, AI가 스스로 색인에서 맞는 절을 찾아 그 절만 원문으로 읽는다
+
+### 바뀜
+- **기획 양식 1.1.0** — "참고한 도메인 지식" 칸이 더해졌다. 그 전 양식으로 만든 기획은 `lantern check`가 이 칸을 묻지 않고, 처음 연결할 때 칸이 끝에 생긴다
+- **가져오기만 하는 CLAUDE.md를 지움** — `@AGENTS.md` 한 줄뿐인 `CLAUDE.md` · `.claude/CLAUDE.md`를 `lantern install` · `lantern upgrade`가 지운다. 그 파일이 있으면 Claude Code가 영역별 `AGENTS.md`를 읽지 않기 때문이다. 직접 쓴 내용이 있거나 `CLAUDE.local.md`가 있으면 그대로 둔다
+
 ## [0.2.5] - 2026-10-31
 
 ### 고침

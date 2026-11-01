@@ -110,6 +110,8 @@ flowchart LR
 | `/l-map` | updates the MOC (document map) | `Docs MOC.md` |
 | `/l-adr` | records decisions that are hard to reverse | `Decisions/ADR-001 …` |
 | `/l-resume` | carries on an earlier conversation — from any AI tool, from where it stopped even if it was cut off | — |
+| `/l-ref` | brings in company rules, glossaries and domain knowledge, indexes them by section and gets each section's use approved | the index, company rules in `AGENTS.md`, `Glossary.md` |
+| `/l-domain` | when domain rules matter, finds the matching section in the index and reads just that section word for word | (the plan's "Domain Knowledge Used") |
 
 ### How it works
 - **Scripts handle the format, the AI writes the content.** Numbering, files, folders, checks and status changes all go through the `lantern` command; the AI only writes content.
@@ -130,10 +132,11 @@ docs/
 ├─ 2. Work/W-001 …/       plan · design · tasks · log — the only place edited while working
 │   └─ Archive/           archive
 ├─ 3. Current State/     what the system looks like now — updated only when work is done, after approval
-│   └─ Rules/ · Decisions/ · Deployment and Operations/ …
+│   └─ Rules/ · Decisions/ · Deployment and Operations/ · Glossary …
 ├─ 4. Operations/        reports · session logs · (teams of 2+) meeting notes
 ├─ 5. Legacy Docs/       (existing projects) original documents, kept unchanged
-└─ 📒 Debt/              understanding debt — one card per debt
+├─ 📒 Debt/              understanding debt — one card per debt
+└─ 📚 Domain Knowledge/  laws · policies · business rules (the Domain Knowledge MOC shows the index)
 ```
 
 Which documents you get depends on your `/l-init` answers (`lantern.yaml`; check with `lantern profile docs`).
@@ -191,6 +194,19 @@ LanternSpec connects its checks to those hooks, so `lantern` checks at every sta
 lantern hooks install            # turns on the commit and push checks (/l-init asks before installing)
 lantern install --ci             # also checks on GitHub (turn off with --no-ci)
 ```
+
+## References — company rules, terms and domain knowledge
+
+Material people already have stays in its own form and is indexed by section, so the AI reads only the sections it needs (`/l-ref`). It can live inside the project or outside it (`~/…`).
+
+| Material | When it is read | How |
+|---|---|---|
+| Company rules | always | each section's scope and strength are approved, then it goes word for word into the matching `AGENTS.md` |
+| Terms | when needed | `lantern check` finds the glossary's "words to avoid" in the documents |
+| Domain knowledge | only the section, only when needed | sections picked from the `📚 Domain Knowledge/` index are attached to a work's plan and read when their task starts |
+
+- **Outside material never reaches git.** Its paths, titles and index all stay in `.lantern/`.
+- **Sections are read by address.** `lantern ref read "Privacy#Retention period"`
 
 ## Managing unfamiliar tech — knowledge base and understanding debt
 
@@ -256,6 +272,7 @@ work       task next [--all]|start|done|ac|list|estimate · task add [--parallel
 learning   knowledge search|read|propose|write|areas · debt find|new|ask|resolve|promote|practice|known|status|list · mcp
 reports    report [--views] [--summary] · status · resume [--session] [--more] · scan [--tests] · sync adopt · eval · obsidian plugins
 templates  template list|lint|level|bump|outdated|diff|usage|new|migrate · legacy adopt|todos
+references ref list|check|index|read · tag|exclude|rules · terms|term|glossary|candidate · domain|describe|attach
 git        hooks install|uninstall|status · docs-mode local|shared
 wrap-up    close <skill>
 ```
