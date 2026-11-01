@@ -575,6 +575,7 @@
 "move the text of {file} into AGENTS.md and delete it": {ko: "{file}의 글을 AGENTS.md로 옮기고 지우기"}
 "Claude Code doesn't read {items} while a CLAUDE.md exists — {fix}": {ko: "CLAUDE.md가 있는 동안 Claude Code는 다음 파일을 읽지 않습니다: {items} — 권장: {fix}"}
 "You can delete {file}: it only imports AGENTS.md, which Claude Code reads itself": {ko: "지워도 되는 파일: {file} — AGENTS.md를 불러오는 줄뿐이고, Claude Code는 AGENTS.md를 직접 읽습니다"}
+"{file} deleted (it only imported AGENTS.md, which Claude Code reads itself)": {ko: "{file} 지움 (AGENTS.md를 가져오기만 했습니다 — Claude Code가 AGENTS.md를 직접 읽음)"}
 "Claude Code reads AGENTS.md through the import in {file}": {ko: "Claude Code가 AGENTS.md를 읽습니다 (불러오는 곳: {file})"}
 "CLAUDE.local.md keeps Claude Code from reading AGENTS.md — set Project instructions to claude-md-and-agents-md in /config (or ~/.claude/settings.json)": {ko: "CLAUDE.local.md가 있으면 Claude Code가 AGENTS.md를 읽지 않습니다 — /config(또는 ~/.claude/settings.json)에서 Project instructions를 claude-md-and-agents-md로 바꾸세요"}
 "Claude Code reads AGENTS.md itself": {ko: "Claude Code가 AGENTS.md를 직접 읽습니다"}
@@ -1199,8 +1200,8 @@
 "No section '{title}' in {doc} — {hint}": {ko: "{doc}에 '{title}' 절이 없습니다 — {hint}"}
 "Several reference documents are called {name}: {items}": {ko: "{name}이라는 참고 자료 문서가 여럿입니다: {items}"}
 "'{title}' appears {count} times in {doc} — add a title above it: {items}": {ko: "{doc}에 '{title}'가 {count}번 나옵니다 — 위 제목을 붙여 고르세요: {items}"}
-"✔ {work_id} uses {address} — written in {path}": {ko: "✔ {work_id}이(가) {address}을(를) 씁니다 — {path}에 적음"}
-"📚 Domain knowledge {work_id} uses — read each right before the task that needs it:": {ko: "📚 {work_id}이(가) 쓰는 도메인 지식 — 그것이 필요한 할 일을 시작할 때 읽으세요:"}
+"✔ Attached to {work_id}: {address} — written in {path}": {ko: "✔ {work_id}에 걸었습니다: {address} — {path}에 적음"}
+"📚 Domain knowledge {work_id} uses — read each right before the task that needs it:": {ko: "📚 {work_id}에 걸린 도메인 지식 — 그것이 필요한 할 일을 시작할 때 읽으세요:"}
 "lantern ref describe <document#section> --what \"…\" --when \"…\" [--keys \"a, b\"] [--verbatim]": {ko: "lantern ref describe <문서#절> --what \"…\" --when \"…\" [--keys \"가, 나\"] [--verbatim]"}
 "✔ Description taken away: {address}": {ko: "✔ 설명을 거뒀습니다: {address}"}
 "✔ Described: {address}": {ko: "✔ 설명을 넣었습니다: {address}"}

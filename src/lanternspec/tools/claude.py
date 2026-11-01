@@ -232,9 +232,11 @@ class ClaudeCode(ClaudeHooks, Tool):
     def install_config(self, project: Project, mcp: bool) -> list[str]:
         """Implement Tool.install_config for Claude Code.
 
-        Claude Code reads AGENTS.md on its own, so no CLAUDE.md is created. An existing CLAUDE.md is
-        kept, and an import of AGENTS.md goes at its top (while a CLAUDE.md exists, Claude reads only
-        CLAUDE.md files). Hooks go into `.claude/settings.json`, the MCP server (when asked) into `.mcp.json`.
+        Claude Code reads AGENTS.md on its own, so no CLAUDE.md is created. CLAUDE.md files that hold
+        nothing but the import of AGENTS.md are deleted, since while one exists Claude reads only CLAUDE.md
+        files and so misses the folders' AGENTS.md (kept when a CLAUDE.local.md needs them). Any other
+        CLAUDE.md is kept, with the import at its top. Hooks go into `.claude/settings.json`, the MCP
+        server (when asked) into `.mcp.json`.
 
         Args:
             project: The project.
@@ -248,6 +250,11 @@ class ClaudeCode(ClaudeHooks, Tool):
             ['.claude/settings.json (에이전트 hook)']
         """
         merged = []
+        present = {rel: read(project.root / rel) for rel in CLAUDE_FILES if (project.root / rel).exists()}
+        if present and not (project.root / "CLAUDE.local.md").exists() and all(t.strip() == CLAUDE_FILES[r] for r, t in present.items()):
+            for rel in present:
+                (project.root / rel).unlink()
+                merged.append(msg("{file} deleted (it only imported AGENTS.md, which Claude Code reads itself)", file=rel))
         for rel, line in CLAUDE_FILES.items():
             path = project.root / rel
             if path.exists() and not imports_agents(read(path)):

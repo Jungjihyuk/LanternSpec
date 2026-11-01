@@ -41,7 +41,7 @@ def test_outside_material_is_indexed_out_of_git_and_read_by_section(repo):
     folder = _outside()
     _, out = repo("ref", "index", "domain", "~/company")
     assert "✔ .lantern/references.yaml에 적음 (밖의 자료는 git에 올리지 않음): domain ~/company" in out
-    assert "문서 1개 · 절 6개 (새로 6 · 바뀜 0 · 사라짐 0)" in out and "+ 개인정보#개인정보 처리 지침#파기" in out
+    assert "문서 1개 · 절 6개 (새로 6 · 바뀜 0 · 사라짐 0)" in out and "+ 개인정보#파기" in out
     assert "company" not in (repo.root / "lantern.yaml").read_text(encoding="utf-8")  # the outside path stays out of git
     private = yaml.safe_load((repo.root / ".lantern/references.yaml").read_text(encoding="utf-8"))
     assert private["sources"] == {"domain": ["~/company"]} and "~/company/개인정보.md" in private["documents"]
@@ -52,9 +52,9 @@ def test_outside_material_is_indexed_out_of_git_and_read_by_section(repo):
     assert "5년 동안 둔다." in out and "30일" not in out and "⚠" not in out
     assert "(개인정보.md) -->" in out and "company" not in out  # where it lives isn't printed
     code, out = repo("ref", "read", "개인정보#보관 기간", ok=False)
-    assert code != 0 and "2번 나옵니다" in out and "개인정보#개인정보 처리 지침#회원#보관 기간" in out
+    assert code != 0 and "2번 나옵니다" in out and "개인정보#회원#보관 기간" in out
     code, out = repo("ref", "read", "개인정보#보관기한", ok=False)
-    assert code != 0 and "비슷한 제목: 개인정보#개인정보 처리 지침#회원#보관 기간" in out
+    assert code != 0 and "비슷한 제목: 개인정보#회원#보관 기간" in out
 
     (folder / "개인정보.md").write_text(LAW.replace("5년", "10년"), encoding="utf-8")
     _, out = repo("ref", "read", "개인정보#주문#보관 기간")
@@ -62,7 +62,7 @@ def test_outside_material_is_indexed_out_of_git_and_read_by_section(repo):
     _, doctor = repo("doctor", ok=False)
     assert "domain: 색인 뒤에 바뀌었거나 색인한 적이 없는 문서: 개인정보 (3)" in doctor  # the section and the ones above it
     _, out = repo("ref", "index", "domain", "~/company")
-    assert "더함" not in out and "~ 개인정보#개인정보 처리 지침#주문#보관 기간" in out and "+ " not in out
+    assert "더함" not in out and "~ 개인정보#주문#보관 기간" in out and "+ " not in out
     _, doctor = repo("doctor", ok=False)
     assert "참고 자료 1곳 — 색인이 최신입니다" in doctor
 
@@ -85,9 +85,7 @@ def test_a_long_section_lists_its_parts_to_read_one_at_a_time(repo):
     _outside(f"# 법\n## 1장\n{body}\n## 2장\n{body}\n")
     repo("ref", "index", "domain", "~/company")
     _, out = repo("ref", "read", "개인정보")
-    assert "줄입니다 — 한 부분씩 읽으세요" in out and 'lantern ref read "개인정보#법"' in out
-    _, out = repo("ref", "read", "개인정보#법")
-    assert 'lantern ref read "개인정보#법#1장"' in out and "0번째 줄" not in out
+    assert "줄입니다 — 한 부분씩 읽으세요" in out and 'lantern ref read "개인정보#1장"' in out and "0번째 줄" not in out
     _, out = repo("ref", "read", "개인정보#1장")
     assert "199번째 줄" in out
 
@@ -159,7 +157,7 @@ def _parts_with_rules(repo):
 def test_approved_inside_rules_go_word_for_word_into_the_agents_md_of_their_scope(repo):
     _parts_with_rules(repo)
     _, out = repo("ref", "tag", "API#오류 응답", "--scope", "backend", "--strength", "must")
-    assert "✔ API#API 규칙#오류 응답: backend · must → lantern upgrade" in out
+    assert "✔ API#오류 응답: backend · must → lantern upgrade" in out
     repo("ref", "tag", "API#이름 짓기", "--scope", "all", "--strength", "should")
     repo("ref", "tag", "API#로그", "--scope", "typescript")
     code, out = repo("ref", "tag", "API#로그", "--scope", "go", ok=False)
@@ -248,7 +246,7 @@ def test_should_rules_become_pointers_when_agents_md_is_over_budget(repo):
     repo("upgrade")
     backend = (repo.root / "backend/AGENTS.md").read_text(encoding="utf-8")
     assert "#### 반드시\n짧다." in backend
-    assert '- 참고 — `lantern ref read "긴#긴 규칙#참고"`' in backend and "되도록 이렇게 한다." not in backend
+    assert '- 참고 — `lantern ref read "긴#참고"`' in backend and "되도록 이렇게 한다." not in backend
 
 
 GLOSSARY_ROWS = (
@@ -409,10 +407,10 @@ def test_domain_knowledge_put_in_its_folder_is_described_tied_to_tasks_and_read_
     )
     repo("ref", "describe", "개인정보#파기", "--what", "지우는 방법", "--when", "삭제 코드를 짤 때")
     _, out = repo("ref", "domain")
-    assert "| 개인정보#개인정보 처리 지침#주문#보관 기간 | 주문 기록을 두는 기간 | 주문 데이터를 지울 때 | 보관, 파기 | ✅ |" in out
+    assert "| 개인정보#주문#보관 기간 | 주문 기록을 두는 기간 | 주문 데이터를 지울 때 | 보관, 파기 | ✅ |" in out
     assert "5년" not in out  # the index says what a section is about, never its rule
     text = moc.read_text(encoding="utf-8")
-    assert "[[📚 도메인 지식/개인정보#개인정보 처리 지침#주문#보관 기간\\|개인정보#개인정보 처리 지침#주문#보관 기간]]" in text
+    assert "[[📚 도메인 지식/개인정보#주문#보관 기간\\|개인정보#주문#보관 기간]]" in text
     _, check = repo("check")
     assert "도메인 지식 MOC" not in check
 
@@ -422,17 +420,17 @@ def test_domain_knowledge_put_in_its_folder_is_described_tied_to_tasks_and_read_
     repo("ref", "attach", "개인정보#파기", "--work", "W-001")
     repo("ref", "attach", "개인정보#주문#보관 기간", "--work", "W-001", "--task", "T03")  # again: its line is replaced
     plan = (repo.root / "docs/2. 작업/W-001 주문 삭제/기획.md").read_text(encoding="utf-8")
-    assert "- [[📚 도메인 지식/개인정보#개인정보 처리 지침#주문#보관 기간]] — T03 · 📌 원문 필수" in plan
-    assert plan.count("주문#보관 기간") == 1 and "- [[📚 도메인 지식/개인정보#개인정보 처리 지침#파기]] — 작업 전체" in plan
+    assert "- [[📚 도메인 지식/개인정보#주문#보관 기간]] — T03 · 📌 원문 필수" in plan
+    assert plan.count("주문#보관 기간") == 1 and "- [[📚 도메인 지식/개인정보#파기]] — 작업 전체" in plan
     _, out = repo("ref", "domain", "--work", "W-001", "--task", "T03")
-    assert 'lantern ref read "개인정보#개인정보 처리 지침#주문#보관 기간"  — T03 · 📌 원문 필수' in out
+    assert 'lantern ref read "개인정보#주문#보관 기간"  — T03 · 📌 원문 필수' in out
     assert "#파기" in out  # tied to the whole work
     _, out = repo("ref", "domain", "--work", "W-001", "--task", "T01")
     assert "보관 기간" not in out and "#파기" in out
 
     _, out = repo("ref", "read", "개인정보#주문#보관 기간")
     assert "📌 원문 필수" in out and "5년 동안 둔다." in out
-    assert "- 개인정보#개인정보 처리 지침#주문#보관 기간 · 📌 원문 필수" in _session_after_compact(repo.root)
+    assert "- 개인정보#주문#보관 기간 · 📌 원문 필수" in _session_after_compact(repo.root)
 
     (folder / "개인정보.md").write_text(LAW.replace("5년", "10년"), encoding="utf-8")
     repo("ref", "index", "domain", "docs/📚 도메인 지식")
@@ -451,7 +449,7 @@ def test_outside_domain_knowledge_is_tied_to_a_work_without_reaching_the_plan(re
     committed = "".join(p.read_text(encoding="utf-8") for p in (repo.root / "docs").rglob("*.md"))
     assert "파기" not in committed and "지우는 방법" not in committed  # neither the plan nor the MOC hold it
     _, out = repo("ref", "domain", "--work", "W-001", "--task", "T01")
-    assert 'lantern ref read "개인정보#개인정보 처리 지침#파기"' in out
+    assert 'lantern ref read "개인정보#파기"' in out
 
 
 def test_a_plan_made_before_the_section_existed_gets_it_and_is_not_asked_about_it(repo):
@@ -467,4 +465,4 @@ def test_a_plan_made_before_the_section_existed_gets_it_and_is_not_asked_about_i
     _, out = repo("check", str(path), ok=False)
     assert "참고한 도메인 지식" not in out
     repo("ref", "attach", "법#보관", "--work", "W-001")
-    assert "## 참고한 도메인 지식\n- [[📚 도메인 지식/법#법#보관]] — 작업 전체" in path.read_text(encoding="utf-8")
+    assert "## 참고한 도메인 지식\n- [[📚 도메인 지식/법#보관]] — 작업 전체" in path.read_text(encoding="utf-8")

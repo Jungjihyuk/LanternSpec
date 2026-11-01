@@ -136,6 +136,21 @@ def test_a_claude_md_inside_dot_claude_imports_the_root_agents_md(repo):
     assert not (repo.root / "CLAUDE.md").exists()
 
 
+def test_install_deletes_a_claude_md_that_only_imports_agents_md(repo):
+    (repo.root / "CLAUDE.md").write_text("@AGENTS.md\n", encoding="utf-8")
+    (repo.root / "CLAUDE.local.md").write_text("내 메모\n", encoding="utf-8")
+    repo("install")
+    assert (repo.root / "CLAUDE.md").exists()  # CLAUDE.local.md keeps Claude from reading AGENTS.md itself
+    (repo.root / "CLAUDE.local.md").unlink()
+    (repo.root / ".claude").mkdir(exist_ok=True)
+    (repo.root / ".claude/CLAUDE.md").write_text("@../AGENTS.md\n\n# 메모\n", encoding="utf-8")
+    repo("install")
+    assert (repo.root / "CLAUDE.md").exists()  # deleting one alone wouldn't let Claude read the nested AGENTS.md
+    (repo.root / ".claude/CLAUDE.md").unlink()
+    _, out = repo("upgrade")
+    assert not (repo.root / "CLAUDE.md").exists() and "CLAUDE.md 지움" in out
+
+
 def _claude_rows(repo):
     from lanternspec.core.project import Project
 

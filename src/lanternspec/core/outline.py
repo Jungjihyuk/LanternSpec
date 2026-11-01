@@ -36,7 +36,7 @@ class Section:
     """One heading and its text, sub-sections included.
 
     Attributes:
-        titles: The titles from the top heading down to this one.
+        titles: The titles from the top heading down to this one (a lone `# ` title above it is left out).
         level: The heading level (1 for `#`).
         start: The heading's line index.
         end: The index of the line after the section.
@@ -67,7 +67,8 @@ class Section:
 def sections(text: str) -> list[Section]:
     r"""List the sections of a document in order.
 
-    Lines in the frontmatter and in fenced code are not headings.
+    Lines in the frontmatter and in fenced code are not headings. A document whose first heading is its
+    only `# ` heading wears that title as its name; it is left out of the addresses below it.
 
     Args:
         text: The whole document.
@@ -78,7 +79,9 @@ def sections(text: str) -> list[Section]:
     Example:
         >>> doc = "---\nid: a\n---\n# 법\n## 보관\n```\n# 코드\n```\n### 기한\n## 파기\n"
         >>> [(s.address, s.start, s.end) for s in sections(doc)]
-        [('법', 3, 11), ('법#보관', 4, 9), ('법#보관#기한', 8, 9), ('법#파기', 9, 11)]
+        [('법', 3, 11), ('보관', 4, 9), ('보관#기한', 8, 9), ('파기', 9, 11)]
+        >>> [s.address for s in sections("# 1장\n## 목적\n# 2장\n## 목적\n")]
+        ['1장', '1장#목적', '2장', '2장#목적']
     """
     lines = text.split("\n")
     first = 0
@@ -94,6 +97,7 @@ def sections(text: str) -> list[Section]:
         h = None if fence else HEADING.match(lines[i])
         if h:
             heads.append((i, len(h.group(1)), h.group(2).strip()))
+    lone_top = bool(heads) and heads[0][1] == 1 and sum(lv == 1 for _, lv, _ in heads) == 1
     out = []
     stack: list[tuple[int, str]] = []
     for n, (i, level, title) in enumerate(heads):
@@ -102,7 +106,8 @@ def sections(text: str) -> list[Section]:
         stack.append((level, title))
         end = next((j for j, lv, _ in heads[n + 1 :] if lv <= level), len(lines))
         own_end = heads[n + 1][0] if n + 1 < len(heads) and heads[n + 1][0] < end else end
-        out.append(Section(tuple(t for _, t in stack), level, i, end, own_end))
+        titles = tuple(t for _, t in stack)
+        out.append(Section(titles[1:] if lone_top and n else titles, level, i, end, own_end))
     return out
 
 
@@ -126,9 +131,9 @@ def find(text: str, query: str) -> list[Section]:
     Example:
         >>> doc = "# 법\n## 회원\n### 보관\n## 주문\n### 보관\n"
         >>> [s.address for s in find(doc, "보관")]
-        ['법#회원#보관', '법#주문#보관']
+        ['회원#보관', '주문#보관']
         >>> [s.address for s in find(doc, "주문#보관")]
-        ['법#주문#보관']
+        ['주문#보관']
     """
     want = [_key(t) for t in query.split("#") if t.strip()]
     if not want:
@@ -232,7 +237,7 @@ def similar(text: str, query: str, limit: int = 3) -> list[str]:
 
     Example:
         >>> similar("# 법\n## 보관 기간\n## 파기\n", "보관기간")
-        ['법#보관 기간']
+        ['보관 기간']
     """
     found = sections(text)
     by_title: dict[str, list[str]] = {}

@@ -129,7 +129,7 @@ def _attach(project: Project, a: argparse.Namespace) -> int:
     if work is None:
         raise CliError(msg("Work {work_id} not found", work_id=a.work))
     path = domain_mod.attach(project, work, a.arg, [a.task] if a.task else [], a.note or "")
-    print(msg("✔ {work_id} uses {address} — written in {path}", work_id=a.work.upper(), address=a.arg, path=project.rel(path)))
+    print(msg("✔ Attached to {work_id}: {address} — written in {path}", work_id=a.work.upper(), address=a.arg, path=project.rel(path)))
     return 0
 
 
@@ -278,10 +278,11 @@ def _read(project: Project, address: str) -> int:
 
 
 def _parts(text: str, section: outline.Section | None) -> list[outline.Section]:
-    """The sections right below a section (or the top-level sections of a whole document)."""
+    """The sections right below a section (or the top-level sections of a whole document, below its lone title)."""
     inner = [s for s in outline.sections(text) if section is None or section.start < s.start < section.end]
     top = min((s.level for s in inner), default=0)
-    return [s for s in inner if s.level == top]
+    parts = [s for s in inner if s.level == top]
+    return _parts(text, parts[0]) if section is None and len(parts) == 1 else parts
 
 
 def register(add: Add) -> None:
