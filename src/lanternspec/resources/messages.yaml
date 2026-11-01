@@ -1132,7 +1132,7 @@
 "lantern ref tag <document#section> --scope <all|part|language> --strength <must|should>": {ko: "lantern ref tag <문서#절> --scope <all|영역|언어> --strength <must|should>"}
 "rules: must rules only": {ko: "rules: 반드시 지킬 규칙만"}
 "tag: must or should": {ko: "tag: must(반드시) · should(되도록)"}
-"tag · term: take the approval away": {ko: "tag · term: 승인 거두기"}
+"tag · term · describe: take it away": {ko: "tag · term · describe: 거두기"}
 "tag · term: where it applies — all, a part's folder or a language": {ko: "tag · term: 적용되는 곳 — all(전체) · 영역 폴더 · 언어"}
 "{place} is not a part — lantern parts": {ko: "{place}는 영역이 아닙니다 — lantern parts"}
 "✔ Approval taken away: {address}": {ko: "✔ 승인을 거둠: {address}"}
@@ -1199,3 +1199,34 @@
 "No section '{title}' in {doc} — {hint}": {ko: "{doc}에 '{title}' 절이 없습니다 — {hint}"}
 "Several reference documents are called {name}: {items}": {ko: "{name}이라는 참고 자료 문서가 여럿입니다: {items}"}
 "'{title}' appears {count} times in {doc} — add a title above it: {items}": {ko: "{doc}에 '{title}'가 {count}번 나옵니다 — 위 제목을 붙여 고르세요: {items}"}
+"✔ {work_id} uses {address} — written in {path}": {ko: "✔ {work_id}이(가) {address}을(를) 씁니다 — {path}에 적음"}
+"📚 Domain knowledge {work_id} uses — read each right before the task that needs it:": {ko: "📚 {work_id}이(가) 쓰는 도메인 지식 — 그것이 필요한 할 일을 시작할 때 읽으세요:"}
+"lantern ref describe <document#section> --what \"…\" --when \"…\" [--keys \"a, b\"] [--verbatim]": {ko: "lantern ref describe <문서#절> --what \"…\" --when \"…\" [--keys \"가, 나\"] [--verbatim]"}
+"✔ Description taken away: {address}": {ko: "✔ 설명을 거뒀습니다: {address}"}
+"✔ Described: {address}": {ko: "✔ 설명을 넣었습니다: {address}"}
+"lantern ref attach <document#section> --work W-012 [--task T03] [--note \"…\"]": {ko: "lantern ref attach <문서#절> --work W-012 [--task T03] [--note \"…\"]"}
+"{work_id} uses no domain knowledge — lantern ref domain lists what there is": {ko: "{work_id}에 걸린 도메인 지식이 없습니다 — 무엇이 있는지는 lantern ref domain"}
+"describe: its topic only — never the rule itself": {ko: "describe: 주제만 — 규칙의 내용(숫자 · 기한)은 쓰지 않음"}
+"describe: the situation to read it in": {ko: "describe: 읽어야 하는 상황"}
+"describe: its key terms, \"word, word\"": {ko: "describe: 핵심 용어, \"말, 말\""}
+"describe: numbers · deadlines · exceptions — read the exact words before deciding": {ko: "describe: 숫자 · 기한 · 예외가 있음 — 판단 전에 원문을 다시 읽음"}
+"domain · attach: the work, e.g. W-012": {ko: "domain · attach: 작업, 예: W-012"}
+"domain · attach: the task, e.g. T03": {ko: "domain · attach: 할 일, 예: T03"}
+"attach: what it is used for, in a few words": {ko: "attach: 어디에 쓰는지 몇 마디로"}
+"No domain knowledge yet — put documents in {folder}, then /l-ref domain": {ko: "도메인 지식이 아직 없습니다 — {folder}에 문서를 넣고 /l-ref domain"}
+"📌 Verbatim — numbers · deadlines · exceptions: follow these exact words, and read them again right before deciding": {ko: "📌 원문 필수 — 숫자 · 기한 · 예외: 이 원문 그대로 따르고, 판단하기 직전에 다시 읽으세요"}
+"whole work": {ko: "작업 전체"}
+"📌 verbatim": {ko: "📌 원문 필수"}
+"always (generated)": {ko: "늘 (자동 생성)"}
+"| Address | What | When to read | Key terms | Verbatim |": {ko: "| 주소 | 무엇 | 언제 읽나 | 핵심 용어 | 원문 필수 |"}
+"Read one section with `lantern ref read \"<address>\"` — only when the situation in 'When to read' comes up.": {ko: "한 절씩 `lantern ref read \"<주소>\"`로 읽습니다 — '언제 읽나'의 상황이 왔을 때만."}
+"| Section | What | When to read | Key terms | Verbatim |": {ko: "| 절 | 무엇 | 언제 읽나 | 핵심 용어 | 원문 필수 |"}
+"⚠ = the section changed after it was described — /l-ref domain": {ko: "⚠ = 설명한 뒤에 절이 바뀜 — /l-ref domain"}
+"| (none yet — put documents in this folder, then /l-ref domain) | | | | |": {ko: "| (아직 없음 — 이 폴더에 문서를 넣고 /l-ref domain) | | | | |"}
+"# 📚 Domain Knowledge MOC": {ko: "# 📚 도메인 지식 MOC"}
+"> ⚙️ Generated — `lantern ref domain`. Don't edit by hand; describe sections with /l-ref domain.": {ko: "> ⚙️ 자동 생성 — `lantern ref domain`. 손으로 고치지 않습니다. 절 설명은 /l-ref domain으로."}
+"> Put documents in this folder (convert PDF · HWP to .md and keep the original). The AI reads a section only when 'When to read' comes up — work picks them in the plan's '{section}'.": {ko: "> 이 폴더에 문서를 넣습니다 (PDF · HWP는 .md로 바꾸고 원본도 둡니다). AI는 '언제 읽나'의 상황이 왔을 때만 그 절을 읽고, 작업은 기획의 '{section}' 칸에서 고릅니다."}
+"{doc} is not a domain-knowledge document (references.domain)": {ko: "{doc}은(는) 도메인 지식 문서가 아닙니다 (references.domain)"}
+"(not described yet — /l-ref domain)": {ko: "(아직 설명 없음 — /l-ref domain)"}
+"{doc} isn't indexed yet — lantern ref index domain <path>": {ko: "{doc}은(는) 아직 색인하지 않았습니다 — lantern ref index domain <경로>"}
+"[Domain knowledge read today — read a section again with lantern ref read before relying on it]": {ko: "[오늘 읽은 도메인 지식 — 기대기 전에 lantern ref read로 다시 읽으세요]"}

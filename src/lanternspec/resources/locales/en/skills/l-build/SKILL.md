@@ -29,6 +29,9 @@ lantern task start W-012-T03     # stamps [<<attr.start>>:: time] exactly
 ```
 **Parallel (graph):** if `--all` shows two or more `[P]` tasks and this tool supports subagents, you may hand the `[P]` tasks **one each** to subagents. Make each follow the same rules (start · evidence · one task = one commit), and never hand out tasks that change the same files together. Without subagent support, do them in turn.
 
+**Domain knowledge:** when some is tied to the task, read **only those sections, right as it starts** — run the `lantern ref read …` lines that `lantern ref domain --work W-012 --task T03` shows.
+Read a 📌 verbatim section again right before turning its rule into code. Knowledge that becomes necessary mid-build: find and read it with `/l-domain`, then tie it with `lantern ref attach`.
+
 1. Build it. If a **big change** not in the design is needed, stop and report (→ `/l-design`).
 2. Test it<!-- lantern:if build.lint -->, and run lint and type check too (`lantern lint`)<!-- lantern:endif -->. On failure, fix and retry — **at most 3 times**. If the third try fails, stop and report.
 3. Leave evidence in `<<file.record>>`:

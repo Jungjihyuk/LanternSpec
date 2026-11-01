@@ -86,10 +86,11 @@ def fixed_places(project: Project) -> dict[str, tuple[str, str | None]]:
         ('3. 현재 상태/배포 · 운영/배포.md', '배포')
     """
     from ..learn.debt import STATUS_DOC_ID
+    from ..refs.domain import MOC_ID as DOMAIN_MOC_ID
     from ..report.principles_doc import DOC_ID as PRINCIPLES_ID
     from ..work.scaffold import base_template_text
 
-    generated = {"principles": PRINCIPLES_ID, "debt-status": STATUS_DOC_ID}
+    generated = {"principles": PRINCIPLES_ID, "debt-status": STATUS_DOC_ID, "domain-moc": DOMAIN_MOC_ID}
     names = project.names
     out: dict[str, tuple[str, str | None]] = {}
     for key in DOC_FOLDERS:

@@ -58,6 +58,12 @@ Acceptance criteria format: `- [ ] AC-1 When …, then …` — one per line.
 <!-- lantern:endif -->
 Make results **checkable**: "fast" ✕ → "within 2 seconds" ○, "shows well" ✕ → "shows at the top of the list" ○.
 
+**Pick domain knowledge:** look at "When to read" in `lantern ref domain` (the index) and **only pick, without reading**, the sections this work needs — they are read when their task starts. For each one:
+```bash
+lantern ref attach "<address>" --work W-012 --note "what it is for"
+```
+Inside material gets a line in `## <<section.domain_refs>>`; outside material stays only in this computer's `.lantern/`. Don't write that section by hand. Leave it empty when nothing applies.
+
 ## 4. Ask about what you don't know (no guessing)
 Write unknowns in their section as `<<marker.unknown>>: <question>`, and ask **at most <<plan.max_questions>> at a time**.
 - Pick by impact: scope → security → user experience → details

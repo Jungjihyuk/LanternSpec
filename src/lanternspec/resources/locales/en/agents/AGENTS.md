@@ -33,6 +33,7 @@
 10. **How to ask.** For a question with choices, offer only real candidates — the question tool already adds a free-text option at the bottom, so don't add empty options like "Type your own" or "Pick Other". For a free answer with no candidates (an introduction, a name …), ask in a plain message without options.
 11. **People decide about protected sections.** Never delete or rename on your own the sections lantern reads and writes (listed in `<<folder.templates>>/_meta/<<file.sections_page>>`). When a check or wrap-up says "… section is missing. … Did you change it on purpose?", **don't put the section back**; ask the user which of three it is — renamed it → `lantern sections rename <key> "new title"` · not using that feature → `lantern sections off <key>` · a mistake → restore the section from the template.
 12. **Terms follow the glossary.** When unsure what a word means, look at `lantern ref terms` (the project glossary merged with the company terms — when they differ, the company's). Don't use its "words to avoid". Give a new term a one-line meaning the first time you use it.
+13. **Domain knowledge, one section when needed.** For a decision that depends on law, policy or business rules, find the fitting section in `lantern ref domain` (the index), read its own words with `lantern ref read`, and follow them (`/l-domain`). Never decide from the index's "What" alone.
 
 <!-- lantern:principles -->
 

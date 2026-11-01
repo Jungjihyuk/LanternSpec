@@ -1,4 +1,4 @@
-"""References commands: ref (list · check · index · read · tag · exclude · rules · terms · term · glossary · candidate)."""
+"""References commands: ref (list · check · index · read · tag · exclude · rules · terms · term · glossary · candidate · domain …)."""
 
 from __future__ import annotations
 
@@ -16,10 +16,12 @@ READ_MAX_LINES = 300  # a longer section shows its sub-sections to pick from ins
 
 
 def cmd_ref(a: argparse.Namespace) -> int:
-    """`lantern ref [list|check|index|read|tag|exclude|rules]` — references: listed · structure · index · read · approve · leave out."""
+    """`lantern ref [list|check|index|read|tag|exclude|rules|…]` — references: listed · structure · index · read · approve · leave out."""
     project = _p()
     if a.action in (None, "list"):
         return _list(project)
+    if a.action == "domain":
+        return _domain(project, a.work or "", a.task or "")
     if a.action == "rules":
         return _rules(project, a.arg or "", a.must)
     if a.action == "terms":
@@ -46,6 +48,10 @@ def cmd_ref(a: argparse.Namespace) -> int:
         return _index(project, a.arg, a.path)
     if a.action == "tag":
         return _tag(project, a.arg, a.scope or "", a.strength, a.off)
+    if a.action == "describe":
+        return _describe(project, a)
+    if a.action == "attach":
+        return _attach(project, a)
     if a.action == "glossary":
         from ..refs import terms as terms_mod
 
@@ -96,6 +102,59 @@ def _tag(project: Project, address: str, scope: str, strength: str, off: bool) -
         print(msg("✔ {address}: {scope} · {strength}", address=full, scope=scope, strength=strength) + " → lantern upgrade")
     else:
         print(msg("✔ Approval taken away: {address}", address=full) + " → lantern upgrade")
+    return 0
+
+
+def _describe(project: Project, a: argparse.Namespace) -> int:
+    """Store (or take away) what a domain-knowledge section is about and when to read it, then refresh the MOC."""
+    from ..refs import domain as domain_mod
+
+    keys = [w.strip() for w in (a.keys or "").replace("·", ",").split(",") if w.strip()]
+    what, when = ("", "") if a.off else (a.what or "", a.when or "")
+    if not a.off and not (what.strip() and when.strip()):
+        raise CliError(msg('lantern ref describe <document#section> --what "…" --when "…" [--keys "a, b"] [--verbatim]'))
+    full = index_mod.describe(project, a.arg, what, when, keys, a.verbatim)
+    domain_mod.write_moc(project)
+    print(msg("✔ Description taken away: {address}", address=full) if a.off else msg("✔ Described: {address}", address=full))
+    return 0
+
+
+def _attach(project: Project, a: argparse.Namespace) -> int:
+    """Tie a domain-knowledge section to a work's tasks."""
+    from ..refs import domain as domain_mod
+
+    if not a.work:
+        raise CliError(msg('lantern ref attach <document#section> --work W-012 [--task T03] [--note "…"]'))
+    work = project.find_work(a.work, include_archive=False)
+    if work is None:
+        raise CliError(msg("Work {work_id} not found", work_id=a.work))
+    path = domain_mod.attach(project, work, a.arg, [a.task] if a.task else [], a.note or "")
+    print(msg("✔ {work_id} uses {address} — written in {path}", work_id=a.work.upper(), address=a.arg, path=project.rel(path)))
+    return 0
+
+
+def _domain(project: Project, work_id: str, task: str) -> int:
+    """Print the domain-knowledge index, or the sections one work (or task) uses, each with the command that reads it."""
+    from ..refs import domain as domain_mod
+
+    if not work_id:
+        print(
+            domain_mod.table(project)
+            or msg("No domain knowledge yet — put documents in {folder}, then /l-ref domain", folder=project.rel(project.folder("domain")))
+        )
+        return 0
+    work = project.find_work(work_id)
+    if work is None:
+        raise CliError(msg("Work {work_id} not found", work_id=work_id))
+    chosen = domain_mod.picks(project, work, task)
+    if not chosen:
+        print(msg("{work_id} uses no domain knowledge — lantern ref domain lists what there is", work_id=work_id.upper()))
+        return 0
+    print(msg("📚 Domain knowledge {work_id} uses — read each right before the task that needs it:", work_id=work_id.upper()))
+    for p in chosen:
+        known = domain_mod.find(project, p.address)
+        tail = " · ".join(x for x in (", ".join(p.tasks) or msg("whole work"), msg("📌 verbatim") if known and known.verbatim else "") if x)
+        print(f'- lantern ref read "{p.address}"  — {tail}')
     return 0
 
 
@@ -156,6 +215,10 @@ def _check(project: Project, path: str) -> int:
 def _index(project: Project, kind: str, path: str) -> int:
     """Index one source and say which sections are new · changed · gone (the skill tags only those)."""
     r = index_mod.index(project, kind, path)
+    if kind == "domain" and not r.source.outside:
+        from ..refs.domain import write_moc
+
+        write_moc(project)
     if r.registered and r.source.outside:
         print(
             msg(
@@ -195,6 +258,15 @@ def _read(project: Project, address: str) -> int:
     print(f"<!-- {doc.name}{' › ' + section.address if section else ''} ({doc.label}) -->")
     if index_mod.changed_since_indexed(project, doc, section):
         print(msg("⚠ Changed since it was indexed (or never indexed) — the index may be behind: /l-ref {kind}", kind=doc.source.kind))
+    if doc.source.kind == "domain":
+        from ..refs import domain as domain_mod
+
+        known = domain_mod.find(project, address) if section else None
+        if known and known.verbatim:
+            print(
+                msg("📌 Verbatim — numbers · deadlines · exceptions: follow these exact words, and read them again right before deciding")
+            )
+        domain_mod.record_read(project, f"{doc.name}#{section.address}" if section else doc.name, bool(known and known.verbatim))
     parts = _parts(text, section)
     if body.count("\n") + 1 > READ_MAX_LINES and parts:
         print(msg("{count} lines — read one part:", count=body.count("\n") + 1))
@@ -216,7 +288,24 @@ def register(add: Add) -> None:
     """Register the references commands."""
     p = add("ref", cmd_ref, msg("References (company rules · terms · domain knowledge): list · check · index · read"))
     p.add_argument(
-        "action", nargs="?", choices=["list", "check", "index", "read", "tag", "exclude", "rules", "terms", "term", "glossary", "candidate"]
+        "action",
+        nargs="?",
+        choices=[
+            "list",
+            "check",
+            "index",
+            "read",
+            "tag",
+            "exclude",
+            "rules",
+            "terms",
+            "term",
+            "glossary",
+            "candidate",
+            "domain",
+            "describe",
+            "attach",
+        ],
     )
     p.add_argument(
         "arg",
@@ -228,9 +317,18 @@ def register(add: Add) -> None:
     p.add_argument("path", nargs="?", help=msg("index: the file or folder to index (relative = inside, ~/… = outside) · term: the term"))
     p.add_argument("--scope", help=msg("tag · term: where it applies — all, a part's folder or a language"))
     p.add_argument("--strength", choices=list(rules_mod.STRENGTHS), default="must", help=msg("tag: must or should"))
-    p.add_argument("--off", action="store_true", help=msg("tag · term: take the approval away"))
+    p.add_argument("--off", action="store_true", help=msg("tag · term · describe: take it away"))
     p.add_argument("--avoid", help=msg('term · glossary: words not to use for it, "word, word"'))
     p.add_argument("--meaning", help=msg("term · glossary: what it means, in one line"))
     p.add_argument("--undo", action="store_true", help=msg("exclude: bring it back"))
     p.add_argument("--must", action="store_true", help=msg("rules: must rules only"))
     p.add_argument("--drop", action="store_true", help=msg("candidate: not a project word — forget it"))
+    p.add_argument("--what", help=msg("describe: its topic only — never the rule itself"))
+    p.add_argument("--when", help=msg("describe: the situation to read it in"))
+    p.add_argument("--keys", help=msg('describe: its key terms, "word, word"'))
+    p.add_argument(
+        "--verbatim", action="store_true", help=msg("describe: numbers · deadlines · exceptions — read the exact words before deciding")
+    )
+    p.add_argument("--work", help=msg("domain · attach: the work, e.g. W-012"))
+    p.add_argument("--task", help=msg("domain · attach: the task, e.g. T03"))
+    p.add_argument("--note", help=msg("attach: what it is used for, in a few words"))

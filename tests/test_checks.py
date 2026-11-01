@@ -32,19 +32,19 @@ def test_check_structure_length_and_template_versions(repo):
     long_doc = docs(repo) / "3. 현재 상태/시스템 구조.md"
     fill(long_doc, [("{{주요 흐름}}", "\n".join(f"- 흐름 {i}" for i in range(60)))])
     tmpl = docs(repo) / "0. 템플릿/기획.md"
-    fill(tmpl, [("template_version: 1.0.0", "template_version: 2.0.0")])
+    fill(tmpl, [("template_version: 1.1.0", "template_version: 2.0.0")])
     code, out = repo("check", ok=False)
     assert "양식 '기획'의 필수 칸 '## 범위 밖'" not in out  # 범위 밖 has no required blank
-    assert "양식 '기획'이 1.0.0 → 2.0.0로 크게 바뀌었습니다" in out
+    assert "양식 '기획'이 1.1.0 → 2.0.0로 크게 바뀌었습니다" in out
     assert "'## 주요 흐름' 칸이" in out and "줄입니다 (기준 40줄)" in out
     fill(plan, [("## 왜", "## 이유")])
     code, out = repo("check", str(plan), ok=False)
     assert code == 1 and "필수 칸 '## 왜'이 사라졌습니다" in out
     # minor bump → info only
     fill(plan, [("## 이유", "## 왜")])
-    fill(tmpl, [("template_version: 2.0.0", "template_version: 1.1.0")])
+    fill(tmpl, [("template_version: 2.0.0", "template_version: 1.2.0")])
     _, out = repo("check", str(plan))
-    assert "양식 '기획'이 바뀌었습니다 (1.0.0 → 1.1.0) — 무엇이 바뀌었는지는 양식의 '변경 기록' 칸에" in out
+    assert "양식 '기획'이 바뀌었습니다 (1.1.0 → 1.2.0) — 무엇이 바뀌었는지는 양식의 '변경 기록' 칸에" in out
 
 
 def test_check_task_file_rules(repo):

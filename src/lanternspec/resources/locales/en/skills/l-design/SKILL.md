@@ -14,6 +14,7 @@ Input: `$ARGUMENTS` — `W-012`.
 ## 0. Before starting
 - Read `<<file.plan>>`. **If any `<<marker.unknown>>` remains, ask first** (at most <<plan.max_questions>>, highest impact first).
 - Read only the related parts of the current state: `<<folder.current>>/<<file.architecture>>` · `<<folder.screens>>/` · `<<folder.data>>/schema.dbml`.
+- When a design choice depends on domain rules, read only the sections tied to the work (`lantern ref domain --work W-012`) with `lantern ref read` — don't skim the whole index again.
 
 ## 1. Create <<file.design>> · pick sections
 ```bash
@@ -65,6 +66,8 @@ Once approved (or passed by auto), record it:
 lantern design approve W-012 --by "<who approved>"     # --by auto when passed by auto
 ```
 If told what to change, change it and show the summary again.
+
+When the project has domain knowledge (`lantern ref domain` isn't empty), add one line to the approval screen: `📚 Domain knowledge used: N — anything needed that's missing?` Tie what you hear with `lantern ref attach`.
 
 <!-- lantern:if knowledge -->
 ## 7. Unfamiliar technologies → /l-learn candidates

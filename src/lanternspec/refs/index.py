@@ -8,12 +8,14 @@ is, its titles, its index — reaches the repository. Only `lantern` writes thes
 Responsibilities:
     - index one source, and list its path (inside → lantern.yaml `references`, outside → `.lantern/references.yaml`)
     - tell which documents changed, or were never indexed, since
-    - store what the person approved: a company-rules section's scope · strength, a company term, exclusions
+    - store what the person approved: a company-rules section's scope · strength, a company term,
+      a domain-knowledge section's what · when to read · key terms · verbatim, exclusions
 
 Not here:
     - finding the documents and sections → refs/sources.py
     - which approved rules go where → refs/rules.py
-    - proposing the scope and strength of each section → the /l-ref skill
+    - the domain-knowledge index, reads and picks → refs/domain.py
+    - proposing the tags of each section → the /l-ref skill
 """
 
 from __future__ import annotations
@@ -135,6 +137,53 @@ def outside_exclude(project: Project) -> list[str]:
     return [str(x) for x in _file(project, True).get("exclude") or []]
 
 
+def excluded(project: Project) -> list[tuple[src_mod.Document, outline.Section | None]]:
+    """List the documents and sections left out (lantern.yaml's and `.lantern/`'s `exclude`) that still exist.
+
+    Args:
+        project: The project.
+
+    Returns:
+        (document, section) pairs; the section is None when the whole document is left out.
+
+    Example:
+        >>> [(d.name, s and s.title) for d, s in excluded(project)]  # doctest: +SKIP
+        [('개인정보', '파기')]
+    """
+    out = []
+    for address in [*(project.profile.get("references.exclude") or []), *outside_exclude(project)]:
+        try:
+            out.append(src_mod.locate(project, str(address)))
+        except LookupError:
+            continue
+    return out
+
+
+def is_excluded(
+    skip: list[tuple[src_mod.Document, outline.Section | None]], doc: src_mod.Document, section: outline.Section | None
+) -> bool:
+    """Tell whether a section (or a whole document, for None) falls in what `excluded` returned.
+
+    Args:
+        skip: What `excluded` returned.
+        doc: The document.
+        section: The section; None for the whole document.
+
+    Returns:
+        True when it, or a section or document holding it, is left out.
+
+    Example:
+        >>> is_excluded([], doc, None)  # doctest: +SKIP
+        False
+    """
+    for d, s in skip:
+        if d.path != doc.path:
+            continue
+        if s is None or (section is not None and s.start <= section.start and section.end <= s.end):
+            return True
+    return False
+
+
 def _save(project: Project, outside: bool, docs: dict[str, Any], **keep: Any) -> None:
     """Write one index; the outside one also keeps its paths and exclusions (given ones replace them)."""
     path = index_file(project, outside)
@@ -219,7 +268,8 @@ def index(project: Project, kind: str, entry: str) -> IndexResult:
         if moved:
             profile_mod.update(project.root, {f"references.{kind}": [x for x in shared if not same(x)]})
     else:
-        registered = not any(same(x) for x in shared)
+        home = project.folder("domain").resolve()
+        registered = not any(same(x) for x in shared) and not source.path.is_relative_to(home)  # the domain folder needs no listing
         if registered:
             profile_mod.update(project.root, {f"references.{kind}": [*shared, entry]})
     project.profile = profile_mod.load(project.root)
@@ -237,6 +287,9 @@ def index(project: Project, kind: str, entry: str) -> IndexResult:
             new["applies"] = applies
         if rec.get("terms"):  # approved company terms aren't tied to sections
             new["terms"] = rec["terms"]
+        notes = {a: n for a, n in (rec.get("notes") or {}).items() if a in now}  # descriptions of sections still there
+        if notes:
+            new["notes"] = notes
         result.sections += len(now)
         result.added += [f"{doc.name}#{a}" for a in now if a not in before]
         result.changed += [f"{doc.name}#{a}" for a in now if a in before and before[a] != now[a]]
@@ -346,6 +399,57 @@ def set_term(project: Project, document: str, term: str, avoid: list[str], meani
         rec.pop("terms")
     _save(project, doc.source.outside, stored)
     return doc.name
+
+
+def describe(project: Project, address: str, what: str, when: str, keys: list[str], verbatim: bool) -> str:
+    """Store what people approved about a domain-knowledge section; no what and no when takes it away.
+
+    The section's hash is kept with it, so the index can tell when the section changed after it was described.
+
+    Args:
+        project: The project.
+        address: The section ("문서#절"); the document must be indexed as `domain`.
+        what: Its topic only — never the rule itself (numbers · deadlines), so judging needs the words.
+        when: The situation to read it in.
+        keys: Its key terms.
+        verbatim: True when its exact words must be read again right before deciding (numbers · deadlines · exceptions).
+
+    Returns:
+        The section's full address.
+
+    Raises:
+        LookupError: The section isn't found.
+        ValueError: A whole document, or a document that isn't domain knowledge or isn't indexed.
+
+    Example:
+        >>> describe(project, "개인정보#보관 기간", "탈퇴 회원 정보를 두는 기간", "탈퇴 데이터를 지울 때", ["파기"], True)  # doctest: +SKIP
+        '개인정보#개인정보 처리 지침#보관 기간'
+    """
+    doc, section = src_mod.locate(project, address)
+    if section is None:
+        raise ValueError(msg("Name a section, not a whole document: {address}#<title>", address=address))
+    if doc.source.kind != "domain":
+        raise ValueError(msg("{doc} is not a domain-knowledge document (references.domain)", doc=doc.name))
+    stored = load(project, doc.source.outside)
+    rec = stored.get(doc.shown)
+    if rec is None:
+        raise ValueError(msg("{doc} isn't indexed yet — lantern ref index domain <path>", doc=doc.name))
+    notes = dict(rec.get("notes") or {})
+    if what.strip() or when.strip():
+        notes[section.address] = {
+            "what": what.strip(),
+            "when": when.strip(),
+            "keys": [k for k in keys if k],
+            "verbatim": verbatim,
+            "hash": outline.digest(outline.cut(read(doc.path), section)),
+        }
+    else:
+        notes.pop(section.address, None)
+    rec["notes"] = notes
+    if not notes:
+        rec.pop("notes")
+    _save(project, doc.source.outside, stored)
+    return f"{doc.name}#{section.address}"
 
 
 def exclude(project: Project, address: str, undo: bool = False) -> bool:

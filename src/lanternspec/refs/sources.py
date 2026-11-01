@@ -1,6 +1,7 @@
 r"""Where the references are: their paths, their documents, and one section by its address.
 
-A relative path is inside the project and is listed in lantern.yaml `references`, for the team;
+A relative path is inside the project and is listed in lantern.yaml `references`, for the team
+(the domain-knowledge folder `📚 도메인 지식/` needs no listing — what is put there counts);
 `~/…` and absolute paths are outside (an absolute path into the project still counts as inside) and
 are listed in `.lantern/references.yaml`, out of git. Material outside is never opened by the AI's
 own file tools — some tools ask before every read outside the working folder, and a run nobody
@@ -110,6 +111,8 @@ def resolve(project: Project, entry: str) -> Source | None:
 def sources(project: Project) -> list[Source]:
     """List every reference path, resolved, in the order rules · terms · domain (lantern.yaml's, then `.lantern/`'s).
 
+    The domain-knowledge folder counts as a domain source once it holds a document, listed or not.
+
     Args:
         project: The project.
 
@@ -129,6 +132,9 @@ def sources(project: Project) -> list[Source]:
             src = resolve(project, str(entry))
             if src:
                 out.append(Source(kind, src.entry, src.path, src.outside))
+    home = Source("domain", project.rel(project.folder("domain")), project.folder("domain").resolve(), False)
+    if home.path.is_dir() and not any(s.kind == "domain" and s.path == home.path for s in out) and documents(project, home):
+        out.append(home)
     return out
 
 
@@ -155,7 +161,7 @@ def shown(project: Project, path: Path) -> str:
 
 
 def documents(project: Project, source: Source) -> list[Document]:
-    """List a source's Markdown documents (a folder's, recursively, without hidden or `_` folders).
+    """List a source's Markdown documents (a folder's, recursively, without hidden or `_` folders or the generated domain MOC).
 
     Args:
         project: The project.
@@ -175,7 +181,8 @@ def documents(project: Project, source: Source) -> list[Document]:
         files = [f for f in sorted(p.rglob("*.md")) if not any(x.startswith((".", "_")) for x in f.relative_to(p).parts[:-1])]
     else:
         files = []
-    return [Document(source, f, shown(project, f)) for f in files]
+    moc = (project.folder("domain") / project.names.file("domain_moc")).resolve()
+    return [Document(source, f, shown(project, f)) for f in files if f.resolve() != moc]
 
 
 def all_documents(project: Project) -> list[Document]:

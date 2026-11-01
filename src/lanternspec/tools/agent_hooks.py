@@ -100,6 +100,7 @@ def session_start(project: Project, tool: Tool, inp: HookInput) -> HookResult:
     if inp.source == "compact":
         out += _saved_progress(project, inp.session)
         out += [line for line in (_part_line(project, inp.session),) if line]
+        out += _domain_read(project)
     out += _outside_must_rules(project)
     return HookResult(context="\n".join(out))
 
@@ -110,6 +111,18 @@ def _outside_must_rules(project: Project) -> list[str]:
 
     text = outside_rules(project, "", "must")
     return ["", msg("[Company rules kept outside the project — must follow]"), text] if text else []
+
+
+def _domain_read(project: Project) -> list[str]:
+    """The domain-knowledge sections read today, so the AI knows what it relied on (and re-reads verbatim ones)."""
+    from ..refs.domain import read_today
+
+    read = read_today(project)
+    if not read:
+        return []
+    out = ["", msg("[Domain knowledge read today — read a section again with lantern ref read before relying on it]")]
+    out += [f"- {a}" + (" · " + msg("📌 verbatim") if v else "") for a, v in read]
+    return out
 
 
 def _compact_file(project: Project, session: str) -> Path:

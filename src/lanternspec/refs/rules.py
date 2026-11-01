@@ -82,17 +82,6 @@ def scopes(project: Project) -> list[str]:
     return [ALL, *(str(p["path"]) for p in parts), *dict.fromkeys(str(x) for x in langs)]
 
 
-def _excluded(project: Project) -> list[tuple[src_mod.Document, outline.Section | None]]:
-    """The documents and sections named in `references.exclude` (lantern.yaml's and `.lantern/`'s) that still exist."""
-    out = []
-    for address in [*(project.profile.get("references.exclude") or []), *index_mod.outside_exclude(project)]:
-        try:
-            out.append(src_mod.locate(project, str(address)))
-        except LookupError:
-            continue
-    return out
-
-
 def _within(inner: outline.Section, outer: outline.Section) -> bool:
     return outer.start <= inner.start and inner.end <= outer.end
 
@@ -113,7 +102,7 @@ def approved(project: Project) -> list[Rule]:
         [('API#API#오류 응답', 'backend', 'must')]
     """
     stores = {False: index_mod.load(project, False), True: index_mod.load(project, True)}
-    skip = _excluded(project)
+    skip = index_mod.excluded(project)
     out: list[Rule] = []
     for doc in src_mod.all_documents(project):
         if doc.source.kind != "rules":
@@ -127,7 +116,7 @@ def approved(project: Project) -> list[Rule]:
             section = found.get(address)
             if section is None or not isinstance(tag, dict):
                 continue
-            if any(d.path == doc.path and (s is None or _within(section, s)) for d, s in skip):
+            if index_mod.is_excluded(skip, doc, section):
                 continue
             mine.append(Rule(doc, section, str(tag.get("scope") or ALL), str(tag.get("strength") or "should")))
         mine.sort(key=lambda r: r.section.start)

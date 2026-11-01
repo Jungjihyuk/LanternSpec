@@ -434,6 +434,10 @@ def init_apply(project: Project) -> list[str]:
                 from ..report.principles_doc import write_doc
 
                 write_doc(project)
+            elif spec.key == "domain-moc":
+                from ..refs.domain import write_moc
+
+                write_moc(project)
             elif spec.key == "legacy-map" and spec.template:
                 from ..check.legacy import legacy_files, map_rows
 

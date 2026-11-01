@@ -28,6 +28,7 @@ folders:                    # docs/ 아래 폴더
   debt: {ko: "📒 부채", en: "📒 Debt"}
   debt_cards: {ko: "📒 부채/카드", en: "📒 Debt/Cards"}
   note_drafts: {ko: "📒 부채/노트 초안", en: "📒 Debt/Note Drafts"}
+  domain: {ko: "📚 도메인 지식", en: "📚 Domain Knowledge"}  # 모든 단계에서 꺼내 보는 참고서 (사람이 넣고, 필요할 때만 읽는다)
   screens: {ko: "화면", en: "Screens"}  # 작업 폴더 · 현재 상태 안의 화면 시안 폴더
   data: {ko: "데이터", en: "Data"}  # 현재 상태 안의 데이터 폴더
 
@@ -62,6 +63,7 @@ docs:                       # 문서 이름 (확장자 없이) — 템플릿 이
   report: {ko: "현황", en: "Status Report"}  # 자동 생성
   no_work: {ko: "작업 없이 고친 것", en: "Changes Without Work"}  # 자동 생성 (4. 운영 기록 안)
   sections_page: {ko: "보호 칸", en: "Protected Sections"}  # 자동 생성 (0. 템플릿/_meta 안)
+  domain_moc: {ko: "도메인 지식 MOC", en: "Domain Knowledge MOC"}  # 자동 생성 (📚 도메인 지식 안)
 
 task_attrs:                 # 할 일 줄의 칸 이름: - [ ] W-012-T02 무엇 [크기:: M] [기준:: AC-1] [먼저:: T01]
   size: {ko: "크기", en: "size"}
@@ -95,6 +97,7 @@ acceptance:                 # 수락 기준 검사 (lantern check --epic)
 
 # 보호 칸 — lantern이 읽거나 써 넣는 칸.
 #   docs: 이 칸이 있는 문서(위 docs의 키) · title: 기본 제목 · feature: 이 칸으로 하는 일 (사용자에게 그대로 보인다)
+#   since: 이 칸이 생긴 양식 버전 — 그보다 옛 양식으로 만든 문서에는 빠졌다고 묻지 않는다
 # 사람이 제목을 바꾸거나 지워도 깨지지 않는다: lantern check가 의도를 묻고,
 # 답은 lantern.yaml(docs.sections · docs.unused_sections)에 남는다 (lantern sections).
 sections:
@@ -138,6 +141,11 @@ sections:
     docs: [glossary]
     ko: {title: "용어", feature: "lantern check가 이 칸의 표에서 쓰지 말 표현을 읽어 문서를 검사하고, lantern ref terms가 사내 용어와 함께 보여 줍니다"}
     en: {title: "Terms", feature: "lantern check reads the words to avoid from this table to check documents, and lantern ref terms shows it with the company terms"}
+  domain_refs:
+    docs: [plan]
+    since: "1.1.0"
+    ko: {title: "참고한 도메인 지식", feature: "/l-plan이 이 작업에 쓸 도메인 지식의 절을 이 칸에 고르고, /l-build가 그 할 일을 시작할 때 거기 걸린 절만 읽습니다"}
+    en: {title: "Domain Knowledge Used", feature: "/l-plan picks here the domain-knowledge sections this work needs, and /l-build reads only the ones tied to a task when it starts that task"}
   legacy_docs:
     docs: [legacy_map]
     ko: {title: "문서", feature: "기존 문서마다 이 칸의 표에 한 줄씩 더합니다"}

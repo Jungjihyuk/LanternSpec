@@ -605,6 +605,9 @@ def check_file(project: Project, path: Path, text: str, ctx: _Ctx) -> list[Findi
     if tname and tname in ctx.templates.texts and not generated and not disabled:
         in_template = set(missing_sections(project, tname, ctx.templates.texts[tname]))
         for role in missing_sections(project, tname, text):
+            since = project.names.section(role).since
+            if since and semver(meta.get("template_version")) < semver(since):  # made before the template had it
+                continue
             if role not in in_template:
                 out.append(section_question(project, path, role, tname, rel, "section-missing"))
 

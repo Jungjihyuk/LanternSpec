@@ -811,6 +811,7 @@ DOC_FOLDERS: dict[str, tuple[str, ...]] = {
     "known-tech": ("debt",),
     "debt-status": ("debt",),
     "legacy-map": ("legacy",),
+    "domain-moc": ("domain",),
 }
 
 
@@ -880,6 +881,8 @@ def enabled_docs(profile: Profile) -> list[DocSpec]:
         folder("decisions", msg("always")),
         doc("unit-log", msg("always")),
         doc("glossary", msg("always")),
+        folder("domain", msg("always")),
+        generated("domain-moc", msg("always (generated)")),
         folder("reports", msg("always"), "past_reports"),
     ]
     if clients:

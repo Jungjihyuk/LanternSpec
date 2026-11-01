@@ -6,8 +6,8 @@ created: ${today}
 updated: ${today}
 links: ${links}
 template: Plan
-template_version: 1.0.0
-based_on: 1.0.0
+template_version: 1.1.0
+based_on: 1.1.0
 domain: "{{Domain}}"
 ui: false
 owner: ${owner}
@@ -49,6 +49,9 @@ owner: ${owner}
 
 - {{Out of scope}}
 
+## Domain Knowledge Used
+> [!guide] /l-plan fills this with `lantern ref attach`. One line = one section of domain knowledge — which tasks use it. Material outside the project isn't written here (it is kept in this computer's `.lantern/`). Leave it empty when nothing applies.
+
 ## Needs answer
 > [!guide] Don't guess what you don't know; write `- ❓ Needs answer: question`. Once answered, put it in the right section and delete the line.
 
@@ -57,3 +60,4 @@ owner: ${owner}
 | Version | Date | What changed |
 |---|---|---|
 | 1.0.0 | 2026-10-27 | Base template |
+| 1.1.0 | 2026-11-01 | Added the "Domain Knowledge Used" section |

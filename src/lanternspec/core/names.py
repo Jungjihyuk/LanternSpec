@@ -34,16 +34,20 @@ class Section:
         title: The default title in this language, e.g. "지금 상황".
         docs: Document roles the section lives in, e.g. ("record", "session").
         feature: What lantern does with it, in words shown to the user.
+        since: The template version that added it ("" = from the start); older documents aren't asked about it.
 
     Example:
         >>> load("ko").section("now").docs
         ('record', 'session')
+        >>> load("ko").section("domain_refs").since
+        '1.1.0'
     """
 
     role: str
     title: str
     docs: tuple[str, ...]
     feature: str
+    since: str = ""
 
 
 @dataclass
@@ -234,7 +238,9 @@ class Names:
             '어디서 나왔나'
         """
         spec = self.table["sections"][role]
-        return Section(role, str(spec["title"]), tuple(spec.get("docs") or ()), str(spec.get("feature") or ""))
+        return Section(
+            role, str(spec["title"]), tuple(spec.get("docs") or ()), str(spec.get("feature") or ""), str(spec.get("since") or "")
+        )
 
     def sections(self) -> list[Section]:
         """Return every protected section, in names.yaml order.

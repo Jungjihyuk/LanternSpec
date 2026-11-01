@@ -18,6 +18,7 @@ LanternSpec이 이름을 쓰는 여러 곳(lantern.yaml 키 · enums.yaml 목록
 | `name` | lantern.yaml `project.name` = 프로젝트 이름. `Tool.name` · `Adapter.name` = 도구 · 저장소를 가리키는 키 (claude · obsidian) | lantern.yaml · `Tool` · `Adapter` |
 | `hook` · `hooks` | `lantern hook` = AI 도구 · git이 부르는 내부 명령. `lantern hooks` = git hook 설치. lantern.yaml `git.hooks` = git hook의 세기 (warn · block). `Tool.hooks()` = AI 도구 설정에 넣는 hook 항목 | CLI · lantern.yaml · `Tool` |
 | `rules` | lantern.yaml `references.rules` = 사람이 들이는 사내 규칙 자료의 경로 (안 · 밖). `lantern ref rules` = 밖에 둔 사내 규칙 중 승인한 것을 보여 주는 명령. names.yaml 폴더 `rules` = 문서 폴더 `3. 현재 상태/규칙` (협업 규칙 · 개발 원칙 같은 이 프로젝트의 규칙 문서) | lantern.yaml · names.yaml folders |
+| `domain` | lantern.yaml `references.domain` · 폴더 `📚 도메인 지식/` = 도메인 지식 — 필요할 때만 한 절씩 읽는 참고서 (법령 · 업무 규칙 …). 색인은 `lantern ref domain`, 작업이 쓰는 절은 기획의 보호 칸 `domain_refs`. 기획 frontmatter `domain` = 그 작업의 업무 분야 한 단어 | lantern.yaml · names.yaml folders · CLI(`lantern ref domain`) · 기획 frontmatter |
 | `debt_status` | enums.yaml `debt_status` = 부채 카드 하나의 상태 값 목록. 문서 `debt_status` = 부채 전체를 보여 주는 자동 생성 문서 "부채 현황" | enums.yaml · names.yaml docs |
 
 ## 한 개념, 여러 곳
