@@ -236,10 +236,11 @@ class Tool:
         base = f"{self.skill_root}/{src.name}"
         note = f"<!-- {profile.names.marker('generated_skill')} -->\n"
         body = render_body(src, profile, self, prefix, enums)
-        src = replace(src, description=fill_tokens(src.description, body_context(profile, self.name, enums)))
+        ctx = body_context(profile, self.name, enums)
+        src = replace(src, description=fill_tokens(src.description, ctx))
         files = {f"{base}/SKILL.md": yaml_front(self.skill_meta(src, profile, prefix)) + note + "\n" + body}
         for rel, text in src.extra.items():
-            files[f"{base}/{rel}"] = rewrite_commands(text, prefix)
+            files[f"{base}/{rel}"] = rewrite_commands(fill_tokens(text, ctx), prefix)
         for rel, text in self.skill_extras(src, profile).items():
             files[f"{base}/{rel}"] = text
         return files

@@ -1132,8 +1132,8 @@
 "lantern ref tag <document#section> --scope <all|part|language> --strength <must|should>": {ko: "lantern ref tag <문서#절> --scope <all|영역|언어> --strength <must|should>"}
 "rules: must rules only": {ko: "rules: 반드시 지킬 규칙만"}
 "tag: must or should": {ko: "tag: must(반드시) · should(되도록)"}
-"tag: take the approval away": {ko: "tag: 승인 거두기"}
-"tag: where the rule applies — all, a part's folder or a language": {ko: "tag: 규칙이 적용되는 곳 — all(전체) · 영역 폴더 · 언어"}
+"tag · term: take the approval away": {ko: "tag · term: 승인 거두기"}
+"tag · term: where it applies — all, a part's folder or a language": {ko: "tag · term: 적용되는 곳 — all(전체) · 영역 폴더 · 언어"}
 "{place} is not a part — lantern parts": {ko: "{place}는 영역이 아닙니다 — lantern parts"}
 "✔ Approval taken away: {address}": {ko: "✔ 승인을 거둠: {address}"}
 "✔ Brought back: {address}": {ko: "✔ 되돌림: {address}"}
@@ -1152,8 +1152,24 @@
 "[Company rules kept outside the project — must follow]": {ko: "[프로젝트 밖에 둔 사내 규칙 — 반드시 지킴]"}
 "This project follows company rules kept outside it, but this computer has none yet — ask who looks after them where they are, then bring them in with /l-ref rules <path>": {ko: "이 프로젝트는 밖에 둔 사내 규칙을 따르는데 이 컴퓨터에는 아직 없습니다 — 담당자에게 자료 위치를 받아 /l-ref rules <경로>로 들이세요"}
 "references.outside_rules: must be true or false": {ko: "references.outside_rules: true나 false여야 합니다"}
+"'{word}' — use '{term}' ({where})": {ko: "'{word}' — '{term}'로 쓰세요 ({where})"}
+"company glossary": {ko: "사내 용어집"}
+"No terms yet — fill in {doc} or bring a company glossary in with /l-ref terms": {ko: "아직 용어가 없습니다 — {doc}를 채우거나 사내 용어집을 /l-ref terms로 들이세요"}
+"lantern ref term <glossary document> <term> --avoid \"word, word\" [--meaning \"…\"]": {ko: "lantern ref term <용어집 문서> <용어> --avoid \"표현, 표현\" [--meaning \"…\"]"}
+"term: what it means, in one line": {ko: "term: 뜻 한 줄"}
+"term: words not to use for it, \"word, word\"": {ko: "term: 쓰지 말 표현, \"표현, 표현\""}
+"✔ {doc}: {term} (avoid: {words})": {ko: "✔ {doc}: {term} (쓰지 말 표현: {words})"}
+"✔ {doc}: {term} taken away": {ko: "✔ {doc}: {term} 승인을 거둠"}
+"{doc} doesn't mention {term}": {ko: "{doc}에 {term}이라는 말이 없습니다"}
+"{doc} is not a glossary document (references.terms)": {ko: "{doc}는 용어집 문서가 아닙니다 (references.terms)"}
+"{doc} isn't indexed yet — lantern ref index terms <path>": {ko: "{doc}는 아직 색인되지 않았습니다 — lantern ref index terms <경로>"}
+"company": {ko: "사내"}
+"project": {ko: "프로젝트"}
+"| Term | Meaning | Words to avoid | Scope | From |": {ko: "| 용어 | 뜻 | 쓰지 말 표현 | 범위 | 출처 |"}
+"⚠ Also in the project glossary with another meaning — the company's wins: {items}": {ko: "⚠ 프로젝트 용어집에도 다른 뜻으로 있습니다 — 사내 것을 따릅니다: {items}"}
+"ℹ New documents to make: {items} → lantern scaffold init": {ko: "ℹ 새로 만들 문서: {items} → lantern scaffold init"}
 "    # follows company rules kept outside the project (no path or title here) — false to stop": {ko: "    # 밖에 둔 사내 규칙을 따른다 (경로 · 제목은 여기 없음) — 그만 따르려면 false"}
-"index: the file or folder to index (relative = inside, ~/… = outside)": {ko: "index: 색인할 파일이나 폴더 (상대 경로 = 안, ~/… = 밖)"}
+"index: the file or folder to index (relative = inside, ~/… = outside) · term: the term": {ko: "index: 색인할 파일이나 폴더 (상대 경로 = 안, ~/… = 밖) · term: 용어"}
 "lantern ref index <rules|terms|domain> <path>": {ko: "lantern ref index <rules|terms|domain> <경로>"}
 "doesn't exist": {ko: "없음"}
 "{count} documents": {ko: "문서 {count}개"}

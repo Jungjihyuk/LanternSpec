@@ -46,6 +46,7 @@ LanternSpec이 이름을 쓰는 여러 곳(lantern.yaml 키 · enums.yaml 목록
 | `legacy` | 브라운필드의 기존 문서 | 폴더 · CLI |
 | `principle` · `principles` | 개발 원칙 (설계 원칙 · 코드 컨벤션) | 문서(자동 생성) · CLI |
 | `section` · `sections` | 보호 칸 — lantern이 제목으로 찾아 읽고 쓰는 `##` 칸 | lantern.yaml(`docs.sections`) · CLI |
+| `glossary` | 용어집 — 이 프로젝트의 용어 · 뜻 · 쓰지 말 표현 표 (`3. 현재 상태/규칙/용어집.md`). 사내 용어집은 `references.terms`로 들인다. 이 저장소의 `GLOSSARY.md`(개발용 이름 표)와는 다른 것 | 문서 · 보호 칸 · CLI(`lantern ref terms`) |
 | `unit_log` | 작업 단위 기록 — 사람이 `/l-plan`의 작업 단위 추천을 바꾼 이유 | 문서 · 보호 칸 · CLI(`unit-log`) |
 | `data` | 데이터 문서와 그 폴더 (현재 상태 안) | 문서 · 폴더 |
 | `screen` · `screens` | 화면 시안 — 문서 · 폴더 · 할 일 줄의 칸 · CLI | 문서 · 폴더 · 할 일 칸 · CLI |

@@ -8,7 +8,7 @@ is, its titles, its index — reaches the repository. Only `lantern` writes thes
 Responsibilities:
     - index one source, and list its path (inside → lantern.yaml `references`, outside → `.lantern/references.yaml`)
     - tell which documents changed, or were never indexed, since
-    - store what the person approved for a company-rules section (scope · strength), and exclusions
+    - store what the person approved: a company-rules section's scope · strength, a company term, exclusions
 
 Not here:
     - finding the documents and sections → refs/sources.py
@@ -235,6 +235,8 @@ def index(project: Project, kind: str, entry: str) -> IndexResult:
         applies = {a: tag for a, tag in (rec.get("applies") or {}).items() if a in now}  # approvals of sections still there
         if applies:
             new["applies"] = applies
+        if rec.get("terms"):  # approved company terms aren't tied to sections
+            new["terms"] = rec["terms"]
         result.sections += len(now)
         result.added += [f"{doc.name}#{a}" for a in now if a not in before]
         result.changed += [f"{doc.name}#{a}" for a in now if a in before and before[a] != now[a]]
@@ -301,6 +303,49 @@ def tag(project: Project, address: str, scope: str, strength: str) -> str:
         rec.pop("applies")
     _save(project, doc.source.outside, stored)
     return f"{doc.name}#{section.address}"
+
+
+def set_term(project: Project, document: str, term: str, avoid: list[str], meaning: str = "", scope: str = "") -> str:
+    """Store a term people approved from a company glossary; no words to avoid and no meaning takes it away.
+
+    Args:
+        project: The project.
+        document: The glossary document (name or path), indexed as `terms`.
+        term: The term as the glossary writes it.
+        avoid: Words not to use for it.
+        meaning: What it means, in one line.
+        scope: "all" (or ""), a part's folder or a language.
+
+    Returns:
+        The document's name.
+
+    Raises:
+        LookupError: The document isn't found.
+        ValueError: It isn't a terms document, isn't indexed, or doesn't mention the term.
+
+    Example:
+        >>> set_term(project, "용어", "고객", ["손님"], "돈을 내는 사람")  # doctest: +SKIP
+        '용어'
+    """
+    doc = src_mod.find_document(project, document)
+    if doc.source.kind != "terms":
+        raise ValueError(msg("{doc} is not a glossary document (references.terms)", doc=doc.name))
+    stored = load(project, doc.source.outside)
+    rec = stored.get(doc.shown)
+    if rec is None:
+        raise ValueError(msg("{doc} isn't indexed yet — lantern ref index terms <path>", doc=doc.name))
+    if not term.strip() or term.casefold() not in read(doc.path).casefold():
+        raise ValueError(msg("{doc} doesn't mention {term}", doc=doc.name, term=term))
+    terms = dict(rec.get("terms") or {})
+    if avoid or meaning:
+        terms[term] = {"meaning": meaning, "avoid": avoid, **({"scope": scope} if scope and scope != "all" else {})}
+    else:
+        terms.pop(term, None)
+    rec["terms"] = terms
+    if not terms:
+        rec.pop("terms")
+    _save(project, doc.source.outside, stored)
+    return doc.name
 
 
 def exclude(project: Project, address: str, undo: bool = False) -> bool:

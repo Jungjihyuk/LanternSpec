@@ -798,6 +798,7 @@ DOC_FOLDERS: dict[str, tuple[str, ...]] = {
     "deploy": ("deploy_ops",),
     "server-ops": ("deploy_ops",),
     "unit-log": ("rules",),
+    "glossary": ("rules",),
     "collab": ("rules",),
     "principles": ("rules",),
     "known-tech": ("debt",),
@@ -871,6 +872,7 @@ def enabled_docs(profile: Profile) -> list[DocSpec]:
         folder("rules", msg("always")),
         folder("decisions", msg("always")),
         doc("unit-log", msg("always")),
+        doc("glossary", msg("always")),
         folder("reports", msg("always"), "past_reports"),
     ]
     if clients:

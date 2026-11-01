@@ -1,4 +1,4 @@
-"""References commands: ref (list · check · index · read · tag · exclude · rules)."""
+"""References commands: ref (list · check · index · read · tag · exclude · rules · terms · term)."""
 
 from __future__ import annotations
 
@@ -22,6 +22,17 @@ def cmd_ref(a: argparse.Namespace) -> int:
         return _list(project)
     if a.action == "rules":
         return _rules(project, a.arg or "", a.must)
+    if a.action == "terms":
+        from ..refs import terms as terms_mod
+
+        print(
+            terms_mod.table(project)
+            or msg(
+                "No terms yet — fill in {doc} or bring a company glossary in with /l-ref terms",
+                doc=project.rel(terms_mod.glossary_path(project)),
+            )
+        )
+        return 0
     if not a.arg:
         raise CliError(msg("lantern ref {action} needs a path or an address", action=a.action))
     if a.action == "check":
@@ -32,6 +43,17 @@ def cmd_ref(a: argparse.Namespace) -> int:
         return _index(project, a.arg, a.path)
     if a.action == "tag":
         return _tag(project, a.arg, a.scope or "", a.strength, a.off)
+    if a.action == "term":
+        if not a.path:
+            raise CliError(msg('lantern ref term <glossary document> <term> --avoid "word, word" [--meaning "…"]'))
+        avoid = [] if a.off else [w for w in (a.avoid or "").replace("·", ",").split(",") if w.strip()]
+        name = index_mod.set_term(project, a.arg, a.path, [w.strip() for w in avoid], "" if a.off else a.meaning or "", a.scope or "")
+        print(
+            msg("✔ {doc}: {term} taken away", doc=name, term=a.path)
+            if a.off
+            else msg("✔ {doc}: {term} (avoid: {words})", doc=name, term=a.path, words=", ".join(avoid) or "-")
+        )
+        return 0
     if a.action == "exclude":
         changed = index_mod.exclude(project, a.arg, a.undo)
         said = msg("✔ Brought back: {address}", address=a.arg) if a.undo else msg("✔ Left out of this project: {address}", address=a.arg)
@@ -170,7 +192,7 @@ def _parts(text: str, section: outline.Section | None) -> list[outline.Section]:
 def register(add: Add) -> None:
     """Register the references commands."""
     p = add("ref", cmd_ref, msg("References (company rules · terms · domain knowledge): list · check · index · read"))
-    p.add_argument("action", nargs="?", choices=["list", "check", "index", "read", "tag", "exclude", "rules"])
+    p.add_argument("action", nargs="?", choices=["list", "check", "index", "read", "tag", "exclude", "rules", "terms", "term"])
     p.add_argument(
         "arg",
         nargs="?",
@@ -178,9 +200,11 @@ def register(add: Add) -> None:
             "check: a file or folder · index: rules | terms | domain · read · tag · exclude: document#section · rules: a part (optional)"
         ),
     )
-    p.add_argument("path", nargs="?", help=msg("index: the file or folder to index (relative = inside, ~/… = outside)"))
-    p.add_argument("--scope", help=msg("tag: where the rule applies — all, a part's folder or a language"))
+    p.add_argument("path", nargs="?", help=msg("index: the file or folder to index (relative = inside, ~/… = outside) · term: the term"))
+    p.add_argument("--scope", help=msg("tag · term: where it applies — all, a part's folder or a language"))
     p.add_argument("--strength", choices=list(rules_mod.STRENGTHS), default="must", help=msg("tag: must or should"))
-    p.add_argument("--off", action="store_true", help=msg("tag: take the approval away"))
+    p.add_argument("--off", action="store_true", help=msg("tag · term: take the approval away"))
+    p.add_argument("--avoid", help=msg('term: words not to use for it, "word, word"'))
+    p.add_argument("--meaning", help=msg("term: what it means, in one line"))
     p.add_argument("--undo", action="store_true", help=msg("exclude: bring it back"))
     p.add_argument("--must", action="store_true", help=msg("rules: must rules only"))

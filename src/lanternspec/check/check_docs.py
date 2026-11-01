@@ -730,6 +730,48 @@ def _check_tasks(project: Project, path: Path, text: str, rel: str) -> list[Find
     return out
 
 
+def term_findings(project: Project, paths: list[Path]) -> list[Finding]:
+    """Point out the glossary's words to avoid in documents (the glossary itself and generated documents aside).
+
+    Args:
+        project: The project.
+        paths: The documents to look at.
+
+    Returns:
+        One warning per line and word.
+
+    Example:
+        >>> term_findings(project, [path])[0].message  # doctest: +SKIP
+        "'유저' 대신 '회원' (용어집)"
+    """
+    from ..refs import terms as terms_mod
+
+    terms, _ = terms_mod.merged(project)
+    if not any(t.avoid for t in terms):
+        return []
+    glossary = terms_mod.glossary_path(project).resolve()
+    out = []
+    for p in paths:
+        if p.resolve() == glossary:
+            continue
+        text = read(p)
+        if is_generated(frontmatter.parse(text).meta):
+            continue
+        for line, word, t in terms_mod.avoid_hits(text, terms):
+            where = msg("company glossary") if t.company else project.names.file("glossary")
+            out.append(
+                Finding(
+                    "warn",
+                    project.rel(p),
+                    "avoid-term",
+                    msg("'{word}' — use '{term}' ({where})", word=word, term=t.term, where=where),
+                    line,
+                    t.meaning or None,
+                )
+            )
+    return out
+
+
 class _Ctx:
     def __init__(self, project: Project) -> None:
         self.enums = project.enums
@@ -795,6 +837,7 @@ def run(project: Project, paths: Iterable[Path] | None = None, templates: bool =
     target_set = set(targets)
     for p in targets:
         findings += check_file(project, p, read(p), ctx)
+    findings += term_findings(project, targets)
     # duplicate ids need every doc, not only the targets
     if paths is not None:
         for p in all_docs:

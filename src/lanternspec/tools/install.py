@@ -458,6 +458,12 @@ def upgrade(project: Project, force: bool = False, apply: bool = False) -> Insta
     moved = layout.apply(project, found) if apply else []
     report = install(project, None, force=force)
     report.templates = upgrade_templates(project, force=force)
+    if project.docs.exists():  # documents a newer version turns on (e.g. the glossary) are made by scaffold init, never here
+        from ..work.scaffold import init_plan
+
+        new = [project.docs_rel(a.path) for a in init_plan(project) if a.kind == "create-doc"]
+        if new:
+            report.warnings.append(msg("ℹ New documents to make: {items} → lantern scaffold init", items=", ".join(new)))
     if moved:
         from ..report import doc_map
 

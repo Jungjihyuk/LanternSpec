@@ -249,3 +249,76 @@ def test_should_rules_become_pointers_when_agents_md_is_over_budget(repo):
     backend = (repo.root / "backend/AGENTS.md").read_text(encoding="utf-8")
     assert "#### 반드시\n짧다." in backend
     assert '- 참고 — `lantern ref read "긴#긴 규칙#참고"`' in backend and "되도록 이렇게 한다." not in backend
+
+
+GLOSSARY_ROWS = (
+    "| 회원 | 가입한 사람 | 유저, 사용자 | |\n| 회원 정보 | 회원의 이름 · 연락처 | 정보 | |\n| 결제 | 돈을 받는 일 | payment | |\n"
+)
+
+
+def _glossary(repo, rows=GLOSSARY_ROWS):
+    path = repo.root / "docs/3. 현재 상태/규칙/용어집.md"
+    text = path.read_text(encoding="utf-8")
+    path.write_text(text.replace("|---|---|---|---|\n", "|---|---|---|---|\n" + rows, 1), encoding="utf-8")
+
+
+def test_the_glossary_comes_with_the_project_and_check_points_out_words_to_avoid(repo):
+    init_project(repo)
+    assert (repo.root / "docs/3. 현재 상태/규칙/용어집.md").exists()
+    _glossary(repo)
+    plan = repo.root / "docs/3. 현재 상태/기능 목록.md"
+    plan.write_text(
+        plan.read_text(encoding="utf-8")
+        + "\n유저가 가입한다.\n회원 정보를 고친다.\n`사용자` 테이블\n```\n사용자 = 1\n```\nPayment API, payments-v2\n",
+        encoding="utf-8",
+    )
+    code, out = repo("check", ok=False)
+    assert "'유저' — '회원'로 쓰세요 (용어집.md)" in out and "가입한 사람" in out
+    assert "'정보' — '회원 정보'" not in out  # the term's own words don't count
+    assert "'사용자'" not in out  # inside code
+    assert "'payment' — '결제'로 쓰세요" in out and out.count("'payment'") == 1  # whole words only, any case
+    assert out.count("'유저'") == 1  # the glossary itself, which lists the word, isn't checked
+
+    _, out = repo("ref", "terms")
+    assert "| 회원 | 가입한 사람 | 유저, 사용자 | all | 프로젝트 |" in out
+
+
+def test_company_terms_are_approved_into_the_index_and_win_over_the_project_glossary(repo):
+    init_project(repo)
+    _glossary(repo)
+    folder = Path.home() / "company"
+    folder.mkdir(exist_ok=True)
+    (folder / "사내 용어.md").write_text(
+        "# 사내 용어\n## 회원\n고객사와 계약한 사람. 멤버라고 하지 않는다.\n## 정산\n월말 계산.\n", encoding="utf-8"
+    )
+    repo("ref", "index", "terms", "~/company")
+    _, out = repo("ref", "term", "사내 용어", "회원", "--avoid", "멤버", "--meaning", "고객사와 계약한 사람")
+    assert "✔ 사내 용어: 회원 (쓰지 말 표현: 멤버)" in out
+    code, out = repo("ref", "term", "사내 용어", "없는 말", "--avoid", "x", ok=False)
+    assert code != 0 and "사내 용어에 없는 말이라는 말이 없습니다" in out
+    _, out = repo("ref", "terms")
+    assert "| 회원 | 고객사와 계약한 사람 | 멤버 | all | 사내 |" in out and "가입한 사람" not in out
+    assert "⚠ 프로젝트 용어집에도 다른 뜻으로 있습니다 — 사내 것을 따릅니다: 회원" in out
+    assert "사내 용어" not in (repo.root / "lantern.yaml").read_text(encoding="utf-8")  # outside: nothing in git
+
+    features = repo.root / "docs/3. 현재 상태/기능 목록.md"
+    features.write_text(features.read_text(encoding="utf-8") + "\n멤버가 로그인한다.\n유저도 쓴다.\n", encoding="utf-8")
+    _, out = repo("check", ok=False)
+    assert "'멤버' — '회원'로 쓰세요 (사내 용어집)" in out and "'유저'" not in out  # the company's term replaces the project's
+
+    repo("ref", "index", "terms", "~/company")  # approved terms survive a new index
+    _, out = repo("ref", "terms")
+    assert "| 회원 | 고객사와 계약한 사람 |" in out
+    repo("ref", "term", "사내 용어", "회원", "--off")
+    _, out = repo("ref", "terms")
+    assert "| 회원 | 가입한 사람 |" in out
+
+
+def test_an_existing_project_gets_the_glossary_on_upgrade(repo):
+    init_project(repo)
+    path = repo.root / "docs/3. 현재 상태/규칙/용어집.md"
+    path.unlink()
+    _, out = repo("upgrade")
+    assert "ℹ 새로 만들 문서: 3. 현재 상태/규칙/용어집.md → lantern scaffold init" in out and not path.exists()
+    repo("scaffold", "init")
+    assert "## 용어" in path.read_text(encoding="utf-8")
