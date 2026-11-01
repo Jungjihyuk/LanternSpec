@@ -7,6 +7,11 @@
 
 ## [Unreleased]
 
+업그레이드: `uv tool upgrade lanternspec` → 프로젝트마다 `lantern upgrade` (Obsidian CSS 조각을 새로 만든다)
+
+### 고침
+- **도메인 지식 폴더에도 색** — Obsidian 파일 목록에서 `📚 도메인 지식` 폴더만 색 상자 없이 보이던 것을 고쳤다. 폴더가 여덟 개가 되어, 목록 순서대로 빨강 · 주황 · 노랑 · 초록 · 청록 · 파랑 · 보라 · 분홍으로 한 칸씩 밀었다 (`📒 부채`는 그대로 빨강, `5. 기존 문서`가 분홍)
+
 ## [0.2.6] - 2026-11-01
 
 업그레이드: `uv tool upgrade lanternspec` → 프로젝트마다 `lantern upgrade` (새 스킬 `/l-ref` · `/l-domain`, 기획 양식 1.1.0, AGENTS.md 규칙을 새로 맞춘다) → 용어집 · 도메인 지식 폴더가 필요하면 `lantern scaffold init`

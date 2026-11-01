@@ -7,6 +7,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+Upgrade: `uv tool upgrade lanternspec` → `lantern upgrade` in each project (regenerates the Obsidian CSS snippet)
+
+### Fixed
+- **The domain-knowledge folder gets a color too** — in Obsidian's file list, `📚 Domain Knowledge` was the only folder without a colored box. With eight folders the colors shift by one in list order: red · orange · yellow · green · teal · blue · violet · pink (`📒 Debt` stays red, `5. Legacy Docs` becomes pink)
+
 ## [0.2.6] - 2026-11-01
 
 Upgrade: `uv tool upgrade lanternspec` → `lantern upgrade` in each project (installs the new `/l-ref` and `/l-domain` skills, plan template 1.1.0, and refreshes AGENTS.md rules) → `lantern scaffold init` if you want the glossary and the domain-knowledge folder

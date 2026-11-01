@@ -56,14 +56,15 @@ PROPERTY_TYPES = {  # Obsidian Properties field types (types.json)
 }
 APP_DEFAULTS = {"alwaysUpdateLinks": True, "showInlineTitle": True}  # renaming a file updates its [[links]]
 SNIPPET = "lanternspec"  # .obsidian/snippets/lanternspec.css — folder colors · file icons · callout · quote styles
-FOLDER_COLORS = {  # top-level folder → (light color, dark color). A rainbow in stage order
+FOLDER_COLORS = {  # top-level folder → (light color, dark color). A rainbow in the file list's order, pink last
     "debt": ("#d64545", "#f07171"),
-    "templates": ("#d9730d", "#f59a4b"),
-    "ideas": ("#c79100", "#e8c14a"),
-    "works": ("#2f9e44", "#5fcf75"),
-    "current": ("#0b8a83", "#3fc4bc"),
-    "ops": ("#1c6fd1", "#5b9ef0"),
-    "legacy": ("#7c4dcc", "#a685e8"),
+    "domain": ("#d9730d", "#f59a4b"),
+    "templates": ("#c79100", "#e8c14a"),
+    "ideas": ("#2f9e44", "#5fcf75"),
+    "works": ("#0b8a83", "#3fc4bc"),
+    "current": ("#1c6fd1", "#5b9ef0"),
+    "ops": ("#7c4dcc", "#a685e8"),
+    "legacy": ("#c2255c", "#f06595"),
 }
 
 

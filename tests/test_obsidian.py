@@ -43,7 +43,7 @@ def test_vault_settings_follow_enums_and_keep_user_settings(repo):
     look = json.loads((obs / "appearance.json").read_text(encoding="utf-8"))
     assert look == {"cssTheme": "Blue Topaz", "enabledCssSnippets": ["tags", "lanternspec"]}
     css = (obs / "snippets/lanternspec.css").read_text(encoding="utf-8")
-    assert '.nav-folder-title[data-path="2. 작업"]' in css and '[data-path="📒 부채"]' in css
+    assert '.nav-folder-title[data-path="2. 작업"]' in css and '[data-path="📒 부채"]' in css and '[data-path="📚 도메인 지식"]' in css
     assert "--callout-radius" in css and ".markdown-rendered blockquote" in css  # callout and quote styles too
     # renaming a value renames the Obsidian choice too
     repo("enums", "rename", "debt_status", "되물음", "다시 물음")
