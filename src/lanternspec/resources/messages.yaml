@@ -527,7 +527,8 @@
 "{fieldname}: '{value}' is not a {label} value": {ko: "{fieldname}: '{value}'는 {label} 값이 아닙니다"}
 "Available: {items} (enums.yaml)": {ko: "가능: {items} (enums.yaml)"}
 "A required blank is empty: {{{{{name}}}}}": {ko: "필수 칸이 비어 있습니다: {{{{{name}}}}}"}
-"Template '{tname}' changed a lot: {get} → {value}": {ko: "양식 '{tname}'이 {get} → {value}로 크게 바뀌었습니다"}
+"Template '{tname}' changed a lot since this document was made (template version {get} → {value}, not the LanternSpec version)": {ko: "이 문서를 만든 뒤 양식 '{tname}'이 크게 바뀌었습니다 (양식 버전 {get} → {value} — LanternSpec 버전과 별개)"}
+"To bring this document along: lantern template migrate \"{docs_rel}\"": {ko: "이 문서에도 반영하려면: lantern template migrate \"{docs_rel}\""}
 "Move it with lantern template migrate \"{docs_rel}\" (/l-template migrate)": {ko: "lantern template migrate \"{docs_rel}\" 로 옮기세요 (/l-template migrate)"}
 "The required section '## {heading}' of template '{tname}' is gone": {ko: "양식 '{tname}'의 필수 칸 '## {heading}'이 사라졌습니다"}
 "Don't delete the section; fill it in. If it doesn't apply, write 'none'": {ko: "칸을 지우지 말고 내용을 채우세요. 해당 없으면 '없음'"}
@@ -535,7 +536,7 @@
 "{id}: acceptance criterion {ac} is not in {name}": {ko: "{id}: 수락 기준 {ac}이 {name}에 없습니다"}
 "Prerequisite tasks form a cycle: {items}": {ko: "먼저 끝나야 할 일이 순환합니다: {items}"}
 "Task ID {id} is also in {seen}": {ko: "할 일 ID {id}가 {seen}에도 있습니다"}
-"Template '{tname}' changed ({get} → {value}) — its '{section}' section says what changed": {ko: "양식 '{tname}'이 바뀌었습니다 ({get} → {value}) — 무엇이 바뀌었는지는 양식의 '{section}' 칸에 있습니다"}
+"Template '{tname}' changed since this document was made (template version {get} → {value}, not the LanternSpec version) — its '{section}' section says what changed": {ko: "이 문서를 만든 뒤 양식 '{tname}'이 바뀌었습니다 (양식 버전 {get} → {value} — LanternSpec 버전과 별개) — 무엇이 바뀌었는지는 양식의 '{section}' 칸에 있습니다"}
 "{id}: lists itself as a prerequisite": {ko: "{id}: 자기 자신을 먼저로 지정했습니다"}
 "ID {doc_id} is shared with other documents: {others}": {ko: "ID {doc_id}가 다른 문서와 겹칩니다: {others}"}
 

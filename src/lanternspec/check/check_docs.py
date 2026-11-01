@@ -559,7 +559,8 @@ def check_file(project: Project, path: Path, text: str, ctx: _Ctx) -> list[Findi
                         rel,
                         "template-major",
                         msg(
-                            "Template '{tname}' changed a lot: {get} → {value}",
+                            "Template '{tname}' changed a lot since this document was made "
+                            "(template version {get} → {value}, not the LanternSpec version)",
                             tname=tname,
                             get=meta.get("template_version"),
                             value=ctx.templates.versions[tname],
@@ -575,13 +576,15 @@ def check_file(project: Project, path: Path, text: str, ctx: _Ctx) -> list[Findi
                         rel,
                         "template-minor",
                         msg(
-                            "Template '{tname}' changed ({get} → {value}) — its '{section}' section says what changed",
+                            "Template '{tname}' changed since this document was made (template version {get} → {value}, "
+                            "not the LanternSpec version) — its '{section}' section says what changed",
                             tname=tname,
                             get=meta.get("template_version"),
                             value=ctx.templates.versions[tname],
                             section=project.names.marker("changelog"),
                         ),
                         1,
+                        msg('To bring this document along: lantern template migrate "{docs_rel}"', docs_rel=project.docs_rel(path)),
                     )
                 )
 

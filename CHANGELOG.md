@@ -9,6 +9,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Upgrade: `uv tool upgrade lanternspec` → `lantern upgrade` in each project (regenerates the Obsidian CSS snippet)
 
+### Changed
+- **Clearer template version notice** — `lantern check`'s "template changed" notice now says it is the template's own version, not LanternSpec's ("changed since this document was made … template version 1.0.0 → 1.1.0, not the LanternSpec version"), and shows the command that brings the document along (`lantern template migrate`)
+
 ### Fixed
 - **The domain-knowledge folder gets a color too** — in Obsidian's file list, `📚 Domain Knowledge` was the only folder without a colored box. With eight folders the colors shift by one in list order: red · orange · yellow · green · teal · blue · violet · pink (`📒 Debt` stays red, `5. Legacy Docs` becomes pink)
 
