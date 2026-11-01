@@ -7,6 +7,8 @@
 
 ## [Unreleased]
 
+## [0.2.7] - 2026-11-02
+
 업그레이드: `uv tool upgrade lanternspec` → 프로젝트마다 `lantern upgrade` (기본 양식 · `/l-template` 스킬 · Obsidian CSS 조각을 새로 만든다)
 
 ### 바뀜
@@ -159,7 +161,8 @@
   Rust · Go)와 규모로 코드 컨벤션을 기준표대로 골라 `AGENTS.md`와 `개발 원칙.md`에 넣는다 (`principles`, `lint`)
 - **작업 방식 · 평가** — 하네스 · 루프 · 그래프 추천(`harness suggest`), 실행 기록으로 스킬 · 모델 · 설정 비교(`eval`)
 
-[Unreleased]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.6...HEAD
+[Unreleased]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.7...HEAD
+[0.2.7]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.6...v0.2.7
 [0.2.6]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.5...v0.2.6
 [0.2.5]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.4...v0.2.5
 [0.2.4]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.3...v0.2.4
