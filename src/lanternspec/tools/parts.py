@@ -8,6 +8,7 @@ Responsibilities:
     - list the candidates (from the files git knows) with what was decided about each
     - record a decision in lantern.yaml: add a part (with its detected languages and check commands) or ignore it
     - tell which part a file belongs to · which folder AGENTS.md files the hooks don't hand over
+    - list the check commands of the parts, or of the project when it has none
 
 Not here:
     - telling a candidate from its files → core/principles.py (part_candidates)
@@ -63,6 +64,30 @@ def recorded(project: Project) -> list[dict[str, Any]]:
         ['backend', 'frontend/apps/web']
     """
     return [p for p in project.profile.get("code.parts") or [] if isinstance(p, dict) and p.get("path")]
+
+
+def commands(project: Project, role: str, ci: bool = False) -> list[tuple[str, str]]:
+    """List the commands that check one thing (lint · typecheck · test), each with the folder it runs in.
+
+    The parts' own commands take over from `build.<role>`, which then stays only for projects without them.
+
+    Args:
+        project: The project.
+        role: The command's role, e.g. "lint".
+        ci: Leave out the parts with `ci: false`.
+
+    Returns:
+        (part folder, command) pairs; the folder is "" for the project root.
+
+    Example:
+        >>> commands(project, "lint")  # doctest: +SKIP
+        [('backend', 'uv run ruff check app/'), ('frontend', 'pnpm biome check .')]
+    """
+    own = [p for p in recorded(project) if (p.get("build") or {}).get(role)]
+    if own:
+        return [(p["path"], str(p["build"][role])) for p in own if not (ci and p.get("ci") is False)]
+    root = project.profile.get(f"build.{role}")
+    return [("", str(root))] if root else []
 
 
 def statuses(project: Project) -> list[PartStatus]:

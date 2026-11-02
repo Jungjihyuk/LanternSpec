@@ -41,7 +41,7 @@ def cmd_scan(a: argparse.Namespace) -> int:
     """`lantern scan` — find docs-vs-code drift (text or JSON)."""
     from ..report import scan
 
-    res = scan.run(_p(), rev=a.range, limit=a.limit, tests=a.tests)
+    res = scan.run(_p(), rev=a.range, limit=a.limit, tests=a.tests, ci=a.ci)
     print(res.to_json() if a.json else res.format())
     return 1 if res.tests is not None and not res.tests.get("ok") else 0  # CI fails on broken acceptance tests
 
@@ -151,7 +151,8 @@ def register(add: Add) -> None:
     p = add("scan", cmd_scan, msg("Find doc-code mismatches"))
     p.add_argument("--range", help=msg("git range (e.g. main..HEAD)"))
     p.add_argument("--limit", type=int, default=200)
-    p.add_argument("--tests", action="store_true", help=msg("Run acceptance tests with build.test"))
+    p.add_argument("--tests", action="store_true", help=msg("Run acceptance tests (each part's test command, or build.test)"))
+    p.add_argument("--ci", action="store_true", help=msg("For CI: leave out parts with ci: false"))
     p.add_argument("--json", action="store_true")
     p = add("sync", cmd_sync, msg("Record the result of aligning"))
     p.add_argument("action", choices=["adopt"])

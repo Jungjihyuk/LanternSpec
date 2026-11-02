@@ -285,7 +285,7 @@ def test_ci_workflow(repo):
     wf = repo.root / ".github/workflows/lanternspec.yml"
     data = yaml.safe_load(wf.read_text(encoding="utf-8"))
     runs = [s.get("run", "") for s in data["jobs"]["docs-and-acceptance"]["steps"]]
-    assert "lantern scan --tests" in runs and "lantern check --quiet" in runs and "lantern lint" in runs
+    assert "lantern scan --tests --ci" in runs and "lantern check --quiet" in runs and "lantern lint --ci" in runs
     repo("upgrade")
     assert wf.exists()
     # once a language is set, its runner's setup steps come before the checks (the runner comes from the lock file)
@@ -299,7 +299,7 @@ def test_ci_workflow(repo):
     assert (
         names.index("Python 도구 준비 (uv)")
         < names.index("TypeScript 도구 준비 (yarn)")
-        < names.index("린트 · 타입 검사 (lantern lint — build.lint · build.typecheck)")
+        < names.index("린트 · 타입 검사 (lantern lint — 영역마다의 명령, 없으면 build.lint · build.typecheck)")
     )
     runs = [s.get("run") for s in steps]
     assert "uv sync" in runs and "npm install -g yarn && yarn install" in runs
@@ -399,3 +399,118 @@ def test_antigravity_agent_hooks(repo, vault):
     turn = [r for r in recs if r.get("session") == "c1" and r.get("kind") == "turn"][0]
     assert turn["skill"] == "l-plan" and turn["model"] == "gemini-4-argon-medium"
     assert turn["tools"] == {"write_file": 1, "edit_file": 1}
+
+
+def _monorepo(repo):
+    import yaml
+
+    for folder, files in {
+        "backend": ["pyproject.toml", "uv.lock"],
+        "analysis": ["pyproject.toml", "poetry.lock"],
+        "frontend": ["package.json", "pnpm-lock.yaml"],
+    }.items():
+        (repo.root / folder).mkdir()
+        for name in files:
+            (repo.root / folder / name).write_text("", encoding="utf-8")
+    init_project(repo)
+    repo("profile", "set", "project.kind=service", "project.languages=[python, typescript]")
+    path = repo.root / "lantern.yaml"
+    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    data["build"]["lint"] = "exit 9"  # the parts' commands take over from it
+    data["code"] = {
+        "parts": [
+            {"path": "backend", "languages": ["python"], "build": {"lint": "touch linted", "test": "touch tested"}},
+            {"path": "frontend", "languages": ["typescript"], "build": {"lint": "exit 3"}},
+            {"path": "analysis", "languages": ["python"], "ci": False, "build": {"lint": "touch linted", "test": "touch tested"}},
+        ]
+    }
+    path.write_text(yaml.safe_dump(data, allow_unicode=True), encoding="utf-8")
+
+
+def test_ci_prepares_each_part_in_its_folder_and_leaves_out_ci_false(repo):
+    import yaml
+
+    _monorepo(repo)
+    repo("install", "--ci")
+    wf = yaml.safe_load((repo.root / ".github/workflows/lanternspec.yml").read_text(encoding="utf-8"))
+    steps = wf["jobs"]["docs-and-acceptance"]["steps"]
+    uv = next(s for s in steps if s.get("run") == "uv sync")
+    assert uv["working-directory"] == "backend" and uv["if"] == "hashFiles('backend/pyproject.toml') != ''"
+    pnpm = next(s for s in steps if "pnpm install" in s.get("run", ""))
+    assert pnpm["working-directory"] == "frontend"
+    assert sum(1 for s in steps if s.get("run") == "uv sync") == 1  # analysis is out, and nothing runs at the root
+    assert not any(s.get("working-directory") == "analysis" or "poetry" in s.get("run", "") for s in steps)
+    assert sum(1 for s in steps if str(s.get("uses", "")).startswith("astral-sh/setup-uv")) == 1
+    assert "lantern lint --ci" in [s.get("run") for s in steps]
+
+    # analysis back in: its own lock file picks its runner, even though backend uses uv
+    path = repo.root / "lantern.yaml"
+    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    del data["code"]["parts"][2]["ci"]
+    path.write_text(yaml.safe_dump(data, allow_unicode=True), encoding="utf-8")
+    repo("upgrade")
+    wf = yaml.safe_load((repo.root / ".github/workflows/lanternspec.yml").read_text(encoding="utf-8"))
+    poetry = next(s for s in wf["jobs"]["docs-and-acceptance"]["steps"] if "poetry install" in s.get("run", ""))
+    assert poetry["working-directory"] == "analysis"
+
+
+def test_a_single_part_in_a_subfolder_is_prepared_there(repo):
+    import yaml
+
+    (repo.root / "backend").mkdir()
+    init_project(repo)
+    repo("profile", "set", "project.kind=service", "project.languages=[python]")
+    path = repo.root / "lantern.yaml"
+    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    data["code"] = {"parts": [{"path": "backend", "languages": ["python"]}]}
+    path.write_text(yaml.safe_dump(data, allow_unicode=True), encoding="utf-8")
+    repo("install", "--ci")
+    steps = yaml.safe_load((repo.root / ".github/workflows/lanternspec.yml").read_text(encoding="utf-8"))["jobs"]["docs-and-acceptance"][
+        "steps"
+    ]
+    assert next(s for s in steps if s.get("run") == "uv sync")["working-directory"] == "backend"
+
+
+def test_a_project_without_its_package_file_skips_the_setup_command(repo):
+    import yaml
+
+    init_project(repo)
+    repo("profile", "set", "project.kind=service", "project.languages=[python]")
+    repo("install", "--ci")
+    steps = yaml.safe_load((repo.root / ".github/workflows/lanternspec.yml").read_text(encoding="utf-8"))["jobs"]["docs-and-acceptance"][
+        "steps"
+    ]
+    uv = next(s for s in steps if s.get("run") == "uv sync")
+    assert uv["if"] == "hashFiles('pyproject.toml') != ''" and "working-directory" not in uv
+
+
+def test_lint_runs_each_parts_commands_and_ci_follows_ci_lint(repo):
+    import yaml
+
+    _monorepo(repo)
+    code, out = repo("lint", ok=False)  # by hand: every part, and a failure fails
+    assert code == 1 and "✖ frontend · lint: `exit 3`" in out and "exit 9" not in out
+    assert (repo.root / "backend/linted").exists() and (repo.root / "analysis/linted").exists()
+    (repo.root / "analysis/linted").unlink()
+
+    code, out = repo("lint", "--ci", ok=False)  # a new project blocks; ci: false stays out
+    assert code == 1 and not (repo.root / "analysis/linted").exists()
+
+    repo("profile", "set", "build.ci_lint=warn")
+    code, out = repo("lint", "--ci")
+    assert code == 0 and "⚠ frontend · lint: `exit 3`" in out and "::warning::frontend · lint: exit 3" in out
+    assert "build.ci_lint: block" in out
+    assert yaml.safe_load((repo.root / "lantern.yaml").read_text(encoding="utf-8"))["build"]["ci_lint"] == "warn"
+    code, out = repo("lint", ok=False)
+    assert code == 1  # the setting is about CI only
+
+    repo("scan", "--tests", "--ci")
+    assert (repo.root / "backend/tested").exists() and not (repo.root / "analysis/tested").exists()
+
+
+def test_ci_lint_defaults_to_warning_for_existing_code():
+    from lanternspec.core.profile import Profile
+
+    assert Profile(data={"project": {"origin": "brownfield"}}).ci_lint == "warn"
+    assert Profile(data={"project": {"origin": "greenfield"}}).ci_lint == "block"
+    assert Profile(data={"project": {"origin": "brownfield"}, "build": {"ci_lint": "block"}}).ci_lint == "block"

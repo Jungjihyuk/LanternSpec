@@ -19,9 +19,10 @@ tools:
 runners:                   # 명령 앞에 붙이는 실행기 — 기존 프로젝트는 lock 파일로 알아본다 (맞는 것이 없으면 처음 것)
                            # ci: GitHub Actions에서 확인 명령을 돌리기 전에 도구 · 의존성을 준비하는 단계 (lantern install --ci)
   - name: go
+    manifest: go.mod
     prefix: ''
     ci:
-      - {uses: actions/setup-go@v7, with: {go-version-file: go.mod}}
+      - {uses: actions/setup-go@v7, with: {go-version-file: '{dir}go.mod'}}
       - {run: go install golang.org/x/tools/cmd/goimports@latest && go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest}
 
 existing:                  # 기존 프로젝트에 이미 있는 설정 — 찾으면 이 명령을 기록만 하고 설정은 바꾸지 않는다

@@ -86,6 +86,7 @@ CHOICES: dict[str, tuple[str, ...]] = {
     "build.report_cycle": ("work", "criterion", "task"),
     "build.merge_approval": ("required", "auto"),
     "build.loop": ("off", "on"),
+    "build.ci_lint": ("warn", "block"),
 }
 LIST_CHOICES: dict[str, tuple[str, ...]] = {
     "project.clients": ("web", "desktop", "mobile"),
@@ -255,6 +256,11 @@ class Profile:
         return self.get("project.origin") == "brownfield"
 
     @property
+    def ci_lint(self) -> str:
+        """What a lint or type error does in CI (build.ci_lint): existing code starts at "warn", new code at "block"."""
+        return str(self.get("build.ci_lint") or ("warn" if self.brownfield else "block"))
+
+    @property
     def schema_paths(self) -> list[str]:
         """Glob patterns of schema files (git.schema_paths, else the defaults)."""
         return list(self.get("git.schema_paths") or DEFAULT_SCHEMA_PATHS)
@@ -386,6 +392,8 @@ def _part_problems(data: dict[str, Any]) -> list[str]:
                         items=", ".join(principles.language_names()),
                     )
                 )
+        if not isinstance(part.get("ci", True), bool):
+            problems.append(msg("code.parts {path}: ci must be true or false", path=path))
     if not isinstance(get_path(data, "code.ignored_parts") or [], list):
         problems.append(msg("code.ignored_parts: must be a list of folders"))
     return problems
@@ -608,6 +616,10 @@ def render(data: dict[str, Any]) -> str:
                     where=where,
                 )
             )
+    if d["build"].get("ci_lint"):
+        lines.append(
+            msg("  ci_lint: {s}   # lint and type errors in CI: warn (shown, CI passes) | block (CI fails)", s=s(d["build"]["ci_lint"]))
+        )
     lines += [
         "check:",
         msg("  max_lines: {s}            # warn to split when longer (doesn't block)", s=s(d["check"]["max_lines"])),
@@ -620,7 +632,7 @@ def render(data: dict[str, Any]) -> str:
             "code:",
             msg(
                 "  # parts = sub-projects with their own package file (pyproject.toml · package.json …) — "
-                "lantern parts (each gets its own AGENTS.md)"
+                "lantern parts (each gets its own AGENTS.md; ci: false leaves one out of CI)"
             ),
         ]
         body = yaml.safe_dump(

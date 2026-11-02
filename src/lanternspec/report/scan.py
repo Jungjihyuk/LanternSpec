@@ -293,14 +293,15 @@ class ScanResult:
         return "\n".join(lines)
 
 
-def run(project: Project, rev: str | None = None, limit: int = 200, tests: bool = False) -> ScanResult:
+def run(project: Project, rev: str | None = None, limit: int = 200, tests: bool = False, ci: bool = False) -> ScanResult:
     """Scan for docs-vs-code drift.
 
     Args:
         project: The project.
         rev: A revision or range of commits to look at; the current branch when None.
         limit: Most commits to look at.
-        tests: Also run build.test.
+        tests: Also run each part's test command, or build.test.
+        ci: Leave out the tests of parts with `ci: false`.
 
     Returns:
         The findings.
@@ -381,11 +382,17 @@ def run(project: Project, rev: str | None = None, limit: int = 200, tests: bool 
         res.dbml_drift = dbml.diff(dbml.parse(read(schema_path)), dbml.from_sql(sql_files))
     # tests
     if tests:
-        cmd = project.profile.get("build.test")
-        if not cmd:
+        from ..tools.parts import commands
+
+        runs = [(part, run_tests(project, cmd, project.root / part if part else None)) for part, cmd in commands(project, "test", ci=ci)]
+        if not runs:
             res.notes.append(msg("No build.test, so acceptance tests were skipped (lantern.yaml build.test)"))
         else:
-            res.tests = run_tests(project, str(cmd))
+            res.tests = {
+                "command": " · ".join(f"{part}: {r['command']}" if part else r["command"] for part, r in runs),
+                "ok": all(r["ok"] for _, r in runs),
+                "tail": "\n".join(r["tail"] for _, r in runs if not r["ok"]) or runs[-1][1]["tail"],
+            }
     return res
 
 

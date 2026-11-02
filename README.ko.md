@@ -243,7 +243,8 @@ AI가 쓴 기술 중 모르는 것은 내 지식 저장소의 노트와 비교�
 - 기존 프로젝트는 이미 쓰는 린트 · 포맷 설정을 기록만 하고 바꾸지 않는다.
 - 코드가 자라 규모 경계를 넘으면 `lantern doctor`가 원칙을 한 단계 올릴지 묻는다.
 - 코드 주석 언어는 `project.comment_language`로 문서 언어와 따로 정할 수 있다.
-- 확인: `lantern principles show` · 린트와 타입 검사 실행: `lantern lint`
+- 확인: `lantern principles show` · 린트와 타입 검사 실행: `lantern lint` (영역이 있으면 영역마다 그 폴더에서)
+- CI(`lantern install --ci`)는 영역마다 그 폴더에서 도구를 준비하고 검사한다. 무거운 영역은 `lantern.yaml`의 그 영역에 `ci: false`를 적어 뺀다. 기존 프로젝트의 린트 · 타입 오류는 처음에는 경고만 하고 CI를 통과시키며, 오류를 정리하면 `build.ci_lint: block`으로 올린다.
 
 ### AI 작업 방식
 `lantern harness suggest`가 코드 크기 · 진행 중 작업 · 테스트 유무 · 지난 실행 기록을 보고 셋 중 하나를 추천한다.

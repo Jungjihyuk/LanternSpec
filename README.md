@@ -245,7 +245,8 @@ Picks design principles and code conventions from a table, based on the project 
 - In existing projects, lint and format settings already in use are recorded, never changed.
 - When the code grows past a size boundary, `lantern doctor` asks whether to raise the principles one level.
 - The language of code comments can be set apart from the documents with `project.comment_language`.
-- See the result with `lantern principles show`; run lint and type checks with `lantern lint`
+- See the result with `lantern principles show`; run lint and type checks with `lantern lint` (in each part's folder when there are parts)
+- CI (`lantern install --ci`) prepares tools and checks in each part's folder. Leave a heavy part out with `ci: false` on that part in `lantern.yaml`. In existing projects, lint and type errors only warn at first and CI passes; once they are clean, set `build.ci_lint: block`.
 
 ### How the AI works
 `lantern harness suggest` looks at code size, work in progress, whether tests exist and past runs, and recommends one of three modes.

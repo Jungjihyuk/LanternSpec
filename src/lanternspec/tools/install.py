@@ -53,10 +53,10 @@ CI_CHECKS = """      - name: {check}
         run: lantern check --quiet
         if: hashFiles('lantern.yaml') != ''
       - name: {lint}
-        run: lantern lint
+        run: lantern lint --ci
         if: hashFiles('lantern.yaml') != ''
       - name: {scan}
-        run: lantern scan --tests
+        run: lantern scan --tests --ci
 """
 
 
@@ -153,8 +153,44 @@ def tools_cover(rel: str, tools: list[Tool]) -> bool:
     return any(t.owns_skill_file(rel) for t in tools)
 
 
+def _setup_steps(project: Project) -> list[dict]:
+    """Build the steps that prepare each part's tools in its folder, and the root's for languages no part holds.
+
+    A tool is installed once, whatever number of parts use it; a part with `ci: false` gets nothing. A command that
+    needs a file (`uv sync` needs pyproject.toml) is skipped while that file is missing, so it can't fail a project without it.
+    """
+    known = principles.language_names()
+    parts = parts_mod.recorded(project)
+    held = {lang for p in parts for lang in p.get("languages") or []}
+    places = [("", lang) for lang in project.profile.get("project.languages") or [] if lang not in held]
+    places += [(p["path"], lang) for p in parts if p.get("ci") is not False for lang in p.get("languages") or []]
+    steps: list[dict] = []
+    installed: list[dict] = []
+    for folder, lang in places:
+        if lang not in known:
+            continue
+        runner = principles.find_runner(project.root / folder, lang)
+        label = principles.conventions(lang, project.profile.language)["label"]
+        name = msg("{label} tool setup ({name})", label=label, name=runner["name"])
+        prefix = f"{folder}/" if folder else ""
+        for step in runner["ci"]:
+            if "uses" in step:
+                used = {
+                    **step,
+                    **({"with": {k: str(v).replace("{dir}", prefix) for k, v in step["with"].items()}} if "with" in step else {}),
+                }
+                if used not in installed:
+                    installed.append(used)
+                    steps.append({"name": name, **used})
+                continue
+            guard = {"if": f"hashFiles('{prefix}{runner['manifest']}') != ''"} if runner.get("manifest") else {}
+            place = {"working-directory": folder} if folder else {}
+            steps.append({"name": f"{name} · {folder}" if folder else name, **guard, **step, **place})
+    return steps
+
+
 def ci_workflow(project: Project) -> str:
-    """Build the GitHub Actions workflow: lanternspec + the project's own tools (each language's runner, found by its lock file).
+    """Build the GitHub Actions workflow: lanternspec + the project's own tools (each part's runner, found by its lock file).
 
     Args:
         project: The project.
@@ -166,13 +202,7 @@ def ci_workflow(project: Project) -> str:
         >>> ci_workflow(project).splitlines()[1]  # doctest: +SKIP
         'name: lanternspec'
     """
-    steps: list[dict] = []
-    for lang in project.profile.get("project.languages") or []:
-        if lang not in principles.language_names():
-            continue
-        runner = principles.find_runner(project.root, lang)
-        label = principles.conventions(lang, project.profile.language)["label"]
-        steps += [{"name": msg("{label} tool setup ({name})", label=label, name=runner["name"]), **step} for step in runner["ci"]]
+    steps = _setup_steps(project)
     if steps:
         prepare = msg(
             "      # Project tools · dependencies — from lantern.yaml project.languages and the lock "
@@ -189,7 +219,7 @@ def ci_workflow(project: Project) -> str:
     )
     checks = CI_CHECKS.format(
         check=msg("Check formats (lantern check)"),
-        lint=msg("Lint · type check (lantern lint — build.lint · build.typecheck)"),
+        lint=msg("Lint · type check (lantern lint — each part's commands, or build.lint · build.typecheck)"),
         scan=msg("Doc-code mismatches + acceptance tests (lantern scan --tests)"),
     )
     return head + prepare + checks

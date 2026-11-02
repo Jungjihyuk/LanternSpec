@@ -141,23 +141,33 @@ def cmd_doctor(a: argparse.Namespace) -> int:
 
 
 def cmd_lint(a: argparse.Namespace) -> int:
-    """`lantern lint` — run build.lint and build.typecheck from lantern.yaml (/l-build · CI)."""
+    """`lantern lint` — run the lint and type-check commands of each part, or build.lint and build.typecheck (/l-build · CI)."""
     from ..report.scan import run_tests
+    from ..tools.parts import commands
 
     project = _p()
-    cmds = [(role, project.profile.get(f"build.{role}")) for role in ("lint", "typecheck")]
-    if not any(cmd for _, cmd in cmds):
+    cmds = [(role, part, cmd) for role in ("lint", "typecheck") for part, cmd in commands(project, role, ci=a.ci)]
+    if not cmds:
         print(msg("ℹ No build.lint · build.typecheck, so skipped (lantern principles detect --write)"))
         return 0
+    warn_only = a.ci and project.profile.ci_lint == "warn"
     failed = 0
-    for role, cmd in cmds:
-        if not cmd:
-            continue
-        res = run_tests(project, str(cmd))
-        print(f"{'✔' if res['ok'] else '✖'} {role}: `{cmd}`")
+    for role, part, cmd in cmds:
+        res = run_tests(project, cmd, project.root / part if part else None)
+        where = f"{part} · " if part else ""
+        print(f"{'✔' if res['ok'] else '⚠' if warn_only else '✖'} {where}{role}: `{cmd}`")
         if not res["ok"]:
             failed += 1
             print(res["tail"])
+            if warn_only:  # a passing step hides its log, so GitHub Actions shows this on the run's page
+                print(f"::warning::{where}{role}: {cmd}")
+    if warn_only and failed:
+        print(
+            msg(
+                "⚠ {count} checks failed, but CI passes (build.ci_lint: warn) — once they are clean, set build.ci_lint: block", count=failed
+            )
+        )
+        return 0
     return 1 if failed else 0
 
 
@@ -170,7 +180,8 @@ def register(add: Add) -> None:
     p.add_argument("--json", action="store_true")
     p.add_argument("--quiet", action="store_true", help=msg("Hide notes (ℹ)"))
     p.add_argument("--strict", action="store_true", help=msg("Treat warnings as failures"))
-    add("lint", cmd_lint, msg("Code lint · type check (lantern.yaml build.lint · build.typecheck)"))
+    p = add("lint", cmd_lint, msg("Code lint · type check (each part's commands, or lantern.yaml build.lint · build.typecheck)"))
+    p.add_argument("--ci", action="store_true", help=msg("For CI: leave out parts with ci: false, and follow build.ci_lint"))
     p = add("template", cmd_template, msg("Templates: list · lint · level · bump · outdated · diff · usage · new · migrate"))
     p.add_argument("action", choices=["list", "lint", "level", "bump", "outdated", "diff", "usage", "new", "migrate"])
     p.add_argument("name", nargs="?")
