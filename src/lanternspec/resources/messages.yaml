@@ -549,7 +549,7 @@
 "Not a git repository — hooks · commit links · sync won't work": {ko: "git 저장소가 아닙니다 — hook · 커밋 연결 · sync가 동작하지 않습니다"}
 "Skills are not installed — lantern install": {ko: "스킬이 설치되지 않았습니다 — lantern install"}
 "✔ All good": {ko: "✔ 모두 정상"}
-"✖ {bad} · ⚠ {warn}": {ko: "✖ {bad}개 · ⚠ {warn}개"}
+"{mark} {bad} problems · {warn} warnings": {ko: "{mark} 문제 {bad}개 · 경고 {warn}개"}
 "lantern.yaml format": {ko: "lantern.yaml 형식"}
 "The local mode needs git 2.42 or later (now {items})": {ko: "local 방식은 git 2.42 이상 필요 (지금 {items})"}
 "Document storage ({remote}): {x}": {ko: "문서 저장 방식({remote}): {x}"}

@@ -7,6 +7,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Changed
+- **Colored status marks** — on a terminal, ✔ in `lantern doctor`, `lantern check` and other commands is green and ℹ cyan, while ⚠ warnings and ✖ problems color the whole line yellow and red. Output sent to a file or pipe, or with `NO_COLOR` set, stays plain as before. The summary at the bottom of `lantern doctor` is in words too, such as "0 problems · 3 warnings"
+
 ## [0.2.7] - 2026-11-02
 
 Upgrade: `uv tool upgrade lanternspec` → `lantern upgrade` in each project (refreshes the default templates, the `/l-template` skill and the Obsidian CSS snippet)

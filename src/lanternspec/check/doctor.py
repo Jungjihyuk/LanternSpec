@@ -391,10 +391,18 @@ def format_result(rows: list[tuple[str, str]]) -> str:
         >>> print(format_result([(OK, "lantern.yaml 형식"), (WARN, "MOC가 없습니다 — lantern map")]))
         ✔ lantern.yaml 형식
         ⚠ MOC가 없습니다 — lantern map
-        ✖ 0개 · ⚠ 1개
+        ⚠ 문제 0개 · 경고 1개
     """
     bad = sum(1 for r in rows if r[0] == BAD)
     warn = sum(1 for r in rows if r[0] == WARN)
     lines = [f"{icon} {text}" for icon, text in rows]
-    lines.append("" if not rows else (msg("✔ All good") if not bad and not warn else msg("✖ {bad} · ⚠ {warn}", bad=bad, warn=warn)))
+    lines.append(
+        ""
+        if not rows
+        else (
+            msg("✔ All good")
+            if not bad and not warn
+            else msg("{mark} {bad} problems · {warn} warnings", mark=BAD if bad else WARN, bad=bad, warn=warn)
+        )
+    )
     return "\n".join(lines).rstrip()

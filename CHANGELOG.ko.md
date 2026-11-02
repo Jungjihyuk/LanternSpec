@@ -7,6 +7,9 @@
 
 ## [Unreleased]
 
+### 바뀜
+- **상태 표시에 색** — 터미널에서 `lantern doctor` · `lantern check` 등의 ✔는 초록, ℹ는 청록으로 표시하고, ⚠ 경고와 ✖ 문제는 줄 전체를 노랑 · 빨강으로 보여 준다. 파일 · 파이프로 보내거나 `NO_COLOR`를 켜면 지금처럼 색 없이 나온다. `lantern doctor` 맨 아래 요약도 "문제 0개 · 경고 3개"처럼 말로 쓴다
+
 ## [0.2.7] - 2026-11-02
 
 업그레이드: `uv tool upgrade lanternspec` → 프로젝트마다 `lantern upgrade` (기본 양식 · `/l-template` 스킬 · Obsidian CSS 조각을 새로 만든다)

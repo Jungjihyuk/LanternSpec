@@ -11,7 +11,7 @@ import sys
 
 from .. import __version__
 from ..core.messages import msg
-from . import check, core, learn, refs, report, tools, work
+from . import check, color, core, learn, refs, report, tools, work
 from .common import CliError, Handler
 
 GROUPS = (tools, core, work, learn, refs, report, check)  # order of the help list
@@ -64,6 +64,7 @@ def main(argv: list[str] | None = None) -> int:
     if len(argv) >= 2 and argv[0] == "task" and argv[1] == "add":
         argv = ["task-add", *argv[2:]]
     _use_project_language()
+    color.enable()
     parser = build_parser()
     a = parser.parse_args(argv)
     if not getattr(a, "fn", None):
