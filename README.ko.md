@@ -205,6 +205,7 @@ lantern install --ci             # GitHub에서도 검사한다 (끄기: --no-ci
 
 - **밖에 둔 자료는 git에 올라가지 않는다.** 경로 · 제목 · 색인까지 `.lantern/`에만 둔다.
 - **절은 주소로 읽는다.** `lantern ref read "개인정보#보관 기간"`
+- **원본은 변환본으로 읽는다.** `lantern ref convert --apply`가 PDF · Word · PowerPoint · HWP는 절로 나눈 Markdown으로, Excel · CSV는 시트 · 열 · 행 수만 담은 카드로 원본 옆에 만든다. 품질을 함께 표시한다 (제목 · 표가 없어진 HWP는 "확인 필요", 스캔 PDF는 "글자 없음"). PDF는 `pdftotext`(poppler)가 필요하다.
 
 ## 모르는 기술 관리 — 지식 저장소와 이해 부채
 

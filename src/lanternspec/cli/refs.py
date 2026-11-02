@@ -1,4 +1,4 @@
-"""References commands: ref (list · check · index · read · tag · exclude · rules · terms · term · glossary · candidate · domain …)."""
+"""References commands: ref (list · check · index · read · tag · exclude · rules · terms · glossary · domain · convert · preview …)."""
 
 from __future__ import annotations
 
@@ -22,6 +22,8 @@ def cmd_ref(a: argparse.Namespace) -> int:
         return _list(project)
     if a.action == "domain":
         return _domain(project, a.work or "", a.task or "")
+    if a.action == "convert":
+        return _convert(project, a.arg or "", a.apply)
     if a.action == "rules":
         return _rules(project, a.arg or "", a.must)
     if a.action == "terms":
@@ -50,6 +52,8 @@ def cmd_ref(a: argparse.Namespace) -> int:
         return _tag(project, a.arg, a.scope or "", a.strength, a.off)
     if a.action == "describe":
         return _describe(project, a)
+    if a.action == "preview":
+        return _preview(project, a.arg)
     if a.action == "attach":
         return _attach(project, a)
     if a.action == "glossary":
@@ -142,6 +146,9 @@ def _domain(project: Project, work_id: str, task: str) -> int:
             domain_mod.table(project)
             or msg("No domain knowledge yet — put documents in {folder}, then /l-ref domain", folder=project.rel(project.folder("domain")))
         )
+        waiting = src_mod.pending(project)
+        if waiting:
+            print("\n⚠ " + waiting)
         return 0
     work = project.find_work(work_id)
     if work is None:
@@ -155,6 +162,127 @@ def _domain(project: Project, work_id: str, task: str) -> int:
         known = domain_mod.find(project, p.address)
         tail = " · ".join(x for x in (", ".join(p.tasks) or msg("whole work"), msg("📌 verbatim") if known and known.verbatim else "") if x)
         print(f'- lantern ref read "{p.address}"  — {tail}')
+    return 0
+
+
+def _size(n: int) -> str:
+    return f"{n / 1e6:.1f}MB" if n >= 1e6 else f"{-(-n // 1000)}KB"  # rounded up, so 0 stays 0
+
+
+QUALITY = {"ok": "✔", "check": "⚠", "empty": "✖"}
+
+
+def _convert(project: Project, path: str, apply: bool) -> int:
+    """List the domain-knowledge originals and what converting them would do; with --apply, convert the new and changed ones."""
+    import time
+
+    from ..refs import convert as conv
+
+    if path:
+        found = src_mod.resolve(project, path)
+        if found is None or not found.path.exists():
+            raise CliError(msg("{path} does not exist", path=path))
+        if found.outside:
+            raise CliError(msg("lantern ref convert works inside the project — convert material outside it there, then index the .md"))
+        items = conv.originals(found.path)
+    else:
+        items = src_mod.originals(project)
+    if not items:
+        print(
+            msg(
+                "No originals to convert — PDF · DOCX · PPTX · HWP · HWPX · XLSX · CSV put in {folder} show up here",
+                folder=project.rel(project.folder("domain")),
+            )
+        )
+        return 0
+    todo = [o for o in items if o.state in ("new", "changed")]
+    if not apply:
+        marks = {"new": "+", "changed": "~", "done": "✔", "edited": "⚠", "same": "=", "unknown": "?"}
+        for o in items:
+            tail = {
+                "same": msg("(same file as {path} — converted once)", path=project.rel(o.same_as)) if o.same_as else "",
+                "edited": msg("(the original changed, but its copy was edited by hand — left alone; delete the copy to convert again)"),
+                "unknown": msg("(can't be read — save it as PDF, DOCX or XLSX)"),
+                "done": f"→ {o.target.name}",
+            }.get(o.state, "")
+            print(f"{marks[o.state]} {o.label:<5} {_size(o.path.stat().st_size):>7}  {project.rel(o.path)}  {tail}".rstrip())
+        counts = {s: sum(1 for o in items if o.state == s) for s in ("done", "same", "unknown")}
+        print(
+            "\n"
+            + msg(
+                "To convert: {todo} ({size}) · converted: {done} · duplicates: {same} · unreadable: {unknown}",
+                todo=len(todo),
+                size=_size(sum(o.path.stat().st_size for o in todo)),
+                **counts,
+            )
+        )
+        if todo:
+            print(
+                msg(
+                    "→ lantern ref convert {path}--apply  (only the copies are written; the originals stay as they are)",
+                    path=f'"{path}" ' if path else "",
+                )
+            )
+        return 0
+    made, failed, total, started = 0, 0, 0, time.monotonic()
+    for o in todo:
+        try:
+            copy = conv.convert(o)
+        except conv.ConvertError as e:
+            failed += 1
+            print(f"✖ {project.rel(o.path)} — {e}")
+            continue
+        except Exception as e:  # one odd file must not stop the rest; it is reported and left unconverted
+            failed += 1
+            print(
+                f"✖ {project.rel(o.path)} — "
+                + msg("could not be read ({error}) — save it again as PDF or DOCX", error=f"{type(e).__name__}: {e}")
+            )
+            continue
+        made += 1
+        size = o.target.stat().st_size
+        total += size
+        note = f" — {copy.note}" if copy.note else ""
+        print(f"{QUALITY[copy.quality]} {project.rel(o.target)}  ({_size(size)}){note}")
+    print(
+        "\n"
+        + msg(
+            "Made {made} copies ({size} — read whole, at most {tokens} tokens) · failed {failed} · {seconds}s",
+            made=made,
+            size=_size(total),
+            tokens=f"{total:,}",
+            failed=failed,
+            seconds=round(time.monotonic() - started, 1),
+        )
+    )
+    if made:
+        print(msg("→ Describe them with /l-ref domain — it looks at lantern ref preview, not the whole text"))
+    return 1 if failed else 0
+
+
+def _preview(project: Project, name: str) -> int:
+    """Print a reference document as its sections' addresses, sizes and first lines."""
+    from ..refs import convert as conv
+
+    doc = src_mod.find_document(project, name)
+    text = read(doc.path)
+    head = conv.read_header(text)
+    if head:
+        quality = {"ok": msg("good"), "check": msg("check it"), "empty": msg("no text")}.get(head.get("quality", ""), "")
+        print(
+            msg("Converted from {name} ({tool} · {quality})", name=head.get("from", ""), tool=head.get("tool", ""), quality=quality)
+            + (f" — {head['note']}" if head.get("note") else "")
+        )
+    shown = conv.preview(text)
+    print(shown)
+    print(
+        "\n"
+        + msg(
+            'Preview {preview} of {whole} — lantern ref read "<address>" reads one section',
+            preview=_size(len(shown.encode())),
+            whole=_size(len(text.encode())),
+        )
+    )
     return 0
 
 
@@ -198,7 +326,9 @@ def _check(project: Project, path: str) -> int:
         raise CliError(msg("{path} doesn't exist", path=path))
     docs = src_mod.documents(project, found)
     if not docs:
-        raise CliError(msg("{path} holds no Markdown document — convert PDF · HWP to .md first (keep the original)", path=path))
+        raise CliError(
+            msg("{path} holds no Markdown document — lantern ref convert makes .md copies of PDF · DOCX · HWP · XLSX first", path=path)
+        )
     bad = 0
     for d in docs:
         text = read(d.path)
@@ -306,6 +436,8 @@ def register(add: Add) -> None:
             "domain",
             "describe",
             "attach",
+            "convert",
+            "preview",
         ],
     )
     p.add_argument(
@@ -333,3 +465,6 @@ def register(add: Add) -> None:
     p.add_argument("--work", help=msg("domain · attach: the work, e.g. W-012"))
     p.add_argument("--task", help=msg("domain · attach: the task, e.g. T03"))
     p.add_argument("--note", help=msg("attach: what it is used for, in a few words"))
+    p.add_argument(
+        "--apply", action="store_true", help=msg("convert: write the Markdown copies (without it, only shows what would happen)")
+    )

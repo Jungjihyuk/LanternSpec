@@ -223,7 +223,8 @@ def write_moc(project: Project) -> Path:
             "",
             f"> [!abstract] {project.names.marker('glance')}",
             msg(
-                "> Put documents in this folder (convert PDF · HWP to .md and keep the original). The AI reads a section "
+                "> Put documents in this folder — PDF · DOCX · HWP · XLSX too: `lantern ref convert` makes a .md copy next to each. "
+                "The AI reads a section "
                 "only when 'When to read' comes up — work picks them in the plan's '{section}'.",
                 section=project.names.title("domain_refs"),
             ),

@@ -252,7 +252,9 @@ def index(project: Project, kind: str, entry: str) -> IndexResult:
     source = src_mod.Source(kind, found.entry, found.path, found.outside)
     docs = src_mod.documents(project, source)
     if not docs:
-        raise ValueError(msg("{path} holds no Markdown document — convert PDF · HWP to .md first (keep the original)", path=entry))
+        raise ValueError(
+            msg("{path} holds no Markdown document — lantern ref convert makes .md copies of PDF · DOCX · HWP · XLSX first", path=entry)
+        )
 
     def same(x: str) -> bool:
         return bool((r := src_mod.resolve(project, x)) and r.path == source.path)

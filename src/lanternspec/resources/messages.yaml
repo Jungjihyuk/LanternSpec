@@ -1119,7 +1119,7 @@
 "{count} not indexed or changed": {ko: "{count}개 색인 안 됨 · 바뀜"}
 "indexed": {ko: "색인됨"}
 "{path} doesn't exist": {ko: "{path}가 없습니다"}
-"{path} holds no Markdown document — convert PDF · HWP to .md first (keep the original)": {ko: "{path}에 Markdown 문서가 없습니다 — PDF · HWP는 먼저 .md로 바꾸세요 (원본은 남겨 두기)"}
+"{path} holds no Markdown document — lantern ref convert makes .md copies of PDF · DOCX · HWP · XLSX first": {ko: "{path}에 Markdown 문서가 없습니다 — 먼저 lantern ref convert로 PDF · DOCX · HWP · XLSX의 .md 변환본을 만드세요"}
 "✔ Added to lantern.yaml references.{kind}: {path}": {ko: "✔ lantern.yaml references.{kind}에 더함: {path}"}
 "✔ Listed in {file} (outside material stays out of git): {kind} {path}": {ko: "✔ {file}에 적음 (밖의 자료는 git에 올리지 않음): {kind} {path}"}
 "✔ Taken out of lantern.yaml, which goes into git: references.{kind} {path}": {ko: "✔ git에 올라가는 lantern.yaml에서 뺌: references.{kind} {path}"}
@@ -1227,8 +1227,48 @@
 "| (none yet — put documents in this folder, then /l-ref domain) | | | | |": {ko: "| (아직 없음 — 이 폴더에 문서를 넣고 /l-ref domain) | | | | |"}
 "# 📚 Domain Knowledge MOC": {ko: "# 📚 도메인 지식 MOC"}
 "> ⚙️ Generated — `lantern ref domain`. Don't edit by hand; describe sections with /l-ref domain.": {ko: "> ⚙️ 자동 생성 — `lantern ref domain`. 손으로 고치지 않습니다. 절 설명은 /l-ref domain으로."}
-"> Put documents in this folder (convert PDF · HWP to .md and keep the original). The AI reads a section only when 'When to read' comes up — work picks them in the plan's '{section}'.": {ko: "> 이 폴더에 문서를 넣습니다 (PDF · HWP는 .md로 바꾸고 원본도 둡니다). AI는 '언제 읽나'의 상황이 왔을 때만 그 절을 읽고, 작업은 기획의 '{section}' 칸에서 고릅니다."}
+"> Put documents in this folder — PDF · DOCX · HWP · XLSX too: `lantern ref convert` makes a .md copy next to each. The AI reads a section only when 'When to read' comes up — work picks them in the plan's '{section}'.": {ko: "> 이 폴더에 문서를 넣습니다 — PDF · DOCX · HWP · XLSX도 됩니다: `lantern ref convert`가 옆에 .md 변환본을 만듭니다. AI는 '언제 읽나'의 상황이 왔을 때만 그 절을 읽고, 작업은 기획의 '{section}' 칸에서 고릅니다."}
 "{doc} is not a domain-knowledge document (references.domain)": {ko: "{doc}은(는) 도메인 지식 문서가 아닙니다 (references.domain)"}
 "(not described yet — /l-ref domain)": {ko: "(아직 설명 없음 — /l-ref domain)"}
 "{doc} isn't indexed yet — lantern ref index domain <path>": {ko: "{doc}은(는) 아직 색인하지 않았습니다 — lantern ref index domain <경로>"}
 "[Domain knowledge read today — read a section again with lantern ref read before relying on it]": {ko: "[오늘 읽은 도메인 지식 — 기대기 전에 lantern ref read로 다시 읽으세요]"}
+"(can't be read — save it as PDF, DOCX or XLSX)": {ko: "(읽을 수 없는 형식 — PDF · DOCX · XLSX로 저장해 넣으세요)"}
+"(same file as {path} — converted once)": {ko: "({path}와 같은 파일 — 한 번만 변환함)"}
+"(the original changed, but its copy was edited by hand — left alone; delete the copy to convert again)": {ko: "(원본이 바뀌었지만 변환본을 손으로 고쳤습니다 — 그대로 둠. 다시 변환하려면 변환본을 지우세요)"}
+"Converted from {name} ({tool} · {quality})": {ko: "{name}에서 변환함 ({tool} · {quality})"}
+"Made {made} copies ({size} — read whole, at most {tokens} tokens) · failed {failed} · {seconds}s": {ko: "변환본 {made}개 만듦 ({size} — 통째로 읽으면 최대 {tokens} 토큰) · 실패 {failed}개 · {seconds}초"}
+"No originals to convert — PDF · DOCX · PPTX · HWP · HWPX · XLSX · CSV put in {folder} show up here": {ko: "변환할 원본이 없습니다 — {folder}에 넣은 PDF · DOCX · PPTX · HWP · HWPX · XLSX · CSV가 여기 나옵니다"}
+"Preview {preview} of {whole} — lantern ref read \"<address>\" reads one section": {ko: "미리보기 {preview} / 원문 {whole} — 한 절은 lantern ref read \"<주소>\"로 읽습니다"}
+"To convert: {todo} ({size}) · converted: {done} · duplicates: {same} · unreadable: {unknown}": {ko: "변환할 것 {todo}개 ({size}) · 변환됨 {done}개 · 같은 파일 {same}개 · 읽을 수 없음 {unknown}개"}
+"check it": {ko: "확인 필요"}
+"convert: write the Markdown copies (without it, only shows what would happen)": {ko: "convert: 마크다운 변환본을 씀 (없으면 무엇을 할지만 보여 줌)"}
+"good": {ko: "좋음"}
+"lantern ref convert works inside the project — convert material outside it there, then index the .md": {ko: "lantern ref convert는 프로젝트 안에서만 합니다 — 밖의 자료는 그곳에서 변환한 뒤 .md를 색인하세요"}
+"no text": {ko: "글자 없음"}
+"{path} does not exist": {ko: "{path}가 없습니다"}
+"→ Describe them with /l-ref domain — it looks at lantern ref preview, not the whole text": {ko: "→ /l-ref domain으로 설명을 붙이세요 — 원문 전체가 아니라 lantern ref preview를 봅니다"}
+"→ lantern ref convert {path}--apply  (only the copies are written; the originals stay as they are)": {ko: "→ lantern ref convert {path}--apply  (변환본만 쓰고, 원본은 그대로 둡니다)"}
+"> Data file — its values stay in {name}; read them from code, not from this card.": {ko: "> 데이터 파일 — 값은 {name}에 그대로 있습니다. 이 카드가 아니라 코드에서 읽습니다."}
+"PDF needs pdftotext — install poppler (brew install poppler · apt install poppler-utils)": {ko: "PDF는 pdftotext가 있어야 합니다 — poppler를 설치하세요 (brew install poppler · apt install poppler-utils)"}
+"Page {n}": {ko: "쪽 {n}"}
+"Part": {ko: "부분"}
+"Slide {n}": {ko: "슬라이드 {n}"}
+"a locked HWP (password or distribution copy) — open it in Hangul and save it as .hwpx, .docx or PDF": {ko: "잠긴 HWP (암호 또는 배포용 문서) — 한글에서 열어 .hwpx · .docx · PDF로 저장하세요"}
+"almost no text — maybe a scanned image; put an OCR'd .md next to it instead": {ko: "글자가 거의 없습니다 — 스캔한 이미지일 수 있습니다. 글자 인식(OCR)한 .md를 옆에 두세요"}
+"no headings and no table layout (cells one per line) — cut into parts": {ko: "제목 구조와 표 모양이 없습니다 (칸마다 한 줄) — 부분으로 나눔"}
+"no headings — cut into parts": {ko: "제목이 없습니다 — 부분으로 나눔"}
+"not a readable Excel file ({error}) — save it again as .xlsx or .csv": {ko: "읽을 수 없는 엑셀 파일입니다 ({error}) — .xlsx · .csv로 다시 저장하세요"}
+"not a readable HWPX file ({error}) — save it again from Hangul as .docx or PDF": {ko: "읽을 수 없는 HWPX 파일입니다 ({error}) — 한글에서 .docx · PDF로 다시 저장하세요"}
+"not a readable PowerPoint file ({error}) — save it again as .pptx or PDF": {ko: "읽을 수 없는 파워포인트 파일입니다 ({error}) — .pptx · PDF로 다시 저장하세요"}
+"not a readable Word file ({error}) — save it again as .docx or PDF": {ko: "읽을 수 없는 워드 파일입니다 ({error}) — .docx · PDF로 다시 저장하세요"}
+"not an HWP 5.0 file — save it again from Hangul as .hwpx, .docx or PDF": {ko: "HWP 5.0 파일이 아닙니다 — 한글에서 .hwpx · .docx · PDF로 다시 저장하세요"}
+"pdftotext could not read it: {error}": {ko: "pdftotext가 읽지 못했습니다: {error}"}
+"the HWP body could not be read ({error})": {ko: "HWP 본문을 읽지 못했습니다 ({error})"}
+"this format can't be read — save it as PDF, DOCX or XLSX": {ko: "읽을 수 없는 형식입니다 — PDF · DOCX · XLSX로 저장하세요"}
+"{rows} rows · {columns} columns": {ko: "{rows}행 · {columns}열"}
+"{sparse} of {pages} pages hold little text (pictures or tables)": {ko: "{pages}쪽 중 {sparse}쪽은 글자가 적습니다 (그림이나 표)"}
+"{title} {n}": {ko: "{title} {n}"}
+"{count} originals not converted yet ({kinds}) — lantern ref convert": {ko: "변환 안 된 원본 {count}개 ({kinds}) — lantern ref convert"}
+"{name} is an original that is not converted yet — lantern ref convert, then read its copy": {ko: "{name}은 아직 변환하지 않은 원본입니다 — lantern ref convert 뒤에 변환본을 읽으세요"}
+"could not be read ({error}) — save it again as PDF or DOCX": {ko: "읽지 못했습니다 ({error}) — PDF · DOCX로 다시 저장해 넣으세요"}
+"same columns as '{sheet}'": {ko: "열은 '{sheet}' 시트와 같음"}

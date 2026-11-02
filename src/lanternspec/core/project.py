@@ -428,7 +428,7 @@ class Project:
             return nfc(str(path))
 
     # ---- iteration
-    def iter_docs(self, include_templates: bool = False, include_legacy: bool = False) -> Iterator[Path]:
+    def iter_docs(self, include_templates: bool = False, include_legacy: bool = False, include_domain: bool = False) -> Iterator[Path]:
         """Yield every Markdown document under the documents root, sorted by path.
 
         Hidden folders (such as `.obsidian`) are always skipped.
@@ -436,6 +436,7 @@ class Project:
         Args:
             include_templates: Also yield the files in the template folder.
             include_legacy: Also yield the original documents kept in the legacy folder.
+            include_domain: Also yield the domain-knowledge documents (material people bring in, not made from templates).
 
         Yields:
             Paths of `.md` files.
@@ -448,6 +449,7 @@ class Project:
             return
         tmpl = self.templates_dir.resolve()
         legacy = self.folder("legacy").resolve()
+        domain = self.folder("domain").resolve()
         for p in sorted(self.docs.rglob("*.md")):
             rp = p.resolve()
             if any(part.startswith(".") for part in p.relative_to(self.docs).parts):
@@ -455,6 +457,8 @@ class Project:
             if not include_templates and (rp == tmpl or tmpl in rp.parents):
                 continue
             if not include_legacy and (rp == legacy or legacy in rp.parents):
+                continue
+            if not include_domain and domain in rp.parents:
                 continue
             yield p
 

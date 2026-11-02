@@ -7,6 +7,16 @@
 
 ## [Unreleased]
 
+업그레이드: `uv tool upgrade lanternspec` → 프로젝트마다 `lantern upgrade` (`/l-ref` · `/l-domain` 스킬을 새로 만든다)
+
+### 추가
+- **원본 변환 `lantern ref convert`** — 도메인 지식 폴더의 PDF · DOCX · PPTX · HWP · HWPX는 절로 나눈 Markdown 변환본으로, XLSX · CSV는 시트 · 열 · 행 수와 앞 몇 줄만 담은 카드로 원본 옆에 만든다. 기본은 목록만 보여 주고 `--apply`일 때 쓴다. 품질(좋음 · 확인 필요 · 글자 없음)을 표시하고, 같은 파일은 한 번만 변환하며, 원본이 바뀌면 다시 변환하되 손으로 고친 변환본은 덮어쓰지 않는다. 한 파일이 실패해도 나머지는 계속한다. PDF는 `pdftotext`(poppler)가 필요하다
+- **절 미리보기 `lantern ref preview`** — 문서를 절마다 주소 · 줄 수 · 첫 줄로 보여 준다. `/l-ref domain`이 원문 전체 대신 이것을 보고 설명을 제안해 토큰을 아낀다
+
+### 고침
+- **도메인 지식에 "frontmatter가 없습니다" 경고** — `lantern check`가 양식이 없는 도메인 지식 문서를 양식 검사 대상으로 보던 것을 고쳤다
+- **변환 안 된 원본이 보이지 않던 것** — `lantern doctor` · `lantern ref domain`이 변환을 기다리는 원본 수를 알려 준다
+
 ### 바뀜
 - **상태 표시에 색** — 터미널에서 `lantern doctor` · `lantern check` 등의 ✔는 초록, ℹ는 청록으로 표시하고, ⚠ 경고와 ✖ 문제는 줄 전체를 노랑 · 빨강으로 보여 준다. 파일 · 파이프로 보내거나 `NO_COLOR`를 켜면 지금처럼 색 없이 나온다. `lantern doctor` 맨 아래 요약도 "문제 0개 · 경고 3개"처럼 말로 쓴다
 

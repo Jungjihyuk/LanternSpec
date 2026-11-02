@@ -161,8 +161,9 @@ def _reference_rows(project: Project) -> list[tuple[str, str]]:
 
     found = src_mod.sources(project)
     excluded = [str(x) for x in project.profile.get("references.exclude") or []]
+    waiting = src_mod.pending(project)
     if not found and not excluded and not project.profile.get("references.outside_rules"):
-        return []
+        return [(WARN, "domain: " + waiting)] if waiting else []
     out = [(BAD, msg("references.{kind}: {path} doesn't exist", kind=s.kind, path=s.entry)) for s in found if not s.path.exists()]
     for kind in src_mod.KINDS:
         for entry in project.profile.get(f"references.{kind}") or []:
@@ -193,6 +194,8 @@ def _reference_rows(project: Project) -> list[tuple[str, str]]:
         by_kind.setdefault(s.document.source.kind, []).append(s.document.name + ("" if s.never else f" ({len(s.changed)})"))
     for kind, docs in by_kind.items():
         out.append((WARN, msg("{kind}: changed or never indexed since /l-ref: {items} — /l-ref {kind}", kind=kind, items=", ".join(docs))))
+    if waiting:
+        out.append((WARN, "domain: " + waiting))
     for address in excluded:
         try:
             src_mod.locate(project, address)

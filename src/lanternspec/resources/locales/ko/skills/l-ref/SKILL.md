@@ -26,7 +26,8 @@ argument-hint: "[rules|terms|domain] <경로>"
 밖의 자료의 경로 · 제목 · 원문은 git에 올라가는 파일(문서 · 코드 · 커밋 메시지)에 옮겨 적지 않는다.
 
 ## 1. 받기
-- 경로를 확인한다. PDF · HWP · Word는 Markdown(`.md`)으로 바꿔 **같은 폴더에** 두고 원본도 남긴다 (색인은 `.md`만 읽는다).
+- 경로를 확인한다. 색인은 `.md`만 읽는다. 안의 PDF · Word · PowerPoint · HWP · Excel은 `lantern ref convert`가 **같은 폴더에** 변환본을 만든다 (`domain.md`의 0번). 원본은 그대로 남는다.
+- 원본을 파일 읽기 도구로 직접 열어 옮겨 적지 않는다. 밖의 원본은 사람이 `.md`로 바꿔 둔다.
 - 프로젝트 안에 둘지 밖에 둘지는 사람이 정한다. 공개하면 안 되는 자료는 밖에 둔다 — 밖의 자료는 경로도 색인도 git에 오르지 않는다 (`.lantern/references.yaml`).
 
 ## 2. 구조 보기

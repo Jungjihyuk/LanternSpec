@@ -26,7 +26,8 @@ Some AI tools ask permission for every read outside the working folder, and a ru
 Never copy an outside document's path, titles or text into files that go into git (documents · code · commit messages).
 
 ## 1. Receive
-- Check the path. Convert PDF · HWP · Word to Markdown (`.md`) **in the same folder** and keep the original (the index reads only `.md`).
+- Check the path. The index reads only `.md`. For inside PDF · Word · PowerPoint · HWP · Excel files, `lantern ref convert` makes copies **in the same folder** (step 0 of `domain.md`). The originals stay as they are.
+- Never open an original with file-reading tools to copy it out. Outside originals are converted to `.md` by the person.
 - The person decides whether it lives inside the project or outside. Keep material that must not be published outside — neither its path nor its index goes into git (`.lantern/references.yaml`).
 
 ## 2. Look at the structure

@@ -7,6 +7,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+Upgrade: `uv tool upgrade lanternspec` → `lantern upgrade` in each project (refreshes the `/l-ref` and `/l-domain` skills)
+
+### Added
+- **Converting originals with `lantern ref convert`** — PDF · DOCX · PPTX · HWP · HWPX files in the domain-knowledge folder get a Markdown copy cut into sections, and XLSX · CSV files get a card with sheets, columns, row counts and first rows, next to the original. By default it only lists them; `--apply` writes. It marks the quality (good · check it · no text), converts identical files once, converts again when an original changes but never overwrites a copy edited by hand, and carries on when one file fails. PDF needs `pdftotext` (poppler)
+- **Section preview with `lantern ref preview`** — shows a document as each section's address, line count and first lines. `/l-ref domain` proposes descriptions from it instead of the whole text, which saves tokens
+
+### Fixed
+- **"No frontmatter" warning on domain knowledge** — `lantern check` no longer treats domain-knowledge documents, which have no template, as templated documents
+- **Unconverted originals went unnoticed** — `lantern doctor` and `lantern ref domain` now say how many originals wait to be converted
+
 ### Changed
 - **Colored status marks** — on a terminal, ✔ in `lantern doctor`, `lantern check` and other commands is green and ℹ cyan, while ⚠ warnings and ✖ problems color the whole line yellow and red. Output sent to a file or pipe, or with `NO_COLOR` set, stays plain as before. The summary at the bottom of `lantern doctor` is in words too, such as "0 problems · 3 warnings"
 

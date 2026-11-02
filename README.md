@@ -207,6 +207,7 @@ Material people already have stays in its own form and is indexed by section, so
 
 - **Outside material never reaches git.** Its paths, titles and index all stay in `.lantern/`.
 - **Sections are read by address.** `lantern ref read "Privacy#Retention period"`
+- **Originals are read through copies.** `lantern ref convert --apply` turns PDF · Word · PowerPoint · HWP into Markdown cut into sections, and Excel · CSV into a card of sheets, columns and row counts, next to the original. It marks the quality too (HWP without headings or tables is "check it", a scanned PDF "no text"). PDF needs `pdftotext` (poppler).
 
 ## Managing unfamiliar tech — knowledge base and understanding debt
 

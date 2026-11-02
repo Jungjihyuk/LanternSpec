@@ -6,10 +6,15 @@ one way the AI reads a section — outside material is never opened by the AI's 
 """
 
 import json
+import os
+import shutil
+import struct
 import subprocess
 import sys
+import zipfile
 from pathlib import Path
 
+import pytest
 import yaml
 
 from conftest import init_project
@@ -466,3 +471,155 @@ def test_a_plan_made_before_the_section_existed_gets_it_and_is_not_asked_about_i
     assert "참고한 도메인 지식" not in out
     repo("ref", "attach", "법#보관", "--work", "W-001")
     assert "## 참고한 도메인 지식\n- [[📚 도메인 지식/법#보관]] — 작업 전체" in path.read_text(encoding="utf-8")
+
+
+# ---- originals (PDF · DOCX · HWP · XLSX …) converted to Markdown copies
+
+W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+S_NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+
+
+def _docx(path: Path, body: str) -> None:
+    with zipfile.ZipFile(path, "w") as z:
+        z.writestr("word/document.xml", f'<w:document xmlns:w="{W_NS}"><w:body>{body}</w:body></w:document>')
+
+
+def _para(text: str, style: str = "") -> str:
+    ppr = f'<w:pPr><w:pStyle w:val="{style}"/></w:pPr>' if style else ""
+    return f"<w:p>{ppr}<w:r><w:t>{text}</w:t></w:r></w:p>"
+
+
+def _xlsx(path: Path, sheets: dict[str, list[list[str]]]) -> None:
+    strings: list[str] = []
+
+    def cell(r: int, c: int, v: str) -> str:
+        strings.append(v)
+        return f'<c r="{chr(65 + c)}{r}" t="s"><v>{len(strings) - 1}</v></c>'
+
+    with zipfile.ZipFile(path, "w") as z:
+        rels, entries = [], []
+        for i, (name, rows) in enumerate(sheets.items(), 1):
+            data = "".join(f'<row r="{r}">' + "".join(cell(r, c, v) for c, v in enumerate(row)) + "</row>" for r, row in enumerate(rows, 1))
+            z.writestr(f"xl/worksheets/sheet{i}.xml", f'<worksheet xmlns="{S_NS}"><sheetData>{data}</sheetData></worksheet>')
+            rels.append(f'<Relationship Id="rId{i}" Target="worksheets/sheet{i}.xml"/>')
+            entries.append(f'<sheet name="{name}" r:id="rId{i}" xmlns:r="{R_NS}"/>')
+        z.writestr("xl/workbook.xml", f'<workbook xmlns="{S_NS}"><sheets>{"".join(entries)}</sheets></workbook>')
+        z.writestr("xl/_rels/workbook.xml.rels", f"<Relationships>{''.join(rels)}</Relationships>")
+        z.writestr("xl/sharedStrings.xml", f'<sst xmlns="{S_NS}">' + "".join(f"<si><t>{s}</t></si>" for s in strings) + "</sst>")
+
+
+R_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+WORDS = "직업훈련 기관은 훈련생의 출석을 매일 기록하고, 기록은 삼 년 동안 보관한다. " * 10
+
+
+def test_originals_are_listed_converted_once_and_their_copies_read_like_any_document(repo):
+    init_project(repo)
+    folder = repo.root / "docs/📚 도메인 지식"
+    _docx(folder / "훈련 규정.docx", _para("출석", "Heading1") + _para(WORDS) + _para("수료", "Heading1") + _para(WORDS))
+    (folder / "히스토리").mkdir()
+    shutil.copy(folder / "훈련 규정.docx", folder / "히스토리/훈련 규정 사본.docx")  # the same file twice
+    _xlsx(folder / "직업 목록.xlsx", {"01": [["코드", "이름"], ["0101", "회계사"]], "02": [["코드", "이름"], ["0201", "교사"]]})
+    (folder / "그림.png").write_bytes(b"\x89PNG")
+    (folder / ".DS_Store").write_bytes(b"x")
+
+    _, out = repo("doctor", ok=False)
+    assert "변환 안 된 원본 2개" in out and "lantern ref convert" in out
+    _, out = repo("ref", "convert")
+    assert "+ DOCX" in out and "= DOCX" in out and "+ XLSX" in out and "? PNG" in out and ".DS_Store" not in out
+    assert "변환할 것 2개" in out and not (folder / "훈련 규정.md").exists()  # without --apply nothing is written
+
+    _, out = repo("ref", "convert", "--apply")
+    assert "✔ docs/📚 도메인 지식/훈련 규정.md" in out and "실패 0개" in out
+    copy = (folder / "훈련 규정.md").read_text(encoding="utf-8")
+    assert copy.startswith('<!-- lantern:converted from="훈련 규정.docx"') and "## 출석" in copy
+    assert not (folder / "히스토리/훈련 규정 사본.md").exists()  # a duplicate is converted once
+    card = (folder / "직업 목록.md").read_text(encoding="utf-8")
+    assert "2 rows" not in card and "2행 · 2열" in card and "| 0101 | 회계사 |" in card
+    assert "열은 '01' 시트와 같음" in card and "0201" not in card  # sheets with the same columns are shown once
+    _, out = repo("ref", "convert")
+    assert "변환할 것 0개" in out and "= DOCX" in out  # the duplicate stays a duplicate once the first is done
+
+    _, out = repo("ref", "preview", "훈련 규정.docx")  # the original's name stands for its copy
+    assert "훈련 규정.docx에서 변환함 (docx · 좋음)" in out and "출석  (" in out and "직업훈련 기관은" in out
+    _, out = repo("ref", "read", "훈련 규정#수료")
+    assert "직업훈련 기관은" in out
+    _, out = repo("check")
+    assert "훈련 규정" not in out  # domain knowledge has no template to check against
+
+
+def test_a_changed_original_is_converted_again_unless_its_copy_was_edited(repo):
+    init_project(repo)
+    folder = repo.root / "docs/📚 도메인 지식"
+    _docx(folder / "규정.docx", _para("출석", "Heading1") + _para(WORDS))
+    repo("ref", "convert", "--apply")
+    _docx(folder / "규정.docx", _para("출석", "Heading1") + _para(WORDS + "바뀜"))
+    os.utime(folder / "규정.docx", ns=(1, 1))
+    _, out = repo("ref", "convert")
+    assert "~ DOCX" in out
+    copy = folder / "규정.md"
+    copy.write_text(copy.read_text(encoding="utf-8") + "\n사람이 고침\n", encoding="utf-8")
+    _, out = repo("ref", "convert")
+    assert "⚠ DOCX" in out and "손으로 고쳤습니다" in out
+    repo("ref", "convert", "--apply")
+    assert "사람이 고침" in copy.read_text(encoding="utf-8")  # an edited copy is never overwritten
+
+
+def test_one_unreadable_original_fails_alone(repo, monkeypatch):
+    from lanternspec.refs import convert as conv
+
+    init_project(repo)
+    folder = repo.root / "docs/📚 도메인 지식"
+    (folder / "깨진.docx").write_bytes(b"not a zip")
+    (folder / "이상한.hwp").write_bytes(b"x")
+    _docx(folder / "멀쩡.docx", _para(WORDS))
+    monkeypatch.setitem(conv.CONVERTERS, ".hwp", lambda p: (_ for _ in ()).throw(UnicodeEncodeError("utf-8", "", 0, 1, "surrogates")))
+    code, out = repo("ref", "convert", "--apply", ok=False)
+    assert code == 1 and "✖ docs/📚 도메인 지식/깨진.docx — " in out and "✖ docs/📚 도메인 지식/이상한.hwp — " in out
+    assert "UnicodeEncodeError" in out and "실패 2개" in out
+    assert (folder / "멀쩡.md").exists() and not (folder / "깨진.md").exists()
+
+
+def test_conversion_rates_how_well_the_text_came_out():
+    from lanternspec.refs import convert as conv
+
+    assert conv._rate("x", "t", [WORDS, WORDS]).quality == "ok"
+    assert conv._rate("x", "t", ["표", "그림", WORDS]).quality == "check"  # most pages hold little
+    assert conv._rate("x", "t", ["", " "]).quality == "empty"  # a scan
+    assert conv._rate("x", "t", [WORDS], "제목 없음").quality == "check"
+
+
+def test_hwp_paragraphs_keep_characters_outside_the_basic_plane_and_skip_controls():
+    from lanternspec.refs import convert as conv
+
+    text = (
+        "가".encode("utf-16le")
+        + struct.pack("<H", 11)
+        + b"\0" * 14
+        + "😀나".encode("utf-16le")
+        + struct.pack("<H", 9)
+        + b"\0" * 14
+        + "다".encode("utf-16le")
+    )
+    record = struct.pack("<I", 67 | (len(text) << 20)) + text
+    assert conv._hwp_paragraphs(record) == ["가😀나\t다"]
+
+
+def test_a_long_document_previews_one_line_per_section():
+    from lanternspec.refs import convert as conv
+
+    doc = "# 보고서\n" + "".join(f"## 쪽 {n}\n첫 줄\n둘째 줄\n" for n in range(1, 50))
+    shown = conv.preview(doc)
+    assert "쪽 48  (3)" in shown and "둘째 줄" not in shown
+    assert "둘째 줄" in conv.preview(doc.split("## 쪽 5\n")[0])
+
+
+@pytest.mark.skipif(not shutil.which("pdftotext"), reason="needs pdftotext (poppler)")
+def test_a_pdf_without_text_is_rated_empty(tmp_path):
+    from lanternspec.refs import convert as conv
+
+    pdf = tmp_path / "스캔.pdf"
+    pdf.write_bytes(
+        b"%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n"
+        b"3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 200 200]>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n"
+    )
+    assert conv.pdf_copy(pdf).quality == "empty"

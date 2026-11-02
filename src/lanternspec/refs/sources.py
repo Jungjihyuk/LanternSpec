@@ -9,11 +9,13 @@ watches can't answer — so it reaches the AI through `lantern ref read`, which 
 
 Responsibilities:
     - resolve each listed path and list its Markdown documents
+    - list the domain-knowledge originals inside the project that are not Markdown (PDF · HWP · XLSX …)
     - find a document and a section from an address ("문서#제목", "문서#위#아래")
 
 Not here:
     - reading headings and cutting sections → core/outline.py
     - the hashes that tell a change → refs/index.py
+    - converting the originals → refs/convert.py
 """
 
 from __future__ import annotations
@@ -23,7 +25,8 @@ from pathlib import Path
 
 from ..core import outline
 from ..core.messages import msg
-from ..core.project import Project, read
+from ..core.project import Project, nfc, read
+from . import convert as conv
 
 KINDS = ("rules", "terms", "domain")  # the lists under `references` (besides `exclude`)
 
@@ -205,6 +208,52 @@ def all_documents(project: Project) -> list[Document]:
     return list(seen.values())
 
 
+def originals(project: Project) -> list[conv.Original]:
+    """List the domain-knowledge originals inside the project (the domain folder and listed domain paths).
+
+    Material outside the project is left to people: converting it would write next to files the project doesn't own.
+
+    Args:
+        project: The project.
+
+    Returns:
+        Each original once, with the state of its Markdown copy.
+
+    Example:
+        >>> [o.state for o in originals(project)]  # doctest: +SKIP
+        ['new', 'done']
+    """
+    roots = [project.folder("domain").resolve(), *(s.path for s in sources(project) if s.kind == "domain" and not s.outside)]
+    seen: dict[Path, conv.Original] = {}
+    for root in roots:
+        for o in conv.originals(root):
+            seen.setdefault(o.path, o)
+    return list(seen.values())
+
+
+def pending(project: Project) -> str:
+    """Say in one line which domain-knowledge originals still wait to be converted.
+
+    Args:
+        project: The project.
+
+    Returns:
+        "" when none wait; else the counts by format and the command to run.
+
+    Example:
+        >>> pending(project)  # doctest: +SKIP
+        '변환 안 된 원본 40개 (PDF 24 · HWP 15 · DOCX 1) — lantern ref convert'
+    """
+    waiting = [o for o in originals(project) if o.state in ("new", "changed")]
+    if not waiting:
+        return ""
+    counts: dict[str, int] = {}
+    for o in waiting:
+        counts[o.label] = counts.get(o.label, 0) + 1
+    kinds = " · ".join(f"{k} {n}" for k, n in sorted(counts.items(), key=lambda kv: -kv[1]))
+    return msg("{count} originals not converted yet ({kinds}) — lantern ref convert", count=len(waiting), kinds=kinds)
+
+
 def find_document(project: Project, name: str) -> Document:
     """Find a reference document by its name (file name without `.md`) or its path.
 
@@ -222,12 +271,19 @@ def find_document(project: Project, name: str) -> Document:
         >>> find_document(project, "개인정보").shown  # doctest: +SKIP
         'docs/📚 도메인 지식/개인정보.md'
     """
-    want = name.strip().removesuffix(".md")
+    want = nfc(name.strip()).removesuffix(".md")
     docs = all_documents(project)
+    if conv.kind_of(Path(want)) != "unknown" and not any(nfc(d.name) == want for d in docs):
+        # an original's name ("법.pdf") stands for its Markdown copy ("법")
+        stem = want[: -len(Path(want).suffix)]
+        if not any(nfc(d.name) == Path(stem).name for d in docs):
+            raise LookupError(msg("{name} is an original that is not converted yet — lantern ref convert, then read its copy", name=name))
+        want = stem
     hits = [
         d
         for d in docs
-        if d.name == want or any(x.removesuffix(".md") == want or x.removesuffix(".md").endswith("/" + want) for x in (d.shown, d.label))
+        if nfc(d.name) == want
+        or any(nfc(x).removesuffix(".md") == want or nfc(x).removesuffix(".md").endswith("/" + want) for x in (d.shown, d.label))
     ]
     if len(hits) == 1:
         return hits[0]

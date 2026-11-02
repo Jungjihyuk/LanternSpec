@@ -24,6 +24,7 @@ lantern ref read "<address>"
 - One section at a time. A long section lists its sub-sections; read only the one you need.
 - **📌 Verbatim:** follow its numbers · deadlines · exceptions exactly as written. Read it again right before turning the decision into code or documents.
 - **⚠ Changed since indexed:** follow the original words, and tell the person in one line to fix the index with `/l-ref domain`.
+- Never open an original (PDF · HWP · Excel …) directly. If it has no copy, `lantern ref read` says so; suggest `lantern ref convert` to the person. A data card holds no values — when values are needed, read the original from code.
 - Never open material outside the project with file tools. Never copy its path, titles or words into files that go into git (documents · code · commit messages).
 
 ## 3. Tie it

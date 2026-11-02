@@ -10,8 +10,21 @@ Documents put in `<<folder.domain>>/` need no listing. Other paths are listed at
 | Key terms `--keys` | Two or three words that lead to it |
 | Verbatim `--verbatim` | Sections with numbers · deadlines · exceptions; their exact words are read again right before deciding. Propose it by default when they have them |
 
+## 0. Convert the originals (before step 3's index)
+Large, numerous material costs a lot of tokens. **Never read originals (PDF · HWP · Excel …) directly, and never read copies whole.**
+```bash
+lantern ref convert [path]            # shows what is there, sizes and duplicates (writes nothing)
+lantern ref convert [path] --apply    # writes the copies (the originals stay)
+```
+- Show the list first and let the person choose the scope: everything / one folder / a few. Split it up when there is a lot.
+- Pass on the quality marks as they are. ⚠ means headings or tables were partly lost, so numbers should be checked against the original; ✖ means no text (a scan), so the person puts in an OCR'd `.md`. Report failed files with their hint and move on.
+- A data file's copy (XLSX · CSV) is a card of sheets, columns and row counts. The values stay in the original, for code to read.
+
 ## 1. Propose
-- Handle only the `+` · `~` sections from step 3's output. Read a section with `lantern ref read "<address>"` (outside material too).
+- Handle only the `+` · `~` sections from step 3's output. **Propose from `lantern ref preview "<document>"`** — it shows each section's address, line count and first lines.
+- Open a section with `lantern ref read "<address>"` only when the preview doesn't tell what it is (outside material too). Don't read the sections one after another.
+- For a copy cut into pages or parts, pages on one topic can be proposed as one line.
+- For a data card, write only what and when; never copy its values into the index.
 - One line per section: `address — what — when to read — key terms — verbatim or not`.
 - When the sub-sections are short, describe the section above them instead (its sub-sections are read with it). Leave out front matter · contents · revision history, shown as "sections to leave out".
 
