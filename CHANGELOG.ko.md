@@ -7,6 +7,8 @@
 
 ## [Unreleased]
 
+## [0.2.8] - 2026-11-03
+
 업그레이드: `uv tool upgrade lanternspec` → 프로젝트마다 `lantern upgrade` (`/l-ref` · `/l-domain` · `/l-idea` · `/l-plan` 스킬과 아이디어 · 역량 카드 양식을 새로 만들고, `enums.yaml`에 아이디어 상태 "막힘"을 더하며, CI를 쓰는 프로젝트는 CI 파일을 다시 만든다)
 
 ### 추가
@@ -178,7 +180,8 @@
   Rust · Go)와 규모로 코드 컨벤션을 기준표대로 골라 `AGENTS.md`와 `개발 원칙.md`에 넣는다 (`principles`, `lint`)
 - **작업 방식 · 평가** — 하네스 · 루프 · 그래프 추천(`harness suggest`), 실행 기록으로 스킬 · 모델 · 설정 비교(`eval`)
 
-[Unreleased]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.7...HEAD
+[Unreleased]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.8...HEAD
+[0.2.8]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.7...v0.2.8
 [0.2.7]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.6...v0.2.7
 [0.2.6]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.5...v0.2.6
 [0.2.5]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.4...v0.2.5

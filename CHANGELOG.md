@@ -7,6 +7,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.8] - 2026-11-03
+
 Upgrade: `uv tool upgrade lanternspec` → `lantern upgrade` in each project (refreshes the `/l-ref`, `/l-domain`, `/l-idea` and `/l-plan` skills and the Idea and Competency Card templates, adds the "Blocked" idea status to `enums.yaml`, and regenerates the CI workflow in projects that use it)
 
 ### Added
@@ -169,7 +171,8 @@ First release.
 - **Design principles and code conventions** — design principles chosen from a table by project kind · external integrations · size, and code conventions by language (Python · TypeScript · Swift · Rust · Go) and size, written into `AGENTS.md` and `개발 원칙.md` (`principles`, `lint`)
 - **Ways of working and evaluation** — harness · loop · graph recommendation (`harness suggest`); comparing skills · models · settings from the run log (`eval`)
 
-[Unreleased]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.7...HEAD
+[Unreleased]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.8...HEAD
+[0.2.8]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.7...v0.2.8
 [0.2.7]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.6...v0.2.7
 [0.2.6]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.5...v0.2.6
 [0.2.5]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.4...v0.2.5
