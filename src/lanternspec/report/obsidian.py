@@ -5,6 +5,7 @@ Responsibilities:
     - merge LanternSpec's share of docs/.obsidian settings (other user settings stay)
     - CSS snippet: folder colors per document stage · folder and file icons · callout · quote styles (any theme)
     - download the recommended plugins' official releases (Dataview · Metadata Menu) (install_plugins)
+    - copy the Lantern Timeline plugin bundled with the package, for projects that use Obsidian plugins
 
 Not here:
     - renaming choices → core/meta.py (rename_enum_value) — write_vault runs again afterwards
@@ -23,6 +24,7 @@ from typing import Any
 
 import yaml
 
+from .. import resources
 from ..core.enums import Enums
 from ..core.messages import msg
 from ..core.names import Names
@@ -32,6 +34,8 @@ PLUGINS = {  # recommended plugin id → GitHub repo. [key:: value] display (tas
     "dataview": "blacksmithgu/obsidian-dataview",
     "metadata-menu": "mdelobelle/metadatamenu",
 }
+TIMELINE_PLUGIN = "lantern-timeline"  # bundled in resources/obsidian/, so it needs no download and follows this package's version
+TIMELINE_BLOCK = "lantern-timeline"  # the code block it draws (report/views.py writes it)
 PLUGIN_FILES = ("main.js", "manifest.json", "styles.css")  # official release files of a community plugin (styles.css may be missing)
 RELEASE_URL = "https://github.com/{repo}/releases/latest/download/{file}"
 VAULT_GITIGNORE = """# {note}
@@ -310,7 +314,11 @@ def write_vault(project: Project) -> list[Path]:
     snippets = look.get("enabledCssSnippets") or []
     save(obs / "appearance.json", _dump({**look, "enabledCssSnippets": snippets + [SNIPPET] * (SNIPPET not in snippets)}))
     plugins = _load(obs / "community-plugins.json", [])
-    save(obs / "community-plugins.json", _dump(plugins + [p for p in PLUGINS if p not in plugins]))
+    wanted_plugins = [*PLUGINS, TIMELINE_PLUGIN] if _uses_plugins(obs) else list(PLUGINS)
+    save(obs / "community-plugins.json", _dump(plugins + [p for p in wanted_plugins if p not in plugins]))
+    if _uses_plugins(obs):  # a newer package redraws the timeline with its own copy
+        for name, source in resources.iter_files(f"obsidian/{TIMELINE_PLUGIN}"):
+            save(obs / "plugins" / TIMELINE_PLUGIN / name, source.read_text(encoding="utf-8"))
     save(
         obs / ".gitignore",
         VAULT_GITIGNORE.format(
@@ -334,6 +342,27 @@ def write_vault(project: Project) -> list[Path]:
             stale.unlink()
             out.append(stale)
     return out
+
+
+def _uses_plugins(obs: Path) -> bool:
+    """Tell whether plugins were installed in this vault: downloaded ones, or a timeline copied earlier."""
+    return any((obs / "plugins" / p / "main.js").exists() for p in [*PLUGINS, TIMELINE_PLUGIN])
+
+
+def timeline_installed(project: Project) -> bool:
+    """Tell whether reports can use the Lantern Timeline plugin.
+
+    Args:
+        project: The project.
+
+    Returns:
+        True when the plugin's code is in the vault.
+
+    Example:
+        >>> timeline_installed(project)  # doctest: +SKIP
+        True
+    """
+    return (project.docs / ".obsidian" / "plugins" / TIMELINE_PLUGIN / "main.js").exists()
 
 
 def install_plugins(project: Project, fetch: Callable[[str], bytes | None] | None = None) -> list[tuple[str, str]]:

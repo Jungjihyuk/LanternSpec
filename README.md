@@ -150,6 +150,7 @@ Sections lantern reads and writes (protected sections, such as "Now" in a log) m
 
 ### Viewing the docs in Obsidian
 Open the `docs/` folder as a vault in Obsidian and it is already set up for reading (`docs/.obsidian/`).
+`lantern obsidian plugins` also adds Lantern Timeline, which shows the report's timeline as bars by day (display only).
 
 - **Folder colors, folder and file icons, callouts and quotes** — each document stage has its own folder color, folders and files get icons, and callouts and quotes look clean. Works on top of any theme.
 - **Picking status and kind** — each document type offers only its own choices in a menu (Metadata Menu). The choices are generated from `enums.yaml`, so renaming a value updates them too.

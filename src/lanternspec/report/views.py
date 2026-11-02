@@ -12,6 +12,7 @@ Not here:
 from __future__ import annotations
 
 import datetime as _dt
+import json
 import re
 from pathlib import Path
 
@@ -20,6 +21,7 @@ from ..core.messages import msg
 from ..core.project import Project, git_out, nfc, now_minute, read, today, wikilink, work_id_of, work_name_of, write
 from ..core.taskfile import Task, TaskGraph, parse_criteria, parse_tasks
 from ..learn import debt as debt_mod
+from . import obsidian
 
 VIEWS = ["kanban", "timeline", "domain", "trace", "debt", "sync", "eval"]
 VIEW_TITLE = {  # English; msg() translates them
@@ -109,8 +111,105 @@ def _parse_dt(s: str) -> _dt.datetime | None:
     return None
 
 
+def _plain_title(title: str) -> str:
+    """Drop the document links a task line carries: a chart shows what the task is, not where it is described."""
+    return re.sub(r"\s*[—-]\s*$", "", re.sub(r"\[\[[^\]]*\]\]", "", title)).strip()
+
+
+def _work_bars(project: Project, w: Path, plan_meta: dict) -> list[dict]:
+    """Date each task of a work: actual times first, then planned dates, then its order and size after the task before it."""
+    bars = []
+    cursor = _parse_dt(frontmatter.as_str(plan_meta.get("created")) or today()) or _dt.datetime.now()
+    for t in _work_tasks(project, w):
+        days = _dt.timedelta(days=SIZE_DAYS.get(t.size, 1))
+        start, end = _parse_dt(t.started), _parse_dt(t.finished)
+        planned_s, planned_e = _parse_dt(t.attrs.get("start_plan", "")), _parse_dt(t.attrs.get("due_plan", ""))
+        if start:
+            basis = "actual"
+            end = (end if end > start else start + _dt.timedelta(minutes=30)) if end else start + days
+        elif planned_s:
+            basis, start, end = "planned", planned_s, planned_e or planned_s + days
+        else:
+            basis, start, end = "estimated", cursor, cursor + days
+        cursor = end
+        bars.append(
+            {
+                "id": t.id.split("-")[-1],
+                "title": _plain_title(t.title),
+                "start": f"{start:%Y-%m-%d %H:%M}",
+                "end": f"{end:%Y-%m-%d %H:%M}",
+                "state": "done" if t.done else "doing" if t.started else "todo",
+                "basis": basis,
+            }
+        )
+    return bars
+
+
+def _timeline_rows(project: Project) -> list[dict]:
+    """Collect every work (archived ones too) with its dated tasks and the day its idea appeared."""
+    rows = []
+    for w in project.work_dirs(include_archive=True):
+        plan_meta = _meta(project.doc_path(w, "plan"))
+        row: dict = {
+            "id": work_id_of(w),
+            "name": work_name_of(w),
+            "file": project.docs_rel(project.doc_path(w, "tasks")),
+            "tasks": _work_bars(project, w, plan_meta),
+        }
+        for link in frontmatter.as_list(plan_meta.get("links")):
+            m = re.search(r"(IDEA-\d{3,})", str(link))
+            idea = project.find_by_id(m.group(1)) if m else None
+            created = frontmatter.as_str(_meta(idea).get("created")) if idea else ""
+            if m and created:
+                row["idea"] = {"id": m.group(1), "date": created}
+        if not row["tasks"]:
+            row["created"] = frontmatter.as_str(plan_meta.get("created")) or today()
+        rows.append(row)
+    return sorted(rows, key=lambda r: r["id"])
+
+
+def _timeline_plugin_block(rows: list[dict]) -> str:
+    """Write the rows as the code block the Lantern Timeline plugin draws."""
+    labels = {
+        "done": msg("Done"),
+        "doing": msg("Doing"),
+        "todo": msg("To do"),
+        "actual": msg("actual dates"),
+        "planned": msg("planned dates"),
+        "estimated": msg("estimated from order and size"),
+        "plan": msg("plan"),
+    }
+    text = json.dumps({"labels": labels, "works": rows}, ensure_ascii=False, separators=(",", ":"))
+    return "```" + obsidian.TIMELINE_BLOCK + "\n" + text.replace("`", "\\u0060") + "\n```"
+
+
+def _timeline_mermaid(rows: list[dict]) -> str:
+    """Write the rows as a Mermaid Gantt chart."""
+    lines = ["```mermaid", "gantt", "  dateFormat YYYY-MM-DD HH:mm", "  axisFormat %m-%d", "  todayMarker on"]
+    for row in rows:
+        wid = row["id"]
+        lines.append(f"  section {_gantt_name(wid + ' ' + row['name'])}")
+        if "idea" in row:
+            lines.append(f"  💡 {row['idea']['id']} :milestone, {wid.lower().replace('-', '')}idea, {row['idea']['date']} 00:00, 0d")
+        for t in row["tasks"]:
+            tid = f"{wid}{t['id']}".lower().replace("-", "")
+            tag = {"done": "done, ", "doing": "active, "}.get(t["state"], "")
+            lines.append(f"  {_gantt_name(t['id'] + ' ' + t['title'])} :{tag}{tid}, {t['start']}, {t['end']}")
+        if "created" in row:
+            lines.append(
+                msg(
+                    "  {gantt_name} plan :milestone, {replace}m, {created} 00:00, 0d",
+                    gantt_name=_gantt_name(wid),
+                    replace=wid.lower().replace("-", ""),
+                    created=row["created"],
+                )
+            )
+    lines.append("```")
+    return "\n".join(lines)
+
+
 def timeline(project: Project) -> str:
-    """Draw every work (archived ones too) as a Mermaid Gantt chart.
+    """Draw every work (archived ones too) on a timeline: for the Lantern Timeline plugin when it is installed, else as Mermaid.
 
     Tasks use their actual times when they have them, then planned dates, then their order and size
     (S = 1 day · M = 2 · L = 3). The idea a work came from shows as a milestone.
@@ -119,70 +218,19 @@ def timeline(project: Project) -> str:
         project: The project.
 
     Returns:
-        The Mermaid block with a note on how it was drawn; a short note when there are no works.
+        The chart's code block with a note on how it was drawn; a short note when there are no works.
 
     Example:
         >>> timeline(project).splitlines()[1]  # doctest: +SKIP
         'gantt'
     """
-    works = project.work_dirs(include_archive=True)
-    if not works:
+    rows = _timeline_rows(project)
+    if not rows:
         return msg("_No works._")
-    lines = ["```mermaid", "gantt", "  dateFormat YYYY-MM-DD HH:mm", "  axisFormat %m-%d", "  todayMarker on"]
-    any_task = False
-    for w in works:
-        wid = work_id_of(w)
-        tasks = _work_tasks(project, w)
-        plan_meta = _meta(project.doc_path(w, "plan"))
-        lines.append(f"  section {_gantt_name(wid + ' ' + work_name_of(w))}")
-        # idea → work: when did the idea appear?
-        for link in frontmatter.as_list(plan_meta.get("links")):
-            m = re.search(r"(IDEA-\d{3,})", str(link))
-            if m:
-                idea = project.find_by_id(m.group(1))
-                created = frontmatter.as_str(_meta(idea).get("created")) if idea else ""
-                if created:
-                    lines.append(f"  💡 {m.group(1)} :milestone, {wid.lower().replace('-', '')}idea, {created} 00:00, 0d")
-        prev_id: str | None = None
-        cursor = _parse_dt(frontmatter.as_str(plan_meta.get("created")) or today()) or _dt.datetime.now()
-        for t in tasks:
-            any_task = True
-            tid = t.id.lower().replace("-", "")
-            name = _gantt_name(f"{t.id.split('-')[-1]} {t.title}")
-            start, end = _parse_dt(t.started), _parse_dt(t.finished)
-            planned_s, planned_e = _parse_dt(t.attrs.get("start_plan", "")), _parse_dt(t.attrs.get("due_plan", ""))
-            tag = "done, " if t.done else ("active, " if t.started else "")
-            if start and end:
-                if end <= start:
-                    end = start + _dt.timedelta(minutes=30)
-                lines.append(f"  {name} :{tag}{tid}, {start:%Y-%m-%d %H:%M}, {end:%Y-%m-%d %H:%M}")
-                cursor = end
-            elif start:
-                lines.append(f"  {name} :{tag}{tid}, {start:%Y-%m-%d %H:%M}, {SIZE_DAYS.get(t.size, 1)}d")
-                cursor = start + _dt.timedelta(days=SIZE_DAYS.get(t.size, 1))
-            elif planned_s:
-                end_p = planned_e or planned_s + _dt.timedelta(days=SIZE_DAYS.get(t.size, 1))
-                lines.append(f"  {name} :{tag}{tid}, {planned_s:%Y-%m-%d %H:%M}, {end_p:%Y-%m-%d %H:%M}")
-                cursor = end_p
-            elif prev_id:
-                lines.append(f"  {name} :{tag}{tid}, after {prev_id}, {SIZE_DAYS.get(t.size, 1)}d")
-            else:
-                lines.append(f"  {name} :{tag}{tid}, {cursor:%Y-%m-%d %H:%M}, {SIZE_DAYS.get(t.size, 1)}d")
-            prev_id = tid
-        if not tasks:
-            created = frontmatter.as_str(plan_meta.get("created")) or today()
-            lines.append(
-                msg(
-                    "  {gantt_name} plan :milestone, {replace}m, {created} 00:00, 0d",
-                    gantt_name=_gantt_name(wid),
-                    replace=wid.lower().replace("-", ""),
-                    created=created,
-                )
-            )
-    lines.append("```")
-    note = "" if any_task else msg("\n_No tasks yet, so only the start of each work is shown._")
+    chart = _timeline_plugin_block(rows) if obsidian.timeline_installed(project) else _timeline_mermaid(rows)
+    note = "" if any(row["tasks"] for row in rows) else msg("\n_No tasks yet, so only the start of each work is shown._")
     return (
-        "\n".join(lines)
+        chart
         + msg(
             "\n\n> Without planned dates it is drawn from task order and size (S=1 day · M=2 days · L=3 "
             "days); once actual times exist, from those."

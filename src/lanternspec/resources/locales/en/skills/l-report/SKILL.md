@@ -1,6 +1,6 @@
 ---
 name: l-report
-description: See where things stand, in the views you want — read the work folders · current state · debt ledger and write kanban · timeline (Mermaid gantt) · by domain · trace (idea → work → commit) · debt status · docs-vs-code into <<folder.reports>>/<<file.report>>, with a 3-line summary at the top. Use when the user asks for status, progress, a kanban, a timeline or a report.
+description: See where things stand, in the views you want — read the work folders · current state · debt ledger and write kanban · timeline · by domain · trace (idea → work → commit) · debt status · docs-vs-code into <<folder.reports>>/<<file.report>>, with a 3-line summary at the top. Use when the user asks for status, progress, a kanban, a timeline or a report.
 invocation: model
 argument-hint: "[kanban,timeline,domain,trace,debt,sync]"
 ---

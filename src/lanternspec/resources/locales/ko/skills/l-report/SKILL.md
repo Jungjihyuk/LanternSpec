@@ -1,6 +1,6 @@
 ---
 name: l-report
-description: 원하는 보기로 현황 확인 — 작업 폴더 · 현재 상태 · 부채 장부를 읽어 칸반 · 타임라인(Mermaid gantt) · 도메인별 · 추적(아이디어→작업→커밋) · 부채 현황 · 문서-코드 일치를 <<folder.reports>>/<<file.report>>에 만들고, 맨 위에 3줄 요약을 쓴다. Use when the user asks for status, progress, a kanban, a timeline or a report.
+description: 원하는 보기로 현황 확인 — 작업 폴더 · 현재 상태 · 부채 장부를 읽어 칸반 · 타임라인 · 도메인별 · 추적(아이디어→작업→커밋) · 부채 현황 · 문서-코드 일치를 <<folder.reports>>/<<file.report>>에 만들고, 맨 위에 3줄 요약을 쓴다. Use when the user asks for status, progress, a kanban, a timeline or a report.
 invocation: model
 argument-hint: "[kanban,timeline,domain,trace,debt,sync]"
 ---

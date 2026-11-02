@@ -81,3 +81,66 @@ def test_obsidian_plugins_download_latest_release_files(repo, monkeypatch):
     monkeypatch.setattr("lanternspec.report.obsidian._download", lambda url: None)
     code, out = repo("obsidian", "plugins", ok=False)
     assert code == 1 and "커뮤니티 플러그인에서 직접 설치" in out
+
+
+def _timeline_project(repo):
+    init_project(repo)
+    repo("scaffold", "work", "로그인")
+    tasks = repo.root / "docs/2. 작업/W-001 로그인/할 일.md"
+    lines = (
+        "- [x] W-001-T01 설계 — [[2. 작업/W-001 로그인/설계|설계]] [크기:: S] [시작:: 2026-10-29 10:00] [완료:: 2026-10-29 10:00]\n"
+        "- [ ] W-001-T02 버튼 `확인` [크기:: M] [시작 예정:: 2026-11-02] [마감 예정:: 2026-11-04]\n"
+        "- [ ] W-001-T03 연결 [크기:: L]\n"
+    )
+    tasks.write_text(lines, encoding="utf-8")
+    return repo.root / "docs/.obsidian/plugins/lantern-timeline", repo.root / "docs/4. 운영 기록/보고/현황.md"
+
+
+def test_the_timeline_plugin_comes_with_obsidian_plugins_and_reports_then_use_it(repo):
+    plugin, report = _timeline_project(repo)
+    repo("report", "--views", "timeline")
+    text = report.read_text(encoding="utf-8")  # no plugins in this vault: Mermaid, as anywhere else
+    assert not plugin.exists() and "```mermaid" in text and "lantern-timeline" not in text
+    assert "T01 설계 :done, w001t01, 2026-10-29 10:00, 2026-10-29 10:30" in text and "[[" not in text.split("```mermaid")[1]
+
+    dataview = repo.root / "docs/.obsidian/plugins/dataview"  # upgrade brings it to a vault that already uses plugins
+    dataview.mkdir(parents=True)
+    (dataview / "main.js").write_text("", encoding="utf-8")
+    repo("upgrade")
+    assert {"main.js", "manifest.json", "styles.css"} == {p.name for p in plugin.iterdir()}
+    assert json.loads((plugin / "manifest.json").read_text(encoding="utf-8"))["id"] == "lantern-timeline"
+    assert "lantern-timeline" in json.loads((repo.root / "docs/.obsidian/community-plugins.json").read_text(encoding="utf-8"))
+
+    repo("report", "--views", "timeline")
+    text = report.read_text(encoding="utf-8")
+    assert "```mermaid" not in text
+    data = json.loads(text.split("```lantern-timeline\n")[1].split("\n```")[0])
+    assert "`" not in text.split("```lantern-timeline\n")[1].split("\n```")[0]  # can't close the code block early
+    assert data["labels"]["doing"] == "진행 중"
+    work = data["works"][0]
+    assert work["id"] == "W-001" and work["file"] == "2. 작업/W-001 로그인/할 일.md"
+    t1, t2, t3 = work["tasks"]
+    assert t1 == {
+        "id": "T01",
+        "title": "설계",
+        "start": "2026-10-29 10:00",
+        "end": "2026-10-29 10:30",
+        "state": "done",
+        "basis": "actual",
+    }
+    assert (t2["basis"], t2["state"], t2["start"], t2["end"]) == ("planned", "todo", "2026-11-02 00:00", "2026-11-04 00:00")
+    assert (t3["basis"], t3["start"], t3["end"]) == (
+        "estimated",
+        "2026-11-04 00:00",
+        "2026-11-07 00:00",
+    )  # after the task before it, L = 3 days
+
+
+def test_the_timeline_plugin_ships_and_only_draws():
+    from lanternspec import resources
+
+    files = dict(resources.iter_files("obsidian/lantern-timeline"))
+    assert set(files) == {"main.js", "manifest.json", "styles.css"}
+    code = files["main.js"].read_text(encoding="utf-8")
+    assert 'registerMarkdownCodeBlockProcessor("lantern-timeline"' in code
+    assert "vault.modify" not in code and "vault.process" not in code and ".vault." not in code  # reading only, for now

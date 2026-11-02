@@ -7,6 +7,14 @@
 
 ## [Unreleased]
 
+업그레이드: `uv tool upgrade lanternspec` → 프로젝트마다 `lantern upgrade` (Obsidian 플러그인을 쓰는 보관함에 Lantern Timeline 플러그인을 넣는다. Obsidian을 다시 열면 켜진다) → `lantern report`로 보고서를 다시 만든다
+
+### 추가
+- **읽기 쉬운 타임라인 플러그인** — Obsidian 플러그인을 쓰는 프로젝트의 보고서 타임라인을 Lantern Timeline 플러그인으로 그린다. 왼쪽에 작업과 할 일 목록, 오른쪽에 날짜별 막대를 두고, 작업을 접고 펼칠 수 있으며, 할 일 이름을 누르면 `할 일.md`가 열린다. 완료 · 진행 중 · 할 일 · 추정을 색과 점선으로 나누고, 오늘 위치와 주말을 표시한다. 아직 보기 전용이라 일정을 끌어서 바꿀 수는 없다. 플러그인이 없는 프로젝트는 지금처럼 Mermaid로 그린다
+
+### 고침
+- **타임라인에 문서 링크가 섞이던 것** — 할 일 이름에 붙은 `[[…]]` 링크를 빼고 보여 주고, 작업을 번호순으로 놓는다
+
 ## [0.2.8] - 2026-11-03
 
 업그레이드: `uv tool upgrade lanternspec` → 프로젝트마다 `lantern upgrade` (`/l-ref` · `/l-domain` · `/l-idea` · `/l-plan` 스킬과 아이디어 · 역량 카드 양식을 새로 만들고, `enums.yaml`에 아이디어 상태 "막힘"을 더하며, CI를 쓰는 프로젝트는 CI 파일을 다시 만든다)

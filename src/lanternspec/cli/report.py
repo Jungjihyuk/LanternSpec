@@ -127,12 +127,14 @@ def cmd_harness(a: argparse.Namespace) -> int:
 
 def cmd_obsidian(a: argparse.Namespace) -> int:
     """`lantern obsidian plugins` — download the recommended Obsidian plugins into docs/.obsidian/plugins/."""
-    from ..report.obsidian import install_plugins, write_vault
+    from ..report.obsidian import TIMELINE_PLUGIN, install_plugins, write_vault
 
     project = _p()
     write_vault(project)  # plugin settings and .gitignore must exist first
     for plugin_id, version in install_plugins(project):
         print(f"✔ {plugin_id} {version}")
+    write_vault(project)  # now that plugins are in use, this also copies the timeline plugin bundled with the package
+    print(f"✔ {TIMELINE_PLUGIN}")
     print(msg("Next: open the docs/ folder as a vault in Obsidian, and turn community plugins on when asked (turn off restricted mode)"))
     return 0
 

@@ -1285,3 +1285,10 @@
 "  ci_lint: {s}   # lint and type errors in CI: warn (shown, CI passes) | block (CI fails)": {ko: "  ci_lint: {s}   # CI의 린트 · 타입 오류: warn(보여 주고 통과) | block(실패)"}
 "code.parts {path}: ci must be true or false": {ko: "code.parts {path}: ci는 true나 false여야 합니다"}
 "  # parts = sub-projects with their own package file (pyproject.toml · package.json …) — lantern parts (each gets its own AGENTS.md; ci: false leaves one out of CI)": {ko: "  # 영역 = 패키지 설정 파일(pyproject.toml · package.json 등)이 따로 있는 하위 프로젝트 — lantern parts (영역마다 AGENTS.md가 생기고, ci: false면 CI에서 뺀다)"}
+"actual dates": {ko: "실제 일정"}
+"planned dates": {ko: "예정 일정"}
+"estimated from order and size": {ko: "순서와 크기로 추정"}
+"Doing": {ko: "진행 중"}
+"To do": {ko: "할 일"}
+"plan": {ko: "기획"}
+"Done": {ko: "완료"}

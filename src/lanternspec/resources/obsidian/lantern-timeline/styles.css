@@ -1,0 +1,48 @@
+.lt-root { font-size: 12px; margin: 8px 0; color: var(--text-normal); }
+.lt-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 8px; color: var(--text-muted); }
+.lt-legend-item { display: flex; align-items: center; gap: 4px; }
+.lt-swatch { position: static !important; width: 18px; height: 10px !important; padding: 0 !important; }
+.lt-scroller { overflow: auto; max-height: 70vh; border: 1px solid var(--background-modifier-border); border-radius: 6px; background: var(--background-primary); }
+.lt-body { position: relative; }
+.lt-row { display: flex; height: 28px; border-bottom: 1px solid var(--background-modifier-border); }
+.lt-name {
+  position: sticky; left: 0; z-index: 3; flex: 0 0 var(--lt-name-width); width: var(--lt-name-width);
+  display: flex; align-items: center; gap: 4px; padding: 0 8px; box-sizing: border-box; overflow: hidden;
+  background: var(--background-primary); border-right: 1px solid var(--background-modifier-border);
+}
+.lt-track {
+  position: relative; flex: 0 0 var(--lt-track-width); width: var(--lt-track-width);
+  /* one tile per day for the grid, one per week for the weekend: tiles repeat evenly however wide the track is */
+  background-image:
+    linear-gradient(to left, var(--background-modifier-border) 1px, transparent 1px),
+    linear-gradient(to right, var(--background-secondary) calc(var(--lt-day-width) * 2), transparent calc(var(--lt-day-width) * 2));
+  background-size: var(--lt-day-width) 100%, calc(var(--lt-day-width) * 7) 100%;
+  background-position: 0 0, var(--lt-weekend-shift) 0;
+}
+.lt-months, .lt-days { position: sticky; z-index: 4; background: var(--background-primary); color: var(--text-muted); }
+.lt-months { top: 0; height: 24px; }
+.lt-days { top: 24px; height: 24px; }
+.lt-months .lt-track, .lt-days .lt-track { display: flex; background-image: none; }
+.lt-month { flex: none; box-sizing: border-box; padding: 4px 6px; font-weight: 600; white-space: nowrap; overflow: hidden; border-right: 1px solid var(--background-modifier-border); }
+.lt-day { flex: 0 0 var(--lt-day-width); text-align: center; line-height: 24px; }
+.lt-weekend { background: var(--background-secondary); }
+.lt-today-cell { color: var(--text-on-accent); background: var(--interactive-accent); border-radius: 4px; font-weight: 600; }
+.lt-work .lt-name { cursor: pointer; font-weight: 600; background: var(--background-secondary); }
+.lt-fold { flex: 0 0 12px; color: var(--text-muted); }
+.lt-work-name, .lt-task-name { flex: 1 1 auto; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.lt-task .lt-name { padding-left: 24px; }
+.lt-task-name { cursor: pointer; }
+.lt-task-name:hover { color: var(--text-accent); text-decoration: underline; }
+.lt-count { flex: none; color: var(--text-muted); font-weight: 400; }
+.lt-bar {
+  position: absolute; top: 5px; height: 18px; box-sizing: border-box; padding: 0 5px; border-radius: 4px;
+  font-size: 11px; line-height: 18px; white-space: nowrap; overflow: hidden; color: #fff;
+}
+.lt-summary { top: 11px; height: 6px; padding: 0; border-radius: 3px; background: var(--text-faint); }
+.lt-done { background: #5b9a6f; }
+.lt-doing { background: var(--interactive-accent); color: var(--text-on-accent); }
+.lt-todo { background: #8a8fa3; }
+.lt-estimated { background: transparent; color: var(--text-muted); border: 1px dashed var(--text-faint); line-height: 16px; }
+.lt-mark { position: absolute; top: 9px; width: 10px; height: 10px; transform: rotate(45deg); background: #e0a93b; }
+.lt-today { position: absolute; top: 48px; bottom: 0; width: 2px; background: var(--interactive-accent); opacity: .7; z-index: 2; pointer-events: none; }
+.lt-error { color: var(--text-error); }
