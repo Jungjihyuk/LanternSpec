@@ -268,13 +268,13 @@ Import mockups with `lantern screen import`; `lantern screen compare` finds wher
 setup      install [--language] [--tools] [--mcp] [--ci|--no-ci] · upgrade [--apply] · doctor · harness suggest
 profile    profile show|docs|write|set · principles show|detect · parts [add|ignore] · enums list|rename · sections list|rename|off|on
 documents  scaffold init [--plan] | work | doc | idea | adr | meeting | custom · new-id · map · meta get|set
-checks     check [--changed] [--epic W-012] · lint · check-dbml · dbml render|from-sql|diff
+checks     check [--changed] [--epic W-012] · lint [--ci] · check-dbml · dbml render|from-sql|diff
 work       task next [--all]|start|done|ac|list|estimate · task add [--parallel] · pack · screen import|compare
            work branch|start|list|finish|archive|stage · design approve · unit-log add · idea find|status
 learning   knowledge search|read|propose|write|areas · debt find|new|ask|resolve|promote|practice|known|status|list · mcp
-reports    report [--views] [--summary] · status · resume [--session] [--more] · scan [--tests] · sync adopt · eval · obsidian plugins
+reports    report [--views] [--summary] · status · resume [--session] [--more] · scan [--tests] [--ci] · sync adopt · eval · obsidian plugins
 templates  template list|lint|level|bump|outdated|diff|usage|new|migrate · legacy adopt|todos
-references ref list|check|index|read · tag|exclude|rules · terms|term|glossary|candidate · domain|describe|attach
+references ref list|check|index|read · tag|exclude|rules · terms|term|glossary|candidate · domain|describe|attach · convert [--apply]|preview
 git        hooks install|uninstall|status · docs-mode local|shared
 wrap-up    close <skill>
 ```

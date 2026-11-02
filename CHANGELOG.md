@@ -7,23 +7,22 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
-Upgrade: `uv tool upgrade lanternspec` → `lantern upgrade` in each project (refreshes the `/l-ref`, `/l-domain`, `/l-idea` and `/l-plan` skills and the Idea and Competency Card templates, and adds the "Blocked" idea status to `enums.yaml`, and regenerates the CI workflow)
+Upgrade: `uv tool upgrade lanternspec` → `lantern upgrade` in each project (refreshes the `/l-ref`, `/l-domain`, `/l-idea` and `/l-plan` skills and the Idea and Competency Card templates, adds the "Blocked" idea status to `enums.yaml`, and regenerates the CI workflow in projects that use it)
 
 ### Added
 - **Converting originals with `lantern ref convert`** — PDF · DOCX · PPTX · HWP · HWPX files in the domain-knowledge folder get a Markdown copy cut into sections, and XLSX · CSV files get a card with sheets, columns, row counts and first rows, next to the original. By default it only lists them; `--apply` writes. It marks the quality (good · check it · no text), converts identical files once, converts again when an original changes but never overwrites a copy edited by hand, and carries on when one file fails. PDF needs `pdftotext` (poppler)
 - **Section preview with `lantern ref preview`** — shows a document as each section's address, line count and first lines. `/l-ref domain` proposes descriptions from it instead of the whole text, which saves tokens
-
 - **Blocked ideas** — what is wanted but not possible now, because of a technical limit, skill or experience, stays as the idea status 🚧 Blocked. `lantern idea status IDEA-014 Blocked --reason "…" --revisit "…"` records why and what would reopen it, and the Docs MOC gathers blocked ideas in their own list. When skill is what blocks it, `lantern debt promote IDEA-014` makes a competency card, linked both ways
-- **Lint errors in CI with `build.ci_lint`** — `warn` shows the errors and lets CI pass; `block` fails it. When unset, existing projects are `warn` and new ones `block`. Failing tests fail CI either way
-
-### Fixed
-- **CI failing in monorepos** — when the package file lives in a subfolder such as `backend/pyproject.toml`, CI ran `uv sync` at the root and failed. Each part (`code.parts`) now prepares its tools in its own folder, with the runner found from that folder's lock file, and the setup command is skipped while the package file is missing
-- **Parts' commands were never run** — `lantern lint` and `lantern scan --tests` now run each part's commands in its folder; a part's command takes over from `build.*`. Leave a part out of CI with `ci: false`
-- **"No frontmatter" warning on domain knowledge** — `lantern check` no longer treats domain-knowledge documents, which have no template, as templated documents
-- **Unconverted originals went unnoticed** — `lantern doctor` and `lantern ref domain` now say how many originals wait to be converted
+- **Lint errors in CI with `build.ci_lint`** — `warn` shows the errors and lets CI pass; `block` fails it. When unset, existing projects are `warn` and new ones `block`. Failing tests fail CI either way. Existing projects whose CI used to fail on lint errors now pass, so set `build.ci_lint: block` to keep failing
 
 ### Changed
 - **Colored status marks** — on a terminal, ✔ in `lantern doctor`, `lantern check` and other commands is green and ℹ cyan, while ⚠ warnings and ✖ problems color the whole line yellow and red. Output sent to a file or pipe, or with `NO_COLOR` set, stays plain as before. The summary at the bottom of `lantern doctor` is in words too, such as "0 problems · 3 warnings"
+- **Checks per part** — `lantern lint` and `lantern scan --tests` run each part's (`code.parts`) commands in its folder. A part's command takes over from `build.*`, so everyday `lantern lint` checks every part too. Leave a heavy part out of CI with `ci: false` on that part
+
+### Fixed
+- **CI failing in monorepos** — when the package file lives in a subfolder such as `backend/pyproject.toml`, CI ran `uv sync` at the root and failed. Each part (`code.parts`) now prepares its tools in its own folder, with the runner found from that folder's lock file, and the setup command is skipped while the package file is missing
+- **"No frontmatter" warning on domain knowledge** — `lantern check` no longer treats domain-knowledge documents, which have no template, as templated documents
+- **Unconverted originals went unnoticed** — `lantern doctor` and `lantern ref domain` now say how many originals wait to be converted
 
 ## [0.2.7] - 2026-11-02
 

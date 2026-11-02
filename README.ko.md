@@ -266,13 +266,13 @@ Claude Design · Figma · Canva를 각 도구의 MCP로 쓴다.
 설치     install [--language] [--tools] [--mcp] [--ci|--no-ci] · upgrade [--apply] · doctor · harness suggest
 프로필   profile show|docs|write|set · principles show|detect · parts [add|ignore] · enums list|rename · sections list|rename|off|on
 문서     scaffold init [--plan] | work | doc | idea | adr | meeting | custom · new-id · map · meta get|set
-검사     check [--changed] [--epic W-012] · lint · check-dbml · dbml render|from-sql|diff
+검사     check [--changed] [--epic W-012] · lint [--ci] · check-dbml · dbml render|from-sql|diff
 일       task next [--all]|start|done|ac|list|estimate · task add [--parallel] · pack · screen import|compare
          work branch|start|list|finish|archive|stage · design approve · unit-log add · idea find|status
 배움     knowledge search|read|propose|write|areas · debt find|new|ask|resolve|promote|practice|known|status|list · mcp
-보고     report [--views] [--summary] · status · resume [--session] [--more] · scan [--tests] · sync adopt · eval · obsidian plugins
+보고     report [--views] [--summary] · status · resume [--session] [--more] · scan [--tests] [--ci] · sync adopt · eval · obsidian plugins
 양식     template list|lint|level|bump|outdated|diff|usage|new|migrate · legacy adopt|todos
-참고     ref list|check|index|read · tag|exclude|rules · terms|term|glossary|candidate · domain|describe|attach
+참고     ref list|check|index|read · tag|exclude|rules · terms|term|glossary|candidate · domain|describe|attach · convert [--apply]|preview
 git      hooks install|uninstall|status · docs-mode local|shared
 마무리   close <스킬>
 ```
