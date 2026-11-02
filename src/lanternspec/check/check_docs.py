@@ -622,6 +622,18 @@ def check_file(project: Project, path: Path, text: str, ctx: _Ctx) -> list[Findi
     ):
         out.append(Finding("warn", rel, "dropped-reason", msg("A dropped idea needs a one-line reason (dropped_reason)"), 1))
 
+    # idea: blocked says why and what would reopen it
+    if (
+        doc_type == "idea"
+        and meta.get("status") == project.enums["idea_status"].roles.get("blocked")
+        and not (str(meta.get("blocked_reason") or "").strip() and str(meta.get("revisit_when") or "").strip())
+    ):
+        out.append(
+            Finding(
+                "warn", rel, "blocked-reason", msg("A blocked idea needs why (blocked_reason) and what would reopen it (revisit_when)"), 1
+            )
+        )
+
     # tasks
     if doc_type == "tasks":
         out += _check_tasks(project, path, text, rel)

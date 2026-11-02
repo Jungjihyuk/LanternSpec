@@ -7,11 +7,13 @@
 
 ## [Unreleased]
 
-업그레이드: `uv tool upgrade lanternspec` → 프로젝트마다 `lantern upgrade` (`/l-ref` · `/l-domain` 스킬을 새로 만든다)
+업그레이드: `uv tool upgrade lanternspec` → 프로젝트마다 `lantern upgrade` (`/l-ref` · `/l-domain` · `/l-idea` · `/l-plan` 스킬, 아이디어 · 역량 카드 양식을 새로 만들고, `enums.yaml`에 아이디어 상태 "막힘"을 더한다)
 
 ### 추가
 - **원본 변환 `lantern ref convert`** — 도메인 지식 폴더의 PDF · DOCX · PPTX · HWP · HWPX는 절로 나눈 Markdown 변환본으로, XLSX · CSV는 시트 · 열 · 행 수와 앞 몇 줄만 담은 카드로 원본 옆에 만든다. 기본은 목록만 보여 주고 `--apply`일 때 쓴다. 품질(좋음 · 확인 필요 · 글자 없음)을 표시하고, 같은 파일은 한 번만 변환하며, 원본이 바뀌면 다시 변환하되 손으로 고친 변환본은 덮어쓰지 않는다. 한 파일이 실패해도 나머지는 계속한다. PDF는 `pdftotext`(poppler)가 필요하다
 - **절 미리보기 `lantern ref preview`** — 문서를 절마다 주소 · 줄 수 · 첫 줄로 보여 준다. `/l-ref domain`이 원문 전체 대신 이것을 보고 설명을 제안해 토큰을 아낀다
+
+- **막힌 아이디어** — 원하지만 기술 한계 · 실력 · 경험 때문에 지금은 못 하는 것을 아이디어 상태 🚧 막힘으로 남긴다. `lantern idea status IDEA-014 막힘 --reason "…" --revisit "…"`로 이유와 다시 볼 조건을 함께 적고, 개발문서 MOC가 막힌 아이디어를 따로 모아 보여 준다. 실력 때문에 막혔으면 `lantern debt promote IDEA-014`로 역량 카드를 만들어 서로 잇는다
 
 ### 고침
 - **도메인 지식에 "frontmatter가 없습니다" 경고** — `lantern check`가 양식이 없는 도메인 지식 문서를 양식 검사 대상으로 보던 것을 고쳤다

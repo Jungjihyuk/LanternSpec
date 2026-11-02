@@ -483,40 +483,12 @@ def resolve(project: Project, term: str, note: str | None = None) -> Path:
 # --------------------------------------------------------------------------- competency debt (understanding → competency)
 
 
-def promote(project: Project, term: str, name: str | None = None) -> Path:
-    """Create a competency-debt card ("build it myself") from a resolved understanding-debt card.
-
-    Args:
-        project: The project.
-        term: The understanding card's ID, title or alias.
-        name: The new card's title; "<title> 직접 만들기" when None.
-
-    Returns:
-        The new competency card.
-
-    Raises:
-        LookupError: There is no understanding card for the term.
-        ValueError: The understanding card is not resolved yet.
-        FileExistsError: It already has a competency card.
-
-    Example:
-        >>> promote(project, "D-007").name  # doctest: +SKIP
-        'D-009 JWT 직접 만들기.md'
-    """
-    src = find(project, term, kind="understanding")
-    if src is None:
-        raise LookupError(msg("No understanding-debt card for '{term}'", term=term))
-    if src.meta.get("status") != project.enums.value("debt_status", "resolved"):
-        raise ValueError(msg("{id} is not resolved yet — understanding first, competency after (lantern debt resolve {id})", id=src.id))
-    for c in cards(project):
-        if kind_of(project, c) == project.enums.value("debt_kind", "competency") and str(c.meta.get("from") or "") == src.id:
-            raise FileExistsError(msg("A competency card already exists: {id} {title}", id=c.id, title=c.title))
+def _competency_card(project: Project, source: str, title: str, link: str, area: str, aliases: list[str], owner: str) -> tuple[Path, str]:
+    """Create a competency-debt card from what it came from; returns the card and its ID."""
     debt_id = next_id(project, "debt")
-    title = safe_name(name or msg("Build {title} yourself", title=src.title))
     dest = project.folder("debt_cards") / f"{debt_id} {title}.md"
     from ..work.scaffold import create_from_template
 
-    link = wikilink(project, src.path, src.id)
     create_from_template(
         project,
         project.names.doc("competency_card"),
@@ -526,13 +498,81 @@ def promote(project: Project, term: str, name: str | None = None) -> Path:
             "kind": project.enums.value("debt_kind", "competency"),
             "id": debt_id,
             "name": title,
-            "area": templating.yaml_str(str(src.meta.get("area") or default_area(project))),
-            "aliases": templating.yaml_list([str(a) for a in frontmatter.as_list(src.meta.get("aliases"))]),
-            "owner": templating.yaml_str(str(src.meta.get("owner") or "")),
-            "source": src.id,
+            "area": templating.yaml_str(area),
+            "aliases": templating.yaml_list(aliases),
+            "owner": templating.yaml_str(owner),
+            "source": source,
             "source_link": link,
             "links": templating.yaml_list([link]),
         },
+    )
+    return dest, debt_id
+
+
+def _promote_idea(project: Project, path: Path, name: str | None) -> Path:
+    """Create the competency card a blocked idea waits for, linked both ways."""
+    from ..work import ideas
+
+    meta = frontmatter.parse(read(path)).meta
+    idea_id = str(meta.get("id") or path.stem.split(" ")[0])
+    blocked = project.enums["idea_status"].roles.get("blocked")
+    if not blocked or meta.get("status") != blocked:
+        raise ValueError(msg('{id} is not blocked — lantern idea status {id} "<blocked>" --reason … --revisit … first', id=idea_id))
+    for c in cards(project):
+        if kind_of(project, c) == project.enums.value("debt_kind", "competency") and str(c.meta.get("from") or "") == idea_id:
+            raise FileExistsError(msg("A competency card already exists: {id} {title}", id=c.id, title=c.title))
+    title = safe_name(name or msg("Build {title} yourself", title=nfc(path.stem).split(" ", 1)[-1]))
+    dest, debt_id = _competency_card(project, idea_id, title, wikilink(project, path, idea_id), default_area(project), [], "")
+    link = wikilink(project, dest, debt_id)
+    competency = project.enums.label("debt_kind", "competency")
+    ideas.link_card(
+        project, path, link, msg("- {today} waits for {competency} debt → {wikilink}", today=today(), competency=competency, wikilink=link)
+    )
+    return dest
+
+
+def promote(project: Project, term: str, name: str | None = None) -> Path:
+    """Create a competency-debt card ("build it myself") from a resolved understanding card or a blocked idea.
+
+    Args:
+        project: The project.
+        term: The understanding card's ID, title or alias, or a blocked idea's ID.
+        name: The new card's title; "<title> 직접 만들기" when None.
+
+    Returns:
+        The new competency card.
+
+    Raises:
+        LookupError: There is no understanding card for the term.
+        ValueError: The understanding card is not resolved yet, or the idea is not blocked.
+        FileExistsError: It already has a competency card.
+
+    Example:
+        >>> promote(project, "D-007").name  # doctest: +SKIP
+        'D-009 JWT 직접 만들기.md'
+    """
+    from ..work.ideas import idea_path
+
+    blocked_idea = idea_path(project, term)
+    if blocked_idea is not None:
+        return _promote_idea(project, blocked_idea, name)
+    src = find(project, term, kind="understanding")
+    if src is None:
+        raise LookupError(msg("No understanding-debt card for '{term}'", term=term))
+    if src.meta.get("status") != project.enums.value("debt_status", "resolved"):
+        raise ValueError(msg("{id} is not resolved yet — understanding first, competency after (lantern debt resolve {id})", id=src.id))
+    for c in cards(project):
+        if kind_of(project, c) == project.enums.value("debt_kind", "competency") and str(c.meta.get("from") or "") == src.id:
+            raise FileExistsError(msg("A competency card already exists: {id} {title}", id=c.id, title=c.title))
+    title = safe_name(name or msg("Build {title} yourself", title=src.title))
+    dest, debt_id = _competency_card(
+        project,
+        src.id,
+        title,
+        wikilink(project, src.path, src.id),
+        str(src.meta.get("area") or default_area(project)),
+        [str(a) for a in frontmatter.as_list(src.meta.get("aliases"))],
+        str(src.meta.get("owner") or ""),
     )
     competency = project.enums.label("debt_kind", "competency")
     write(

@@ -101,6 +101,7 @@ idea_status:
     Reviewing: {icon: 🔍, role: reviewing}
     In Work: {icon: 📦, role: worked}
     On Hold: {icon: 🗄, role: on_hold}
+    Blocked: {icon: 🚧, role: blocked}
     Dropped: {icon: ❌, role: dropped}
 
 work_status:

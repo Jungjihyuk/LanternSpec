@@ -247,3 +247,65 @@ def test_unit_log_and_adr_and_meta(repo):
     assert code == 1 and "결정 상태" in out
     _, out = repo("meta", "get", "ADR-001", "status")
     assert out.strip() == '"채택"'
+
+
+def test_a_blocked_idea_says_why_and_when_to_look_again_and_can_wait_for_a_competency_card(repo):
+    init_project(repo)
+    repo("scaffold", "idea", "HWP 표 살리기", "--raw", "표까지 살리면 좋겠다")
+    code, out = repo("idea", "status", "IDEA-001", "막힘", "--reason", "표 구조를 못 읽음", ok=False)
+    assert code != 0 and "--revisit" in out
+    code, out = repo("debt", "promote", "IDEA-001", ok=False)
+    assert code != 0 and "막힌 아이디어가 아닙니다" in out
+
+    repo("idea", "status", "IDEA-001", "막힘", "--reason", "표 구조를 못 읽음", "--revisit", "표를 읽는 도구가 생기면")
+    card = next((repo.root / "docs/1. 아이디어").glob("IDEA-001 *"))
+    text = card.read_text(encoding="utf-8")
+    meta = frontmatter.parse(text).meta
+    assert meta["blocked_reason"] == "표 구조를 못 읽음" and meta["revisit_when"] == "표를 읽는 도구가 생기면"
+    assert "🚧 막힘 — 표 구조를 못 읽음 (다시 볼 조건: 표를 읽는 도구가 생기면)" in text
+    _, out = repo("idea", "find", "HWP 표")
+    assert "다시 볼 조건: 표를 읽는 도구가 생기면" in out
+
+    repo("map")
+    moc = (repo.root / "docs/개발문서 MOC.md").read_text(encoding="utf-8")
+    assert "### 🚧 막힘" in moc and "| 표 구조를 못 읽음 | 표를 읽는 도구가 생기면 |" in moc
+
+    repo("debt", "promote", "IDEA-001", "표 구조 해석 직접 만들기")
+    made = next((repo.root / "docs/📒 부채/카드").glob("D-001 *"))
+    made_text = made.read_text(encoding="utf-8")
+    assert frontmatter.parse(made_text).meta["from"] == "IDEA-001" and "이해 부채 [[" not in made_text
+    assert "D-001" in card.read_text(encoding="utf-8")
+    code, _ = repo("debt", "promote", "IDEA-001", ok=False)
+    assert code != 0  # one card per idea
+
+    repo("idea", "status", "IDEA-001", "검토 중")
+    text = card.read_text(encoding="utf-8")
+    assert frontmatter.parse(text).meta["blocked_reason"] == "" and "다시 볼 조건: 표를 읽는 도구가 생기면" in text  # the log keeps it
+    repo("map")
+    assert "### 🚧 막힘" not in (repo.root / "docs/개발문서 MOC.md").read_text(encoding="utf-8")
+
+
+def test_check_asks_for_the_reason_of_a_blocked_idea_set_by_hand(repo):
+    init_project(repo)
+    repo("scaffold", "idea", "손으로 막힘", "--raw", "원문")
+    card = next((repo.root / "docs/1. 아이디어").glob("IDEA-001 *"))
+    card.write_text(frontmatter.set_fields(card.read_text(encoding="utf-8"), {"status": "막힘"}), encoding="utf-8")
+    _, out = repo("check", str(card), ok=False)
+    assert "다시 볼 조건(revisit_when)" in out
+
+
+def test_upgrade_adds_the_blocked_status_to_an_older_project(repo):
+    init_project(repo)
+    path = repo.root / "docs/0. 템플릿/_meta/enums.yaml"
+    path.write_text(path.read_text(encoding="utf-8").replace("    막힘: {icon: 🚧, role: blocked}\n", ""), encoding="utf-8")
+    repo("scaffold", "idea", "옛 아이디어", "--raw", "원문")
+    repo("idea", "status", "IDEA-001", "보류")  # still works before the upgrade
+    repo("map")
+    _, out = repo("doctor", ok=False)
+    assert "blocked" in out
+    _, out = repo("upgrade")
+    assert "막힘" in out
+    text = path.read_text(encoding="utf-8")
+    assert "    보류: {icon: 🗄, role: on_hold}\n    버림: {icon: ❌, role: dropped}\n    막힘: {icon: 🚧, role: blocked}\n" in text
+    assert "■ 상세 설명" in text  # comments stay
+    repo("idea", "status", "IDEA-001", "막힘", "--reason", "이유", "--revisit", "조건")

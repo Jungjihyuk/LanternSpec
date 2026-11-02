@@ -26,7 +26,7 @@ from .messages import msg
 
 # Roles the code relies on. A project's enums.yaml must give each of them to some value of its list.
 REQUIRED_ROLES: dict[str, list[str]] = {
-    "idea_status": ["new", "reviewing", "worked", "on_hold", "dropped"],
+    "idea_status": ["new", "reviewing", "worked", "on_hold", "blocked", "dropped"],
     "work_status": ["plan", "design", "tasks", "build", "done", "on_hold"],
     "adr_status": ["proposed", "accepted", "superseded"],
     "debt_kind": ["understanding", "competency", "tech"],
@@ -431,6 +431,45 @@ def rename_in_text(text: str, enum: str, old: str, new: str) -> str:
         raise LookupError(msg("{enum} has no value '{old}'", enum=enum, old=old))
     body = pat.sub(lambda m: f"{m.group(1)}{_yaml_key(new)}:", body, count=1)
     return text[: block.start(1)] + body + text[block.end(1) :]
+
+
+def add_value_in_text(text: str, enum: str, name: str, icon: str, role: str) -> str:
+    r"""Add one value at the end of a list in the text of enums.yaml.
+
+    Comments and the other values stay as written.
+
+    Args:
+        text: The whole text of enums.yaml.
+        enum: List name.
+        name: The new value's name.
+        icon: Its icon.
+        role: Its role.
+
+    Returns:
+        The enums.yaml text with the value added.
+
+    Raises:
+        LookupError: The list does not exist.
+
+    Example:
+        >>> text = "idea_status:\n  values:\n    보류: {icon: 🗄, role: on_hold}\n\nsize:\n  values:\n    S: 🟢\n"
+        >>> print(add_value_in_text(text, "idea_status", "막힘", "🚧", "blocked"), end="")
+        idea_status:
+          values:
+            보류: {icon: 🗄, role: on_hold}
+            막힘: {icon: 🚧, role: blocked}
+        <BLANKLINE>
+        size:
+          values:
+            S: 🟢
+    """
+    block = re.search(r"^" + re.escape(enum) + r":[ \t]*$(.*?)(?=^\S|\Z)", text, re.M | re.S)
+    if block is None:
+        raise LookupError(msg("enums.yaml has no '{enum}'", enum=enum))
+    body = block.group(1)
+    kept = body.rstrip()
+    line = f"\n    {_yaml_key(name)}: {{icon: {icon}, role: {role}}}"
+    return text[: block.start(1)] + kept + line + body[len(kept) :] + text[block.end(1) :]
 
 
 def _yaml_key(s: str) -> str:

@@ -7,10 +7,12 @@ created: ${today}
 updated: ${today}
 links: ${links}
 template: Idea
-template_version: 1.0.1
-based_on: 1.0.1
+template_version: 1.0.2
+based_on: 1.0.2
 auto: ${auto}
 dropped_reason: ""
+blocked_reason: ""
+revisit_when: ""
 ---
 # 💡 ${id} ${name}
 
@@ -36,6 +38,7 @@ ${raw}
 
 ## Status Log
 > [!guide] Filled in automatically. Changing it to ${idea_status.dropped.label} needs a one-line reason (the `dropped_reason` property at the top).
+> ${idea_status.blocked.label} means wanted, but not possible now. It needs why (`blocked_reason`) and what would reopen it (`revisit_when`).
 
 - ${today} recorded as ${idea_status.new.label}
 
@@ -45,3 +48,4 @@ ${raw}
 |---|---|---|
 | 1.0.0 | 2026-10-27 | Base template |
 | 1.0.1 | 2026-11-02 | Clearer writing guides (long ones split into lines, symbols and internal names in words) |
+| 1.0.2 | 2026-11-03 | Added the why and look-again properties of a blocked idea |

@@ -7,11 +7,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
-Upgrade: `uv tool upgrade lanternspec` → `lantern upgrade` in each project (refreshes the `/l-ref` and `/l-domain` skills)
+Upgrade: `uv tool upgrade lanternspec` → `lantern upgrade` in each project (refreshes the `/l-ref`, `/l-domain`, `/l-idea` and `/l-plan` skills and the Idea and Competency Card templates, and adds the "Blocked" idea status to `enums.yaml`)
 
 ### Added
 - **Converting originals with `lantern ref convert`** — PDF · DOCX · PPTX · HWP · HWPX files in the domain-knowledge folder get a Markdown copy cut into sections, and XLSX · CSV files get a card with sheets, columns, row counts and first rows, next to the original. By default it only lists them; `--apply` writes. It marks the quality (good · check it · no text), converts identical files once, converts again when an original changes but never overwrites a copy edited by hand, and carries on when one file fails. PDF needs `pdftotext` (poppler)
 - **Section preview with `lantern ref preview`** — shows a document as each section's address, line count and first lines. `/l-ref domain` proposes descriptions from it instead of the whole text, which saves tokens
+
+- **Blocked ideas** — what is wanted but not possible now, because of a technical limit, skill or experience, stays as the idea status 🚧 Blocked. `lantern idea status IDEA-014 Blocked --reason "…" --revisit "…"` records why and what would reopen it, and the Docs MOC gathers blocked ideas in their own list. When skill is what blocks it, `lantern debt promote IDEA-014` makes a competency card, linked both ways
 
 ### Fixed
 - **"No frontmatter" warning on domain knowledge** — `lantern check` no longer treats domain-knowledge documents, which have no template, as templated documents

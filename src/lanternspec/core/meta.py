@@ -142,6 +142,44 @@ def meta_get(project: Project, target: str, key: str | None = None) -> Any:
     return meta.get(key) if key else meta
 
 
+def add_missing_roles(project: Project) -> list[str]:
+    """Add to the project's enums.yaml the values a newer version's code needs (`lantern upgrade`).
+
+    A name the project already uses for something else is left alone; `lantern doctor` keeps reporting the role.
+
+    Args:
+        project: The project.
+
+    Returns:
+        One message per value added.
+
+    Example:
+        >>> add_missing_roles(project)  # doctest: +SKIP
+        ["✔ enums.yaml idea_status: 🚧 막힘"]
+    """
+    path = project.enums_file
+    if not path.exists():
+        return []
+    base = enums_mod.load(language=project.profile.language)
+    current = project.enums
+    text = read(path)
+    out: list[str] = []
+    for enum, roles in enums_mod.REQUIRED_ROLES.items():
+        have = current.enums.get(enum)
+        for role in roles:
+            if have is None or role in have.roles or role not in base[enum].roles:
+                continue
+            name = base[enum].value(role)
+            if name in have.values:
+                continue
+            text = enums_mod.add_value_in_text(text, enum, name, base[enum].icon(name), role)
+            out.append(msg("✔ enums.yaml {enum}: {label}", enum=enum, label=base[enum].labelled(name)))
+    if out:
+        write(path, text)
+        project.reload_enums()
+    return out
+
+
 def rename_enum_value(project: Project, enum: str, old: str, new: str) -> list[Path]:
     """Rename an enum value in enums.yaml and in every document that stores it (`lantern enums rename`).
 

@@ -456,8 +456,11 @@ def upgrade(project: Project, force: bool = False, apply: bool = False) -> Insta
     if not found.empty and not apply:
         return InstallReport(layout=[*notes, msg("→ To move them, run lantern upgrade --apply (nothing was changed)")], stopped=True)
     moved = layout.apply(project, found) if apply else []
+    from ..core.meta import add_missing_roles
+
+    added = add_missing_roles(project)  # before the skills are written: they name these values
     report = install(project, None, force=force)
-    report.templates = upgrade_templates(project, force=force)
+    report.templates = [*added, *upgrade_templates(project, force=force)]
     if project.docs.exists():  # documents a newer version turns on (e.g. the glossary) are made by scaffold init, never here
         from ..work.scaffold import init_plan
 

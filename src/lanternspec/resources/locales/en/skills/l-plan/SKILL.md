@@ -14,7 +14,7 @@ Input: `$ARGUMENTS` — `IDEA-014`, or a description.
 ## 0. Read (only as much as needed)
 - `lantern status` — works in progress
 - The <<marker.glance>> of `docs/<<folder.current>>/<<file.project_definition>>` · `<<file.features>>`
-- The idea card (for `IDEA-014`)
+- The idea card (for `IDEA-014`). If it is <<idea_status.blocked.label>>, first give why it is blocked and what would reopen it, and confirm with the person that this has happened
 - `docs/<<folder.rules>>/<<file.unit_log>>` — why people changed the recommendation before
 
 ## 1. Suggest a work unit → the person chooses

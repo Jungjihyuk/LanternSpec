@@ -19,6 +19,7 @@ argument-hint: "<생각 한 줄> | 방금 대화에서 나온 아이디어들"
    ```
    - 같은 아이디어가 있으면 **새로 만들지 않는다.** 그 카드의 `## <<section.raw>>`에 날짜와 함께 덧붙이고(`> …` 인용), 정리본에 새 내용만 보탠다.
    - 같은 아이디어가 <<idea_status.dropped.label>> 상태면, 지난 이유(`dropped_reason`)를 알려 주고 "다시 살릴까요?"를 묻는다. 살리면 `lantern idea status IDEA-NNN "<<idea_status.new>>" --note "다시 나옴"`.
+   - 같은 아이디어가 <<idea_status.blocked.label>> 상태면, 막힌 이유와 다시 볼 조건을 알려 주고 그 조건이 이루어졌는지 묻는다.
 3. **유형 정하기** (`docs/<<folder.templates>>/_meta/enums.yaml`의 `idea_kind`): ✨ 기능 · 🔧 개선 · 🐞 버그 · 🧪 실험 · 🔍 기술 검토. 버그도 여기 모은다 (할 일 후보는 한 곳에).
 4. **만들기 · 채우기:**
    ```bash
@@ -34,6 +35,15 @@ lantern idea status IDEA-014 "<<idea_status.on_hold>>"
 lantern idea status IDEA-014 "<<idea_status.dropped>>" --reason "<이유 한 줄 <<marker.required>>>"
 ```
 버린 아이디어는 지우지 않는다.
+
+## 막힌 아이디어
+원하지만 지금은 못 하는 것(기술 한계 · 실력 · 경험 · 데이터 부족)은 <<idea_status.on_hold>>가 아니라 <<idea_status.blocked>>으로 둔다. <<idea_status.on_hold>>은 그냥 미룬 것이고, <<idea_status.blocked>>은 무엇이 되면 다시 볼지가 있다.
+```bash
+lantern idea status IDEA-014 "<<idea_status.blocked>>" --reason "<무엇 때문에 막혔나 · 시도해 본 것>" --revisit "<무엇이 되면 다시 보나>"
+lantern debt promote IDEA-014 "<익힐 것>"   # 사람의 실력 때문에 막혔을 때만: <<debt_kind.competency.label>> 카드를 만들어 서로 잇는다
+```
+- `--revisit`은 확인할 수 있게 쓴다. 나쁜 예: "나중에 기술이 좋아지면". 좋은 예: "표 구조까지 읽는 HWP 도구가 생기면".
+- 두 값은 사람이 말한 것을 쓴다. 모르면 묻는다. 막힌 목록은 `<<file.moc>>`에서 모아 본다.
 
 <!-- lantern:if idea.capture=ask -->
 ## 대화 중 알아채기 (idea.capture: ask)

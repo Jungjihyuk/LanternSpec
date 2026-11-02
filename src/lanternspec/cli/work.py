@@ -82,6 +82,8 @@ def cmd_idea(a: argparse.Namespace) -> int:
                 if h["status"] == project.enums.value("idea_status", "dropped")
                 else ""
             )
+            if h["blocked_reason"]:
+                extra = " — " + msg("{reason} (look again when: {revisit})", reason=h["blocked_reason"], revisit=h["revisit_when"])
             print(
                 msg(
                     "{id} {title} ({kind} · {status}) score {score}{extra}",
@@ -97,7 +99,7 @@ def cmd_idea(a: argparse.Namespace) -> int:
     if a.action == "status":
         if not a.status:
             raise CliError(msg("lantern idea status IDEA-014 <status>"))
-        p = ideas.idea_status(project, a.arg, a.status, work=a.work, reason=a.reason, note=a.note)
+        p = ideas.idea_status(project, a.arg, a.status, work=a.work, reason=a.reason, note=a.note, revisit=a.revisit)
         print(f"✔ {project.rel(p)} → {a.status}")
         return 0
     return 1
@@ -427,6 +429,7 @@ def register(add: Add) -> None:
     p.add_argument("--work")
     p.add_argument("--reason")
     p.add_argument("--note")
+    p.add_argument("--revisit", help=msg("status: for a blocked idea, what would reopen it"))
     p = add("design", cmd_design, msg("Record design approval"))
     p.add_argument("action", choices=["approve"])
     p.add_argument("work")

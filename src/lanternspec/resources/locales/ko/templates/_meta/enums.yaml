@@ -101,6 +101,7 @@ idea_status:
     검토 중: {icon: 🔍, role: reviewing}
     작업됨: {icon: 📦, role: worked}
     보류: {icon: 🗄, role: on_hold}
+    막힘: {icon: 🚧, role: blocked}
     버림: {icon: ❌, role: dropped}
 
 work_status:

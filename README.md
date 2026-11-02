@@ -231,7 +231,7 @@ There are three kinds of debt.
 | Kind | Meaning |
 |---|---|
 | 🧠 Understanding | you follow it when it's explained, but it isn't yours yet. Reopened if you ask again after resolving it |
-| 🛠 Competency | you understand it but haven't done it yourself. Practised with exercises (`lantern debt promote`) |
+| 🛠 Competency | you understand it but haven't done it yourself, or a blocked idea needs it. Practised with exercises (`lantern debt promote`) |
 | 🧱 Technical | debt left in the code (technical debt) |
 
 ## Design principles and ways of working

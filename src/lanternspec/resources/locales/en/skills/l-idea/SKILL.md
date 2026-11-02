@@ -19,6 +19,7 @@ Input: `$ARGUMENTS` — a thought in one line, or "the ideas from the conversati
    ```
    - If the same idea exists, **don't create a new one.** Add to that card's `## <<section.raw>>` with the date (as a `> …` quote), and add only what is new to the tidy version.
    - If the same idea is <<idea_status.dropped.label>>, give the earlier reason (`dropped_reason`) and ask "bring it back?". If so, `lantern idea status IDEA-NNN "<<idea_status.new>>" --note "came up again"`.
+   - If the same idea is <<idea_status.blocked.label>>, give why it is blocked and what would reopen it, and ask whether that has happened.
 3. **Pick the kind** (`idea_kind` in `docs/<<folder.templates>>/_meta/enums.yaml`): ✨ Feature · 🔧 Improvement · 🐞 Bug · 🧪 Experiment · 🔍 Tech Review. Bugs are gathered here too (task candidates in one place).
 4. **Create · fill:**
    ```bash
@@ -34,6 +35,15 @@ lantern idea status IDEA-014 "<<idea_status.on_hold>>"
 lantern idea status IDEA-014 "<<idea_status.dropped>>" --reason "<one-line reason <<marker.required>>>"
 ```
 Dropped ideas are never deleted.
+
+## Blocked ideas
+What is wanted but not possible now (a technical limit · skill · experience · missing data) is <<idea_status.blocked>>, not <<idea_status.on_hold>>. <<idea_status.on_hold>> is simply put off; <<idea_status.blocked>> says what would reopen it.
+```bash
+lantern idea status IDEA-014 "<<idea_status.blocked>>" --reason "<what blocks it · what was tried>" --revisit "<what would reopen it>"
+lantern debt promote IDEA-014 "<what to learn>"   # only when a person's skill blocks it: makes a <<debt_kind.competency.label>> card, linked both ways
+```
+- Write `--revisit` so it can be checked. Bad: "when the tech gets better". Good: "when an HWP tool reads table structure".
+- Both values come from what the person said; ask if you don't know. `<<file.moc>>` gathers the blocked list.
 
 <!-- lantern:if idea.capture=ask -->
 ## Noticing during the conversation (idea.capture: ask)

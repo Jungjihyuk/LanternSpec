@@ -140,10 +140,19 @@ def build_block(project: Project) -> str:
     ideas = _md_files(project.folder("ideas"))
     if ideas:
         lines += [msg("## 💡 Ideas"), msg("| Idea | Kind | Status |"), "|---|---|---|"]
+        blocked = project.enums["idea_status"].roles.get("blocked")
+        stuck = []
         for p in ideas:
             meta = frontmatter.parse(read(p)).meta
-            lines.append(f"| {wikilink(project, p, nfc(p.stem), table=True)} | {meta.get('kind', '')} | {meta.get('status', '')} |")
+            link = wikilink(project, p, nfc(p.stem), table=True)
+            lines.append(f"| {link} | {meta.get('kind', '')} | {meta.get('status', '')} |")
+            if blocked and meta.get("status") == blocked:
+                cells = [str(meta.get(k) or "").replace("|", "/") for k in ("blocked_reason", "revisit_when")]
+                stuck.append(f"| {link} | {cells[0]} | {cells[1]} |")
         lines.append("")
+        if blocked and stuck:
+            label = project.enums["idea_status"].labelled(blocked)
+            lines += [f"### {label}", msg("| Idea | Why | Look again when |"), "|---|---|---|", *stuck, ""]
 
     # decisions
     adrs = [p for p in _md_files(project.folder("decisions")) if nfc(p.name).startswith("ADR-")]
