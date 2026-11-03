@@ -14,7 +14,7 @@ argument-hint: "[kanban,timeline,domain,trace,debt,sync]"
 | 보기 | 이름 |
 |---|---|
 | 🗂 칸반 | `kanban` |
-| 📅 타임라인 (WBS) | `timeline` |
+| 📅 타임라인 | `timeline` |
 | 🧩 도메인 · 요구사항별 | `domain` |
 | 🔗 추적 (아이디어 → 작업 → 커밋) | `trace` |
 | 📒 부채 현황 | `debt` |

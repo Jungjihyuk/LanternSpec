@@ -26,7 +26,7 @@ from . import obsidian
 VIEWS = ["kanban", "timeline", "domain", "trace", "debt", "sync", "eval"]
 VIEW_TITLE = {  # English; msg() translates them
     "kanban": "🗂 Kanban",
-    "timeline": "📅 Timeline (WBS)",
+    "timeline": "📅 Timeline",
     "domain": "🧩 By domain · requirement",
     "trace": "🔗 Traceability",
     "debt": "📒 Debt Status",
@@ -132,16 +132,15 @@ def _work_bars(project: Project, w: Path, plan_meta: dict) -> list[dict]:
         else:
             basis, start, end = "estimated", cursor, cursor + days
         cursor = end
-        bars.append(
-            {
-                "id": t.id.split("-")[-1],
-                "title": _plain_title(t.title),
-                "start": f"{start:%Y-%m-%d %H:%M}",
-                "end": f"{end:%Y-%m-%d %H:%M}",
-                "state": "done" if t.done else "doing" if t.started else "todo",
-                "basis": basis,
-            }
-        )
+        bar = {
+            "id": t.id.split("-")[-1],
+            "title": _plain_title(t.title),
+            "start": f"{start:%Y-%m-%d %H:%M}",
+            "end": f"{end:%Y-%m-%d %H:%M}",
+            "state": "done" if t.done else "doing" if t.started else "todo",
+            "basis": basis,
+        }
+        bars.append({**bar, "after": t.deps} if t.deps else bar)
     return bars
 
 
@@ -180,10 +179,13 @@ def _timeline_plugin_block(project: Project, rows: list[dict]) -> str:
         "span": msg("whole work"),
         "idea": msg("idea added"),
         "plan": msg("plan started"),
+        "after": msg("comes after"),
+        "late": msg("starts before the task it waits on"),
+        "not_saved": msg("Dates not changed: the task has started, or its line is gone"),
     }
-    text = json.dumps(
-        {"labels": labels, "startField": project.names.attr("start"), "works": rows}, ensure_ascii=False, separators=(",", ":")
-    )
+    names = project.names
+    fields = {role: names.attr(role) for role in ("start", "start_plan", "due_plan")} | {"unknown": names.marker("unknown")}
+    text = json.dumps({"labels": labels, "fields": fields, "works": rows}, ensure_ascii=False, separators=(",", ":"))
     return "```" + obsidian.TIMELINE_BLOCK + "\n" + text.replace("`", "\\u0060") + "\n```"
 
 
@@ -233,7 +235,10 @@ def timeline(project: Project) -> str:
         return msg("_No works._")
     if obsidian.timeline_installed(project):
         chart = _timeline_plugin_block(project, rows)
-        freshness = msg("Checkboxes show at once; dates change when `lantern report` runs again.")
+        freshness = msg(
+            "Drag a task that has not started to plan it. Checkboxes and planned dates show at once; "
+            "the rest when `lantern report` runs again."
+        )
     else:
         chart = _timeline_mermaid(rows)
         freshness = msg("Drawn when `lantern report` ran — after changing tasks, run it again.")

@@ -471,7 +471,7 @@
 "> ⚙️ Generated — `lantern report` · **as of {now_minute}** · views: {items}": {ko: "> ⚙️ 자동 생성 — `lantern report` · **기준: {now_minute}** · 보기: {items}"}
 "## 3-line summary": {ko: "## 3줄 요약"}
 "## Compared with the last report": {ko: "## 지난 보고와 비교"}
-"Checkboxes show at once; dates change when `lantern report` runs again.": {ko: "체크 상태는 바로 반영되고, 날짜는 `lantern report`를 다시 실행할 때 바뀐다."}
+"Drag a task that has not started to plan it. Checkboxes and planned dates show at once; the rest when `lantern report` runs again.": {ko: "시작 전인 할 일은 끌어서 일정을 잡는다. 체크와 예정일은 바로 반영되고, 나머지는 `lantern report`를 다시 실행할 때 바뀐다."}
 "Drawn when `lantern report` ran — after changing tasks, run it again.": {ko: "`lantern report`를 실행한 때의 상태다. 할 일을 바꾼 뒤에는 다시 실행한다."}
 "\n\n> {freshness} Without planned dates it is drawn from task order and size (S=1 day · M=2 days · L=3 days); once actual times exist, from those.": {ko: "\n\n> {freshness} 예정일이 없으면 할 일 순서와 크기(S=1일 · M=2일 · L=3일)로, 실제 시간이 생기면 그 시간으로 그린다."}
 "(no domain)": {ko: "(도메인 없음)"}
@@ -483,7 +483,7 @@
 "# 📊 {today} Report": {ko: "# 📊 {today} 보고"}
 " · ⏳ design awaiting approval {items}": {ko: " · ⏳ 설계 승인 대기 {items}"}
 "🗂 Kanban": {ko: "🗂 칸반"}
-"📅 Timeline (WBS)": {ko: "📅 타임라인 (WBS)"}
+"📅 Timeline": {ko: "📅 타임라인"}
 "🧩 By domain · requirement": {ko: "🧩 도메인 · 요구사항별"}
 "🔗 Traceability": {ko: "🔗 추적"}
 "📒 Debt Status": {ko: "📒 부채 현황"}
@@ -1295,4 +1295,7 @@
 "whole work": {ko: "작업 전체 기간"}
 "idea added": {ko: "아이디어 등록일"}
 "plan started": {ko: "기획 시작일"}
+"comes after": {ko: "선후 관계"}
+"starts before the task it waits on": {ko: "먼저 할 일보다 일찍 시작"}
+"Dates not changed: the task has started, or its line is gone": {ko: "일정을 바꾸지 못했습니다. 이미 시작한 할 일이거나 그 줄이 없습니다"}
 "Done": {ko: "완료"}

@@ -14,7 +14,7 @@ Input: `$ARGUMENTS` — the views to show. If none, the profile default (<<repor
 | View | Name |
 |---|---|
 | 🗂 Kanban | `kanban` |
-| 📅 Timeline (WBS) | `timeline` |
+| 📅 Timeline | `timeline` |
 | 🧩 By domain · requirement | `domain` |
 | 🔗 Trace (idea → work → commit) | `trace` |
 | 📒 Debt status | `debt` |
