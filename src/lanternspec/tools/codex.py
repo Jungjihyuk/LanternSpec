@@ -183,11 +183,11 @@ class Codex(ClaudeHooks, Tool):
             '.codex/hooks.json (에이전트 hook — Codex가 처음 실행할 때 신뢰 여부를 묻는다)'
         """
         merge_json_file(project.root / ".codex" / "hooks.json", lambda d: replace_hook_entries(d, self.hooks()))
-        merged = [msg(".codex/hooks.json (agent hooks — Codex asks whether to trust them on first run)")]
+        merged = [msg(".codex/hooks.json — agent hooks. Codex asks whether to trust them on first run")]
         if mcp:
             path = project.root / ".codex" / "config.toml"
             write(path, add_mcp_server_toml(read(path) if path.exists() else ""))
-            merged.append(f".codex/config.toml (MCP {MCP_NAME})")
+            merged.append(f".codex/config.toml — MCP {MCP_NAME}")
         return merged
 
 

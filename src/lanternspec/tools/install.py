@@ -105,7 +105,8 @@ class InstallReport:
             if len(self.written) > 40:
                 out.append(msg("   … and {value} more", value=len(self.written) - 40))
         if self.merged:
-            out.append(msg("✔ Merged settings: ") + ", ".join(self.merged))
+            out.append(msg("✔ Settings checked in {count} places (your own entries stay):", count=len(self.merged)))
+            out += [f"   {item}" for item in self.merged]
         if self.unchanged:
             out.append(msg("· Unchanged {count}", count=len(self.unchanged)))
         if self.skipped:
@@ -320,7 +321,7 @@ def install(
         ),
     )
     write(agents, text)
-    report.merged.append("AGENTS.md")
+    report.merged.append(msg("AGENTS.md — LanternSpec's rules"))
     level, said = budget.check("AGENTS.md", text, budget.root_budget(chosen), rules.AGENTS_START, rules.AGENTS_END)
     if level != "ok":
         report.warnings.append(f"⚠ {said}")

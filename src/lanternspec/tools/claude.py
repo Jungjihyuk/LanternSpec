@@ -260,12 +260,12 @@ class ClaudeCode(ClaudeHooks, Tool):
             if path.exists() and not imports_agents(read(path)):
                 text = read(path)
                 write(path, f"{line}\n\n{text}" if text.strip() else f"{line}\n")
-                merged.append(f"{rel} ({line})")
+                merged.append(f"{rel} — {line}")
         merge_json_file(project.root / ".claude" / "settings.json", lambda d: replace_hook_entries(d, self.hooks()))
-        merged.append(msg(".claude/settings.json (agent hooks)"))
+        merged.append(msg(".claude/settings.json — agent hooks"))
         if mcp:
             merge_json_file(project.root / ".mcp.json", add_mcp_server)
-            merged.append(f".mcp.json (MCP {MCP_NAME})")
+            merged.append(f".mcp.json — MCP {MCP_NAME}")
         return merged
 
     def read_transcript(self, path: Path) -> list[Turn] | None:

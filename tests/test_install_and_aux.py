@@ -123,6 +123,14 @@ def test_install_merges_rules_and_settings_without_clobbering(repo):
     assert set(agy["lanternspec"]) == {"SessionStart", "PreInvocation", "PostToolUse", "PostInvocation", "Stop"}
 
 
+def test_install_lists_each_settings_file_on_its_own_line(repo):
+    init_project(repo)
+    _, out = repo("install", "--tools", "claude")
+    assert (
+        "✔ 설정 2곳 확인 (직접 넣은 설정은 그대로 둠):\n   AGENTS.md — LanternSpec 규칙\n   .claude/settings.json — 에이전트 hook\n" in out
+    )
+
+
 def test_install_creates_no_claude_md_because_claude_reads_agents_md_itself(repo):
     repo("install")
     assert (repo.root / "AGENTS.md").exists() and not (repo.root / "CLAUDE.md").exists()

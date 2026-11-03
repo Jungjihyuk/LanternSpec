@@ -7,6 +7,9 @@
 
 ## [Unreleased]
 
+### 바뀜
+- **설치 · 업그레이드 출력** — 한 줄로 길게 이어지던 설정 목록을 파일마다 한 줄로 나누고, "설정 합침"을 무슨 일인지 알 수 있는 말로 바꿨다
+
 ## [0.2.9] - 2026-11-03
 
 업그레이드: `uv tool upgrade lanternspec` → 프로젝트마다 `lantern upgrade` (Obsidian 플러그인을 쓰는 보관함에 Lantern Timeline 플러그인을 넣고 Metadata Menu 안내를 끈다. Obsidian을 닫고 실행한 뒤 다시 열면 켜진다) → `lantern report`로 보고서를 다시 만든다

@@ -7,6 +7,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Changed
+- **Install and upgrade output** — the long single line of settings is now one line per file, and "Merged settings" says what actually happens
+
 ## [0.2.9] - 2026-11-03
 
 Upgrade: `uv tool upgrade lanternspec` → `lantern upgrade` in each project (adds the Lantern Timeline plugin to vaults that use Obsidian plugins and turns off a Metadata Menu notice; close Obsidian first, and both apply when it reopens) → `lantern report` to make the report again

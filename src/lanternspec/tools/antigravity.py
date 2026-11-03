@@ -91,14 +91,14 @@ class Antigravity(Tool):
             return data
 
         merge_json_file(project.root / ".agents" / "hooks.json", merge)
-        merged = [msg(".agents/hooks.json (agent hooks — no compaction hook, so saving before compaction is left out)")]
+        merged = [msg(".agents/hooks.json — agent hooks, except saving before compaction (Antigravity has no hook for it)")]
         if mcp:
             write(project.root / PLUGIN_DIR / "plugin.json", json.dumps({"name": "lanternspec"}, indent=2) + "\n")
             merge_json_file(
                 project.root / PLUGIN_DIR / "mcp_config.json",
                 lambda d: {**d, "mcpServers": {**d.get("mcpServers", {}), MCP_NAME: dict(MCP_SERVER)}},
             )
-            merged.append(f"{PLUGIN_DIR}/ (MCP {MCP_NAME})")
+            merged.append(f"{PLUGIN_DIR}/ — MCP {MCP_NAME}")
         return merged
 
     # ---- hooks
