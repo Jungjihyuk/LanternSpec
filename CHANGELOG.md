@@ -7,13 +7,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
-Upgrade: `uv tool upgrade lanternspec` → `lantern upgrade` in each project (adds the Lantern Timeline plugin to vaults that use Obsidian plugins; it turns on when Obsidian reopens) → `lantern report` to make the report again
+Upgrade: `uv tool upgrade lanternspec` → `lantern upgrade` in each project (adds the Lantern Timeline plugin to vaults that use Obsidian plugins and turns off a Metadata Menu notice; close Obsidian first, and both apply when it reopens) → `lantern report` to make the report again
 
 ### Added
-- **A readable timeline plugin** — in projects that use Obsidian plugins, the report's timeline is drawn by the Lantern Timeline plugin: works and tasks on the left, bars by day on the right. Works fold, and clicking a task's name opens its `Tasks.md`. Done · doing · to do · estimated differ by color and dashes, and today and weekends are marked. It only displays for now, so dates can't be dragged yet. Projects without the plugin keep the Mermaid chart
+- **A readable timeline plugin** — in projects that use Obsidian plugins, the report's timeline is drawn by the Lantern Timeline plugin: works and tasks on the left, bars by day on the right. Works fold, and clicking a task's name opens its `Tasks.md`. Color and dashes show each state, today and weekends are marked, and a legend explains the marks. Projects without the plugin keep the Mermaid chart
+- **Plan by dragging on the timeline** — drag a task that has not started to move it, or drag its ends to change its length. The dates are saved in its planned and due attributes on the task line; its actual start and finish times never change
+- **What-comes-after arrows on the timeline** — after relations are drawn as arrows, and turn red when a task that has not started begins before the task it waits on
+- **The timeline follows the tasks file** — changes to a checkbox, the start time or planned dates in `Tasks.md` show without `lantern report`. Actual dates, titles and added or removed tasks show when `lantern report` runs again
+
+### Changed
+- **Timeline title** — the report's `📅 Timeline (WBS)` is now `📅 Timeline`
 
 ### Fixed
 - **Document links in the timeline** — `[[…]]` links on a task line are left out of its name, and works are in number order
+- **Metadata Menu's notice** — the notice asking for DataviewJS, which LanternSpec doesn't need, no longer appears every time Obsidian opens. DataviewJS stays off
 
 ## [0.2.8] - 2026-11-03
 
