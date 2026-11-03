@@ -43,6 +43,9 @@
 .lt-doing { background: var(--interactive-accent); color: var(--text-on-accent); }
 .lt-todo { background: #8a8fa3; }
 .lt-estimated { background: transparent; color: var(--text-muted); border: 1px dashed var(--text-faint); line-height: 16px; }
-.lt-mark { position: absolute; top: 9px; width: 10px; height: 10px; transform: rotate(45deg); background: #e0a93b; }
+.lt-mark { position: absolute; top: 9px; width: 10px; height: 10px; transform: rotate(45deg); }
+.lt-mark-idea { background: #e0a93b; }
+.lt-mark-plan { background: var(--background-primary); border: 2px solid #e0a93b; box-sizing: border-box; }
+.lt-legend .lt-mark { position: static; margin: 0 3px; }
 .lt-today { position: absolute; top: 48px; bottom: 0; width: 2px; background: var(--interactive-accent); opacity: .7; z-index: 2; pointer-events: none; }
 .lt-error { color: var(--text-error); }

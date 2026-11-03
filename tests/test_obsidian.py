@@ -136,6 +136,32 @@ def test_the_timeline_plugin_comes_with_obsidian_plugins_and_reports_then_use_it
     )  # after the task before it, L = 3 days
 
 
+def test_the_timeline_shows_each_task_by_its_checkbox_and_its_actual_days(repo):
+    plugin, report = _timeline_project(repo)
+    tasks = repo.root / "docs/2. 작업/W-001 로그인/할 일.md"
+    tasks.write_text(
+        "- [x] W-001-T01 여러 날 [시작:: 2026-10-29 10:00] [완료:: 2026-11-02 18:00]\n"
+        "- [ ] W-001-T02 체크를 푼 일 [시작:: 2026-10-29 10:00] [완료:: 2026-10-29 11:00]\n"
+        "- [ ] W-001-T03 하는 중 [시작:: 2026-10-30 10:00]\n",
+        encoding="utf-8",
+    )
+    (plugin / "main.js").parent.mkdir(parents=True)
+    (plugin / "main.js").write_text("", encoding="utf-8")
+    repo("report", "--views", "timeline")
+    text = report.read_text(encoding="utf-8")
+    t1, t2, t3 = json.loads(text.split("```lantern-timeline\n")[1].split("\n```")[0])["works"][0]["tasks"]
+    assert (t1["state"], t1["start"], t1["end"]) == ("done", "2026-10-29 10:00", "2026-11-02 18:00")
+    assert (t2["state"], t2["end"]) == ("doing", "2026-10-29 11:00")
+    assert t3["state"] == "doing"
+    assert "`lantern report`를 실행한 때의 상태다" in text
+
+
+def test_the_vault_turns_off_metadata_menus_dataview_notice(repo):
+    init_project(repo)
+    data = json.loads((repo.root / "docs/.obsidian/plugins/metadata-menu/data.json").read_text(encoding="utf-8"))
+    assert data["disableDataviewPrompt"] is True
+
+
 def test_the_timeline_plugin_ships_and_only_draws():
     from lanternspec import resources
 

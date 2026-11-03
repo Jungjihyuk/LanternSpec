@@ -76,12 +76,12 @@ function drawWork(body, work, first, labels, open) {
     const to = Math.max(...work.tasks.map((t) => dayNumber(t.end)));
     place(make(track, "lt-bar lt-summary"), from, to, first);
   }
-  for (const [date, label] of [
-    [work.idea && work.idea.date, work.idea && work.idea.id],
-    [work.created, labels.plan],
+  for (const [date, label, cls] of [
+    [work.idea && work.idea.date, work.idea && `${work.idea.id} · ${labels.idea}`, "lt-mark-idea"],
+    [work.created, labels.plan, "lt-mark-plan"],
   ]) {
     if (!date) continue;
-    const mark = make(track, "lt-mark");
+    const mark = make(track, `lt-mark ${cls}`);
     mark.style.left = `${(dayNumber(date) - first) * DAY_WIDTH + DAY_WIDTH / 2 - 5}px`;
     mark.title = `${label} · ${date}`;
   }
@@ -123,9 +123,18 @@ function render(source, el, openFile) {
   const { first, last } = range(data, today);
   const root = make(el, "lt-root");
   const legend = make(root, "lt-legend");
-  for (const [cls, key] of [["done lt-actual", "done"], ["doing lt-actual", "doing"], ["todo lt-planned", "todo"], ["todo lt-estimated", "estimated"]]) {
+  for (const [cls, key] of [
+    ["lt-swatch lt-bar lt-done lt-actual", "done"],
+    ["lt-swatch lt-bar lt-doing lt-actual", "doing"],
+    ["lt-swatch lt-bar lt-todo lt-planned", "todo"],
+    ["lt-swatch lt-bar lt-todo lt-estimated", "estimated"],
+    ["lt-swatch lt-bar lt-summary", "span"],
+    ["lt-mark lt-mark-idea", "idea"],
+    ["lt-mark lt-mark-plan", "plan"],
+  ]) {
+    if (!data.labels[key]) continue; // a report written by an older version has fewer labels
     const item = make(legend, "lt-legend-item");
-    make(item, `lt-swatch lt-bar lt-${cls}`);
+    make(item, cls);
     make(item, "", data.labels[key]);
   }
 

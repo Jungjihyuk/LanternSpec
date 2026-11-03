@@ -177,7 +177,9 @@ def _timeline_plugin_block(rows: list[dict]) -> str:
         "actual": msg("actual dates"),
         "planned": msg("planned dates"),
         "estimated": msg("estimated from order and size"),
-        "plan": msg("plan"),
+        "span": msg("whole work"),
+        "idea": msg("idea added"),
+        "plan": msg("plan started"),
     }
     text = json.dumps({"labels": labels, "works": rows}, ensure_ascii=False, separators=(",", ":"))
     return "```" + obsidian.TIMELINE_BLOCK + "\n" + text.replace("`", "\\u0060") + "\n```"
@@ -232,8 +234,8 @@ def timeline(project: Project) -> str:
     return (
         chart
         + msg(
-            "\n\n> Without planned dates it is drawn from task order and size (S=1 day · M=2 days · L=3 "
-            "days); once actual times exist, from those."
+            "\n\n> Drawn when `lantern report` ran — after changing tasks, run it again. Without planned dates it is drawn "
+            "from task order and size (S=1 day · M=2 days · L=3 days); once actual times exist, from those."
         )
         + note
     )

@@ -330,7 +330,8 @@ def write_vault(project: Project) -> list[Path]:
     types = _load(obs / "types.json")
     save(obs / "types.json", _dump({**types, "types": {**PROPERTY_TYPES, **(types.get("types") or {})}}))
     mm = _load(obs / "plugins" / "metadata-menu" / "data.json")
-    mm.update({"fileClassAlias": TYPE_FIELD, "classFilesPath": class_dir(project.names)})
+    # the fileClasses only use fixed choice lists, so Metadata Menu's startup notice asking for DataviewJS doesn't apply
+    mm.update({"fileClassAlias": TYPE_FIELD, "classFilesPath": class_dir(project.names), "disableDataviewPrompt": True})
     mm["presetFields"] = [f for f in mm.get("presetFields") or [] if f.get("name") not in _managed_fields(enums)]
     save(obs / "plugins" / "metadata-menu" / "data.json", _dump(mm))
     classes = project.docs / class_dir(project.names)
