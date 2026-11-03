@@ -1,10 +1,14 @@
 // Draws a `lantern-timeline` code block: the JSON that `lantern report` writes (report/views.py).
-// Which dates a task gets is decided there; this file only draws them, and changes nothing in the vault.
-const { Plugin } = require("obsidian");
+// Which dates a task gets is decided there; this file draws them, keeps each task's state in step with its line
+// in the tasks file, and changes nothing in the vault.
+const { MarkdownRenderChild, Plugin, TFile } = require("obsidian");
 
 const DAY_WIDTH = 28;
 const NAME_WIDTH = 300;
 const MS_PER_DAY = 86400000;
+// The task line's format (core/taskfile.py) and the rule for its state (report/views.py), read here again to follow a checkbox at once.
+const TASK_LINE = /^\s*- \[( |x|X)\] (W-\d{3,}-T\d{2,})\b/;
+const ATTR = /\[([^\[\]:]+?)::\s*([^\[\]]*?)\s*\]/g;
 
 // Whole days only, counted in UTC so daylight saving never shifts a bar.
 const dayNumber = (text) => {
@@ -23,6 +27,17 @@ function make(parent, className, text) {
   if (text !== undefined) el.textContent = text;
   parent.appendChild(el);
   return el;
+}
+
+function statesIn(text, startField) {
+  const states = {};
+  for (const line of text.split("\n")) {
+    const task = line.match(TASK_LINE);
+    if (!task) continue;
+    const started = [...line.matchAll(ATTR)].some(([, name, value]) => name === startField && value);
+    states[task[2]] = task[1] !== " " ? "done" : started ? "doing" : "todo";
+  }
+  return states;
 }
 
 function range(data, today) {
@@ -63,12 +78,11 @@ function drawHeader(body, first, last, today) {
 }
 
 function drawWork(body, work, first, labels, open) {
-  const done = work.tasks.filter((t) => t.state === "done").length;
   const row = make(body, "lt-row lt-work");
   const name = make(row, "lt-name");
   const fold = make(name, "lt-fold");
   make(name, "lt-work-name", `${work.id} ${work.name}`).title = `${work.id} ${work.name}`;
-  make(name, "lt-count", work.tasks.length ? `${done}/${work.tasks.length}` : "");
+  const count = make(name, "lt-count");
   const track = make(row, "lt-track");
 
   if (work.tasks.length) {
@@ -92,11 +106,20 @@ function drawWork(body, work, first, labels, open) {
     const link = make(cell, "lt-task-name", `${task.id} ${task.title}`);
     link.title = `${task.id} ${task.title}`;
     link.dataset.file = work.file;
-    const bar = make(make(line, "lt-track"), `lt-bar lt-${task.state} lt-${task.basis}`, task.id);
-    place(bar, dayNumber(task.start), dayNumber(task.end), first);
-    bar.title = `${task.id} ${task.title}\n${task.start} → ${task.end}\n${labels[task.state]} · ${labels[task.basis]}`;
+    task.bar = make(make(line, "lt-track"), "", task.id);
+    place(task.bar, dayNumber(task.start), dayNumber(task.end), first);
     return line;
   });
+
+  const showStates = () => {
+    for (const task of work.tasks) {
+      task.bar.className = `lt-bar lt-${task.state} lt-${task.basis}`;
+      task.bar.title = `${task.id} ${task.title}\n${task.start} → ${task.end}\n${labels[task.state]} · ${labels[task.basis]}`;
+    }
+    const done = work.tasks.filter((t) => t.state === "done").length;
+    count.textContent = work.tasks.length ? `${done}/${work.tasks.length}` : "";
+  };
+  showStates();
 
   const set = (isOpen) => {
     fold.textContent = work.tasks.length ? (isOpen ? "▾" : "▸") : "";
@@ -109,6 +132,11 @@ function drawWork(body, work, first, labels, open) {
     isOpen = !isOpen;
     set(isOpen);
   });
+
+  return (states) => {
+    for (const task of work.tasks) task.state = states[`${work.id}-${task.id}`] || task.state;
+    showStates();
+  };
 }
 
 function render(source, el, openFile) {
@@ -117,7 +145,7 @@ function render(source, el, openFile) {
     data = JSON.parse(source);
   } catch (error) {
     make(el, "lt-error", `Lantern Timeline: ${error.message}`);
-    return;
+    return null;
   }
   const today = todayNumber();
   const { first, last } = range(data, today);
@@ -154,8 +182,9 @@ function render(source, el, openFile) {
   const unfinished = (work) => work.tasks.some((t) => t.state !== "done");
   const latest = [...data.works].reverse().find((w) => w.tasks.length);
   const someOpen = data.works.some(unfinished);
+  const updates = new Map();
   for (const work of data.works) {
-    drawWork(body, work, first, data.labels, someOpen ? unfinished(work) : work === latest);
+    updates.set(work.file, drawWork(body, work, first, data.labels, someOpen ? unfinished(work) : work === latest));
   }
   if (today >= first && today <= last) {
     make(body, "lt-today").style.left = `${NAME_WIDTH + (today - first) * DAY_WIDTH + DAY_WIDTH / 2}px`;
@@ -167,12 +196,40 @@ function render(source, el, openFile) {
     const visible = Math.max(scroller.clientWidth - NAME_WIDTH, 0);
     scroller.scrollLeft = (today - first) * DAY_WIDTH - visible / 2;
   });
+  if (!data.startField) return null; // a report written by an older version says nothing about how to read a task line
+  return { paths: [...updates.keys()], update: (path, text) => updates.get(path)(statesIn(text, data.startField)) };
+}
+
+// Lives as long as the drawn block, so its listener goes away with it.
+class LiveStates extends MarkdownRenderChild {
+  constructor(el, vault, live) {
+    super(el);
+    this.vault = vault;
+    this.live = live;
+  }
+
+  async read(file) {
+    this.live.update(file.path, await this.vault.cachedRead(file));
+  }
+
+  onload() {
+    for (const path of this.live.paths) {
+      const file = this.vault.getAbstractFileByPath(path);
+      if (file instanceof TFile) this.read(file);
+    }
+    this.registerEvent(
+      this.vault.on("modify", (file) => {
+        if (this.live.paths.includes(file.path)) this.read(file);
+      }),
+    );
+  }
 }
 
 module.exports = class LanternTimeline extends Plugin {
   onload() {
     this.registerMarkdownCodeBlockProcessor("lantern-timeline", (source, el, ctx) => {
-      render(source, el, (file) => this.app.workspace.openLinkText(file, ctx.sourcePath));
+      const live = render(source, el, (file) => this.app.workspace.openLinkText(file, ctx.sourcePath));
+      if (live) ctx.addChild(new LiveStates(el, this.app.vault, live));
     });
   }
 };

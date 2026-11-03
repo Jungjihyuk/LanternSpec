@@ -168,7 +168,7 @@ def _timeline_rows(project: Project) -> list[dict]:
     return sorted(rows, key=lambda r: r["id"])
 
 
-def _timeline_plugin_block(rows: list[dict]) -> str:
+def _timeline_plugin_block(project: Project, rows: list[dict]) -> str:
     """Write the rows as the code block the Lantern Timeline plugin draws."""
     labels = {
         "done": msg("Done"),
@@ -181,7 +181,9 @@ def _timeline_plugin_block(rows: list[dict]) -> str:
         "idea": msg("idea added"),
         "plan": msg("plan started"),
     }
-    text = json.dumps({"labels": labels, "works": rows}, ensure_ascii=False, separators=(",", ":"))
+    text = json.dumps(
+        {"labels": labels, "startField": project.names.attr("start"), "works": rows}, ensure_ascii=False, separators=(",", ":")
+    )
     return "```" + obsidian.TIMELINE_BLOCK + "\n" + text.replace("`", "\\u0060") + "\n```"
 
 
@@ -229,13 +231,19 @@ def timeline(project: Project) -> str:
     rows = _timeline_rows(project)
     if not rows:
         return msg("_No works._")
-    chart = _timeline_plugin_block(rows) if obsidian.timeline_installed(project) else _timeline_mermaid(rows)
+    if obsidian.timeline_installed(project):
+        chart = _timeline_plugin_block(project, rows)
+        freshness = msg("Checkboxes show at once; dates change when `lantern report` runs again.")
+    else:
+        chart = _timeline_mermaid(rows)
+        freshness = msg("Drawn when `lantern report` ran — after changing tasks, run it again.")
     note = "" if any(row["tasks"] for row in rows) else msg("\n_No tasks yet, so only the start of each work is shown._")
     return (
         chart
         + msg(
-            "\n\n> Drawn when `lantern report` ran — after changing tasks, run it again. Without planned dates it is drawn "
-            "from task order and size (S=1 day · M=2 days · L=3 days); once actual times exist, from those."
+            "\n\n> {freshness} Without planned dates it is drawn from task order and size (S=1 day · M=2 days · L=3 days); "
+            "once actual times exist, from those.",
+            freshness=freshness,
         )
         + note
     )

@@ -42,7 +42,7 @@
 .lt-done { background: #5b9a6f; }
 .lt-doing { background: var(--interactive-accent); color: var(--text-on-accent); }
 .lt-todo { background: #8a8fa3; }
-.lt-estimated { background: transparent; color: var(--text-muted); border: 1px dashed var(--text-faint); line-height: 16px; }
+.lt-todo.lt-estimated { background: transparent; color: var(--text-muted); border: 1px dashed var(--text-faint); line-height: 16px; }
 .lt-mark { position: absolute; top: 9px; width: 10px; height: 10px; transform: rotate(45deg); }
 .lt-mark-idea { background: #e0a93b; }
 .lt-mark-plan { background: var(--background-primary); border: 2px solid #e0a93b; box-sizing: border-box; }

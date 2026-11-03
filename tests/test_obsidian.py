@@ -101,6 +101,7 @@ def test_the_timeline_plugin_comes_with_obsidian_plugins_and_reports_then_use_it
     repo("report", "--views", "timeline")
     text = report.read_text(encoding="utf-8")  # no plugins in this vault: Mermaid, as anywhere else
     assert not plugin.exists() and "```mermaid" in text and "lantern-timeline" not in text
+    assert "`lantern report`를 실행한 때의 상태다" in text
     assert "T01 설계 :done, w001t01, 2026-10-29 10:00, 2026-10-29 10:30" in text and "[[" not in text.split("```mermaid")[1]
 
     dataview = repo.root / "docs/.obsidian/plugins/dataview"  # upgrade brings it to a vault that already uses plugins
@@ -153,7 +154,8 @@ def test_the_timeline_shows_each_task_by_its_checkbox_and_its_actual_days(repo):
     assert (t1["state"], t1["start"], t1["end"]) == ("done", "2026-10-29 10:00", "2026-11-02 18:00")
     assert (t2["state"], t2["end"]) == ("doing", "2026-10-29 11:00")
     assert t3["state"] == "doing"
-    assert "`lantern report`를 실행한 때의 상태다" in text
+    assert "체크 상태는 바로 반영되고" in text
+    assert json.loads(text.split("```lantern-timeline\n")[1].split("\n```")[0])["startField"] == "시작"
 
 
 def test_the_vault_turns_off_metadata_menus_dataview_notice(repo):
@@ -169,4 +171,4 @@ def test_the_timeline_plugin_ships_and_only_draws():
     assert set(files) == {"main.js", "manifest.json", "styles.css"}
     code = files["main.js"].read_text(encoding="utf-8")
     assert 'registerMarkdownCodeBlockProcessor("lantern-timeline"' in code
-    assert "vault.modify" not in code and "vault.process" not in code and ".vault." not in code  # reading only, for now
+    assert not any(call in code for call in (".modify(", ".process(", ".create(", ".append(", ".delete("))  # reading only, for now
