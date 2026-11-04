@@ -65,12 +65,18 @@ git rev-list --count <head>..origin/<target>     # 0이 아니면 <target>의 �
 <!-- lantern:endif -->
 
 ## 4. 확인받고 올리기
-방향 · 제목 · 본문 · push할 브랜치를 보여 주고 **"올릴까요?"라고 묻는다.** 승인하면:
+먼저 공통 마무리를 돌린다. 문서가 바뀌면(지도 갱신 등) 커밋해서 이번 PR에 함께 넣는다:
+```bash
+lantern close l-pr
+```
+방향 · 제목 · 본문 · push할 브랜치를 보여 주고 **"올릴까요?"라고 묻는다.** 승인하면 (본문을 파일로 남기지 않는다):
 ```bash
 git push -u origin <head>
-gh pr create --base <target> --head <head> --title "<제목>" --body-file <본문 파일>
+gh pr create --base <target> --head <head> --title "<제목>" --body-file - <<'EOF'
+<본문>
+EOF
 ```
-PR 주소를 보여 준다. 본문 파일은 프로젝트 밖의 임시 파일로 두고 커밋하지 않는다.
+PR 주소를 보여 준다.
 
 ## 5. 다음 안내
 GitHub에서 확인하고 합치는 것은 사람이 한다.
@@ -82,8 +88,3 @@ GitHub에서 확인하고 합치는 것은 사람이 한다.
 - Squash로 합치면 제목의 작업 ID로 작업을 찾을 수 있지만, 커밋의 할 일 ID는 사라질 수 있다.
 - 합친 뒤에는: `git checkout <target>` · `git pull origin <target>` · 작업 브랜치 정리 `git branch -d <head>` (Squash로 합쳤으면 합쳐진 것을 확인하고 `-D`)
 <!-- lantern:endif -->
-
-## 공통 마무리
-```bash
-lantern close l-pr
-```

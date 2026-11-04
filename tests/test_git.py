@@ -535,7 +535,7 @@ def test_the_pr_skill_follows_the_branch_flow_and_is_only_called_by_a_person(rep
     init_project(repo)
     text = _skill(repo, "l-pr")
     assert "disable-model-invocation: true" in text
-    assert "git.pr: none" in text and "<<" not in text and "lantern:if" not in text
+    assert "git.pr: none" in text and "<<git" not in text and "lantern:if" not in text
     repo("profile", "set", "git.base=dev", "git.pr=deploy", "git.deploy=release")
     text = _skill(repo, "l-pr")
     assert "`dev` → `release`" in text and "git merge origin/release" in text and "git.pr: none" not in text

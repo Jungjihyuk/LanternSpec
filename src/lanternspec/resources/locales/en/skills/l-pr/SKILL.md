@@ -65,12 +65,18 @@ Find the works that went in from `[W-012]` · `[W-012-T03]` in `git log origin/<
 <!-- lantern:endif -->
 
 ## 4. Confirm, then send
-Show the direction · title · body · branch to push and **ask "Send it?"** Once approved:
+First run the common wrap-up. If it changes documents (the map and so on), commit them so they go in this PR:
+```bash
+lantern close l-pr
+```
+Show the direction · title · body · branch to push and **ask "Send it?"** Once approved (no body file is left behind):
 ```bash
 git push -u origin <head>
-gh pr create --base <target> --head <head> --title "<title>" --body-file <body file>
+gh pr create --base <target> --head <head> --title "<title>" --body-file - <<'EOF'
+<body>
+EOF
 ```
-Show the PR's address. Keep the body file as a temporary file outside the project and don't commit it.
+Show the PR's address.
 
 ## 5. What's next
 Reviewing and merging on GitHub is up to the person.
@@ -82,8 +88,3 @@ Reviewing and merging on GitHub is up to the person.
 - After a squash merge the work ID in the title still finds the work, but task IDs in the commits may be lost.
 - After merging: `git checkout <target>` · `git pull origin <target>` · clean up the work branch with `git branch -d <head>` (after a squash merge, confirm it went in, then `-D`)
 <!-- lantern:endif -->
-
-## Common wrap-up
-```bash
-lantern close l-pr
-```
