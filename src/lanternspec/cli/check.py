@@ -171,8 +171,28 @@ def cmd_lint(a: argparse.Namespace) -> int:
     return 1 if failed else 0
 
 
+def cmd_check_pr(a: argparse.Namespace) -> int:
+    """`lantern check-pr` — check a pull request's title and commits for work IDs (CI runs it)."""
+    from ..check.pr_check import pr_problems
+
+    project = _p()
+    problems = pr_problems(project, a.title, a.range)
+    if not problems:
+        print(msg("✔ PR title and commits have work IDs"))
+        return 0
+    block = project.profile.get("git.hooks") == "block"
+    for p in problems:
+        print(f"{'✖' if block else '⚠'} {p}")
+    if not block:
+        print(msg("(warning only — to fail the check, lantern.yaml git.hooks: block)"))
+    return 1 if block else 0
+
+
 def register(add: Add) -> None:
     """Register the check and template commands."""
+    p = add("check-pr", cmd_check_pr, msg("Check a pull request's title and commits for work IDs (for CI)"))
+    p.add_argument("--title", required=True)
+    p.add_argument("--range", required=True, help=msg("The PR's commits, like base..head"))
     p = add("check", cmd_check, msg("Check document formats"))
     p.add_argument("paths", nargs="*")
     p.add_argument("--changed", action="store_true")

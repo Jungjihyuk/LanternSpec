@@ -20,12 +20,12 @@ from dataclasses import dataclass, field
 
 import yaml
 
-from .. import __version__
+from .. import __version__, resources
 from ..check import budget
 from ..check.check_docs import version_gap
 from ..core import messages, principles, state
 from ..core.messages import msg
-from ..core.project import Project, read, write
+from ..core.project import Project, git, read, write
 from ..report import obsidian, principles_doc, sections_doc
 from ..work.scaffold import base_template_names, base_template_text, project_template_path, template_version
 from . import parts as parts_mod
@@ -34,6 +34,8 @@ from . import rules, skills
 from .base import Tool
 
 CI_PATH = ".github/workflows/lanternspec.yml"
+PR_TEMPLATE_PATH = ".github/pull_request_template.md"
+COMMIT_TEMPLATE_PATH = ".gitmessage"
 CI_HEAD = """# {note}
 name: lanternspec
 on: [push, pull_request]
@@ -57,6 +59,12 @@ CI_CHECKS = """      - name: {check}
         if: hashFiles('lantern.yaml') != ''
       - name: {scan}
         run: lantern scan --tests --ci
+      - name: {pr}
+        if: github.event_name == 'pull_request' && !endsWith(github.actor, '[bot]') && hashFiles('lantern.yaml') != ''
+        env:
+          PR_TITLE: ${{{{ github.event.pull_request.title }}}}
+          PR_RANGE: ${{{{ github.event.pull_request.base.sha }}}}..${{{{ github.event.pull_request.head.sha }}}}
+        run: lantern check-pr --title "$PR_TITLE" --range "$PR_RANGE"
 """
 
 
@@ -222,8 +230,62 @@ def ci_workflow(project: Project) -> str:
         check=msg("Check formats (lantern check)"),
         lint=msg("Lint · type check (lantern lint — each part's commands, or build.lint · build.typecheck)"),
         scan=msg("Doc-code mismatches + acceptance tests (lantern scan --tests)"),
+        pr=msg("Work IDs in the PR title and commits (lantern check-pr)"),
     )
     return head + prepare + checks
+
+
+def write_pr_template(project: Project) -> str:
+    """Write a PR template for GitHub once, leaving any template the project already has alone.
+
+    It belongs to the project after that: upgrades don't touch it.
+
+    Args:
+        project: The project.
+
+    Returns:
+        What happened, as a message.
+
+    Example:
+        >>> write_pr_template(project)  # doctest: +SKIP
+        '✔ .github/pull_request_template.md'
+    """
+    for folder in (".github", ".", "docs"):
+        base = project.root / folder
+        for name in ("pull_request_template.md", "PULL_REQUEST_TEMPLATE.md", "PULL_REQUEST_TEMPLATE"):
+            if (base / name).exists():
+                return msg("ℹ Keeping the PR template already there: {path}", path=project.rel(base / name))
+    text = resources.read_text(f"locales/{project.profile.language}/github/pull_request_template.md")
+    write(project.root / PR_TEMPLATE_PATH, text)
+    return msg("✔ {path} — GitHub uses it once it is in the default branch", path=PR_TEMPLATE_PATH)
+
+
+def write_commit_template(project: Project) -> str:
+    """Write a commit message template once and point this clone's git at it.
+
+    The file belongs to the project after that, and an edited one is kept. The git setting
+    is per clone, so each person runs this once.
+
+    Args:
+        project: The project.
+
+    Returns:
+        What happened, as a message.
+
+    Example:
+        >>> write_commit_template(project)  # doctest: +SKIP
+        '✔ .gitmessage — git commit이 이 양식으로 열립니다'
+    """
+    path = project.root / COMMIT_TEMPLATE_PATH
+    existed = path.exists()
+    if not existed:
+        write(path, "\n" + resources.read_text(f"locales/{project.profile.language}/git/gitmessage.txt"))
+    r = git(["config", "commit.template", COMMIT_TEMPLATE_PATH], project.root)
+    if r.returncode != 0:
+        raise ValueError(r.stderr.strip())
+    if existed:
+        return msg("ℹ Keeping the commit template already there: {path}", path=COMMIT_TEMPLATE_PATH)
+    return msg("✔ {path} — git commit opens with this format", path=COMMIT_TEMPLATE_PATH)
 
 
 def generated_files(project: Project, tools: list[Tool], ci: bool) -> dict[str, str]:

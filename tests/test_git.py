@@ -544,3 +544,76 @@ def test_the_pr_skill_follows_the_branch_flow_and_is_only_called_by_a_person(rep
     assert "작업 브랜치 → `dev`" in text and "git merge origin/" not in text
     assert "gh pr create" in text and "gh pr merge" not in text
     assert "l-pr" in _skill(repo, "l-pr", "codex")
+
+
+def test_check_pr_looks_at_the_title_and_the_code_commits(repo):
+    init_project(repo)
+    repo.git("add", "-A")
+    commit(repo, "chore: 준비", check=True)
+    repo.git("checkout", "-q", "-b", "work/W-001")
+    write(repo, "src/a.py", "a = 1\n")
+    repo.git("add", "src")
+    commit(repo, "feat: 번호 없는 코드")
+    write(repo, "docs/note.md", "메모\n")
+    repo.git("add", "docs/note.md")
+    commit(repo, "docs: 문서는 번호가 없어도 된다")
+    _, out = repo("check-pr", "--title", "로그인", "--range", "main..HEAD")
+    assert "PR 제목" in out and "번호 없는 코드" in out and "문서는 번호가" not in out and "경고만" in out
+    write(repo, "src/b.py", "b = 1\n")
+    repo.git("add", "src")
+    commit(repo, "feat: 번호 있음 [W-001-T01]")
+    repo.git("rebase", "-q", "--exec", "true", "main")
+    _, out = repo("check-pr", "--title", "로그인 [W-001]", "--range", "HEAD~1..HEAD")
+    assert "✔" in out
+    # git.hooks: block fails the check
+    repo("profile", "set", "git.hooks=block")
+    code, out = repo("check-pr", "--title", "로그인", "--range", "HEAD~1..HEAD", ok=False)
+    assert code == 1 and "✖" in out
+
+
+def test_the_workflow_runs_check_pr_on_pull_requests_only(repo):
+    import yaml
+
+    init_project(repo)
+    repo("install", "--ci")
+    wf = yaml.safe_load((repo.root / ".github/workflows/lanternspec.yml").read_text(encoding="utf-8"))
+    step = next(s for s in wf["jobs"]["docs-and-acceptance"]["steps"] if "check-pr" in s.get("run", ""))
+    assert "pull_request" in step["if"] and "[bot]" in step["if"]
+    assert step["env"]["PR_TITLE"] == "${{ github.event.pull_request.title }}"  # never pasted into the shell
+    assert "$PR_TITLE" in step["run"] and "github.event" not in step["run"]
+
+
+def test_the_pr_template_is_written_once_and_shared_with_the_skill(repo):
+    init_project(repo)
+    tpl = repo.root / ".github/pull_request_template.md"
+    assert not tpl.exists()
+    repo("install", "--pr-template")
+    assert "## To Reviewer" in tpl.read_text(encoding="utf-8") and "Closes #" in tpl.read_text(encoding="utf-8")
+    assert "## To Reviewer" in _skill(repo, "l-pr") and "<<pr.template>>" not in _skill(repo, "l-pr")
+    tpl.write_text("우리 양식\n", encoding="utf-8")
+    _, out = repo("install", "--pr-template")
+    assert "그대로" in out and tpl.read_text(encoding="utf-8") == "우리 양식\n"
+    _, out = repo("upgrade")
+    assert tpl.read_text(encoding="utf-8") == "우리 양식\n"
+
+
+def test_the_commit_template_is_written_once_and_guides_a_real_commit(repo, tmp_path):
+    init_project(repo)
+    repo("install", "--commit-template")
+    tpl = repo.root / ".gitmessage"
+    assert "enhance" in tpl.read_text(encoding="utf-8")
+    assert repo.git("config", "commit.template").stdout.strip() == ".gitmessage"
+    build = _skill(repo, "l-build")
+    assert "enhance" in build and "<<commit" not in build
+    assert "Co-Authored-By" in build  # the rule that keeps AI marks out of commit messages
+    # the comments go away and an issue line stays
+    editor = tmp_path / "editor.sh"
+    editor.write_text('#!/bin/sh\n{ printf "feat: Add login [W-001-T01]\\n\\nRefs #12\\n"; cat "$1"; } > "$1.new" && mv "$1.new" "$1"\n')
+    editor.chmod(0o755)
+    repo.git("add", "-A")
+    sh(repo.root, "env", f"GIT_EDITOR={editor}", "git", "commit", "-q")
+    assert repo.git("log", "-1", "--format=%B").stdout.strip() == "feat: Add login [W-001-T01]\n\nRefs #12"
+    # an edited template stays
+    tpl.write_text("# 우리 양식\n", encoding="utf-8")
+    _, out = repo("install", "--commit-template")
+    assert "그대로" in out and tpl.read_text(encoding="utf-8") == "# 우리 양식\n"

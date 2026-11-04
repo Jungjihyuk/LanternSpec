@@ -152,7 +152,9 @@ Ask the three `<<marker.required>>` blanks of `docs/<<folder.current>>/<<file.pr
 For a team, ask once more: "Block from the start?" → if yes, `lantern profile set git.hooks=block`.
 (Structural mistakes — the document storage rules — are always blocked, whatever this value is.)
 
-If `git remote -v` shows github.com, ask next: "Check on GitHub too? On every push, GitHub runs the document checks · lint · type check · tests for you (CI)." → if yes, `lantern install --ci`.
+If `git remote -v` shows github.com, ask next: "Check on GitHub too? On every push, GitHub runs the document checks · lint · type check · tests for you and on PRs it also checks the title and commits for work IDs (CI)." → if yes, `lantern install --ci`.
+Then ask: "Add a commit message template? It shows the type and work ID format when you run `git commit` yourself." → if yes, `lantern install --commit-template` (each person needs to run it once).
+If the branch flow is C, also ask: "Add a template for PRs opened on the GitHub site?" → if yes, `lantern install --pr-template` (a template already there stays).
 The workflow includes the setup steps for this project's languages (installing uv · pnpm …). To turn it off later, `lantern install --no-ci`.
 
 Then ask: "Download the recommended plugins for viewing documents in Obsidian (Dataview · Metadata Menu)? The menus for choosing statuses and kinds, and the task display, work right away." (recommended: yes) → if yes, `lantern obsidian plugins`.

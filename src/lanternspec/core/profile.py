@@ -566,11 +566,11 @@ def render(data: dict[str, Any]) -> str:
             s=s(d["git"]["hooks"]),
         ),
         msg("  base: {s}                 # the base branch work branches merge into (main | dev …)", s=s(d["git"]["base"])),
-        msg(
-            "  branch: {s}        # work branch name. {{id}} = W-012, other blanks are yours: "
-            "feature/{{id}}-{{slug}} · {{type}}/{{ticket}}",
-            s=s(d["git"]["branch"]),
-        ),
+        msg("  # Work branch name. Default work/{{id}} makes work/W-012 by itself ({{id}} = the work's ID)"),
+        msg("  # To use another rule, change it. For example:"),
+        msg("  #   feature/{{id}}         → feature/W-012"),
+        msg("  #   feature/{{id}}-{{slug}}  → feature/W-012-login  (a blank other than {{id}}, like {{slug}}, is named for each work)"),
+        f"  branch: {s(d['git']['branch'])}",
         msg("  pr: {s}                   # none | deploy (base → deploy branch by PR) | work (each work by PR)", s=s(d["git"]["pr"])),
         msg("  deploy: {s}               # the branch that goes out, for pr: deploy", s=s(d["git"]["deploy"])),
     ]

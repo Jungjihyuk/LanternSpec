@@ -214,6 +214,37 @@ def _content_result(project: Project, problems: list[str], label: str) -> int:
     return 0
 
 
+def message_problems(message: str, has_code: bool, where: str | None = None) -> list[str]:
+    """Check one commit message: code needs a task ID, and one commit should hold one task.
+
+    Args:
+        message: The whole commit message.
+        has_code: Whether the commit changes code.
+        where: How to call the commit in the message; "code commit" when None.
+
+    Returns:
+        What is wrong, one line per problem.
+
+    Example:
+        >>> message_problems("feat: 로그인 [W-001-T02]", True)
+        []
+        >>> len(message_problems("feat: 로그인", True))
+        1
+    """
+    problems: list[str] = []
+    if has_code and not ID_RE.search(message):
+        problems.append(
+            msg(
+                "Commit message: the {where} message has no task ID — add one at the end, like [W-001-T02]",
+                where=where or msg("code commit"),
+            )
+        )
+    tasks = sorted(set(TASK_RE.findall(message)))
+    if len(tasks) > 1:
+        problems.append(msg("Commit message: several tasks in one commit ({items}) — one task = one commit", items=", ".join(tasks)))
+    return problems
+
+
 def commit_msg(project: Project, msg_file: str) -> int:
     """Check a commit message: code commits need a task ID, and one commit should hold one task.
 
@@ -241,14 +272,8 @@ def commit_msg(project: Project, msg_file: str) -> int:
     from ..report.scan import is_doc_path
 
     code = staged if docs_branch else [f for f in staged if not is_doc_path(project, f)]
-    problems: list[str] = []
-    if code and not ID_RE.search(message):
-        where = msg("the docs branch") if docs_branch else msg("code commit")
-        problems.append(msg("Commit message: the {where} message has no task ID — add one at the end, like [W-001-T02]", where=where))
-    tasks = sorted(set(TASK_RE.findall(message)))
-    if len(tasks) > 1:
-        problems.append(msg("Commit message: several tasks in one commit ({items}) — one task = one commit", items=", ".join(tasks)))
-    return _content_result(project, problems, msg("commit message check"))
+    where = msg("the docs branch") if docs_branch else msg("code commit")
+    return _content_result(project, message_problems(message, bool(code), where), msg("commit message check"))
 
 
 def structure_problems(project: Project, cwd: Path | None = None, staged: list[str] | None = None) -> list[str]:

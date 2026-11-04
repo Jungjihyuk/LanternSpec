@@ -198,6 +198,8 @@ def body_context(profile: Profile, tool: str, enums: enums_mod.Enums | None = No
     ctx: dict[str, Any] = dict((enums or enums_mod.load(language=profile.language)).context())
     ctx.update(profile.names.context())  # <<folder.current>> · <<file.plan>> · <<section.now>> — names come from names.yaml only
     ctx.update(_flatten(data))
+    ctx["pr.template"] = resources.read_text(f"locales/{profile.language}/github/pull_request_template.md").strip()
+    ctx["commit.template"] = resources.read_text(f"locales/{profile.language}/git/gitmessage.txt").strip()
     ctx["tool"] = tool
     ctx["knowledge"] = bool(profile.knowledge)
     ctx["team"] = profile.team

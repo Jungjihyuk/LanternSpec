@@ -153,7 +153,9 @@ lantern scaffold init --plan        # 만들 폴더 · 문서 목록 (아직 아
 2인 이상(team)이면 한 번 더: "처음부터 막을까요?" → 예면 `lantern profile set git.hooks=block`.
 (구조 실수 — 문서 저장 방식 규칙 — 는 이 값과 상관없이 항상 막는다.)
 
-`git remote -v`에 github.com이 있으면 이어서 묻는다: "GitHub에서도 검사할까요? push할 때마다 GitHub이 양식 검사 · 린트 · 타입 검사 · 테스트를 대신 돌려요 (CI)." → 예면 `lantern install --ci`.
+`git remote -v`에 github.com이 있으면 이어서 묻는다: "GitHub에서도 검사할까요? push할 때마다 GitHub이 양식 검사 · 린트 · 타입 검사 · 테스트를 대신 돌리고, PR에서는 제목과 커밋에 작업 ID가 있는지도 봐요 (CI)." → 예면 `lantern install --ci`.
+이어서 묻는다: "커밋 메시지 양식을 넣어 둘까요? `git commit`을 직접 할 때 type과 작업 ID 형식을 보여 줘요." → 예면 `lantern install --commit-template` (설정은 사람마다 한 번씩 필요하다).
+브랜치 방식이 C이면 이어서 묻는다: "GitHub 화면에서 PR을 만들 때 쓸 양식도 넣어 둘까요?" → 예면 `lantern install --pr-template` (이미 양식이 있으면 그대로 둔다).
 워크플로에 이 프로젝트 언어의 도구 준비 단계(uv · pnpm 설치 등)가 함께 들어간다. 나중에 끄려면 `lantern install --no-ci`.
 
 이어서 묻는다: "문서를 Obsidian으로 볼 때 쓰는 권장 플러그인(Dataview · Metadata Menu)을 같이 받아 둘까요? 상태 · 종류를 고르는 메뉴와 할 일 표시가 바로 동작해요." (추천: 예) → 예면 `lantern obsidian plugins`.

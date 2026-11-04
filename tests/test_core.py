@@ -172,7 +172,8 @@ def test_the_branch_settings_are_explained_in_lantern_yaml(repo):
     text = (repo.root / "lantern.yaml").read_text(encoding="utf-8")
     for line in ("branch: work/{id}", "pr: none", "deploy: main"):
         assert line in text
-    assert "feature/{id}-{slug}" in text
+    assert "feature/{id}-{slug}  → feature/W-012-login" in text
+    assert yaml.safe_load(text)["git"]["branch"] == "work/{id}"
     # a rule starting with a blank must survive the trip through YAML
     repo("profile", "set", "git.branch={type}/{ticket}")
     assert load(repo.root).get("git.branch") == "{type}/{ticket}"

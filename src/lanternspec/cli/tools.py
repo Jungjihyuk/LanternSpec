@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 def cmd_install(a: argparse.Namespace) -> int:
     """`lantern install` — install skills, rules and hooks for the chosen AI tools, then show the next steps."""
-    from ..tools.install import install
+    from ..tools.install import install, write_commit_template, write_pr_template
 
     project = _p()
     rep = install(
@@ -30,6 +30,10 @@ def cmd_install(a: argparse.Namespace) -> int:
         language=a.language,
     )
     _print(rep.lines())
+    if a.pr_template:
+        print(write_pr_template(project))
+    if a.commit_template:
+        print(write_commit_template(project))
     _print(_next_steps(project))
     return 0
 
@@ -167,6 +171,8 @@ def register(add: Add) -> None:
     p.add_argument("--force", action="store_true", help=msg("Overwrite files the user edited too"))
     p.add_argument("--mcp", action="store_true", help=msg("Also register the knowledge connector MCP server (lantern mcp)"))
     p.add_argument("--language", choices=languages(), help=msg("Language of skills · rules · documents (first install only, default ko)"))
+    p.add_argument("--pr-template", action="store_true", help=msg("Also add a PR template for GitHub (kept if one exists)"))
+    p.add_argument("--commit-template", action="store_true", help=msg("Also add a commit message template and set it for this clone"))
     ci = p.add_mutually_exclusive_group()
     ci.add_argument(
         "--ci",

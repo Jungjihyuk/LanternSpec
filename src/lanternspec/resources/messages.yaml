@@ -149,6 +149,18 @@
 "branch: start from this branch instead of the base branch": {ko: "branch: 기준 브랜치 대신 이 브랜치에서 시작"}
 "branch: use this branch name and keep it in the plan": {ko: "branch: 이 브랜치 이름을 쓰고 기획 문서에 적어 둠"}
 "The work's branch name, for a branch rule with blanks": {ko: "작업의 브랜치 이름 — 브랜치 규칙에 채울 칸이 있을 때"}
+"PR title: no work ID — add one at the end, like [W-012]": {ko: "PR 제목: 작업 ID가 없습니다 — [W-012]처럼 끝에 붙이세요"}
+"✔ PR title and commits have work IDs": {ko: "✔ PR 제목과 커밋에 작업 ID가 있습니다"}
+"(warning only — to fail the check, lantern.yaml git.hooks: block)": {ko: "(경고만 합니다 — 검사를 실패시키려면 lantern.yaml git.hooks: block)"}
+"Check a pull request's title and commits for work IDs (for CI)": {ko: "PR 제목과 커밋의 작업 ID 검사 (CI용)"}
+"The PR's commits, like base..head": {ko: "PR의 커밋 범위 (예: base..head)"}
+"Work IDs in the PR title and commits (lantern check-pr)": {ko: "PR 제목과 커밋의 작업 ID (lantern check-pr)"}
+"Also add a PR template for GitHub (kept if one exists)": {ko: "GitHub용 PR 양식도 추가 (이미 있으면 그대로 둠)"}
+"Also add a commit message template and set it for this clone": {ko: "커밋 메시지 양식도 추가하고 이 저장소에 설정"}
+"ℹ Keeping the commit template already there: {path}": {ko: "ℹ 이미 있는 커밋 양식을 그대로 둡니다: {path}"}
+"✔ {path} — git commit opens with this format": {ko: "✔ {path} — git commit이 이 양식으로 열립니다"}
+"ℹ Keeping the PR template already there: {path}": {ko: "ℹ 이미 있는 PR 양식을 그대로 둡니다: {path}"}
+"✔ {path} — GitHub uses it once it is in the default branch": {ko: "✔ {path} — 기본 브랜치에 합쳐지면 GitHub가 씁니다"}
 "Branch {name} doesn't follow the rule {rule} (lantern.yaml git.branch)": {ko: "브랜치 {name}은 규칙 {rule}을 따르지 않습니다 (lantern.yaml git.branch)"}
 "{name} can't be a branch name": {ko: "{name}은 브랜치 이름으로 쓸 수 없습니다"}
 "The branch rule {rule} has blanks to fill — choose a name: `lantern work branch {wid} --name <name>`": {ko: "브랜치 규칙 {rule}에 채울 칸이 있습니다 — 이름을 정하세요: `lantern work branch {wid} --name <이름>`"}
@@ -159,7 +171,10 @@
 "git.branch: a branch name can't have spaces or any of ~ ^ : ? * [ \\": {ko: "git.branch: 브랜치 이름에는 공백과 ~ ^ : ? * [ \\ 를 쓸 수 없습니다"}
 "⚠ git.branch has no {{id}}: works on different branches may get the same number": {ko: "⚠ git.branch에 {{id}}가 없습니다: 다른 브랜치에서 같은 작업 번호를 받을 수 있습니다"}
 'ℹ New setting: git.branch (work branch name rule). To use it: lantern profile set git.branch="feature/{{id}}-{{slug}}"': {ko: 'ℹ 새 설정: git.branch (작업 브랜치 이름 규칙). 쓰려면 lantern profile set git.branch="feature/{{id}}-{{slug}}"'}
-"  branch: {s}        # work branch name. {{id}} = W-012, other blanks are yours: feature/{{id}}-{{slug}} · {{type}}/{{ticket}}": {ko: "  branch: {s}        # 작업 브랜치 이름. {{id}} = W-012, 다른 칸은 직접 정함: feature/{{id}}-{{slug}} · {{type}}/{{ticket}}"}
+"  # Work branch name. Default work/{{id}} makes work/W-012 by itself ({{id}} = the work's ID)": {ko: "  # 작업 브랜치 이름. 기본값 work/{{id}}는 work/W-012처럼 자동으로 만들어진다 ({{id}} = 작업 ID)"}
+"  # To use another rule, change it. For example:": {ko: "  # 다른 규칙을 쓰려면 바꾼다. 예:"}
+"  #   feature/{{id}}         → feature/W-012": {ko: "  #   feature/{{id}}         → feature/W-012"}
+"  #   feature/{{id}}-{{slug}}  → feature/W-012-login  (a blank other than {{id}}, like {{slug}}, is named for each work)": {ko: "  #   feature/{{id}}-{{slug}}  → feature/W-012-login  ({{slug}}처럼 {{id}}가 아닌 칸은 작업마다 이름을 정한다)"}
 "  pr: {s}                   # none | deploy (base → deploy branch by PR) | work (each work by PR)": {ko: "  pr: {s}                   # none(PR 없음) | deploy(배포 때 기준 → 배포 브랜치 PR) | work(작업마다 PR)"}
 "  deploy: {s}               # the branch that goes out, for pr: deploy": {ko: "  deploy: {s}               # 배포 브랜치 (pr: deploy일 때)"}
 "{sum}/{count} done": {ko: "{sum}/{count} 완료"}

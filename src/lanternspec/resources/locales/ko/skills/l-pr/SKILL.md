@@ -45,21 +45,12 @@ git rev-list --count <head>..origin/<target>     # 0이 아니면 <target>의 �
 
 - 저장소에 PR 양식(`.github/pull_request_template.md` 등)이 있으면 그 양식을 따르고 "연결 작업"만 더한다. 사내 규칙이 있으면 그것이 먼저다.
 - **제목:** `[TYPE] 제목 [W-012]` — TYPE은 FEAT · FIX · DOCS · REFACTOR · REMOVE · CHORE · TEST · ENHANCE. 작업 ID를 넣어야 Squash로 합쳐도 작업을 찾을 수 있다. 작업이 여럿이면 `[DEPLOY] 제목 [W-012 · W-013]`.
-- **본문:**
-  ```markdown
-  ## 개요
-  무엇을 왜 바꿨나
-
-  ## 바뀐 것
-  - 항목별로 짧게
-
-  ## 리뷰어에게
-  - 설계 결정 · 위험 · 꼭 볼 곳
-
-  ## 연결 작업
-  - W-012 작업 이름 — 수락 기준과 확인 결과
-  ```
+- **본문:** 아래 형식으로 쓴다.
+```markdown
+<<pr.template>>
+```
 - 없는 내용은 지어내지 않는다. 확인하지 못한 수락 기준은 그렇다고 적는다.
+- 제목과 본문에 AI가 작업했다는 표시(`Generated with …` · `Co-Authored-By` 등)를 넣지 않는다.
 <!-- lantern:if docs.remote=local -->
 - 문서를 원격에 올리지 않는 프로젝트다. 문서 내용을 옮겨 적거나 경로를 링크하지 말고, 작업 ID와 필요한 요약만 쓴다.
 <!-- lantern:endif -->

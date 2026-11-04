@@ -45,21 +45,12 @@ Find the works that went in from `[W-012]` · `[W-012-T03]` in `git log origin/<
 
 - If the repository has a PR template (`.github/pull_request_template.md` and so on), follow it and only add "Linked works". Company rules come first.
 - **Title:** `[TYPE] title [W-012]` — TYPE is FEAT · FIX · DOCS · REFACTOR · REMOVE · CHORE · TEST · ENHANCE. The work ID keeps the work findable even after a squash merge. With several works, `[DEPLOY] title [W-012 · W-013]`.
-- **Body:**
-  ```markdown
-  ## Overview
-  What changed and why
-
-  ## Changes
-  - Short, item by item
-
-  ## To the reviewer
-  - Design decisions · risks · where to look closely
-
-  ## Linked works
-  - W-012 work name — acceptance criteria and how they were checked
-  ```
+- **Body:** use this format.
+```markdown
+<<pr.template>>
+```
 - Don't make up what isn't there. If an acceptance criterion wasn't checked, say so.
+- Don't put any mark that AI did the work (`Generated with …` · `Co-Authored-By` and so on) in the title or body.
 <!-- lantern:if docs.remote=local -->
 - This project keeps documents off the remote. Don't copy their content or link their paths; write only work IDs and the summary needed.
 <!-- lantern:endif -->

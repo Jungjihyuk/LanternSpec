@@ -1,0 +1,15 @@
+# Format: type: what was done [W-012-T03]
+#   - [W-012-T03] at the end ties this commit to its task
+#   - Start with a capital letter, no period, keep it short
+#   - Pick one type:
+#       feat     new feature, new function · class · API
+#       fix      bug fix, error handling, wrong logic
+#       docs     only documents or comments
+#       refactor structure or names, same behavior
+#       remove   removing files or code
+#       chore    build settings, packages, environment settings
+#       test     adding or changing tests
+#       enhance  making an existing feature faster or lighter
+#
+# If there is an issue, leave a blank line and write: Refs #12
+#   (git removes lines starting with #, so don't write just #12)
