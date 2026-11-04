@@ -521,3 +521,26 @@ def test_the_build_skill_follows_the_branch_settings(repo):
     repo("profile", "set", "git.pr=work", "git.branch=feature/{id}")
     build = next(t for rel, t in generate(load(repo.root), [get("claude")]).items() if "l-build/" in rel)
     assert "머지는 하지 않는다" in build and "feature/{id}" in build
+
+
+def _skill(repo, name, tool="claude"):
+    from lanternspec.core.profile import load
+    from lanternspec.tools import get
+    from lanternspec.tools.skills import generate
+
+    return next(t for rel, t in generate(load(repo.root), [get(tool)]).items() if f"{name}/SKILL.md" in rel)
+
+
+def test_the_pr_skill_follows_the_branch_flow_and_is_only_called_by_a_person(repo):
+    init_project(repo)
+    text = _skill(repo, "l-pr")
+    assert "disable-model-invocation: true" in text
+    assert "git.pr: none" in text and "<<" not in text and "lantern:if" not in text
+    repo("profile", "set", "git.base=dev", "git.pr=deploy", "git.deploy=release")
+    text = _skill(repo, "l-pr")
+    assert "`dev` → `release`" in text and "git merge origin/release" in text and "git.pr: none" not in text
+    repo("profile", "set", "git.pr=work")
+    text = _skill(repo, "l-pr")
+    assert "작업 브랜치 → `dev`" in text and "git merge origin/" not in text
+    assert "gh pr create" in text and "gh pr merge" not in text
+    assert "l-pr" in _skill(repo, "l-pr", "codex")

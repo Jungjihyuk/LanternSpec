@@ -132,7 +132,7 @@ lantern scaffold idea "<짧은 제목>" --kind <유형> --raw "W-012 구현 중 
    lantern work finish W-012       # 기준 브랜치 받기 → 테스트 (머지는 하지 않는다)
    lantern work archive W-012      # 작업 폴더 → <<folder.archive>>/ (링크도 고쳐 준다)
    ```
-   문서를 커밋한 뒤 push와 PR은 **사람에게 확인받고** 한다.
+   문서를 커밋한 뒤 사람에게 `/l-pr`을 실행하라고 안내한다.
 <!-- lantern:endif -->
 4. 공통 마무리 + 맞추기 검사 + 보고 갱신:
    ```bash

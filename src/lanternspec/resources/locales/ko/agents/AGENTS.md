@@ -51,6 +51,7 @@
 | 프로젝트 준비 · 성격 바꾸기 | `/l-init` |
 | 생각 기록 | `/l-idea` |
 | 무엇을 · 왜 → 어떻게 → 할 일 → 구현 | `/l-plan` → `/l-design` → `/l-task` → `/l-build` |
+| 변경을 PR로 올리기 | `/l-pr` |
 | 모르는 기술 | `/l-learn` |
 | 현황 | `/l-report` |
 | 양식 만들기 · 다듬기 · 옮기기 | `/l-template` |

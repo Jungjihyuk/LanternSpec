@@ -52,6 +52,7 @@
 | Set up the project · change what kind it is | `/l-init` |
 | Capture a thought | `/l-idea` |
 | What · why → how → tasks → build | `/l-plan` → `/l-design` → `/l-task` → `/l-build` |
+| Open a pull request | `/l-pr` |
 | An unfamiliar technology | `/l-learn` |
 | Where things stand | `/l-report` |
 | Make · refine · migrate templates | `/l-template` |

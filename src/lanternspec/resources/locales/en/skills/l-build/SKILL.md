@@ -132,7 +132,7 @@ When `lantern task next W-012` says every task is done:
    lantern work finish W-012       # bring in the base branch → test (no merge)
    lantern work archive W-012      # work folder → <<folder.archive>>/ (links are fixed too)
    ```
-   After committing the documents, **check with the person** before pushing and opening the PR.
+   After committing the documents, tell the person to run `/l-pr`.
 <!-- lantern:endif -->
 4. Common wrap-up + drift check + refresh the report:
    ```bash

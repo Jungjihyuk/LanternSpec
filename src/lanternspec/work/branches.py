@@ -579,8 +579,8 @@ def finish(project: Project, work_id: str, test: bool = True, keep: bool = False
     if pr == "work":
         msgs.append(
             msg(
-                "✔ {name} is up to date with {base}. It merges through a PR: current-state update → lantern work archive {wid} → "
-                "commit → `git push -u origin {name}` → open a PR into {base}",
+                "✔ {name} is up to date with {base}. It merges through a PR: "
+                "current-state update → lantern work archive {wid} → commit → /l-pr",
                 name=name,
                 base=base,
                 wid=wid,
@@ -636,7 +636,7 @@ def finish(project: Project, work_id: str, test: bool = True, keep: bool = False
     msgs.append(msg("Next: summary of the current-state update → approval → update → lantern work archive ") + wid)
     if pr == "deploy":
         deploy = project.profile.get("git.deploy")
-        msgs.append(msg("To send it out later: `git push origin {base}` → open a PR ({base} → {deploy})", base=base, deploy=deploy))
+        msgs.append(msg("To send it out later: /l-pr ({base} → {deploy})", base=base, deploy=deploy))
     return msgs
 
 

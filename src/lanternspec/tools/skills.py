@@ -41,6 +41,7 @@ SKILL_NAMES = [
     "l-resume",
     "l-ref",
     "l-domain",
+    "l-pr",
 ]
 NAME_RE = re.compile(r"^(?!-)(?!.*--)[a-z0-9-]{1,64}(?<!-)$")
 CMD_RE = re.compile(r"(?<![\w/$.-])/(" + "|".join(re.escape(n) for n in SKILL_NAMES) + r")\b")
