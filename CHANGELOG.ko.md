@@ -7,6 +7,8 @@
 
 ## [Unreleased]
 
+## [0.2.10] - 2026-11-04
+
 업그레이드: `uv tool upgrade lanternspec` → 프로젝트마다 `lantern upgrade` (`/l-pr`을 설치하고 스킬의 새 규칙을 넣는다). `dev`나 PR을 쓰려면 `lantern profile set git.pr=deploy` 처럼 설정한 뒤 `lantern upgrade`를 한 번 더 한다
 
 ### 추가
@@ -219,7 +221,8 @@
   Rust · Go)와 규모로 코드 컨벤션을 기준표대로 골라 `AGENTS.md`와 `개발 원칙.md`에 넣는다 (`principles`, `lint`)
 - **작업 방식 · 평가** — 하네스 · 루프 · 그래프 추천(`harness suggest`), 실행 기록으로 스킬 · 모델 · 설정 비교(`eval`)
 
-[Unreleased]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.9...HEAD
+[Unreleased]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.10...HEAD
+[0.2.10]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.9...v0.2.10
 [0.2.9]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.8...v0.2.9
 [0.2.8]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.7...v0.2.8
 [0.2.7]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.6...v0.2.7
