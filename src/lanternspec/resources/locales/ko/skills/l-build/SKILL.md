@@ -15,6 +15,7 @@ argument-hint: "W-NNN | W-NNN-T03 [--report-cycle work|criterion|task]"
 ## 0. 준비
 1. `<<file.tasks>>`가 없으면 멈추고 `/l-task`를 먼저 하자고 한다. 설계 승인(`<<file.design>>`의 `approved`)이 비어 있으면<!-- lantern:if design.approval=off --> 게이트가 꺼져 있으니 진행한다.<!-- lantern:endif --><!-- lantern:if !design.approval=off --> 멈추고 `/l-design` 게이트를 먼저 거친다.<!-- lantern:endif -->
 2. 작업 하나 = 브랜치 하나: `lantern work branch W-012` (동시 작업용 worktree 안이면 이미 그 브랜치다 — 건너뛴다). 새 브랜치는 기준 브랜치 `<<git.base>>`에서 만든다. 다른 브랜치에 있어서 멈추면 사람에게 묻는다: 기준 브랜치로 옮길지, 그 브랜치 위에 이어 만들지(`--from <브랜치>` — 그 브랜치의 코드도 함께 합쳐진다). 브랜치 이름 규칙(`<<git.branch>>`)에 채울 칸이 있어 멈추면 사람과 정해 `--name <이름>`을 붙인다. `⚠ origin/…`이 나오면 기준 브랜치를 먼저 받을지 묻는다.
+   **이번 작업만 예외 (사람이 말했을 때만 쓴다. 스스로 붙이지 않는다):** 합칠 곳을 바꾸려면 `--into <브랜치>` (그 브랜치에서 시작해 거기로 합친다), 작업 브랜치 없이 지금 브랜치에 바로 커밋하려면 `--here`. 명령이 `⚠`를 내면 사람에게 그대로 보여 준다.
 3. 작업 꾸러미를 만들고 **그것만** 읽는다 (작업 폴더 + 관련 현재 상태 부분만 모은 한 번 쓰고 버리는 요약):
    ```bash
    lantern pack W-012     # → .lantern/pack/W-012.md
@@ -129,6 +130,7 @@ lantern scaffold idea "<짧은 제목>" --kind <유형> --raw "W-012 구현 중 
    lantern work finish W-012
    lantern work archive W-012      # 작업 폴더 → <<folder.archive>>/ (링크도 고쳐 준다)
    ```
+   `finish`가 **폴더를 남겨 둔다**고 하면 worktree 안에서 실행한 것이다: `archive`부터 아래 4번과 문서 커밋까지 안내된 폴더로 옮겨서 하고, 끝으로 안내된 정리 명령을 실행한다.
 <!-- lantern:endif -->
 <!-- lantern:if git.pr=work -->
 3. 기준 브랜치를 작업 브랜치에 받아 테스트하고, 합치는 것은 PR에 맡긴다. 충돌하면 멈추고 사람에게 알린다:
@@ -144,4 +146,4 @@ lantern scaffold idea "<짧은 제목>" --kind <유형> --raw "W-012 구현 중 
    lantern scan
    lantern report
    ```
-5. 마지막 보고: 증거 요약(할 일 · 커밋 · 테스트 · AC) · 반영한 것 · `scan`에서 나온 어긋남 · 부채 후보 · 구현 중 남긴 아이디어 카드 · 다음 할 일.
+5. 마지막 보고: 증거 요약(할 일 · 커밋 · 테스트 · AC) · 반영한 것 · `scan`에서 나온 어긋남 · 부채 후보 · 구현 중 남긴 아이디어 카드 · `finish`가 낸 `⚠` (다른 브랜치에도 합치라는 안내는 사람이 정한다. 스스로 합치지 않는다) · 다음 할 일.

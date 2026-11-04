@@ -21,6 +21,8 @@ This project opens a PR for each work: work branch → `<<git.base>>`. Find the 
 <!-- lantern:if git.pr=none -->
 This project's flow doesn't use PRs (`git.pr: none`). Ask whether to open one just this once, and if so, from which branch into which. If they want this from now on, say `/l-init` run again can change the flow.
 <!-- lantern:endif -->
+**Exception:** if this work's line in `lantern work list` ends with `→ <branch>`, a person chose where this one work merges. That comes before the direction above: work branch → that branch.
+
 Below, the branch going up is `<head>` and the receiving branch is `<target>`.
 
 ## 2. Check (stop and say so if any of these fails)
@@ -70,7 +72,7 @@ EOF
 Show the PR's address.
 
 ## 5. What's next
-Reviewing and merging on GitHub is up to the person.
+Reviewing and merging on GitHub is up to the person. If this went up under the **Exception** above, `<<git.base>>` doesn't have the change yet, so after the merge tell them to put it in `<<git.base>>` too.
 <!-- lantern:if git.pr=deploy -->
 - For `<<git.base>>` → `<<git.deploy>>`, recommend **Create a merge commit**. A squash merge splits the two branches' histories, so the next PR shows the same changes again, and task IDs may be lost.
 - After merging, bring the deploy side's changes back: `git checkout <<git.base>>` · `git pull origin <<git.base>>` · `git merge origin/<<git.deploy>>`

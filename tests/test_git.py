@@ -641,6 +641,24 @@ def test_into_refuses_a_branch_that_already_started_elsewhere(repo):
     assert repo.git("config", "--get", "lantern.W-001.into", check=False).stdout.strip() == ""
 
 
+def test_finish_finds_a_chosen_name_while_only_the_work_branch_has_it_in_the_plan(repo):
+    init_project(repo)
+    repo("profile", "set", "git.branch=feature/{id}-{slug}")
+    repo("scaffold", "work", "하나", "--branch", "feature/W-001-one")
+    repo.git("add", "-A")
+    commit(repo, "docs: 기획 [lantern]")
+    repo("scaffold", "work", "둘")
+    repo.git("add", "-A")
+    commit(repo, "docs: 기획 [lantern]")
+    repo("work", "branch", "W-002", "--name", "feature/W-002-two")
+    repo.git("add", "-A")
+    commit(repo, "docs: 이름 [W-002]")
+    repo.git("checkout", "-q", "main")
+    _, out = repo("work", "finish", "W-002", "--no-test")
+    assert "feature/W-002-two → main 머지" in out and "브랜치 삭제" in out
+    assert repo.git("config", "--get", "lantern.W-002.branch", check=False).stdout.strip() == ""
+
+
 def test_into_needs_a_branch_that_exists(repo):
     _dev_project(repo)
     code, out = repo("work", "branch", "W-001", "--into", "없는브랜치", ok=False)

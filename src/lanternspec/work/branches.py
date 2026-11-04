@@ -201,7 +201,9 @@ def merge_target(project: Project, work_id: str) -> str:
 
 
 def branch_name(project: Project, work_id: str) -> str | None:
-    """Return the branch of a work: the one kept in its plan, else its old `work/` branch, else what the rule gives.
+    """Return the branch of a work: the one chosen for it, else the plan's, else its old `work/` branch, else what the rule gives.
+
+    A name chosen with `--name` is read from git config too, because the plan holding it may not be merged yet.
 
     Args:
         project: The project.
@@ -215,9 +217,9 @@ def branch_name(project: Project, work_id: str) -> str | None:
         'work/W-012'
     """
     wid = work_id.upper()
-    here = _exception(project, wid, "here")
-    if here:
-        return here
+    kept = _exception(project, wid, "here") or _exception(project, wid, "branch")
+    if kept:
+        return kept
     folder = project.find_work(wid)
     plan = project.doc_path(folder, "plan") if folder else None
     if plan is not None and plan.exists():
@@ -440,6 +442,7 @@ def ensure_branch(project: Project, work_id: str, from_ref: str | None = None, n
         plan = project.doc_path(folder, "plan") if folder else None
         if plan is not None and plan.exists():
             write(plan, frontmatter.set_fields(read(plan), {"branch": name}, touch=False))
+        git(["config", f"lantern.{wid}.branch", name], project.root)
     return result + _other_target_note(project, wid)
 
 

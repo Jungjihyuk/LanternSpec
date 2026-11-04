@@ -15,6 +15,7 @@ Current settings: report cycle `<<build.report_cycle>>` · applying to the curre
 ## 0. Prepare
 1. If `<<file.tasks>>` doesn't exist, stop and suggest running `/l-task` first. If the design approval (`approved` in `<<file.design>>`) is empty<!-- lantern:if design.approval=off -->, the gate is off, so go ahead.<!-- lantern:endif --><!-- lantern:if !design.approval=off -->, stop and go through the `/l-design` gate first.<!-- lantern:endif -->
 2. One work = one branch: `lantern work branch W-012` (inside a worktree for parallel work you are already on that branch — skip it). A new branch starts from the base branch `<<git.base>>`. If it stops because you are on another branch, ask the person: move to the base branch, or build on that branch (`--from <branch>` — that branch's code gets merged along with this work). If it stops because the naming rule (`<<git.branch>>`) has blanks to fill, settle a name with the person and add `--name <name>`. If `⚠ origin/…` shows up, ask whether to pull the base branch first.
+   **An exception for this work only (only when the person says so; never add these yourself):** to merge somewhere else, `--into <branch>` (starts from that branch and merges into it); to commit straight to the current branch with no work branch, `--here`. If the command prints `⚠`, show it to the person as is.
 3. Make the work pack and read **only that** (a one-off summary of the work folder plus only the related parts of the current state):
    ```bash
    lantern pack W-012     # → .lantern/pack/W-012.md
@@ -129,6 +130,7 @@ When `lantern task next W-012` says every task is done:
    lantern work finish W-012
    lantern work archive W-012      # work folder → <<folder.archive>>/ (links are fixed too)
    ```
+   If `finish` says **the folder stays**, it ran inside a worktree: from `archive` on, through step 4 below and committing the documents, move to the folder it names, and finally run the clean-up command it gives.
 <!-- lantern:endif -->
 <!-- lantern:if git.pr=work -->
 3. Bring the base branch into the work branch and test; merging is left to the PR. On a conflict, stop and tell the person:
@@ -144,4 +146,4 @@ When `lantern task next W-012` says every task is done:
    lantern scan
    lantern report
    ```
-5. Final report: evidence summary (tasks · commits · tests · ACs) · what was applied · drift found by `scan` · debt candidates · idea cards left while building · the next task.
+5. Final report: evidence summary (tasks · commits · tests · ACs) · what was applied · drift found by `scan` · debt candidates · idea cards left while building · any `⚠` from `finish` (a notice to merge into another branch too is the person's call; don't merge on your own) · the next task.

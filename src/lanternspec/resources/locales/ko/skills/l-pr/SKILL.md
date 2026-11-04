@@ -21,6 +21,8 @@ argument-hint: "[W-NNN]"
 <!-- lantern:if git.pr=none -->
 이 프로젝트는 PR을 쓰지 않는 방식이다 (`git.pr: none`). 이번만 만들지 묻고, 그렇다면 어느 브랜치에서 어디로 올릴지 사람에게 묻는다. 계속 쓸 거면 `/l-init`을 다시 실행해 방식을 바꿀 수 있다고 알린다.
 <!-- lantern:endif -->
+**예외:** `lantern work list`에서 이 작업 줄 끝에 `→ <브랜치>`가 있으면 사람이 이번 작업만 합칠 곳을 정한 것이다. 위 방향보다 먼저 따른다: 작업 브랜치 → 그 브랜치.
+
 아래에서 올리는 브랜치를 `<head>`, 받는 브랜치를 `<target>`이라 한다.
 
 ## 2. 확인 (하나라도 걸리면 멈추고 알린다)
@@ -70,7 +72,7 @@ EOF
 PR 주소를 보여 준다.
 
 ## 5. 다음 안내
-GitHub에서 확인하고 합치는 것은 사람이 한다.
+GitHub에서 확인하고 합치는 것은 사람이 한다. 위 **예외**로 올렸다면 `<<git.base>>`에는 아직 이 변경이 없으니, 합친 뒤 `<<git.base>>`에도 넣으라고 알린다.
 <!-- lantern:if git.pr=deploy -->
 - `<<git.base>>` → `<<git.deploy>>`는 **Create a merge commit**으로 합치기를 권한다. Squash로 합치면 두 브랜치의 이력이 갈라져 다음 PR에 같은 변경이 또 보이고, 할 일 ID도 사라질 수 있다.
 - 합친 뒤에는 배포 쪽 변경을 받아 둔다: `git checkout <<git.base>>` · `git pull origin <<git.base>>` · `git merge origin/<<git.deploy>>`
