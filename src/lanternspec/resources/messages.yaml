@@ -98,6 +98,10 @@
 "Task {task_id} is not in {rel}": {ko: "할 일 {task_id}가 {rel}에 없습니다"}
 "{work_id_of}: {sum}/{count} done": {ko: "{work_id_of}: {sum}/{count} 완료"}
 "Size is one of S · M · L": {ko: "크기는 S · M · L 중 하나입니다"}
+"{dep} belongs to another work — a prerequisite must be a task of {work_id}": {ko: "{dep}은 다른 작업의 할 일입니다 — 먼저 끝나야 할 일은 {work_id} 안의 할 일만 적을 수 있습니다"}
+"⚠ {work_id}: task order differs from the last commit — {changes}": {ko: "⚠ {work_id}: 할 일 순서가 마지막 커밋과 다릅니다 — {changes}"}
+"order {old} → {new}": {ko: "순서 {old} → {new}"}
+"{id} prerequisites {old} → {new}": {ko: "{id} 먼저 끝나야 할 일 {old} → {new}"}
 " · {hours_per_day:g} hours a day": {ko: " · 하루 {hours_per_day:g}시간"}
 "✔ Wrote [{attr}] · [{attr2}] in {name}": {ko: "✔ {name}에 [{attr}] · [{attr2}]을 적었습니다"}
 "This is a suggestion — if the person agrees, --apply": {ko: "제안입니다 — 사람이 동의하면 --apply"}
@@ -141,6 +145,8 @@
 
 # work/branches.py
 "Created branch {name}": {ko: "{name} 브랜치를 만들었습니다"}
+"This folder is on {here}, not the base branch {base} — run `git checkout {base}`, or to build on {here}, `lantern work branch {work_id} --from {here}`": {ko: "이 폴더는 기준 브랜치 {base}가 아니라 {here}에 있습니다 — `git checkout {base}`를 실행하세요. {here} 위에 이어 만들려면 `lantern work branch {work_id} --from {here}`"}
+"branch: start from this branch instead of the base branch": {ko: "branch: 기준 브랜치 대신 이 브랜치에서 시작"}
 "{sum}/{count} done": {ko: "{sum}/{count} 완료"}
 "Already on branch {name}": {ko: "이미 {name} 브랜치입니다"}
 "Switched to branch {name}": {ko: "{name} 브랜치로 바꿨습니다"}

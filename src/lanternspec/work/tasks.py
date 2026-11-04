@@ -2,6 +2,7 @@
 
 Responsibilities:
     - choose the next task that can start (dependencies, ❓ marks, missing mockups)
+    - notice when the order of tasks differs from the last commit
     - add tasks with the next ID; mark start, done and reopen with times
     - tick acceptance criteria once verified; suggest due dates from past durations
 
@@ -17,8 +18,8 @@ from pathlib import Path
 
 from ..core import frontmatter
 from ..core.messages import msg
-from ..core.project import Project, now_minute, read, work_id_of, write
-from ..core.taskfile import Task, TaskGraph, drop_attr, find_task, parse_criteria, parse_tasks, set_attr, set_checked
+from ..core.project import Project, git_out, now_minute, read, work_id_of, write
+from ..core.taskfile import Task, TaskGraph, drop_attr, find_task, order_changes, parse_criteria, parse_tasks, set_attr, set_checked
 from .epic_rules import has_mockup
 
 STAGE_ROLES = ["plan", "design", "tasks", "build", "done"]  # work_status roles, in order
@@ -103,6 +104,40 @@ def next_task(project: Project, work_id: str | None = None) -> NextResult:
             return NextResult(task=t, work=w, skipped=skipped)
     all_done = any_tasks and not skipped
     return NextResult(task=None, work=None, skipped=skipped, all_done=all_done)
+
+
+def changed_order(project: Project, work_id: str | None = None) -> list[str]:
+    """Warn when a work's task order differs from the last commit, e.g. a person edited the tasks file.
+
+    A warning only: the tasks file stays the truth for what runs next. An order that was
+    already committed is not noticed.
+
+    Args:
+        project: The project.
+        work_id: Look only in this work; every work in progress when None.
+
+    Returns:
+        One warning per work whose order changed.
+
+    Example:
+        >>> changed_order(project, "W-012")  # doctest: +SKIP
+        ['⚠ W-012: 할 일 순서가 마지막 커밋과 다릅니다 — 순서 T01 · T02 → T02 · T01']
+    """
+    works = [project.find_work(work_id, include_archive=False)] if work_id else project.work_dirs()
+    cwd = project.docs_git_cwd().resolve()
+    out = []
+    for w in works:
+        if w is None or not project.doc_path(w, "tasks").exists():
+            continue
+        tf = project.doc_path(w, "tasks")
+        committed = git_out(["show", f"HEAD:./{tf.resolve().relative_to(cwd).as_posix()}"], cwd)
+        changes = order_changes(parse_tasks(committed, project.names), parse_tasks(read(tf), project.names))
+        if changes:
+            line = msg(
+                "⚠ {work_id}: task order differs from the last commit — {changes}", work_id=work_id_of(w), changes=" · ".join(changes)
+            )
+            out.append(line)
+    return out
 
 
 def _bump_stage(project: Project, path: Path, role: str) -> None:
@@ -322,7 +357,7 @@ def add(
         what: What to do, in one line.
         size: "S", "M" or "L".
         ac: Acceptance criteria the task serves, e.g. ["AC-1"].
-        after: Tasks that must finish first, e.g. ["T01"].
+        after: Tasks of this work that must finish first, e.g. ["T01"].
         owner: Who does it (team projects).
         screen: The screen the task builds (matched with mockups).
         start_plan: Planned start date.
@@ -334,7 +369,7 @@ def add(
         The new task.
 
     Raises:
-        ValueError: The size is not S · M · L, or the work or its `할 일.md` does not exist.
+        ValueError: The size is not S · M · L, a prerequisite is in another work, or the work or its `할 일.md` does not exist.
 
     Example:
         >>> add(project, "W-012", "카카오 버튼", size="S", ac=["AC-1"]).id  # doctest: +SKIP
@@ -345,6 +380,11 @@ def add(
     if size not in ("S", "M", "L"):
         raise ValueError(msg("Size is one of S · M · L"))
     wid = work_id.upper()
+    for dep in after or []:
+        if "-T" in dep.upper() and _work_of_task(dep) != wid:
+            raise ValueError(
+                msg("{dep} belongs to another work — a prerequisite must be a task of {work_id}", dep=dep.upper(), work_id=wid)
+            )
     tf = _tasks_file(project, wid)
     n = project.names
     # the scaffolded example line (a task line with {{blanks}}) gives way to the first real task, in the same place

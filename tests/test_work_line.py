@@ -309,3 +309,18 @@ def test_upgrade_adds_the_blocked_status_to_an_older_project(repo):
     assert "    보류: {icon: 🗄, role: on_hold}\n    버림: {icon: ❌, role: dropped}\n    막힘: {icon: 🚧, role: blocked}\n" in text
     assert "■ 상세 설명" in text  # comments stay
     repo("idea", "status", "IDEA-001", "막힘", "--reason", "이유", "--revisit", "조건")
+
+
+def test_task_add_refuses_a_prerequisite_in_another_work(repo):
+    init_project(repo)
+    repo("scaffold", "work", "작업")
+    repo("scaffold", "doc", "W-001", "할 일")
+    repo("task", "add", "W-001", "하나", "--size", "S")
+    tasks = work_dir(repo, "W-001") / "할 일.md"
+    before = tasks.read_text(encoding="utf-8")
+    code, out = repo("task", "add", "W-001", "둘", "--size", "S", "--after", "W-002-T01", ok=False)
+    assert code != 0 and "W-002-T01" in out
+    assert tasks.read_text(encoding="utf-8") == before  # it must not quietly become this work's T01
+    # the full ID of a task in the same work still means that task
+    repo("task", "add", "W-001", "둘", "--size", "S", "--after", "W-001-T01")
+    assert "W-001-T02 둘 [크기:: S] [먼저:: T01]" in tasks.read_text(encoding="utf-8")

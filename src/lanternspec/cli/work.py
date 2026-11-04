@@ -120,6 +120,7 @@ def cmd_task(a: argparse.Namespace) -> int:
         if a.json:
             print(json.dumps([{"id": t.id, "title": t.title, "parallel": t.parallel} for t in tasks], ensure_ascii=False))
             return 0
+        _print(task_cmd.changed_order(project, a.target))
         if not tasks:
             print(msg("No task can start now"))
         for t in tasks:
@@ -139,11 +140,13 @@ def cmd_task(a: argparse.Namespace) -> int:
                         "work": project.rel(res.work) if res.work else None,
                         "all_done": res.all_done,
                         "skipped": [{"id": i, "reason": r} for i, r in res.skipped],
+                        "order_changes": task_cmd.changed_order(project, a.target),
                     },
                     ensure_ascii=False,
                 )
             )
             return 0
+        _print(task_cmd.changed_order(project, a.target))
         if res.task:
             t = res.task
             n = project.names
@@ -235,7 +238,7 @@ def cmd_work(a: argparse.Namespace) -> int:
 
     project = _p()
     if a.action == "branch":
-        print(work.ensure_branch(project, a.ids[0]))
+        print(work.ensure_branch(project, a.ids[0], a.from_ref))
     elif a.action == "start":
         _print(work.start(project, a.ids, install=not a.no_install))
     elif a.action == "list":
@@ -468,6 +471,7 @@ def register(add: Add) -> None:
     p.add_argument("action", choices=["branch", "start", "list", "finish", "archive", "stage"])
     p.add_argument("ids", nargs="*")
     p.add_argument("--no-install", action="store_true")
+    p.add_argument("--from", dest="from_ref", help=msg("branch: start from this branch instead of the base branch"))
     p.add_argument("--no-test", action="store_true")
     p.add_argument("--keep", action="store_true")
     p = add("pack", cmd_pack, msg("Work pack (a one-off summary for the AI)"))

@@ -14,7 +14,7 @@ argument-hint: "IDEA-NNN | <만들 것 설명>"
 ## 0. 읽기 (필요한 만큼만)
 - `lantern status` — 진행 중 작업
 - `docs/<<folder.current>>/<<file.project_definition>>` · `<<file.features>>`의 <<marker.glance>>
-- 아이디어 카드 (`IDEA-014`이면). <<idea_status.blocked.label>> 상태면 막힌 이유와 다시 볼 조건을 먼저 알리고, 조건이 이루어졌는지 사람에게 확인한다
+- 아이디어 카드 (`IDEA-014`이면). <<idea_status.blocked.label>> 상태면 막힌 이유와 다시 볼 조건을 먼저 알리고, 조건이 이루어졌는지 사람에게 확인한다. 카드가 근거 문서(진단 · 보고 등)를 링크하면 카드에 적힌 항목만 그 문서에서 읽는다
 - `docs/<<folder.rules>>/<<file.unit_log>>` — 지난번 사람이 추천을 바꾼 이유
 
 ## 1. 작업 단위 제안 → 사람이 고른다

@@ -1,6 +1,8 @@
 """The git side: hooks (commit message · schema record · document check · structure · docs-local push) · docs-mode ·
 work worktrees · scan · sync adopt."""
 
+import json
+
 import pytest
 
 from conftest import docs, fill, init_project, sh, work_dir
@@ -249,3 +251,95 @@ def test_docs_mode_regenerates_skills(local_repo):
     assert "git -C docs" in text and "**한 커밋에**" not in text
     assert "docs-local 브랜치" in (r.root / "AGENTS.md").read_text(encoding="utf-8")
     assert not r.git("status", "--porcelain", "--untracked-files=no").stdout.strip()
+
+
+def _on_work_with_tasks(repo):
+    """A committed work with three tasks; returns its tasks file."""
+    init_project(repo)
+    repo("scaffold", "work", "작업")
+    repo("scaffold", "doc", "W-001", "할 일")
+    repo("task", "add", "W-001", "하나", "--size", "S")
+    repo("task", "add", "W-001", "둘", "--size", "S")
+    repo("task", "add", "W-001", "셋", "--size", "S", "--after", "T01")
+    repo.git("add", "-A")
+    commit(repo, "docs: 작업 [W-001]")
+    return work_dir(repo, "W-001") / "할 일.md"
+
+
+def test_a_new_work_branch_starts_from_the_base_branch(repo):
+    init_project(repo)
+    repo("scaffold", "work", "작업")
+    repo("scaffold", "work", "급한 일")
+    repo.git("add", "-A")
+    commit(repo, "docs: 작업 [W-001]")
+    repo("work", "branch", "W-001")
+    write(repo, "src/a.py", "a = 1\n")
+    repo.git("add", "src")
+    commit(repo, "feat: 미완성 [W-001-T01]")
+    # on another work's branch: don't silently carry its unfinished code along
+    code, out = repo("work", "branch", "W-002", ok=False)
+    assert code != 0 and "main" in out and "--from" in out
+    assert repo.git("rev-parse", "--abbrev-ref", "HEAD").stdout.strip() == "work/W-001"
+    # building on it is a choice the person makes
+    repo("work", "branch", "W-002", "--from", "work/W-001")
+    assert (repo.root / "src/a.py").exists()
+    repo.git("checkout", "-q", "main")
+    repo.git("branch", "-q", "-D", "work/W-002")
+    repo("work", "branch", "W-002")
+    assert not (repo.root / "src/a.py").exists()
+    # an existing branch is only switched to, from anywhere
+    repo("work", "branch", "W-001")
+    assert repo.git("rev-parse", "--abbrev-ref", "HEAD").stdout.strip() == "work/W-001"
+
+
+def test_task_next_warns_when_the_order_differs_from_the_last_commit(repo):
+    tasks = _on_work_with_tasks(repo)
+    _, out = repo("task", "next", "W-001")
+    assert "⚠" not in out
+    # what isn't an order change stays quiet: start times, planned dates, new tasks
+    repo("task", "start", "W-001-T01")
+    repo("task", "add", "W-001", "넷", "--size", "S")
+    text = tasks.read_text(encoding="utf-8")
+    tasks.write_text(text.replace("W-001-T02 둘 [크기:: S]", "W-001-T02 둘 [크기:: S] [시작 예정:: 2026-11-10]"), encoding="utf-8")
+    _, out = repo("task", "next", "W-001")
+    assert "⚠" not in out
+    # the line order changed
+    lines = tasks.read_text(encoding="utf-8").split("\n")
+    first, second = [i for i, l in enumerate(lines) if "W-001-T01" in l or "W-001-T02" in l][:2]
+    lines[first], lines[second] = lines[second], lines[first]
+    tasks.write_text("\n".join(lines), encoding="utf-8")
+    _, out = repo("task", "next", "W-001")
+    assert "⚠ W-001" in out and "순서" in out
+    _, out = repo("task", "next", "W-001", "--json")
+    assert "W-001" in json.loads(out)["order_changes"][0]
+    # committing the agreed order clears the warning
+    repo.git("add", str(tasks))
+    commit(repo, "docs: 순서 변경 [W-001]")
+    _, out = repo("task", "next", "W-001")
+    assert "⚠" not in out
+    # a changed prerequisite counts too
+    tasks.write_text(tasks.read_text(encoding="utf-8").replace("[먼저:: T01]", "[먼저:: T02]"), encoding="utf-8")
+    _, out = repo("task", "next", "W-001", "--all")
+    assert "⚠ W-001" in out and "T01" in out and "T02" in out
+
+
+def test_task_next_compares_with_the_docs_branch_in_local_mode(repo):
+    from lanternspec.core.project import git_version
+
+    if git_version(repo.root) < (2, 42, 0):
+        pytest.skip("git 2.42+ needed for worktree --orphan")
+    init_project(repo)
+    repo.git("add", "-A")
+    commit(repo, "chore: 준비")
+    repo("docs-mode", "local")
+    repo("scaffold", "work", "작업")
+    repo("scaffold", "doc", "W-001", "할 일")
+    repo("task", "add", "W-001", "하나", "--size", "S")
+    repo("task", "add", "W-001", "둘", "--size", "S", "--after", "T01")
+    d = docs(repo)
+    sh(d, "git", "add", "-A")
+    sh(d, "git", "commit", "-q", "-m", "docs: 작업")
+    tasks = work_dir(repo, "W-001") / "할 일.md"
+    tasks.write_text(tasks.read_text(encoding="utf-8").replace(" [먼저:: T01]", ""), encoding="utf-8")
+    _, out = repo("task", "next", "W-001")
+    assert "⚠ W-001" in out

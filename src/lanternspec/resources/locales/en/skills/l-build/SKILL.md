@@ -14,7 +14,7 @@ Current settings: report cycle `<<build.report_cycle>>` · applying to the curre
 
 ## 0. Prepare
 1. If `<<file.tasks>>` doesn't exist, stop and suggest running `/l-task` first. If the design approval (`approved` in `<<file.design>>`) is empty<!-- lantern:if design.approval=off -->, the gate is off, so go ahead.<!-- lantern:endif --><!-- lantern:if !design.approval=off -->, stop and go through the `/l-design` gate first.<!-- lantern:endif -->
-2. One work = one branch: `lantern work branch W-012` (inside a worktree for parallel work you are already on that branch — skip it)
+2. One work = one branch: `lantern work branch W-012` (inside a worktree for parallel work you are already on that branch — skip it). A new branch starts from the base branch `<<git.base>>`. If it stops because you are on another branch, ask the person: move to the base branch, or build on that branch (`--from <branch>` — that branch's code gets merged along with this work).
 3. Make the work pack and read **only that** (a one-off summary of the work folder plus only the related parts of the current state):
    ```bash
    lantern pack W-012     # → .lantern/pack/W-012.md
@@ -32,7 +32,7 @@ lantern task start W-012-T03     # stamps [<<attr.start>>:: time] exactly
 **Domain knowledge:** when some is tied to the task, read **only those sections, right as it starts** — run the `lantern ref read …` lines that `lantern ref domain --work W-012 --task T03` shows.
 Read a 📌 verbatim section again right before turning its rule into code. Knowledge that becomes necessary mid-build: find and read it with `/l-domain`, then tie it with `lantern ref attach`.
 
-1. Build it. If a **big change** not in the design is needed, stop and report (→ `/l-design`).
+1. Build it. When something not in the design comes up, sort it with "Things outside the plan" below before changing anything.
 2. Test it<!-- lantern:if build.lint -->, and run lint and type check too (`lantern lint`)<!-- lantern:endif -->. On failure, fix and retry — **at most 3 times**. If the third try fails, stop and report.
 3. Leave evidence in `<<file.record>>`:
    - One line in the `## Evidence` table: task · commit (filled after committing) · files changed · test results (command and pass count) · acceptance criteria
@@ -56,9 +56,39 @@ Read a 📌 verbatim section again right before turning its rule into code. Know
 6. **Check against the mockup:** when a `[<<attr.screen>>:: …]` task is done, capture the built screen (`<<folder.screens>>/build/…png`); if the mockup is a PNG too, point out the differences first with the automatic comparison: `lantern screen compare "<<folder.screens>>/build/login.png" "<<folder.screens>>/login.png"` (a hint only). Then **show both side by side and ask the user**: "Does it match the mockup?" → if it does, check off the AC; if not, for each difference `lantern task add W-012 "<fix the difference>" --size S --ac AC-n --screen "<screen>"`.
 <!-- lantern:endif -->
 
+## 1½. Things outside the plan
+**Is it inside this work's purpose?** Inside if the purpose in the work's name explains it, otherwise outside. Something that looks like a fit for another open work is still outside — don't move it there.
+
+| Situation | What to do |
+|---|---|
+| Inside, a **big change** not in the design | Stop and report (→ `/l-design`) |
+| Inside, a **small difference** from the design | Go on. Bring `<<file.design>>` in line with reality, or note the difference in `<<file.record>>` |
+| Outside, and **this task's acceptance criteria can be met without fixing it** | Don't fix it: leave a card and go on, even if it's a one-line fix |
+| Outside, and **the acceptance criteria can't be met without fixing it** | Stop and go to "Something must come first" |
+
+**Leaving a card:** if this tool supports subagents, hand it to one and keep working; otherwise do it yourself on the spot. A subagent doesn't know this conversation, so pass what was found, its `file:line` and the work ID in full, along with these steps:
+```bash
+lantern idea find "<two or three key words>"     # if the same card exists, add to its ## <<section.raw>> with the date and stop
+lantern scaffold idea "<short title>" --kind <kind> --raw "Found while building W-012 (<file:line>): <what>" --auto
+```
+Fill in the one-line summary and why it's good in the new file; write `<<marker.unknown>>` for what you don't know, and remove optional sections with nothing to say. Keep it out of the task's commit, and include the IDEA ID in the final report.
+
+**Something must come first:**
+1. Write why it stopped in `## <<section.now>>` and commit the changes so far to the work branch (don't check the task off).
+2. Ask the person where to start. Recommend moving to the base branch `<<git.base>>`; unfinished code doesn't get merged into it. For an outage of a running service, also offer starting from the deploy branch.
+3. On that branch, make the card yourself (the commands above, no subagent), tell them to go on from `/l-plan IDEA-NNN`, and **stop here.**
+4. Once that is done and merged, `git checkout <this work's branch>` · `git merge <the merged branch>`, then pick up from `## <<section.now>>`.
+
+**When a person changes the order:** if they say so, or `lantern task next` warns `⚠ … task order differs from the last commit`, don't start the next task.
+1. Ask why. If it runs into what must finish first, say what the risk is, but the person decides.
+2. Once agreed, fix the line order and `[<<attr.after>>:: …]` in `<<file.tasks>>`, note the reason in `<<file.record>>` in one line, run `lantern check` · `lantern report` and commit the documents. Then suggest the next task with `lantern task next`.
+3. If not agreed, check with the person and put only the order back.
+
+`[<<attr.after>>:: …]` only takes tasks of this work. Waiting on another work is "Something must come first".
+
 ## 2. When to report
 - `work`: when the whole work is done · `criterion`: each time an acceptance criterion is complete · `task`: after each task
-- **Report and stop right away, whatever the setting:** tests still fail after 3 fixes · you hit a `<<marker.unknown>>` · checking a screen against its mockup · running a migration against a real database · a big change not in the design
+- **Report and stop right away, whatever the setting:** tests still fail after 3 fixes · you hit a `<<marker.unknown>>` · checking a screen against its mockup · running a migration against a real database · a big change not in the design · something that must come first · an order a person changed
 - A report is 3 lines: **what was done · why it stopped · what needs choosing**
 
 <!-- lantern:if knowledge -->
@@ -100,4 +130,4 @@ When `lantern task next W-012` says every task is done:
    lantern scan
    lantern report
    ```
-5. Final report: evidence summary (tasks · commits · tests · ACs) · what was applied · drift found by `scan` · debt candidates · the next task.
+5. Final report: evidence summary (tasks · commits · tests · ACs) · what was applied · drift found by `scan` · debt candidates · idea cards left while building · the next task.

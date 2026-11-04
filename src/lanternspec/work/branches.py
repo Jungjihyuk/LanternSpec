@@ -89,18 +89,22 @@ def _base(project: Project) -> str:
     return "HEAD"
 
 
-def ensure_branch(project: Project, work_id: str) -> str:
-    """Switch this folder to the work's branch, creating it from the current HEAD when needed (/l-build W-012).
+def ensure_branch(project: Project, work_id: str, from_ref: str | None = None) -> str:
+    """Switch this folder to the work's branch, creating it from the base branch when needed (/l-build W-012).
+
+    A new branch is not made on top of another branch unless asked: that would carry the other
+    branch's unfinished code along, and merge it together with this work.
 
     Args:
         project: The project.
         work_id: The work, e.g. "W-012".
+        from_ref: Start a new branch from here instead of the base branch.
 
     Returns:
         What happened, as a message.
 
     Raises:
-        WorkError: git could not switch or create the branch.
+        WorkError: This folder is on another branch and from_ref is not given, or git could not switch or create the branch.
 
     Example:
         >>> ensure_branch(project, "W-012")  # doctest: +SKIP
@@ -114,7 +118,19 @@ def ensure_branch(project: Project, work_id: str) -> str:
         if r.returncode != 0:
             raise WorkError(r.stderr.strip())
         return msg("Switched to branch {name}", name=name)
-    r = git(["checkout", "-b", name], project.root)
+    base = _base(project)
+    here = current_branch(project.root)
+    if from_ref is None and base != "HEAD" and here != base:
+        raise WorkError(
+            msg(
+                "This folder is on {here}, not the base branch {base} — run `git checkout {base}`, "
+                "or to build on {here}, `lantern work branch {work_id} --from {here}`",
+                here=here,
+                base=base,
+                work_id=work_id.upper(),
+            )
+        )
+    r = git(["checkout", "-b", name, from_ref or base], project.root)
     if r.returncode != 0:
         raise WorkError(r.stderr.strip())
     return msg("Created branch {name}", name=name)

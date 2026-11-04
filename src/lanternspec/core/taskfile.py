@@ -301,6 +301,42 @@ def find_task(tasks: list[Task], task_id: str) -> Task | None:
     return None
 
 
+def order_changes(before: list[Task], after: list[Task]) -> list[str]:
+    r"""Say how the order of tasks changed: their relative line order and their prerequisites.
+
+    Tasks added or removed, dates and states are not order changes.
+
+    Args:
+        before: The tasks as they were.
+        after: The tasks as they are now.
+
+    Returns:
+        One description per change; empty when the order is the same.
+
+    Example:
+        >>> from lanternspec.core.names import load
+        >>> old = parse_tasks("- [ ] W-001-T01 하나\n- [ ] W-001-T02 둘 [먼저:: T01]", load("ko"))
+        >>> new = parse_tasks("- [ ] W-001-T02 둘\n- [ ] W-001-T01 하나\n- [ ] W-001-T03 셋", load("ko"))
+        >>> order_changes(old, new)
+        ['순서 T01 · T02 → T02 · T01', 'T02 먼저 끝나야 할 일 T01 → 없음']
+    """
+
+    def short(ids: list[str]) -> str:
+        return " · ".join(i.rsplit("-", 1)[-1] for i in ids) or msg("none")
+
+    was = {t.id: t for t in before}
+    now = {t.id: t for t in after}
+    old_order = [t.id for t in before if t.id in now]
+    new_order = [t.id for t in after if t.id in was]
+    out = []
+    if old_order != new_order:
+        out.append(msg("order {old} → {new}", old=short(old_order), new=short(new_order)))
+    for t in after:
+        if t.id in was and was[t.id].deps != t.deps:
+            out.append(msg("{id} prerequisites {old} → {new}", id=short([t.id]), old=short(was[t.id].deps), new=short(t.deps)))
+    return out
+
+
 @dataclass
 class TaskGraph:
     r"""The tasks of one work, for dependency questions.
