@@ -59,6 +59,7 @@ lantern install                  # 이 프로젝트에 스킬 · 규칙 · hook 
 /l-design W-001               어떻게 — 바뀌는 구조 · 화면 · 데이터만, 사람이 승인
 /l-task W-001                 순서 있는 할 일 목록
 /l-build W-001                구현 → 테스트 → 할 일마다 커밋, 증거로 보고 → 끝나면 현재 상태에 반영
+/l-pr                         변경을 PR로 올리기 (브랜치 방식에 맞게, PR을 쓸 때)
 /l-report                     칸반 · 타임라인 · 부채 · 3줄 요약
 ```
 
@@ -94,7 +95,7 @@ flowchart LR
 
 | 스킬 | 하는 일 | 남는 문서 |
 |---|---|---|
-| `/l-init` | 질문 7개(신규/기존 · 인원 · 화면 · 서버 · 지식 저장소 · 디자인 도구 · 프로젝트 종류)로 문서 구조와 개발 원칙을 정한다 | `lantern.yaml`, `docs/`, 프로젝트 정의서, MOC, 개발 원칙 |
+| `/l-init` | 질문 7개(신규/기존 · 인원 · 화면 · 서버 · 지식 저장소 · 디자인 도구 · 프로젝트 종류)로 문서 구조와 개발 원칙을 정하고, 브랜치 방식도 고른다 | `lantern.yaml`, `docs/`, 프로젝트 정의서, MOC, 개발 원칙 |
 | `/l-idea` | 대화 속 생각을 원문 + 정리본으로 바로 기록 | `1. 아이디어/IDEA-001 …` |
 | `/l-plan` | 무엇을 · 왜 — 작업 폴더와 수락 기준 | `2. 작업/W-001 …/기획.md` |
 | `/l-design` | 어떻게 — 바뀌는 구조 · 화면 · 데이터(DBML)만, 승인 게이트 | `설계.md`, `화면/`, ADR |
@@ -110,6 +111,7 @@ flowchart LR
 | `/l-resume` | 지난 대화 이어 가기 — 어느 AI 도구에서 하던 대화든, 중간에 끊겼어도 멈춘 곳부터 | — |
 | `/l-ref` | 사내 규칙 · 용어집 · 도메인 지식을 들여와 절 단위로 색인하고, 절마다 쓰임을 승인받는다 | 색인, `AGENTS.md`의 사내 규칙, `용어집.md` |
 | `/l-domain` | 도메인 규칙이 필요할 때 색인에서 맞는 절만 찾아 원문으로 읽는다 | (기획의 "참고한 도메인 지식") |
+| `/l-pr` | 브랜치 방식에 맞는 방향으로 제목 · 본문을 쓰고, 확인받은 뒤 PR을 만든다 (합치지는 않는다) | — |
 
 ### 이렇게 동작한다
 - **형식은 스크립트가, 내용은 AI가.** 번호 · 파일 · 폴더 · 검사 · 상태 바꾸기는 모두 `lantern` 명령이 하고, AI는 내용만 쓴다.
@@ -160,6 +162,24 @@ lantern obsidian plugins     # 두 플러그인의 최신 공식 배포 파일�
 
 처음 열 때 Obsidian이 커뮤니티 플러그인을 켤지 물으면 켠다 (제한 모드 해제). 플러그인 코드와 창 배치(`workspace.json`)는 git에 올라가지 않고 설정만 올라간다. 팀원은 같은 명령으로 받는다.
 
+### 브랜치 방식
+
+작업 하나는 브랜치 하나다. 끝난 작업을 어떻게 합칠지는 `/l-init`에서 고르고, 추천은 `lantern work flow`가 브랜치와 원격을 보고 정한다.
+
+| 방식 | 흐름 | 어울리는 경우 |
+|---|---|---|
+| A. 단순하게 | 작업 → 기본 브랜치 | 처음 쓰거나 혼자 빠르게 만들 때 |
+| B. 개발과 배포를 나누기 | 작업 → `dev`, 배포할 때 `dev` → 기본 브랜치 PR | 기본 브랜치에 합치면 바로 배포되는 서비스 |
+| C. 작업마다 PR | 작업 → PR → 기준 브랜치 | 코드 리뷰를 받을 때 |
+| D. 지금 쓰는 방식 그대로 | 합치는 곳만 기록하고 브랜치는 건드리지 않는다 | 이미 쓰는 전략이 있을 때 |
+
+작업 브랜치 이름은 기본이 `work/W-012`이고, `lantern.yaml`의 `git.branch`로 바꿀 수 있다.
+
+```yaml
+git:
+  branch: feature/{id}-{slug}   # → feature/W-012-login ({id}가 아닌 칸은 작업마다 정한다)
+```
+
 ## 지원 AI 도구
 
 | 도구 | 스킬 | 규칙 | 에이전트 hook | MCP (`--mcp`) |
@@ -183,7 +203,7 @@ LanternSpec은 이 기능에 검사를 연결해, 일하는 단계마다 문서�
 | 커밋 직전 | 이번 커밋에 들어가는 변경을 보고, 함께 남겨야 할 기록이 빠지지 않았는지 확인한다 | DB 구조를 바꿨는데 작업 기록에 그 변경이 적혀 있지 않으면 경고 |
 | 커밋 메시지를 쓴 뒤 | 이 커밋이 어느 할 일을 한 것인지 메시지에 남았는지 확인한다 | 메시지 끝에 할 일 번호(예: `[W-001-T02]` = 1번 작업의 2번째 할 일)가 없으면 경고 |
 | push 직전 | 원격 저장소에 올리면 안 되는 것이 섞이지 않았는지 확인한다 | 원격에 올리지 않기로 한 문서 브랜치를 올리려 하면 막는다 |
-| GitHub에 올린 뒤 | 누가 올렸든 GitHub에서 같은 검사를 한 번 더 한다 (CI) | 문서 양식 · 린트 · 타입 검사 · 테스트가 깨지면 실패로 표시 |
+| GitHub에 올린 뒤 | 누가 올렸든 GitHub에서 같은 검사를 한 번 더 한다 (CI) | 문서 양식 · 린트 · 타입 검사 · 테스트가 깨지면 실패로 표시. PR에서는 제목과 커밋의 작업 ID도 본다 |
 | 필요할 때 | 지난 커밋 전체를 훑어 문서와 코드가 달라진 곳을 모아 보여 준다 (`lantern scan`) | 코드는 바뀌었는데 한동안 확인하지 않은 문서 목록 |
 
 - **기본은 경고만 한다.** 작업을 막지 않는다. 커밋 단계의 검사를 막는 쪽으로 바꾸려면 `lantern.yaml`의 `git.hooks`를 `block`으로 한다.
@@ -192,6 +212,8 @@ LanternSpec은 이 기능에 검사를 연결해, 일하는 단계마다 문서�
 ```bash
 lantern hooks install            # 커밋 · push 단계 검사를 켠다 (/l-init이 묻고 설치)
 lantern install --ci             # GitHub에서도 검사한다 (끄기: --no-ci)
+lantern install --pr-template    # GitHub용 PR 양식을 넣는다
+lantern install --commit-template  # 커밋 메시지 양식을 넣고 이 저장소에 설정한다
 ```
 
 ## 참고 자료 — 사내 규칙 · 용어 · 도메인 지식
@@ -264,12 +286,12 @@ Claude Design · Figma · Canva를 각 도구의 MCP로 쓴다.
 ## CLI 한눈에
 
 ```text
-설치     install [--language] [--tools] [--mcp] [--ci|--no-ci] · upgrade [--apply] · doctor · harness suggest
+설치     install [--language] [--tools] [--mcp] [--ci|--no-ci] [--pr-template] [--commit-template] · upgrade [--apply] · doctor · harness suggest
 프로필   profile show|docs|write|set · principles show|detect · parts [add|ignore] · enums list|rename · sections list|rename|off|on
 문서     scaffold init [--plan] | work | doc | idea | adr | meeting | custom · new-id · map · meta get|set
-검사     check [--changed] [--epic W-012] · lint [--ci] · check-dbml · dbml render|from-sql|diff
+검사     check [--changed] [--epic W-012] · check-pr · lint [--ci] · check-dbml · dbml render|from-sql|diff
 일       task next [--all]|start|done|ac|list|estimate · task add [--parallel] · pack · screen import|compare
-         work branch|start|list|finish|archive|stage · design approve · unit-log add · idea find|status
+         work branch|start|list|finish|archive|stage|flow · design approve · unit-log add · idea find|status
 배움     knowledge search|read|propose|write|areas · debt find|new|ask|resolve|promote|practice|known|status|list · mcp
 보고     report [--views] [--summary] · status · resume [--session] [--more] · scan [--tests] [--ci] · sync adopt · eval · obsidian plugins
 양식     template list|lint|level|bump|outdated|diff|usage|new|migrate · legacy adopt|todos

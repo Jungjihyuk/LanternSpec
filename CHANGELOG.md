@@ -7,8 +7,27 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+Upgrade: `uv tool upgrade lanternspec` → `lantern upgrade` in each project (installs `/l-pr` and puts the new rules in the skills). To use `dev` or PRs, set it like `lantern profile set git.pr=deploy`, then run `lantern upgrade` once more
+
+### Added
+- **`/l-pr` — open a pull request** — finds the direction that fits the branch flow, writes the title and body from the commits and work documents, and pushes and opens the PR once confirmed. Only a person can call it, and it never merges
+- **Branch flow question in `/l-init`** — choose how work gets merged, out of four: keep it simple · separate development from deployment · a PR for each work · keep what you use now. `lantern work flow` works out the recommendation from the branches and remote
+- **Branch settings** — `lantern.yaml` now has `git.branch` (naming rule) · `git.pr` (PR flow) · `git.deploy` (deploy branch). The defaults behave as before
+- **Branch naming rule** — set a rule like `feature/{id}-{slug}` and it is followed, and names that break it are refused. A name without the work ID is tied to its work by `branch` in the plan document. `lantern scaffold work --branch` · `lantern work branch --name`
+- **Handling what comes up outside the plan** — `/l-build` sorts what isn't in the design: a big change goes to design, a small difference goes in the documents, something outside the purpose becomes an idea card instead of being fixed, and something that must come first stops the work and asks which branch to start from
+- **Task order changed by a person** — `lantern task next` warns when the order differs from the last commit, and `/l-build` asks why and goes on once agreed
+- **PR title and commit check** — `lantern check-pr` looks for work IDs in the PR title and code commits. It is part of the GitHub check from `lantern install --ci`, warns by default, and fails under `git.hooks: block`
+- **PR and commit templates** — `lantern install --pr-template` · `--commit-template` write the template files, and leave existing ones alone
+
 ### Changed
 - **Install and upgrade output** — the long single line of settings is now one line per file, and "Merged settings" says what actually happens
+- **New work branches start from the base branch** — `lantern work branch` branches from `git.base` instead of the current position, so another work's unfinished code doesn't come along. It stops when on another branch; use `--from <branch>` to build on it
+- **Finishing a work** — `lantern work finish` brings the base branch into the work branch first, tests that result, then merges. This may add a merge commit on the work branch. It warns when the remote base branch is ahead
+- **No AI marks** — commit messages from `/l-build` · `/l-pr` and PRs carry no mark that AI did the work
+- **Reading an idea card's source** — `/l-plan` reads only the items a card names from the source document it links
+
+### Fixed
+- **A task of another work as a prerequisite** — `lantern task add --after` cut off the work number and pointed at this work's task; it now refuses with an error
 
 ## [0.2.9] - 2026-11-03
 

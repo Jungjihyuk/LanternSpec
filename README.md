@@ -61,6 +61,7 @@ Then call `/l-init` inside your AI tool (`$l-init` in Codex).
 /l-design W-001               how — only the structure, screens and data that change; a person approves
 /l-task W-001                 an ordered task list
 /l-build W-001                implement → test → one commit per task, report with evidence → merge into the current state
+/l-pr                         open a pull request that fits the branch flow (if you use PRs)
 /l-report                     kanban · timeline · debt · a three-line status report
 ```
 
@@ -96,7 +97,7 @@ flowchart LR
 
 | Skill | What it does | What it leaves |
 |---|---|---|
-| `/l-init` | sets up the document structure and design principles from 7 questions (new or existing · team size · screens · server · knowledge base · design tool · project kind) | `lantern.yaml`, `docs/`, project definition, MOC, design principles |
+| `/l-init` | sets up the document structure and design principles from 7 questions (new or existing · team size · screens · server · knowledge base · design tool · project kind), and picks the branch flow | `lantern.yaml`, `docs/`, project definition, MOC, design principles |
 | `/l-idea` | records a thought from the conversation, as said and as summarised | `1. Ideas/IDEA-001 …` |
 | `/l-plan` | what and why — a work folder and acceptance criteria | `2. Work/W-001 …/Plan.md` |
 | `/l-design` | how — only the structure, screens and data (DBML) that change, behind an approval gate | `Design.md`, `Screens/`, ADR |
@@ -112,6 +113,7 @@ flowchart LR
 | `/l-resume` | carries on an earlier conversation — from any AI tool, from where it stopped even if it was cut off | — |
 | `/l-ref` | brings in company rules, glossaries and domain knowledge, indexes them by section and gets each section's use approved | the index, company rules in `AGENTS.md`, `Glossary.md` |
 | `/l-domain` | when domain rules matter, finds the matching section in the index and reads just that section word for word | (the plan's "Domain Knowledge Used") |
+| `/l-pr` | writes the title and body for the direction that fits the branch flow, and opens the PR once confirmed (never merges) | — |
 
 ### How it works
 - **Scripts handle the format, the AI writes the content.** Numbering, files, folders, checks and status changes all go through the `lantern` command; the AI only writes content.
@@ -162,6 +164,24 @@ lantern obsidian plugins     # downloads the latest official release files of bo
 
 When Obsidian first asks whether to turn on community plugins, turn them on (leave restricted mode). Plugin code and the window layout (`workspace.json`) stay out of git; only the settings are committed. Teammates run the same command.
 
+### Branch flow
+
+One work is one branch. `/l-init` asks how finished work gets merged, and `lantern work flow` works out the recommendation from the branches and remote.
+
+| Flow | How it goes | Good for |
+|---|---|---|
+| A. Keep it simple | work → default branch | starting out, or building fast on your own |
+| B. Separate development from deployment | work → `dev`, then a PR from `dev` to the default branch when deploying | a service that deploys as soon as the default branch changes |
+| C. A PR for each work | work → PR → base branch | getting code reviews |
+| D. Keep what you use now | records only where work merges; branches stay as they are | a project that already has a strategy |
+
+Work branches are named `work/W-012` by default; change it with `git.branch` in `lantern.yaml`.
+
+```yaml
+git:
+  branch: feature/{id}-{slug}   # → feature/W-012-login (blanks other than {id} are named for each work)
+```
+
 ## Supported AI tools
 
 | Tool | Skills | Rules | Agent hooks | MCP (`--mcp`) |
@@ -185,7 +205,7 @@ LanternSpec connects its checks to those hooks, so `lantern` checks at every sta
 | Just before a commit | looks at what the commit contains and checks that the records that should go with it are there | warns when the database structure changed but the work log doesn't mention it |
 | After the commit message | checks that the message says which task the commit belongs to | warns when the message has no task ID (e.g. `[W-001-T02]` = the 2nd task of work item #1) |
 | Just before a push | checks that nothing that must stay local is being pushed | blocks pushing the documents branch you chose to keep off the remote |
-| After pushing to GitHub | runs the same checks again on GitHub, whoever pushed (CI) | marks the run failed if document format, lint, type checks or tests break |
+| After pushing to GitHub | runs the same checks again on GitHub, whoever pushed (CI) | marks the run failed if document format, lint, type checks or tests break; on PRs it also looks for work IDs in the title and commits |
 | On demand | scans past commits and lists where documents and code drifted apart (`lantern scan`) | documents not reviewed for a while although their code changed |
 
 - **Warnings by default.** Work is never blocked. To make the commit checks blocking, set `git.hooks` to `block` in `lantern.yaml`.
@@ -194,6 +214,8 @@ LanternSpec connects its checks to those hooks, so `lantern` checks at every sta
 ```bash
 lantern hooks install            # turns on the commit and push checks (/l-init asks before installing)
 lantern install --ci             # also checks on GitHub (turn off with --no-ci)
+lantern install --pr-template    # adds a PR template for GitHub
+lantern install --commit-template  # adds a commit message template and sets it for this clone
 ```
 
 ## References — company rules, terms and domain knowledge
@@ -266,12 +288,12 @@ Import mockups with `lantern screen import`; `lantern screen compare` finds wher
 ## CLI at a glance
 
 ```text
-setup      install [--language] [--tools] [--mcp] [--ci|--no-ci] · upgrade [--apply] · doctor · harness suggest
+setup      install [--language] [--tools] [--mcp] [--ci|--no-ci] [--pr-template] [--commit-template] · upgrade [--apply] · doctor · harness suggest
 profile    profile show|docs|write|set · principles show|detect · parts [add|ignore] · enums list|rename · sections list|rename|off|on
 documents  scaffold init [--plan] | work | doc | idea | adr | meeting | custom · new-id · map · meta get|set
-checks     check [--changed] [--epic W-012] · lint [--ci] · check-dbml · dbml render|from-sql|diff
+checks     check [--changed] [--epic W-012] · check-pr · lint [--ci] · check-dbml · dbml render|from-sql|diff
 work       task next [--all]|start|done|ac|list|estimate · task add [--parallel] · pack · screen import|compare
-           work branch|start|list|finish|archive|stage · design approve · unit-log add · idea find|status
+           work branch|start|list|finish|archive|stage|flow · design approve · unit-log add · idea find|status
 learning   knowledge search|read|propose|write|areas · debt find|new|ask|resolve|promote|practice|known|status|list · mcp
 reports    report [--views] [--summary] · status · resume [--session] [--more] · scan [--tests] [--ci] · sync adopt · eval · obsidian plugins
 templates  template list|lint|level|bump|outdated|diff|usage|new|migrate · legacy adopt|todos
