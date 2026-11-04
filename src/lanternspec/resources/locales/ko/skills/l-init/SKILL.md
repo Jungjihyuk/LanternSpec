@@ -27,7 +27,7 @@ argument-hint: "[바뀐 점 (다시 실행할 때)]"
 - 질문 도구(AskUserQuestion)로 **한 번에 최대 4개씩** 묶어 보낸다. 화면에는 질문이 하나씩 나오고, 답은 한꺼번에 돌아온다.
   - 1회: 1 · 2 · 3 · 4번 (3번은 여러 개를 고를 수 있게)
   - 2회: 5 · 6번, 7번의 두 질문(종류 · 바깥 연결)
-  - 3회: 앞 답에 따라 필요한 것만 — 프로젝트 이름 · 문서 올리기 · 기준 브랜치 · (team이면) 팀원 이름 · (external이면) API 문서
+  - 3회: 앞 답에 따라 필요한 것만 — 프로젝트 이름 · 문서 올리기 · 브랜치 방식 · (team이면) 팀원 이름 · (external이면) API 문서
   - 4회: 5번에서 지식 저장소를 골랐을 때만 — 아래 "지식 저장소를 골랐으면"의 세 질문
 <!-- lantern:endif -->
 <!-- lantern:if !tool=claude -->
@@ -51,7 +51,7 @@ argument-hint: "[바뀐 점 (다시 실행할 때)]"
 **이어서 묻는다** (앞 답에 따라 필요한 것만)
 - 프로젝트 이름 — 폴더 이름을 추천값으로
 - "문서도 GitHub에 함께 올릴까요?" — 예(shared, 기본) / 아니요(local: 문서는 같은 저장소의 `docs-local` 브랜치에만, 원격에 안 올림. 혼자 보는 메모 · 공개 저장소에 어울림)
-- 작업 브랜치를 머지할 기준 브랜치 — `git branch`로 보이는 main · dev를 선택지로
+- 브랜치 방식 — 아래 "브랜치 방식 고르기"
 - 코드 주석(docstring · 주석)은 어떤 언어로 쓸까요? 한국어 / 영어 — 문서는 한국어로 만들고, 코드 안의 설명만 따로 정한다. 혼자 · 한국어 팀이면 한국어, 공개 오픈소스로 낼 거면 영어를 추천
 - (2번이 team이면) 팀원 이름 — 후보를 만들 수 없으니 평범한 메시지로: "함께하는 사람 이름을 쉼표로 적어 주세요"
 - (4번이 external이면) "API 명세 문서도 만들까요?" — 예면 `--extra api`
@@ -61,6 +61,35 @@ argument-hint: "[바뀐 점 (다시 실행할 때)]"
 - **새 노트는 어떻게 만들까요?** — 승인하면 저장소에 바로 쓰기(direct, 추천) / 저장소는 건드리지 않고 초안 파일만 만들기(propose_only)
 - **(저장소에 주제별로 나눈 폴더가 보일 때만) 그 분류도 함께 쓸까요?** (선택) — 먼저 저장소 맨 위 폴더를 훑어, 하위 폴더가 주제처럼 나뉜 폴더(예: `2. Study`)가 없으면 **이 질문은 건너뛴다**. 있으면 질문 문장에 뜻을 먼저 적는다: "모르는 기술은 부채 카드로 남고, 카드마다 주제가 하나 붙어요 (지금은 backend · frontend · data · ai · infra · 기타). 저장소에 주제별로 나눠 둔 폴더가 있는 것 같은데, 그 이름도 주제로 함께 쓸까요? 프로젝트 구조와는 상관없어요." 선택지는 찾은 폴더들과 "기본 주제만 쓰기"(추천).
 
+**브랜치 방식 고르기** (`git branch -a` · `git remote -v`를 먼저 본다. 기본 브랜치는 `main` · `master` 중 실제로 있는 것)
+질문: "작업이 끝난 코드를 어떻게 합칠까요? 나중에 바꿀 수 있어요." 선택지는 쉬운 말로, B · C를 낼 때는 "PR은 코드를 합치기 전에 GitHub에서 변경 내용을 확인하는 요청이에요"를 덧붙인다:
+- **A. 단순하게** — 작업이 끝나면 기본 브랜치에 바로 합쳐요. 처음이거나 혼자 빠르게 만들 때 좋아요.
+- **B. 개발과 배포를 나누기** — 평소에는 dev에 합치고, 배포할 때 PR로 기본 브랜치에 올려요. 기본 브랜치에 합치면 바로 배포되는 서비스에 좋아요.
+- **C. 작업마다 PR 만들기** — 작업마다 PR로 확인받고 합쳐요. 코드 리뷰를 받는다면 이 방식이 좋아요.
+- **D. 지금 쓰는 방식 그대로** — 브랜치를 바꾸지 않고, 어디로 합치는지만 기록해요. (지금 있는 브랜치를 함께 보여 준다)
+
+추천은 위에서부터 먼저 맞는 줄이다. 추천이 아닌 것도 고를 수 있다:
+1. `release/*` · `hotfix/*` · `develop` · `staging` 같은 브랜치가 있다 → **D**
+2. 팀(2번이 team)이고 GitHub 원격이 있다 → **C**
+3. 1인이고 `dev`가 이미 있다 → **B**
+4. 그 외 → **A**
+
+보여 주는 선택지: 원격이 없으면 B · C는 내지 않는다(PR을 만들 곳이 없다). 새 프로젝트(1번이 greenfield)이고 브랜치가 하나뿐이면 D를 내지 않는다. `docs-local` · `work/*` · `feature/*`는 전략이 복잡하다는 근거로 보지 않는다. 남은 선택지가 A 하나면 묻지 않고 A로 두고, GitHub를 연결한 뒤 `/l-init`을 다시 실행하면 바꿀 수 있다고 한 줄로 알린다.
+
+고른 뒤에 필요할 때만 더 묻는다:
+- **B:** `dev`가 없으면 "`dev` 브랜치를 만들까요?" (아니면 다시 고르게 한다)
+- **C:** `main` · `dev`가 모두 있으면 "어디로 합칠까요?"
+- **D:** "작업이 끝나면 어디로 합치나요?"(있는 브랜치를 선택지로) · "합칠 때 PR이 필요한가요?" 그리고 알린다: "LanternSpec은 작업을 합치는 곳까지만 맡아요. 배포 절차는 지금처럼 진행하면 돼요."
+- **B · C · D:** "작업 브랜치 이름에 정해진 규칙이 있나요?" — 없어요(추천: `work/W-012`처럼 자동으로 만들어요) / 있어요. 기존 브랜치에서 패턴이 보이면 후보로 낸다 (예: `feature/JS-15-normalization` → `feature/{ticket}-{slug}`). `{id}`는 작업 ID로 자동으로 채워지고, 다른 칸은 작업마다 정한다. `{id}`가 없으면 다른 브랜치에서 같은 작업 번호를 받을 수 있으니 넣기를 권한다.
+
+프로필 값 (`--deploy`는 B만, `--branch`는 규칙이 있을 때만):
+| 고른 것 | `--base` | `--pr` | `--deploy` |
+|---|---|---|---|
+| A | 기본 브랜치 | `none` | |
+| B | `dev` | `deploy` | 기본 브랜치 |
+| C | 고른 브랜치 (없으면 기본 브랜치) | `work` | |
+| D | 답한 브랜치 | 답에 따라 `work` · `none` | |
+
 답이 애매하면 추측하지 말고 다시 묻는다. 다 모았으면 답을 한 번에 요약해 보여 주고 2단계로 간다.
 
 ## 2. 프로필 쓰기 → 켜질 문서 계산 (스크립트)
@@ -68,7 +97,7 @@ argument-hint: "[바뀐 점 (다시 실행할 때)]"
 lantern profile write --name "<이름>" --origin greenfield|brownfield --team solo|team [--members "지혁,민수"] \
   --clients web,mobile --server none|external|custom [--extra api] \
   [--knowledge "<지식 저장소 경로>" --knowledge-type obsidian|folder --knowledge-write direct|propose_only [--areas-from "2. Study"]] \
-  --design claude-design|figma|canva|none --remote shared|local --base main \
+  --design claude-design|figma|canva|none --remote shared|local --base main --pr none|deploy|work [--deploy main] [--branch "feature/{id}-{slug}"] \
   --kind script|cli|library|service|data --external yes|no [--languages python,typescript] --comment-language ko|en
 lantern principles detect --write   # 코드 규모 · 언어 · 확인 명령(build.format · lint · typecheck)을 기록
 lantern principles show             # 고른 설계 원칙 · 코드 컨벤션
@@ -95,6 +124,7 @@ lantern scaffold init --plan        # 만들 폴더 · 문서 목록 (아직 아
 - `local`을 골랐으면 **먼저** `lantern docs-mode local` (빈 문서 브랜치 · `.gitignore` · `.ignore` · push 막는 hook을 한 번에)
   실행 전에 한 줄로 알린다: "문서를 원격에 안 올리는 설정으로 바꾸면서, main에 설정 파일 3개(`.gitignore` · `.ignore` · `lantern.yaml`)를 커밋해요."
 - 🏠 brownfield이고 `docs/`가 이미 있으면 **먼저** `lantern legacy adopt` (기존 문서를 `docs/<<folder.legacy>>/`로 `git mv` — 기록이 이어진다)
+- B를 고르고 `dev`를 만들기로 했으면 `git branch dev` (커밋이 아직 없으면 첫 커밋 뒤에). GitHub에 올리는 것은 사람에게 다시 묻는다. 그 밖의 브랜치는 만들거나 바꾸지 않는다.
 - 그다음 `lantern scaffold init`
 
 ## 4. 🌱 그린필드 — 짧은 인터뷰로 프로젝트 정의서 초안
@@ -146,5 +176,6 @@ lantern close l-init
 4. 추가하기로 한 문서에 필요한 질문만 이어서 한다 (`--plan` 출력의 "물을 것" 참고: 웹 → 배포 방식, 팀 → 팀원 이름).
 5. `lantern scaffold init` — 새 문서만 만들고 기존 문서는 그대로. 필요 없어진 문서는 지우지 않고 "<<current_status.inactive>>"으로 표시된다. 이미 있는 문서에 새 유형 칸(예: `## 웹`)이 필요하면 해당 문서에 칸을 추가한다.
 6. 문서 저장 방식(shared ↔ local)은 여기서 바꾸지 않는다 → `lantern docs-mode local|shared`.
+   브랜치 방식을 바꾸려면 위 표의 값을 `lantern profile set git.base=dev git.pr=deploy git.deploy=main`처럼 고치고(이름 규칙은 `git.branch`), `lantern upgrade`. 진행 중인 작업은 지금 브랜치를 그대로 쓴다.
 7. `idea.capture` 같은 스킬 동작 값이나 프로젝트 종류(`project.kind` · `project.external` · `project.languages`)가 바뀌었으면 `lantern upgrade` (스킬 · AGENTS.md의 개발 원칙 · 개발 원칙 문서를 다시 만든다).
 8. 공통 마무리 `lantern close l-init`.

@@ -27,7 +27,7 @@ First check the CLI is there with `lantern --version`. If it isn't, only tell th
 - Use the question tool (AskUserQuestion) and send **up to 4 questions at a time**. They appear one by one, and the answers come back together.
   - Round 1: questions 1 · 2 · 3 · 4 (3 allows several answers)
   - Round 2: questions 5 · 6, and the two parts of 7 (kind · outside connections)
-  - Round 3: only what the earlier answers call for — project name · publishing docs · base branch · (team) member names · (external) API document
+  - Round 3: only what the earlier answers call for — project name · publishing docs · branch flow · (team) member names · (external) API document
   - Round 4: only if a knowledge store was chosen in 5 — the three questions under "If a knowledge store was chosen"
 <!-- lantern:endif -->
 <!-- lantern:if !tool=claude -->
@@ -51,7 +51,7 @@ First check the CLI is there with `lantern --version`. If it isn't, only tell th
 **Then ask** (only what the earlier answers call for)
 - Project name — recommend the folder name
 - "Publish the documents to GitHub too?" — yes (shared, default) / no (local: documents stay only on the `docs-local` branch of the same repository and are never pushed. Good for private notes or public repositories)
-- Base branch that work branches merge into — offer the main · dev branches `git branch` shows
+- Branch flow — see "Choosing the branch flow" below
 - (if 2 is team) team member names — there are no candidates, so ask in a plain message: "Please list the people working with you, separated by commas"
 - (if 4 is external) "Create an API document too?" — if yes, `--extra api`
 
@@ -60,6 +60,35 @@ First check the CLI is there with `lantern --version`. If it isn't, only tell th
 - **How should new notes be made?** — write to the store right away once approved (direct, recommended) / never touch the store, only make draft files (propose_only)
 - **(only when the store has folders split by topic) Use those folders as topics too?** (optional) — first skim the store's top-level folders; if there is no folder whose subfolders look like topics (e.g. `2. Study`), **skip this question**. If there is, say what it means first: "Unfamiliar technologies are kept as debt cards, and each card gets one topic (now: backend · frontend · data · ai · infra · other). Your store seems to have folders split by topic — use those names as topics too? This has nothing to do with the project's structure." Offer the folders found and "only the default topics" (recommended).
 
+**Choosing the branch flow** (look at `git branch -a` · `git remote -v` first. The default branch is whichever of `main` · `master` exists)
+Question: "How should finished work be merged? You can change this later." Keep the choices in plain words, and when offering B · C add "A PR is a request to review the changes on GitHub before they are merged":
+- **A. Keep it simple** — finished work goes straight into the default branch. Good when you're new to this or building fast on your own.
+- **B. Separate development from deployment** — work merges into dev, and goes to the default branch through a PR when you deploy. Good for a service that deploys as soon as the default branch changes.
+- **C. A PR for each work** — each work is reviewed through a PR, then merged. Good if you get code reviews.
+- **D. Keep what you use now** — branches stay as they are; only where work merges is recorded. (Show the existing branches with it)
+
+Recommend the first line that fits, top to bottom. The person may still pick another:
+1. Branches like `release/*` · `hotfix/*` · `develop` · `staging` exist → **D**
+2. A team (2 is team) with a GitHub remote → **C**
+3. Solo, and `dev` already exists → **B**
+4. Otherwise → **A**
+
+Which choices to show: with no remote, leave out B · C (there's nowhere to open a PR). For a new project (1 is greenfield) with a single branch, leave out D. `docs-local` · `work/*` · `feature/*` are no sign of a complex flow. If only A is left, don't ask: use A, and say in one line that it can be changed by running `/l-init` again after connecting GitHub.
+
+After the choice, ask more only when needed:
+- **B:** if `dev` doesn't exist, "Create a `dev` branch?" (if not, let them choose again)
+- **C:** if both `main` · `dev` exist, "Which one should work merge into?"
+- **D:** "Where does finished work merge?" (existing branches as choices) · "Does merging need a PR?" Then say: "LanternSpec only takes care of work up to that merge. Deploy the way you do now."
+- **B · C · D:** "Is there a naming rule for work branches?" — no (recommended: named automatically, like `work/W-012`) / yes. If existing branches show a pattern, offer it (e.g. `feature/JS-15-normalization` → `feature/{ticket}-{slug}`). `{id}` is filled with the work ID; the other blanks are chosen per work. Without `{id}`, works on different branches may get the same number, so recommend including it.
+
+Profile values (`--deploy` only for B, `--branch` only with a rule):
+| Choice | `--base` | `--pr` | `--deploy` |
+|---|---|---|---|
+| A | default branch | `none` | |
+| B | `dev` | `deploy` | default branch |
+| C | the chosen branch (else the default branch) | `work` | |
+| D | the answered branch | `work` · `none` from the answer | |
+
 If an answer is unclear, ask again instead of guessing. Once everything is collected, show a summary of the answers and go to step 2.
 
 ## 2. Write the profile → work out which documents turn on (scripts)
@@ -67,7 +96,7 @@ If an answer is unclear, ask again instead of guessing. Once everything is colle
 lantern profile write --language en --name "<name>" --origin greenfield|brownfield --team solo|team [--members "Ana,Ben"] \
   --clients web,mobile --server none|external|custom [--extra api] \
   [--knowledge "<knowledge store path>" --knowledge-type obsidian|folder --knowledge-write direct|propose_only [--areas-from "2. Study"]] \
-  --design claude-design|figma|canva|none --remote shared|local --base main \
+  --design claude-design|figma|canva|none --remote shared|local --base main --pr none|deploy|work [--deploy main] [--branch "feature/{id}-{slug}"] \
   --kind script|cli|library|service|data --external yes|no [--languages python,typescript]
 lantern principles detect --write   # record code size · languages · check commands (build.format · lint · typecheck)
 lantern principles show             # the chosen design principles · code conventions
@@ -94,6 +123,7 @@ If the knowledge store has `--areas-from`, read its folders with `lantern knowle
 - If `local` was chosen, **first** `lantern docs-mode local` (an empty docs branch · `.gitignore` · `.ignore` · a hook that blocks pushing, all at once)
   Before running it, tell the user in one line: "Switching to keeping documents off the remote, this commits 3 settings files to main (`.gitignore` · `.ignore` · `lantern.yaml`)."
 - 🏠 brownfield with an existing `docs/`: **first** `lantern legacy adopt` (moves the existing documents to `docs/<<folder.legacy>>/` with `git mv` — their history continues)
+- If B was chosen and `dev` is to be created, `git branch dev` (after the first commit if there is none yet). Ask the person again before pushing it. Don't create or change any other branch.
 - Then `lantern scaffold init`
 
 ## 4. 🌱 Greenfield — a short interview for the draft project definition
@@ -145,5 +175,6 @@ Fix any ✖ errors in the check result, and say which ⚠ required blanks remain
 4. Ask only the questions the added documents need (see "to ask" in the `--plan` output: web → how it deploys, team → member names).
 5. `lantern scaffold init` — creates only new documents and leaves existing ones alone. Documents no longer needed aren't deleted; they are marked "<<current_status.inactive>>". If an existing document needs a section for a new kind (e.g. `## Web`), add it to that document.
 6. Don't change the document storage mode (shared ↔ local) here → `lantern docs-mode local|shared`.
+   To change the branch flow, change the values in the table above like `lantern profile set git.base=dev git.pr=deploy git.deploy=main` (the naming rule is `git.branch`), then `lantern upgrade`. Works in progress keep their branches.
 7. If skill behavior values such as `idea.capture`, or the project kind (`project.kind` · `project.external` · `project.languages`) changed, `lantern upgrade` (re-creates the skills · the development principles in AGENTS.md · the development-principles document).
 8. Common wrap-up: `lantern close l-init`.

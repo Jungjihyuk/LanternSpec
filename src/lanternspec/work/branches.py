@@ -1,7 +1,8 @@
 """`lantern work` — one work = one branch, parallel worktrees, finish, archive.
 
 Responsibilities:
-    - the `work/W-012` branch of a work, in this folder or in its own worktree
+    - the branch of a work (named by `git.branch`), in this folder or in its own worktree
+    - link a work and its branch: a name that can't be worked out from the rule is kept in the plan's `branch`
     - warn when parallel works say they will change the same tables or files
     - finish a work: test, merge into the base branch, clean up; archive its folder and fix links
 
@@ -20,9 +21,11 @@ from pathlib import Path
 from ..core import frontmatter
 from ..core.messages import msg
 from ..core.names import WORK_DOCS
-from ..core.project import Project, git, git_out, nfc, read, work_name_of, write
+from ..core.project import Project, git, git_out, nfc, read, work_id_of, work_name_of, write
 from ..core.taskfile import parse_tasks
 
+_BLANK = re.compile(r"\{[A-Za-z_]+\}")
+_WORK_IN_BRANCH = re.compile(r"(?<![A-Z0-9-])W-\d{3,}(?=$|[^0-9])")
 LOCKFILES = [
     ("pnpm-lock.yaml", "pnpm install --frozen-lockfile"),
     ("package-lock.json", "npm ci"),
@@ -46,20 +49,118 @@ class WorkError(RuntimeError):
     pass
 
 
-def branch_name(work_id: str) -> str:
-    """Return the branch name of a work.
+def fill_branch(rule: str, work_id: str) -> str:
+    """Fill the work ID into a branch rule; other blanks stay for a person or the AI to choose.
 
     Args:
+        rule: The rule (`git.branch`), e.g. "feature/{id}-{slug}".
         work_id: The work, e.g. "w-012".
 
     Returns:
-        "work/W-012".
+        The rule with `{id}` filled in.
 
     Example:
-        >>> branch_name("w-012")
+        >>> fill_branch("feature/{id}-{slug}", "w-012")
+        'feature/W-012-{slug}'
+    """
+    return rule.replace("{id}", work_id.upper())
+
+
+def fits_rule(rule: str, work_id: str, name: str) -> bool:
+    """Tell whether a branch name follows a branch rule.
+
+    Args:
+        rule: The rule (`git.branch`).
+        work_id: The work, e.g. "W-012".
+        name: The branch name.
+
+    Returns:
+        Whether the name has the rule's fixed parts, with something in every blank.
+
+    Example:
+        >>> fits_rule("feature/{ticket}-{slug}", "W-012", "feature/JS-15-login")
+        True
+        >>> fits_rule("feature/{ticket}-{slug}", "W-012", "fix/JS-15")
+        False
+    """
+    parts = _BLANK.split(fill_branch(rule, work_id))
+    return re.fullmatch(".+".join(re.escape(p) for p in parts), name) is not None
+
+
+def _rule(project: Project) -> str:
+    return str(project.profile.get("git.branch") or "work/{id}")
+
+
+def branch_name(project: Project, work_id: str) -> str | None:
+    """Return the branch of a work: the one kept in its plan, else its old `work/` branch, else what the rule gives.
+
+    Args:
+        project: The project.
+        work_id: The work, e.g. "w-012".
+
+    Returns:
+        The branch name; None when the rule has blanks and no name was chosen yet.
+
+    Example:
+        >>> branch_name(project, "w-012")  # doctest: +SKIP
         'work/W-012'
     """
-    return f"work/{work_id.upper()}"
+    wid = work_id.upper()
+    folder = project.find_work(wid)
+    plan = project.doc_path(folder, "plan") if folder else None
+    if plan is not None and plan.exists():
+        kept = frontmatter.as_str(frontmatter.parse(read(plan)).meta.get("branch"))
+        if kept:
+            return kept
+    if _branch_exists(project, f"work/{wid}"):
+        return f"work/{wid}"
+    name = fill_branch(_rule(project), wid)
+    return None if _BLANK.search(name) else name
+
+
+def work_of_branch(project: Project, branch: str) -> str | None:
+    """Find the work a branch belongs to: by the work ID in its name, else by the name kept in the plans.
+
+    Args:
+        project: The project.
+        branch: The branch name.
+
+    Returns:
+        The work ID; None when the branch belongs to no work.
+
+    Example:
+        >>> work_of_branch(project, "feature/JS-15-login")  # doctest: +SKIP
+        'W-012'
+    """
+    m = _WORK_IN_BRANCH.search(branch)
+    if m:
+        return m.group(0)
+    for folder in project.work_dirs():
+        wid = work_id_of(folder)
+        if branch_name(project, wid) == branch:
+            return wid
+    return None
+
+
+def check_branch_name(project: Project, work_id: str, name: str) -> None:
+    """Refuse a branch name that breaks the rule (`git.branch`) or that git can't use.
+
+    Args:
+        project: The project.
+        work_id: The work, e.g. "W-012".
+        name: The branch name.
+
+    Raises:
+        WorkError: The name does not follow the rule or is not a valid branch name.
+
+    Example:
+        >>> check_branch_name(project, "W-012", "feature/JS-15-login")  # doctest: +SKIP
+    """
+    rule = _rule(project)
+    if not fits_rule(rule, work_id, name):
+        raise WorkError(msg("Branch {name} doesn't follow the rule {rule} (lantern.yaml git.branch)", name=name, rule=rule))
+    if git(["check-ref-format", "--branch", name], project.root).returncode != 0:
+        raise WorkError(msg("{name} can't be a branch name", name=name))
 
 
 def _branch_exists(project: Project, name: str) -> bool:
@@ -89,7 +190,20 @@ def _base(project: Project) -> str:
     return "HEAD"
 
 
-def ensure_branch(project: Project, work_id: str, from_ref: str | None = None) -> str:
+def _behind_remote(project: Project, base: str) -> str | None:
+    """Warn when the remote's base branch has commits this one doesn't; silent when it can't be asked."""
+    if "origin" not in git_out(["remote"], project.root).split():
+        return None
+    env = {"GIT_TERMINAL_PROMPT": "0", "GIT_SSH_COMMAND": "ssh -oBatchMode=yes"}
+    if git(["fetch", "-q", "origin", base], project.root, env=env).returncode != 0:
+        return None
+    count = git_out(["rev-list", "--count", f"{base}..origin/{base}"], project.root)
+    if not count.isdigit() or int(count) == 0:
+        return None
+    return msg("⚠ origin/{base} has {count} commits this {base} doesn't — run `git pull` on {base} first", base=base, count=count)
+
+
+def ensure_branch(project: Project, work_id: str, from_ref: str | None = None, name: str | None = None) -> str:
     """Switch this folder to the work's branch, creating it from the base branch when needed (/l-build W-012).
 
     A new branch is not made on top of another branch unless asked: that would carry the other
@@ -99,41 +213,64 @@ def ensure_branch(project: Project, work_id: str, from_ref: str | None = None) -
         project: The project.
         work_id: The work, e.g. "W-012".
         from_ref: Start a new branch from here instead of the base branch.
+        name: Use this branch name and keep it in the plan; needed when the rule has blanks.
 
     Returns:
         What happened, as a message.
 
     Raises:
-        WorkError: This folder is on another branch and from_ref is not given, or git could not switch or create the branch.
+        WorkError: No name can be worked out, the name breaks the rule, this folder is on another
+            branch and from_ref is not given, or git could not switch or create the branch.
 
     Example:
         >>> ensure_branch(project, "W-012")  # doctest: +SKIP
         'work/W-012 브랜치를 만들었습니다'
     """
-    name = branch_name(work_id)
-    if current_branch(project.root) == name:
-        return msg("Already on branch {name}", name=name)
-    if _branch_exists(project, name):
-        r = git(["checkout", name], project.root)
-        if r.returncode != 0:
-            raise WorkError(r.stderr.strip())
-        return msg("Switched to branch {name}", name=name)
-    base = _base(project)
-    here = current_branch(project.root)
-    if from_ref is None and base != "HEAD" and here != base:
+    wid = work_id.upper()
+    if name:
+        check_branch_name(project, wid, name)
+    target = name or branch_name(project, wid)
+    if target is None:
         raise WorkError(
             msg(
-                "This folder is on {here}, not the base branch {base} — run `git checkout {base}`, "
-                "or to build on {here}, `lantern work branch {work_id} --from {here}`",
-                here=here,
-                base=base,
-                work_id=work_id.upper(),
+                "The branch rule {rule} has blanks to fill — choose a name: `lantern work branch {wid} --name <name>`",
+                rule=_rule(project),
+                wid=wid,
             )
         )
-    r = git(["checkout", "-b", name, from_ref or base], project.root)
-    if r.returncode != 0:
-        raise WorkError(r.stderr.strip())
-    return msg("Created branch {name}", name=name)
+    if current_branch(project.root) == target:
+        result = msg("Already on branch {name}", name=target)
+    elif _branch_exists(project, target):
+        r = git(["checkout", target], project.root)
+        if r.returncode != 0:
+            raise WorkError(r.stderr.strip())
+        result = msg("Switched to branch {name}", name=target)
+    else:
+        base = _base(project)
+        here = current_branch(project.root)
+        if from_ref is None and base != "HEAD" and here != base:
+            raise WorkError(
+                msg(
+                    "This folder is on {here}, not the base branch {base} — run `git checkout {base}`, "
+                    "or to build on {here}, `lantern work branch {work_id} --from {here}`",
+                    here=here,
+                    base=base,
+                    work_id=wid,
+                )
+            )
+        r = git(["checkout", "-b", target, from_ref or base], project.root)
+        if r.returncode != 0:
+            raise WorkError(r.stderr.strip())
+        result = msg("Created branch {name}", name=target)
+        behind = _behind_remote(project, base) if base != "HEAD" else None
+        if behind:
+            result += "\n" + behind
+    if name:
+        folder = project.find_work(wid)
+        plan = project.doc_path(folder, "plan") if folder else None
+        if plan is not None and plan.exists():
+            write(plan, frontmatter.set_fields(read(plan), {"branch": name}, touch=False))
+    return result
 
 
 # --------------------------------------------------------------------------- worktrees
@@ -199,7 +336,7 @@ def work_worktree(project: Project, work_id: str) -> Worktree | None:
         >>> work_worktree(project, "W-012").path  # doctest: +SKIP
         PosixPath('/Users/me/app-W-012')
     """
-    name = branch_name(work_id)
+    name = branch_name(project, work_id)
     for wt in worktrees(project):
         if wt.branch == name:
             return wt
@@ -239,7 +376,7 @@ def conflicts(project: Project, work_ids: list[str]) -> list[str]:
         >>> conflicts(project, ["W-012", "W-013"])  # doctest: +SKIP
         ['⚠ W-012 · W-013가 같은 곳을 고칩니다: 테이블 users']
     """
-    running = [wt.branch.split("/", 1)[1] for wt in worktrees(project) if wt.branch.startswith("work/")]
+    running = [wid for wt in worktrees(project) if (wid := work_of_branch(project, wt.branch))]
     ids = list(dict.fromkeys([w.upper() for w in work_ids] + running))
     points = {w: _touch_points(project, w) for w in ids}
     warnings = []
@@ -300,7 +437,15 @@ def start(project: Project, work_ids: list[str], install: bool = True, parent: P
             msgs.append(msg("• {wid}: already in progress at {path}", wid=wid, path=existing.path))
             continue
         path = parent / f"{project.root.name}-{wid}"
-        name = branch_name(wid)
+        name = branch_name(project, wid)
+        if name is None:
+            raise WorkError(
+                msg(
+                    "The branch rule {rule} has blanks to fill — choose a name: `lantern work branch {wid} --name <name>`",
+                    rule=_rule(project),
+                    wid=wid,
+                )
+            )
         args = ["worktree", "add", str(path), name] if _branch_exists(project, name) else ["worktree", "add", "-b", name, str(path), base]
         r = git(args, project.root)
         if r.returncode != 0:
@@ -349,22 +494,25 @@ def list_works(project: Project) -> list[str]:
         ['W-012  work/W-012  /Users/me/app-W-012  1/3 완료']
     """
     out = []
-    for wt in worktrees(project):
-        if not wt.branch.startswith("work/"):
+    trees = worktrees(project)
+    for wt in trees:
+        wid = work_of_branch(project, wt.branch)
+        if wid is None:
             continue
-        wid = wt.branch.split("/", 1)[1]
         dirty = bool(git_out(["status", "--porcelain", "--untracked-files=no"], wt.path))
         note = msg("  (uncommitted changes)") if dirty else ""
         out.append(f"{wid}  {wt.branch}  {wt.path}  {_progress(project, wid, wt.path)}{note}")
-    for b in git_out(["branch", "--list", "work/*", "--format=%(refname:short)"], project.root).splitlines():
-        if not any(wt.branch == b for wt in worktrees(project)):
-            wid = b.split("/", 1)[1]
+    for b in git_out(["branch", "--list", "--format=%(refname:short)"], project.root).splitlines():
+        wid = work_of_branch(project, b)
+        if wid and not any(wt.branch == b for wt in trees):
             out.append(msg("{wid}  {b}  (no worktree)  {progress}", wid=wid, b=b, progress=_progress(project, wid)))
     return out or [msg("No parallel works in progress")]
 
 
 def finish(project: Project, work_id: str, test: bool = True, keep: bool = False) -> list[str]:
-    """Finish a work: run the tests, merge its branch into the base branch, and clean up.
+    """Finish a work: bring in the base branch, run the tests, merge into the base branch, and clean up.
+
+    With `git.pr: work` it stops before merging: the PR does that, and the branch stays.
 
     Args:
         project: The project.
@@ -377,22 +525,45 @@ def finish(project: Project, work_id: str, test: bool = True, keep: bool = False
 
     Raises:
         WorkError: The branch is missing, there are uncommitted changes, the tests failed,
-            the base branch is missing or not checked out, or the merge conflicted (it is aborted).
+            the base branch is missing or not checked out, or a merge conflicted (it is aborted).
 
     Example:
         >>> finish(project, "W-012", test=False)[0]  # doctest: +SKIP
         '✔ work/W-012 → main 머지'
     """
     wid = work_id.upper()
-    name = branch_name(wid)
-    if not _branch_exists(project, name):
-        raise WorkError(msg("Branch {name} doesn't exist", name=name))
+    name = branch_name(project, wid)
+    if name is None or not _branch_exists(project, name):
+        raise WorkError(msg("Branch {name} doesn't exist", name=name or fill_branch(_rule(project), wid)))
+    base = str(project.profile.get("git.base") or "main")
+    if not _branch_exists(project, base):
+        raise WorkError(msg("Base branch {base} doesn't exist (lantern.yaml git.base)", base=base))
     msgs: list[str] = []
     wt = work_worktree(project, wid)
-    in_place = wt is not None and wt.path.resolve() == project.root.resolve()
+    in_place = wt is None or wt.path.resolve() == project.root.resolve()
     work_path = wt.path if wt else project.root
     if git_out(["status", "--porcelain", "--untracked-files=no"], work_path):
         raise WorkError(msg("{work_path} has uncommitted changes — commit and run again", work_path=work_path))
+    if wt is None:
+        r = git(["checkout", name], project.root)
+        if r.returncode != 0:
+            raise WorkError(r.stderr.strip())
+    behind = _behind_remote(project, base)
+    if behind:
+        msgs.append(behind)
+    # the tests below must see what the base branch will hold after the merge
+    r = git(["merge", "--no-edit", base], work_path, env={"LANTERN_SKIP_HOOKS": "1"})
+    if r.returncode != 0:
+        conflicted = git_out(["diff", "--name-only", "--diff-filter=U"], work_path).replace("\n", " · ")
+        git(["merge", "--abort"], work_path)
+        raise WorkError(
+            msg(
+                "{name} conflicts with {base}: {files} — on {name}, run `git merge {base}`, resolve it, then run this again",
+                name=name,
+                base=base,
+                files=conflicted or r.stdout.strip(),
+            )
+        )
     if test:
         cmd = project.profile.get("build.test")
         if cmd:
@@ -404,9 +575,18 @@ def finish(project: Project, work_id: str, test: bool = True, keep: bool = False
             msgs.append(msg("✔ Tests passed (`{cmd}`)", cmd=cmd))
         else:
             msgs.append(msg("ℹ No build.test, so tests were skipped"))
-    base = str(project.profile.get("git.base") or "main")
-    if not _branch_exists(project, base):
-        raise WorkError(msg("Base branch {base} doesn't exist (lantern.yaml git.base)", base=base))
+    pr = project.profile.get("git.pr")
+    if pr == "work":
+        msgs.append(
+            msg(
+                "✔ {name} is up to date with {base}. It merges through a PR: current-state update → lantern work archive {wid} → "
+                "commit → `git push -u origin {name}` → open a PR into {base}",
+                name=name,
+                base=base,
+                wid=wid,
+            )
+        )
+        return msgs
     if in_place:
         r = git(["checkout", base], project.root)
         if r.returncode != 0:
@@ -454,6 +634,9 @@ def finish(project: Project, work_id: str, test: bool = True, keep: bool = False
             else msg("⚠ Couldn't delete the branch: {strip}", strip=r.stderr.strip())
         )
     msgs.append(msg("Next: summary of the current-state update → approval → update → lantern work archive ") + wid)
+    if pr == "deploy":
+        deploy = project.profile.get("git.deploy")
+        msgs.append(msg("To send it out later: `git push origin {base}` → open a PR ({base} → {deploy})", base=base, deploy=deploy))
     return msgs
 
 

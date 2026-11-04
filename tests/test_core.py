@@ -162,3 +162,46 @@ def test_skill_names_follow_the_rule():
     for bad in ("l:init", "-l", "l--x", "L-init", "x" * 65):
         with pytest.raises(ValueError):
             validate_name(bad)
+
+
+def test_the_branch_settings_are_explained_in_lantern_yaml(repo):
+    from conftest import init_project
+    from lanternspec.core.profile import load, validate
+
+    init_project(repo)
+    text = (repo.root / "lantern.yaml").read_text(encoding="utf-8")
+    for line in ("branch: work/{id}", "pr: none", "deploy: main"):
+        assert line in text
+    assert "feature/{id}-{slug}" in text
+    # a rule starting with a blank must survive the trip through YAML
+    repo("profile", "set", "git.branch={type}/{ticket}")
+    assert load(repo.root).get("git.branch") == "{type}/{ticket}"
+    data = load(repo.root).data
+    assert validate({**data, "git": {**data["git"], "pr": "maybe"}})
+    assert validate({**data, "git": {**data["git"], "branch": "has space/{id}"}})
+
+
+def test_a_branch_rule_without_the_id_gets_a_warning(repo):
+    from conftest import init_project
+
+    init_project(repo)
+    _, out = repo("profile", "set", "git.branch=feature/{ticket}")
+    assert "⚠" in out and "{id}" in out
+    _, out = repo("profile", "set", "git.branch=feature/{id}")
+    assert "⚠" not in out
+
+
+def test_upgrade_mentions_branch_settings_missing_from_an_older_file(repo):
+    from conftest import init_project
+
+    init_project(repo)
+    path = repo.root / "lantern.yaml"
+    lines = [l for l in path.read_text(encoding="utf-8").split("\n") if not l.startswith(("  branch:", "  pr:", "  deploy:"))]
+    path.write_text("\n".join(lines), encoding="utf-8")
+    before = path.read_text(encoding="utf-8")
+    _, out = repo("upgrade")
+    assert "git.branch" in out
+    assert path.read_text(encoding="utf-8") == before  # told, not changed
+    repo("profile", "set", "git.branch=work/{id}")
+    _, out = repo("upgrade")
+    assert "git.branch" not in out

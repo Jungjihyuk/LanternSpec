@@ -41,9 +41,10 @@ lantern unit-log add --what "<what>" --recommended "<recommendation>" --chosen "
 ## 2. Create the work folder
 ```bash
 lantern idea status IDEA-014 "<<idea_status.reviewing>>"   # when starting from an idea
-lantern scaffold work "<work name>" --idea IDEA-014 [--ui]  # --ui for work that changes screens
+lantern scaffold work "<work name>" --idea IDEA-014 [--ui] [--branch "<branch name>"]  # --ui for work that changes screens
 lantern idea status IDEA-014 "<<idea_status.worked>>" --work W-012
 ```
+- The branch naming rule is `<<git.branch>>`. If it has blanks other than `{id}`, settle the name with the person, pass it with `--branch`, and commit the documents on the base branch (so other branches can tell this work's branch). With only `{id}`, don't pass it.
 - When starting **without an idea**, create the idea card along the way: `lantern scaffold idea "<name>" --raw "<the user's description>" --status "<<idea_status.worked>>"` → `scaffold work --idea` with that ID → `idea status … "<<idea_status.worked>>" --work …`.
 - To **add to an existing work**, don't create a folder; add the scenario and acceptance criteria to that work's `<<file.plan>>`, then `lantern idea status IDEA-014 "<<idea_status.worked>>" --work W-010`.
 - To **divide and place**, do one of the two above for each piece: create a folder for a new-work piece, add an existing-work piece to that work's `<<file.plan>>`. Then run `lantern idea status IDEA-014 "<<idea_status.worked>>" --work W-0NN` once per work (each run adds one work link to the idea).

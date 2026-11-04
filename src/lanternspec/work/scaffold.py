@@ -488,7 +488,7 @@ def work_folder_name(work_id: str, name: str) -> str:
     return f"{work_id} {safe_name(name)}"
 
 
-def new_work(project: Project, name: str, idea_id: str | None = None, ui: bool = False) -> Path:
+def new_work(project: Project, name: str, idea_id: str | None = None, ui: bool = False, branch: str | None = None) -> Path:
     """Create a new work folder with its plan (`기획.md`), under the next work ID.
 
     Args:
@@ -496,18 +496,24 @@ def new_work(project: Project, name: str, idea_id: str | None = None, ui: bool =
         name: The work's name.
         idea_id: The idea it comes from; linked from the plan.
         ui: Mark it as screen work (`ui: true`) and create its mockup folder (`화면/`).
+        branch: The work's branch name, kept in the plan; for branch rules with blanks.
 
     Returns:
         The new work folder.
 
     Raises:
         ValueError: idea_id is given but the idea does not exist.
+        WorkError: The branch name breaks the rule (`git.branch`).
 
     Example:
         >>> new_work(project, "카카오 로그인", idea_id="IDEA-003").name  # doctest: +SKIP
         'W-013 카카오 로그인'
     """
     work_id = next_id(project, "work")
+    if branch:
+        from .branches import check_branch_name
+
+        check_branch_name(project, work_id, branch)
     folder = project.folder("works") / work_folder_name(work_id, name)
     folder.mkdir(parents=True, exist_ok=False)
     links: list[str] = []
@@ -529,6 +535,8 @@ def new_work(project: Project, name: str, idea_id: str | None = None, ui: bool =
     )
     if ui:
         write(plan, frontmatter.set_fields(read(plan), {"ui": True}, touch=False))
+    if branch:
+        write(plan, frontmatter.set_fields(read(plan), {"branch": branch}, touch=False))
     if ui or project.profile.get("design.tool") not in (None, "none"):
         (folder / project.names.folder("screens")).mkdir(exist_ok=True)
     return folder

@@ -77,6 +77,9 @@ def cmd_profile(a: argparse.Namespace) -> int:
             git_cfg["base"] = a.base
         if a.hooks:
             git_cfg["hooks"] = a.hooks
+        for key in ("branch", "pr", "deploy"):
+            if getattr(a, key):
+                git_cfg[key] = getattr(a, key)
         path = pm.save(project.root, data)
         print(msg("✔ Saved {name}", name=path.name))
         print(msg("Next: lantern scaffold init --plan"))
@@ -92,7 +95,10 @@ def cmd_profile(a: argparse.Namespace) -> int:
             raise CliError(msg("Document storage changes only with lantern docs-mode local|shared"))
         pm.update(project.root, updates)
         print("✔ " + ", ".join(f"{k}={v}" for k, v in updates.items()))
-        if any(k.split(".")[0] in ("idea", "learn", "plan", "design", "build", "report", "docs") for k in updates):
+        rule = updates.get("git.branch")
+        if rule is not None and "{id}" not in str(rule):
+            print(msg("⚠ git.branch has no {{id}}: works on different branches may get the same number"))
+        if any(k.split(".")[0] in ("idea", "learn", "plan", "design", "build", "report", "docs", "git") for k in updates):
             print(msg("ℹ This value changes how skills work → lantern upgrade"))
         if any(k.startswith("project.") or k == "knowledge" or k == "docs.extra" for k in updates):
             print(msg("ℹ The documents to turn on may change → lantern scaffold init --plan"))
@@ -381,6 +387,9 @@ def register(add: Add) -> None:
         "remote",
         "base",
         "hooks",
+        "branch",
+        "pr",
+        "deploy",
     ):
         p.add_argument(f"--{flag}")
     p.add_argument("--external", choices=["yes", "no"], help=msg("Connects to outside tools · services"))

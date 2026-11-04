@@ -14,7 +14,7 @@ argument-hint: "W-NNN | W-NNN-T03 [--report-cycle work|criterion|task]"
 
 ## 0. 준비
 1. `<<file.tasks>>`가 없으면 멈추고 `/l-task`를 먼저 하자고 한다. 설계 승인(`<<file.design>>`의 `approved`)이 비어 있으면<!-- lantern:if design.approval=off --> 게이트가 꺼져 있으니 진행한다.<!-- lantern:endif --><!-- lantern:if !design.approval=off --> 멈추고 `/l-design` 게이트를 먼저 거친다.<!-- lantern:endif -->
-2. 작업 하나 = 브랜치 하나: `lantern work branch W-012` (동시 작업용 worktree 안이면 이미 그 브랜치다 — 건너뛴다). 새 브랜치는 기준 브랜치 `<<git.base>>`에서 만든다. 다른 브랜치에 있어서 멈추면 사람에게 묻는다: 기준 브랜치로 옮길지, 그 브랜치 위에 이어 만들지(`--from <브랜치>` — 그 브랜치의 코드도 함께 합쳐진다).
+2. 작업 하나 = 브랜치 하나: `lantern work branch W-012` (동시 작업용 worktree 안이면 이미 그 브랜치다 — 건너뛴다). 새 브랜치는 기준 브랜치 `<<git.base>>`에서 만든다. 다른 브랜치에 있어서 멈추면 사람에게 묻는다: 기준 브랜치로 옮길지, 그 브랜치 위에 이어 만들지(`--from <브랜치>` — 그 브랜치의 코드도 함께 합쳐진다). 브랜치 이름 규칙(`<<git.branch>>`)에 채울 칸이 있어 멈추면 사람과 정해 `--name <이름>`을 붙인다. `⚠ origin/…`이 나오면 기준 브랜치를 먼저 받을지 묻는다.
 3. 작업 꾸러미를 만들고 **그것만** 읽는다 (작업 폴더 + 관련 현재 상태 부분만 모은 한 번 쓰고 버리는 요약):
    ```bash
    lantern pack W-012     # → .lantern/pack/W-012.md
@@ -75,7 +75,7 @@ lantern scaffold idea "<짧은 제목>" --kind <유형> --raw "W-012 구현 중 
 
 **먼저 해결할 일:**
 1. 멈춘 이유를 `## <<section.now>>`에 적고, 지금까지의 변경을 작업 브랜치에 커밋한다 (할 일은 끝난 것으로 체크하지 않는다).
-2. 어디서 시작할지 사람에게 묻는다. 추천은 기준 브랜치 `<<git.base>>`로 옮기는 것이다. 끝나지 않은 코드는 기준 브랜치에 합치지 않는다. 운영 중인 서비스의 장애라면 배포 브랜치에서 시작하는 것도 함께 제안한다.
+2. 어디서 시작할지 사람에게 묻는다. 추천은 기준 브랜치 `<<git.base>>`로 옮기는 것이다. 끝나지 않은 코드는 기준 브랜치에 합치지 않는다. 운영 중인 서비스의 장애라면 배포 브랜치(<!-- lantern:if git.pr=deploy -->`<<git.deploy>>`<!-- lantern:endif --><!-- lantern:if !git.pr=deploy -->`<<git.base>>`<!-- lantern:endif -->)에서 시작하는 것도 함께 제안한다. 그 브랜치가 기준 브랜치와 다르면 고친 뒤 두 브랜치에 모두 반영한다.
 3. 옮긴 브랜치에서 카드를 직접 만들고(위 명령, 서브 에이전트 없이), `/l-plan IDEA-NNN`부터 진행하라고 안내하고 **여기서 멈춘다.**
 4. 그 일이 끝나 합쳐지면 `git checkout <이 작업의 브랜치>` · `git merge <합쳐진 브랜치>` 후 `## <<section.now>>`을 보고 이어 간다.
 
@@ -119,11 +119,21 @@ lantern scaffold idea "<짧은 제목>" --kind <유형> --raw "W-012 구현 중 
 2. 반영한다: 한 사실은 한 곳에 — 출처 작업을 링크한다.
    - 데이터: 설계의 DBML 변경분을 `<<folder.current>>/<<folder.data>>/schema.dbml`에 합친다 → `lantern check-dbml` → `lantern dbml render`
    - 반영한 문서의 확인 시점: `lantern meta set "<문서>" checked_commit=$(git rev-parse --short HEAD)` (관련 코드 경로가 늘었으면 `code`도)
-3. 작업 브랜치를 기준 브랜치에 합치고 정리한다 (테스트 → 머지 → 정리):
+<!-- lantern:if !git.pr=work -->
+3. 작업 브랜치를 기준 브랜치에 합치고 정리한다 (기준 브랜치 받기 → 테스트 → 머지 → 정리). 충돌하면 멈추고 사람에게 알린다:
    ```bash
    lantern work finish W-012
    lantern work archive W-012      # 작업 폴더 → <<folder.archive>>/ (링크도 고쳐 준다)
    ```
+<!-- lantern:endif -->
+<!-- lantern:if git.pr=work -->
+3. 기준 브랜치를 작업 브랜치에 받아 테스트하고, 합치는 것은 PR에 맡긴다. 충돌하면 멈추고 사람에게 알린다:
+   ```bash
+   lantern work finish W-012       # 기준 브랜치 받기 → 테스트 (머지는 하지 않는다)
+   lantern work archive W-012      # 작업 폴더 → <<folder.archive>>/ (링크도 고쳐 준다)
+   ```
+   문서를 커밋한 뒤 push와 PR은 **사람에게 확인받고** 한다.
+<!-- lantern:endif -->
 4. 공통 마무리 + 맞추기 검사 + 보고 갱신:
    ```bash
    lantern close l-build --work W-012

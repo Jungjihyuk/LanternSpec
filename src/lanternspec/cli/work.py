@@ -42,7 +42,7 @@ def cmd_scaffold(a: argparse.Namespace) -> int:
         _print([f"✔ {d}" for d in done] or [msg("· Nothing new to make")])
         return 0
     if a.kind == "work":
-        folder = scaffold.new_work(project, a.name, idea_id=a.idea, ui=a.ui)
+        folder = scaffold.new_work(project, a.name, idea_id=a.idea, ui=a.ui, branch=a.branch)
         print(f"✔ {project.rel(project.doc_path(folder, 'plan'))}")
         return 0
     if a.kind == "doc":
@@ -238,7 +238,7 @@ def cmd_work(a: argparse.Namespace) -> int:
 
     project = _p()
     if a.action == "branch":
-        print(work.ensure_branch(project, a.ids[0], a.from_ref))
+        print(work.ensure_branch(project, a.ids[0], a.from_ref, a.branch_name))
     elif a.action == "start":
         _print(work.start(project, a.ids, install=not a.no_install))
     elif a.action == "list":
@@ -408,6 +408,7 @@ def register(add: Add) -> None:
     s.add_argument("name")
     s.add_argument("--idea")
     s.add_argument("--ui", action="store_true", help=msg("A work that changes screens"))
+    s.add_argument("--branch", help=msg("The work's branch name, for a branch rule with blanks"))
     s = ss.add_parser("doc", help=msg("Work document (design · tasks · log)"))
     s.add_argument("work")
     s.add_argument("doc")
@@ -472,6 +473,7 @@ def register(add: Add) -> None:
     p.add_argument("ids", nargs="*")
     p.add_argument("--no-install", action="store_true")
     p.add_argument("--from", dest="from_ref", help=msg("branch: start from this branch instead of the base branch"))
+    p.add_argument("--name", dest="branch_name", help=msg("branch: use this branch name and keep it in the plan"))
     p.add_argument("--no-test", action="store_true")
     p.add_argument("--keep", action="store_true")
     p = add("pack", cmd_pack, msg("Work pack (a one-off summary for the AI)"))

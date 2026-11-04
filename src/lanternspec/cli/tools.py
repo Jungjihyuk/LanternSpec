@@ -85,7 +85,18 @@ def cmd_upgrade(a: argparse.Namespace) -> int:
         _print(upgrade(_p(), force=a.force, apply=a.apply).lines())
     except LayoutError as e:
         raise CliError(str(e)) from e
+    _mention_branch_settings()
     return 0
+
+
+def _mention_branch_settings() -> None:
+    """Tell an older project about the branch settings its lantern.yaml doesn't show yet; the file stays as it is."""
+    from ..core.profile import PROFILE_FILE, set_in_text
+    from ..core.project import read
+
+    path = _p().root / PROFILE_FILE
+    if path.exists() and set_in_text(read(path), "git.branch", "") is None:
+        print(msg('ℹ New setting: git.branch (work branch name rule). To use it: lantern profile set git.branch="feature/{{id}}-{{slug}}"'))
 
 
 def cmd_build_adapters(a: argparse.Namespace) -> int:

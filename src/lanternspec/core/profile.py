@@ -49,7 +49,7 @@ DEFAULTS: dict[str, Any] = {
     "docs": {"root": "docs/", "remote": "shared", "extra": [], "sections": {}, "unused_sections": []},
     "knowledge": None,
     "design": {"tool": "none", "approval": "required"},
-    "git": {"hooks": "warn", "base": "main"},
+    "git": {"hooks": "warn", "base": "main", "branch": "work/{id}", "pr": "none", "deploy": "main"},
     "idea": {"capture": "manual"},
     "plan": {"max_questions": 3, "ac_format": "gwt", "ui_reference": "off"},
     "learn": {"detect": "manual", "max_candidates": 3, "verify": "self"},
@@ -77,6 +77,7 @@ CHOICES: dict[str, tuple[str, ...]] = {
     "design.tool": ("claude-design", "figma", "canva", "none"),
     "design.approval": ("required", "auto", "off"),
     "git.hooks": ("warn", "block"),
+    "git.pr": ("none", "deploy", "work"),
     "idea.capture": ("manual", "ask", "auto"),
     "plan.ac_format": ("gwt", "simple"),
     "plan.ui_reference": ("off", "required"),
@@ -335,6 +336,8 @@ def validate(data: dict[str, Any]) -> list[str]:
         for item in val:
             if item not in allowed:
                 problems.append(msg("{key}: '{item}' is not allowed (available: {items})", key=key, item=item, items=", ".join(allowed)))
+    if re.search(r"[\s~^:?*\[\\]", str(get_path(data, "git.branch") or "")):
+        problems.append(msg("git.branch: a branch name can't have spaces or any of ~ ^ : ? * [ \\"))
     if not isinstance(get_path(data, "project.external", False), bool):
         problems.append(msg("project.external must be true or false"))
     for key, minimum in MIN_INTS.items():
@@ -563,6 +566,13 @@ def render(data: dict[str, Any]) -> str:
             s=s(d["git"]["hooks"]),
         ),
         msg("  base: {s}                 # the base branch work branches merge into (main | dev …)", s=s(d["git"]["base"])),
+        msg(
+            "  branch: {s}        # work branch name. {{id}} = W-012, other blanks are yours: "
+            "feature/{{id}}-{{slug}} · {{type}}/{{ticket}}",
+            s=s(d["git"]["branch"]),
+        ),
+        msg("  pr: {s}                   # none | deploy (base → deploy branch by PR) | work (each work by PR)", s=s(d["git"]["pr"])),
+        msg("  deploy: {s}               # the branch that goes out, for pr: deploy", s=s(d["git"]["deploy"])),
     ]
     if d["git"].get("schema_paths"):
         lines.append(msg("  schema_paths: {s}  # where schema files are (schema log check)", s=s(d["git"]["schema_paths"])))

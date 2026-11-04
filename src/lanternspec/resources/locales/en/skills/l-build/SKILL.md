@@ -14,7 +14,7 @@ Current settings: report cycle `<<build.report_cycle>>` · applying to the curre
 
 ## 0. Prepare
 1. If `<<file.tasks>>` doesn't exist, stop and suggest running `/l-task` first. If the design approval (`approved` in `<<file.design>>`) is empty<!-- lantern:if design.approval=off -->, the gate is off, so go ahead.<!-- lantern:endif --><!-- lantern:if !design.approval=off -->, stop and go through the `/l-design` gate first.<!-- lantern:endif -->
-2. One work = one branch: `lantern work branch W-012` (inside a worktree for parallel work you are already on that branch — skip it). A new branch starts from the base branch `<<git.base>>`. If it stops because you are on another branch, ask the person: move to the base branch, or build on that branch (`--from <branch>` — that branch's code gets merged along with this work).
+2. One work = one branch: `lantern work branch W-012` (inside a worktree for parallel work you are already on that branch — skip it). A new branch starts from the base branch `<<git.base>>`. If it stops because you are on another branch, ask the person: move to the base branch, or build on that branch (`--from <branch>` — that branch's code gets merged along with this work). If it stops because the naming rule (`<<git.branch>>`) has blanks to fill, settle a name with the person and add `--name <name>`. If `⚠ origin/…` shows up, ask whether to pull the base branch first.
 3. Make the work pack and read **only that** (a one-off summary of the work folder plus only the related parts of the current state):
    ```bash
    lantern pack W-012     # → .lantern/pack/W-012.md
@@ -75,7 +75,7 @@ Fill in the one-line summary and why it's good in the new file; write `<<marker.
 
 **Something must come first:**
 1. Write why it stopped in `## <<section.now>>` and commit the changes so far to the work branch (don't check the task off).
-2. Ask the person where to start. Recommend moving to the base branch `<<git.base>>`; unfinished code doesn't get merged into it. For an outage of a running service, also offer starting from the deploy branch.
+2. Ask the person where to start. Recommend moving to the base branch `<<git.base>>`; unfinished code doesn't get merged into it. For an outage of a running service, also offer starting from the deploy branch (<!-- lantern:if git.pr=deploy -->`<<git.deploy>>`<!-- lantern:endif --><!-- lantern:if !git.pr=deploy -->`<<git.base>>`<!-- lantern:endif -->); if that differs from the base branch, put the fix in both afterwards.
 3. On that branch, make the card yourself (the commands above, no subagent), tell them to go on from `/l-plan IDEA-NNN`, and **stop here.**
 4. Once that is done and merged, `git checkout <this work's branch>` · `git merge <the merged branch>`, then pick up from `## <<section.now>>`.
 
@@ -119,11 +119,21 @@ When `lantern task next W-012` says every task is done:
 2. Apply it: each fact in one place — link the work it came from.
    - Data: merge the design's DBML changes into `<<folder.current>>/<<folder.data>>/schema.dbml` → `lantern check-dbml` → `lantern dbml render`
    - When each applied document was checked: `lantern meta set "<document>" checked_commit=$(git rev-parse --short HEAD)` (and `code` if more code paths are involved)
-3. Merge the work branch into the base branch and clean up (test → merge → clean up):
+<!-- lantern:if !git.pr=work -->
+3. Merge the work branch into the base branch and clean up (bring in the base branch → test → merge → clean up). On a conflict, stop and tell the person:
    ```bash
    lantern work finish W-012
    lantern work archive W-012      # work folder → <<folder.archive>>/ (links are fixed too)
    ```
+<!-- lantern:endif -->
+<!-- lantern:if git.pr=work -->
+3. Bring the base branch into the work branch and test; merging is left to the PR. On a conflict, stop and tell the person:
+   ```bash
+   lantern work finish W-012       # bring in the base branch → test (no merge)
+   lantern work archive W-012      # work folder → <<folder.archive>>/ (links are fixed too)
+   ```
+   After committing the documents, **check with the person** before pushing and opening the PR.
+<!-- lantern:endif -->
 4. Common wrap-up + drift check + refresh the report:
    ```bash
    lantern close l-build --work W-012

@@ -343,3 +343,181 @@ def test_task_next_compares_with_the_docs_branch_in_local_mode(repo):
     tasks.write_text(tasks.read_text(encoding="utf-8").replace(" [먼저:: T01]", ""), encoding="utf-8")
     _, out = repo("task", "next", "W-001")
     assert "⚠ W-001" in out
+
+
+def _work(repo, name="작업"):
+    repo("scaffold", "work", name)
+    repo.git("add", "-A")
+    commit(repo, "docs: 작업 [W-001]")
+
+
+def _branch_now(repo):
+    return repo.git("rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
+
+
+def test_a_branch_rule_with_only_the_id_needs_no_name(repo):
+    init_project(repo)
+    repo("profile", "set", "git.branch=feature/{id}")
+    _work(repo)
+    repo("work", "branch", "W-001")
+    assert _branch_now(repo) == "feature/W-001"
+    _, out = repo("work", "list")
+    assert "W-001  feature/W-001" in out
+    # any branch carrying a work ID reserves the number
+    repo.git("branch", "feature/W-007-other")
+    assert repo("new-id", "work")[1].strip() == "W-008"
+    _, out = repo("work", "finish", "W-001", "--no-test")
+    assert "feature/W-001 → main" in out
+    assert repo.git("branch", "--list", "feature/W-001").stdout.strip() == ""
+
+
+def test_a_branch_rule_with_other_blanks_records_the_name_in_the_plan(repo):
+    init_project(repo)
+    repo("profile", "set", "git.branch=feature/{ticket}-{slug}")
+    _work(repo)
+    code, out = repo("work", "branch", "W-001", ok=False)
+    assert code != 0 and "--name" in out and "feature/{ticket}-{slug}" in out
+    code, out = repo("work", "branch", "W-001", "--name", "fix/JS-15", ok=False)
+    assert code != 0 and "feature/{ticket}-{slug}" in out
+    assert _branch_now(repo) == "main"
+    repo("work", "branch", "W-001", "--name", "feature/JS-15-login")
+    assert _branch_now(repo) == "feature/JS-15-login"
+    plan = work_dir(repo, "W-001") / "기획.md"
+    assert frontmatter.parse(plan.read_text(encoding="utf-8")).meta["branch"] == "feature/JS-15-login"
+    # no ID in the name: the plan links the two both ways
+    _, out = repo("work", "list")
+    assert "W-001  feature/JS-15-login" in out
+    assert "이미" in repo("work", "branch", "W-001")[1]
+    repo.git("add", "-A")
+    commit(repo, "docs: 브랜치 [W-001]")
+    _, out = repo("work", "finish", "W-001", "--no-test")
+    assert "feature/JS-15-login → main" in out
+    assert _branch_now(repo) == "main"
+
+
+def test_the_branch_name_can_be_chosen_when_planning(repo):
+    init_project(repo)
+    repo("profile", "set", "git.branch=feature/{ticket}")
+    code, out = repo("scaffold", "work", "작업", "--branch", "bugfix/1", ok=False)
+    assert code != 0 and "feature/{ticket}" in out
+    assert not list((docs(repo) / "2. 작업").glob("W-*"))
+    repo("scaffold", "work", "작업", "--branch", "feature/JS-1")
+    repo.git("add", "-A")
+    commit(repo, "docs: 작업 [W-001]")  # on the base branch: every branch can see the name
+    repo("work", "branch", "W-001")
+    assert _branch_now(repo) == "feature/JS-1"
+
+
+def test_a_work_already_on_its_old_branch_keeps_it_after_the_rule_changes(repo):
+    init_project(repo)
+    _work(repo)
+    repo("work", "branch", "W-001")
+    repo.git("checkout", "-q", "main")
+    repo("profile", "set", "git.branch=feature/{id}")
+    repo.git("add", "-A")
+    commit(repo, "chore: 규칙 [W-001]")
+    repo("work", "branch", "W-001")
+    assert _branch_now(repo) == "work/W-001"
+
+
+def test_finish_tests_the_work_merged_with_the_base(repo):
+    init_project(repo)
+    _work(repo)
+    repo("work", "branch", "W-001")
+    write(repo, "src/a.py", "a = 1\n")
+    repo.git("add", "src")
+    commit(repo, "feat: a [W-001-T01]")
+    repo.git("checkout", "-q", "main")
+    write(repo, "from_base.txt", "x\n")
+    repo.git("add", "from_base.txt")
+    commit(repo, "chore: 기준 브랜치에 들어온 변경 [W-001]")
+    repo.git("checkout", "-q", "work/W-001")
+    repo("profile", "set", "build.test=test -f from_base.txt")
+    repo.git("add", "-A")
+    commit(repo, "chore: 테스트 설정 [W-001]")
+    _, out = repo("work", "finish", "W-001")
+    assert "테스트 통과" in out and "→ main 머지" in out
+    assert (repo.root / "from_base.txt").exists() and (repo.root / "src/a.py").exists()
+
+
+def test_finish_works_from_the_base_branch_and_stops_cleanly_on_a_conflict(repo):
+    init_project(repo)
+    _work(repo)
+    write(repo, "same.txt", "처음\n")
+    repo.git("add", "same.txt")
+    commit(repo, "chore: 파일 [W-001]")
+    repo("work", "branch", "W-001")
+    write(repo, "same.txt", "작업\n")
+    repo.git("add", "same.txt")
+    commit(repo, "feat: 작업 쪽 [W-001-T01]")
+    repo.git("checkout", "-q", "main")
+    write(repo, "same.txt", "기준\n")
+    repo.git("add", "same.txt")
+    commit(repo, "chore: 기준 쪽 [W-001]")
+    code, out = repo("work", "finish", "W-001", "--no-test", ok=False)
+    assert code != 0 and "same.txt" in out and "git merge main" in out
+    assert repo.git("status", "--porcelain").stdout.strip() == ""  # the merge was aborted
+    assert repo.git("branch", "--list", "work/W-001").stdout.strip() != ""
+    assert (repo.root / "same.txt").read_text(encoding="utf-8") == "작업\n"
+
+
+def test_finish_leaves_merging_to_the_pr_when_each_work_gets_one(repo):
+    init_project(repo)
+    repo("profile", "set", "git.pr=work")
+    _work(repo)
+    repo("work", "branch", "W-001")
+    write(repo, "src/a.py", "a = 1\n")
+    repo.git("add", "src")
+    commit(repo, "feat: a [W-001-T01]")
+    main_before = repo.git("rev-parse", "main").stdout
+    _, out = repo("work", "finish", "W-001", "--no-test")
+    assert "PR" in out and "머지" not in out.split("PR")[0]
+    assert repo.git("rev-parse", "main").stdout == main_before
+    assert _branch_now(repo) == "work/W-001"
+
+
+def test_finish_says_how_to_deploy_when_the_base_goes_out_by_pr(repo):
+    init_project(repo)
+    repo.git("branch", "dev")
+    repo("profile", "set", "git.base=dev", "git.pr=deploy", "git.deploy=main")
+    repo.git("add", "-A")
+    commit(repo, "chore: 설정")
+    repo.git("checkout", "-q", "dev")
+    repo.git("merge", "-q", "main")
+    _work(repo)
+    repo("work", "branch", "W-001")
+    _, out = repo("work", "finish", "W-001", "--no-test")
+    assert "→ dev 머지" in out and "dev" in out.split("머지", 1)[1] and "main" in out.split("머지", 1)[1]
+    assert _branch_now(repo) == "dev"
+
+
+def test_a_new_work_branch_warns_when_the_remote_base_is_ahead(repo, tmp_path):
+    init_project(repo)
+    _work(repo)
+    bare = tmp_path / "origin.git"
+    sh(tmp_path, "git", "init", "-q", "--bare", "-b", "main", str(bare))
+    repo.git("remote", "add", "origin", str(bare))
+    repo.git("push", "-q", "origin", "main", "--no-verify")
+    _, out = repo("work", "branch", "W-001")
+    assert "⚠" not in out
+    repo.git("checkout", "-q", "main")
+    repo.git("branch", "-q", "-D", "work/W-001")
+    other = tmp_path / "other"
+    sh(tmp_path, "git", "clone", "-q", str(bare), str(other))
+    sh(other, "git", "commit", "-q", "--allow-empty", "-m", "다른 사람의 커밋")
+    sh(other, "git", "push", "-q", "origin", "main")
+    _, out = repo("work", "branch", "W-001")
+    assert "⚠" in out and "origin/main" in out and "git pull" in out
+
+
+def test_the_build_skill_follows_the_branch_settings(repo):
+    from lanternspec.core.profile import load
+    from lanternspec.tools import get
+    from lanternspec.tools.skills import generate
+
+    init_project(repo)
+    build = next(t for rel, t in generate(load(repo.root), [get("claude")]).items() if "l-build/" in rel)
+    assert "머지는 하지 않는다" not in build and "<<" not in build and "lantern:if" not in build
+    repo("profile", "set", "git.pr=work", "git.branch=feature/{id}")
+    build = next(t for rel, t in generate(load(repo.root), [get("claude")]).items() if "l-build/" in rel)
+    assert "머지는 하지 않는다" in build and "feature/{id}" in build

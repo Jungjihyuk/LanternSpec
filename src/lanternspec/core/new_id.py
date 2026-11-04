@@ -43,7 +43,7 @@ def _numbers(prefix: str, texts: Iterable[str]) -> Iterable[int]:
 def next_id(project: Project, kind: str) -> str:
     """Return the next free ID of a kind.
 
-    File names, `id` frontmatter fields and (for works) `work/W-…` branches all reserve numbers.
+    File names, `id` frontmatter fields and (for works) branches with a work ID in their name all reserve numbers.
 
     Args:
         project: The project.
@@ -76,11 +76,11 @@ def next_id(project: Project, kind: str) -> str:
                     continue
                 if meta.get("id"):
                     texts.append(str(meta["id"]))
-    # worktree branches (work/W-012) also reserve work numbers
+    # branches of works (work/W-012 · feature/W-012-login) also reserve work numbers
     if kind == "work":
         from .project import git_out
 
-        texts += git_out(["branch", "--list", "work/*", "--format=%(refname:short)"], project.root).splitlines()
+        texts += git_out(["branch", "--list", "--format=%(refname:short)"], project.root).splitlines()
     n = max(_numbers(prefix, texts), default=0) + 1
     return f"{prefix}-{n:0{width}d}"
 

@@ -147,6 +147,21 @@
 "Created branch {name}": {ko: "{name} 브랜치를 만들었습니다"}
 "This folder is on {here}, not the base branch {base} — run `git checkout {base}`, or to build on {here}, `lantern work branch {work_id} --from {here}`": {ko: "이 폴더는 기준 브랜치 {base}가 아니라 {here}에 있습니다 — `git checkout {base}`를 실행하세요. {here} 위에 이어 만들려면 `lantern work branch {work_id} --from {here}`"}
 "branch: start from this branch instead of the base branch": {ko: "branch: 기준 브랜치 대신 이 브랜치에서 시작"}
+"branch: use this branch name and keep it in the plan": {ko: "branch: 이 브랜치 이름을 쓰고 기획 문서에 적어 둠"}
+"The work's branch name, for a branch rule with blanks": {ko: "작업의 브랜치 이름 — 브랜치 규칙에 채울 칸이 있을 때"}
+"Branch {name} doesn't follow the rule {rule} (lantern.yaml git.branch)": {ko: "브랜치 {name}은 규칙 {rule}을 따르지 않습니다 (lantern.yaml git.branch)"}
+"{name} can't be a branch name": {ko: "{name}은 브랜치 이름으로 쓸 수 없습니다"}
+"The branch rule {rule} has blanks to fill — choose a name: `lantern work branch {wid} --name <name>`": {ko: "브랜치 규칙 {rule}에 채울 칸이 있습니다 — 이름을 정하세요: `lantern work branch {wid} --name <이름>`"}
+"⚠ origin/{base} has {count} commits this {base} doesn't — run `git pull` on {base} first": {ko: "⚠ origin/{base}에 이쪽 {base}에 없는 커밋이 {count}개 있습니다 — {base}에서 먼저 `git pull`을 하세요"}
+"{name} conflicts with {base}: {files} — on {name}, run `git merge {base}`, resolve it, then run this again": {ko: "{name}이 {base}와 충돌합니다: {files} — {name}에서 `git merge {base}`로 직접 해결한 뒤 다시 실행하세요"}
+"✔ {name} is up to date with {base}. It merges through a PR: current-state update → lantern work archive {wid} → commit → `git push -u origin {name}` → open a PR into {base}": {ko: "✔ {name}에 {base}의 변경을 반영했습니다. 합치는 것은 PR로 합니다: 현재 상태 반영 → lantern work archive {wid} → 커밋 → `git push -u origin {name}` → {base}로 PR 만들기"}
+"To send it out later: `git push origin {base}` → open a PR ({base} → {deploy})": {ko: "배포할 때: `git push origin {base}` → PR 만들기 ({base} → {deploy})"}
+"git.branch: a branch name can't have spaces or any of ~ ^ : ? * [ \\": {ko: "git.branch: 브랜치 이름에는 공백과 ~ ^ : ? * [ \\ 를 쓸 수 없습니다"}
+"⚠ git.branch has no {{id}}: works on different branches may get the same number": {ko: "⚠ git.branch에 {{id}}가 없습니다: 다른 브랜치에서 같은 작업 번호를 받을 수 있습니다"}
+'ℹ New setting: git.branch (work branch name rule). To use it: lantern profile set git.branch="feature/{{id}}-{{slug}}"': {ko: 'ℹ 새 설정: git.branch (작업 브랜치 이름 규칙). 쓰려면 lantern profile set git.branch="feature/{{id}}-{{slug}}"'}
+"  branch: {s}        # work branch name. {{id}} = W-012, other blanks are yours: feature/{{id}}-{{slug}} · {{type}}/{{ticket}}": {ko: "  branch: {s}        # 작업 브랜치 이름. {{id}} = W-012, 다른 칸은 직접 정함: feature/{{id}}-{{slug}} · {{type}}/{{ticket}}"}
+"  pr: {s}                   # none | deploy (base → deploy branch by PR) | work (each work by PR)": {ko: "  pr: {s}                   # none(PR 없음) | deploy(배포 때 기준 → 배포 브랜치 PR) | work(작업마다 PR)"}
+"  deploy: {s}               # the branch that goes out, for pr: deploy": {ko: "  deploy: {s}               # 배포 브랜치 (pr: deploy일 때)"}
 "{sum}/{count} done": {ko: "{sum}/{count} 완료"}
 "Already on branch {name}": {ko: "이미 {name} 브랜치입니다"}
 "Switched to branch {name}": {ko: "{name} 브랜치로 바꿨습니다"}
