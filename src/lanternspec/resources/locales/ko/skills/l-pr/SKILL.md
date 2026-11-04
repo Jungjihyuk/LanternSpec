@@ -56,7 +56,7 @@ git rev-list --count <head>..origin/<target>     # 0이 아니면 <target>의 �
 <!-- lantern:endif -->
 
 ## 4. 확인받고 올리기
-먼저 공통 마무리를 돌린다. 문서가 바뀌면(지도 갱신 등) 커밋해서 이번 PR에 함께 넣는다:
+먼저 공통 마무리를 돌린다. 문서가 바뀌면(지도 갱신 등) 커밋해서 이번 PR에 함께 넣는다 (커밋 메시지에도 AI가 작업했다는 표시를 넣지 않는다):
 ```bash
 lantern close l-pr
 ```

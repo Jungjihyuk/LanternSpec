@@ -56,7 +56,7 @@ Find the works that went in from `[W-012]` · `[W-012-T03]` in `git log origin/<
 <!-- lantern:endif -->
 
 ## 4. Confirm, then send
-First run the common wrap-up. If it changes documents (the map and so on), commit them so they go in this PR:
+First run the common wrap-up. If it changes documents (the map and so on), commit them so they go in this PR (no mark that AI did the work in that commit message either):
 ```bash
 lantern close l-pr
 ```

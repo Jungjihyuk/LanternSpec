@@ -146,6 +146,12 @@
 # work/branches.py
 "Created branch {name}": {ko: "{name} 브랜치를 만들었습니다"}
 "This folder is on {here}, not the base branch {base} — run `git checkout {base}`, or to build on {here}, `lantern work branch {work_id} --from {here}`": {ko: "이 폴더는 기준 브랜치 {base}가 아니라 {here}에 있습니다 — `git checkout {base}`를 실행하세요. {here} 위에 이어 만들려면 `lantern work branch {work_id} --from {here}`"}
+"flow: how many people work on it": {ko: "flow: 몇 명이 하나"}
+"flow: a new project, or one with code already": {ko: "flow: 새 프로젝트인가, 코드가 이미 있나"}
+"Recommended: {flow}": {ko: "추천: {flow}"}
+"Choices: {items}": {ko: "선택지: {items}"}
+"Default branch: {name}": {ko: "기본 브랜치: {name}"}
+"Branches: {items}": {ko: "브랜치: {items}"}
 "branch: start from this branch instead of the base branch": {ko: "branch: 기준 브랜치 대신 이 브랜치에서 시작"}
 "branch: use this branch name and keep it in the plan": {ko: "branch: 이 브랜치 이름을 쓰고 기획 문서에 적어 둠"}
 "The work's branch name, for a branch rule with blanks": {ko: "작업의 브랜치 이름 — 브랜치 규칙에 채울 칸이 있을 때"}

@@ -617,3 +617,67 @@ def test_the_commit_template_is_written_once_and_guides_a_real_commit(repo, tmp_
     tpl.write_text("# 우리 양식\n", encoding="utf-8")
     _, out = repo("install", "--commit-template")
     assert "그대로" in out and tpl.read_text(encoding="utf-8") == "# 우리 양식\n"
+
+
+def test_upgrade_after_init_carries_the_branch_flow_into_the_skills(repo):
+    # /l-init writes the answers after the skills were installed, so it must remake them
+    init_project(repo)
+    repo("install")
+    assert "git.pr: none" in (repo.root / ".claude/skills/l-pr/SKILL.md").read_text(encoding="utf-8")
+    assert "lantern upgrade" in _skill(repo, "l-init").split("## 4.")[0]
+    repo("profile", "set", "git.base=dev", "git.pr=work")
+    repo("upgrade")
+    assert "작업 브랜치 → `dev`" in (repo.root / ".claude/skills/l-pr/SKILL.md").read_text(encoding="utf-8")
+
+
+def test_the_branch_flow_recommendation_follows_the_project_state():
+    from lanternspec.work.branches import recommend_flow
+
+    def flow(branches, remote=True, team="solo", origin="greenfield"):
+        f = recommend_flow(branches, remote, team, origin)
+        return f.recommended, "".join(f.choices)
+
+    # no remote: nowhere to open a PR, and a new project with one branch has nothing to keep
+    assert flow(["main"], remote=False) == ("A", "A")
+    assert flow(["main"], remote=False, team="team") == ("A", "A")
+    assert flow(["main", "dev"], remote=False) == ("A", "AD")
+    # first matching line wins
+    assert flow(["main"]) == ("A", "ABC")
+    assert flow(["main", "dev"]) == ("B", "ABCD")
+    assert flow(["main"], team="team") == ("C", "ABC")
+    assert flow(["main", "dev"], team="team") == ("C", "ABCD")
+    assert flow(["main", "dev", "release/1.2"]) == ("D", "ABCD")
+    assert flow(["main", "hotfix/login"], team="team") == ("D", "ABCD")
+    assert flow(["main", "develop"], remote=False) == ("D", "AD")
+    assert flow(["main", "staging"]) == ("D", "ABCD")
+    # branches that say nothing about the flow
+    assert flow(["main", "docs-local", "work/W-001"]) == ("A", "ABC")
+    assert flow(["main", "feature/JS-1"]) == ("A", "ABCD")
+    # an existing project can always keep what it does
+    assert flow(["main"], origin="brownfield") == ("A", "ABCD")
+    assert recommend_flow(["master", "dev"], True, "solo", "brownfield").default_branch == "master"
+
+
+def test_work_flow_reads_the_repository(repo):
+    repo.git("branch", "dev")
+    _, out = repo("work", "flow", "--team", "solo", "--origin", "greenfield")
+    assert "추천: A" in out and "선택지: A D" in out  # no remote yet
+    repo.git("remote", "add", "origin", "https://github.com/example/example.git")
+    _, out = repo("work", "flow", "--team", "solo", "--origin", "greenfield")
+    assert "추천: B" in out and "선택지: A B C D" in out and "기본 브랜치: main" in out and "dev" in out
+    # a remote branch counts too
+    sh(repo.root, "git", "update-ref", "refs/remotes/origin/release/1.0", "HEAD")
+    _, out = repo("work", "flow", "--team", "team", "--origin", "brownfield")
+    assert "추천: D" in out
+    # a remote that isn't GitHub has no PR flow for /l-pr
+    repo.git("remote", "set-url", "origin", "https://gitlab.example.com/a/b.git")
+    repo.git("update-ref", "-d", "refs/remotes/origin/release/1.0")
+    _, out = repo("work", "flow", "--team", "solo", "--origin", "greenfield")
+    assert "추천: A" in out
+
+
+def test_the_init_skill_leaves_the_recommendation_to_the_command(repo):
+    init_project(repo)
+    text = _skill(repo, "l-init")
+    assert "lantern work flow --team" in text and "A. 단순하게" in text
+    assert "release/*" not in text  # the rule itself lives only in the code

@@ -70,12 +70,12 @@ Read a 📌 verbatim section again right before turning its rule into code. Know
 | Outside, and **this task's acceptance criteria can be met without fixing it** | Don't fix it: leave a card and go on, even if it's a one-line fix |
 | Outside, and **the acceptance criteria can't be met without fixing it** | Stop and go to "Something must come first" |
 
-**Leaving a card:** if this tool supports subagents, hand it to one and keep working; otherwise do it yourself on the spot. A subagent doesn't know this conversation, so pass what was found, its `file:line` and the work ID in full, along with these steps:
+**Leaving a card:** don't do it yourself: **hand it to one subagent** and keep working (even if it looks simple). Only if this tool has no subagents, do it on the spot. A subagent doesn't know this conversation, so pass what was found, its `file:line` and the work ID in full, along with these steps:
 ```bash
 lantern idea find "<two or three key words>"     # if the same card exists, add to its ## <<section.raw>> with the date and stop
 lantern scaffold idea "<short title>" --kind <kind> --raw "Found while building W-012 (<file:line>): <what>" --auto
 ```
-Fill in the one-line summary and why it's good in the new file; write `<<marker.unknown>>` for what you don't know, and remove optional sections with nothing to say. Keep it out of the task's commit, and include the IDEA ID in the final report.
+Fill in the one-line summary and why it's good in the new file; write `<<marker.unknown>>` for what you don't know, and remove optional sections with nothing to say. Keep the card out of the task's commit: commit it separately as `docs: record IDEA-NNN` (the subagent doesn't commit), and include the IDEA ID in the final report.
 
 **Something must come first:**
 1. Write why it stopped in `## <<section.now>>` and commit the changes so far to the work branch (don't check the task off).

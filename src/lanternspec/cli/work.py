@@ -237,6 +237,15 @@ def cmd_work(a: argparse.Namespace) -> int:
     from ..work import stages
 
     project = _p()
+    if a.action == "flow":
+        if not a.team or not a.origin:
+            raise CliError("lantern work flow --team solo|team --origin greenfield|brownfield")
+        flow = work.suggest_flow(project, a.team, a.origin)
+        print(msg("Recommended: {flow}", flow=flow.recommended))
+        print(msg("Choices: {items}", items=" ".join(flow.choices)))
+        print(msg("Default branch: {name}", name=flow.default_branch))
+        print(msg("Branches: {items}", items=", ".join(flow.branches)))
+        return 0
     if a.action == "branch":
         print(work.ensure_branch(project, a.ids[0], a.from_ref, a.branch_name))
     elif a.action == "start":
@@ -469,7 +478,9 @@ def register(add: Add) -> None:
     p.add_argument("--unknown", action="store_true")
     p.add_argument("--parallel", action="store_true", help=msg("[P] can run at the same time as other [P] tasks"))
     p = add("work", cmd_work, msg("Work branches · parallel works · finish · archive · stage"))
-    p.add_argument("action", choices=["branch", "start", "list", "finish", "archive", "stage"])
+    p.add_argument("action", choices=["branch", "start", "list", "finish", "archive", "stage", "flow"])
+    p.add_argument("--team", choices=["solo", "team"], help=msg("flow: how many people work on it"))
+    p.add_argument("--origin", choices=["greenfield", "brownfield"], help=msg("flow: a new project, or one with code already"))
     p.add_argument("ids", nargs="*")
     p.add_argument("--no-install", action="store_true")
     p.add_argument("--from", dest="from_ref", help=msg("branch: start from this branch instead of the base branch"))

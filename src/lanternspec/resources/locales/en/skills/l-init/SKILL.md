@@ -60,20 +60,16 @@ First check the CLI is there with `lantern --version`. If it isn't, only tell th
 - **How should new notes be made?** — write to the store right away once approved (direct, recommended) / never touch the store, only make draft files (propose_only)
 - **(only when the store has folders split by topic) Use those folders as topics too?** (optional) — first skim the store's top-level folders; if there is no folder whose subfolders look like topics (e.g. `2. Study`), **skip this question**. If there is, say what it means first: "Unfamiliar technologies are kept as debt cards, and each card gets one topic (now: backend · frontend · data · ai · infra · other). Your store seems to have folders split by topic — use those names as topics too? This has nothing to do with the project's structure." Offer the folders found and "only the default topics" (recommended).
 
-**Choosing the branch flow** (look at `git branch -a` · `git remote -v` first. The default branch is whichever of `main` · `master` exists)
+**Choosing the branch flow** — **a command decides** the recommendation and the choices to offer (pass the answers to 1 · 2):
+```bash
+lantern work flow --team solo|team --origin greenfield|brownfield
+```
+Show only its `Choices` and mark its `Recommended`. Don't swap in your own judgment. The person may still pick another. If `Choices` is just A, don't ask: use A, and say in one line that it can be changed by running `/l-init` again after connecting GitHub. `default branch` below means the branch the command names.
 Question: "How should finished work be merged? You can change this later." Keep the choices in plain words, and when offering B · C add "A PR is a request to review the changes on GitHub before they are merged":
 - **A. Keep it simple** — finished work goes straight into the default branch. Good when you're new to this or building fast on your own.
 - **B. Separate development from deployment** — work merges into dev, and goes to the default branch through a PR when you deploy. Good for a service that deploys as soon as the default branch changes.
 - **C. A PR for each work** — each work is reviewed through a PR, then merged. Good if you get code reviews.
 - **D. Keep what you use now** — branches stay as they are; only where work merges is recorded. (Show the existing branches with it)
-
-Recommend the first line that fits, top to bottom. The person may still pick another:
-1. Branches like `release/*` · `hotfix/*` · `develop` · `staging` exist → **D**
-2. A team (2 is team) with a GitHub remote → **C**
-3. Solo, and `dev` already exists → **B**
-4. Otherwise → **A**
-
-Which choices to show: with no remote, leave out B · C (there's nowhere to open a PR). For a new project (1 is greenfield) with a single branch, leave out D. `docs-local` · `work/*` · `feature/*` are no sign of a complex flow. If only A is left, don't ask: use A, and say in one line that it can be changed by running `/l-init` again after connecting GitHub.
 
 After the choice, ask more only when needed:
 - **B:** if `dev` doesn't exist, "Create a `dev` branch?" (if not, let them choose again)
@@ -125,6 +121,7 @@ If the knowledge store has `--areas-from`, read its folders with `lantern knowle
 - 🏠 brownfield with an existing `docs/`: **first** `lantern legacy adopt` (moves the existing documents to `docs/<<folder.legacy>>/` with `git mv` — their history continues)
 - If B was chosen and `dev` is to be created, `git branch dev` (after the first commit if there is none yet). Ask the person again before pushing it. Don't create or change any other branch.
 - Then `lantern scaffold init`
+- Finally `lantern upgrade` — the skills were installed before these answers, so remake them to carry the chosen settings (the branch flow and so on).
 
 ## 4. 🌱 Greenfield — a short interview for the draft project definition
 Ask the three `<<marker.required>>` blanks of `docs/<<folder.current>>/<<file.project_definition>>` **in order**. Build each next blank's candidates from the answers before it, so the person only picks or edits.

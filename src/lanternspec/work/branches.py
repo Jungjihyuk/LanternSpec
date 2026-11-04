@@ -3,6 +3,7 @@
 Responsibilities:
     - the branch of a work (named by `git.branch`), in this folder or in its own worktree
     - link a work and its branch: a name that can't be worked out from the rule is kept in the plan's `branch`
+    - recommend a branch flow from the project's state (for /l-init)
     - warn when parallel works say they will change the same tables or files
     - finish a work: test, merge into the base branch, clean up; archive its folder and fix links
 
@@ -24,6 +25,7 @@ from ..core.names import WORK_DOCS
 from ..core.project import Project, git, git_out, nfc, read, work_id_of, work_name_of, write
 from ..core.taskfile import parse_tasks
 
+_COMPLEX_FLOW = re.compile(r"^(release/|hotfix/|develop$|staging$)")
 _BLANK = re.compile(r"\{[A-Za-z_]+\}")
 _WORK_IN_BRANCH = re.compile(r"(?<![A-Z0-9-])W-\d{3,}(?=$|[^0-9])")
 LOCKFILES = [
@@ -47,6 +49,85 @@ class WorkError(RuntimeError):
     """
 
     pass
+
+
+@dataclass
+class BranchFlow:
+    """Which branch flows to offer a project, and which one to recommend.
+
+    Attributes:
+        recommended: The flow to recommend: "A" · "B" · "C" · "D".
+        choices: The flows to offer, in order.
+        default_branch: The branch that goes out.
+        branches: The branches that were looked at.
+
+    Example:
+        >>> BranchFlow("A", ["A"], "main", ["main"]).recommended
+        'A'
+    """
+
+    recommended: str
+    choices: list[str]
+    default_branch: str
+    branches: list[str]
+
+
+def recommend_flow(branches: list[str], has_remote: bool, team: str, origin: str) -> BranchFlow:
+    """Choose the branch flow to recommend: the first rule that fits wins.
+
+    A flow a project already follows comes first, then review for a team, then an existing `dev`.
+    Flows B and C need a GitHub remote to open PRs on, and flow D needs a branch setup to keep.
+
+    Args:
+        branches: Branch names, without the remote's prefix.
+        has_remote: Whether the project has a GitHub remote.
+        team: `project.team`: "solo" or "team".
+        origin: `project.origin`: "greenfield" or "brownfield".
+
+    Returns:
+        The recommendation and the flows to offer.
+
+    Example:
+        >>> recommend_flow(["main", "dev"], True, "solo", "greenfield").recommended
+        'B'
+        >>> recommend_flow(["main"], False, "team", "greenfield").choices
+        ['A']
+    """
+    names = sorted({b for b in branches if b != "docs-local" and not b.startswith("work/")})
+    choices = ["A"] + (["B", "C"] if has_remote else [])
+    if origin != "greenfield" or len(names) > 1:
+        choices.append("D")
+    if any(_COMPLEX_FLOW.match(b) for b in names):
+        recommended = "D"
+    elif has_remote and team == "team":
+        recommended = "C"
+    elif has_remote and team == "solo" and "dev" in names:
+        recommended = "B"
+    else:
+        recommended = "A"
+    default = "master" if "master" in names and "main" not in names else "main"
+    return BranchFlow(recommended, choices, default, names)
+
+
+def suggest_flow(project: Project, team: str, origin: str) -> BranchFlow:
+    """Read the repository's branches and remote, and recommend a branch flow.
+
+    Args:
+        project: The project.
+        team: `project.team`: "solo" or "team".
+        origin: `project.origin`: "greenfield" or "brownfield".
+
+    Returns:
+        The recommendation and the flows to offer.
+
+    Example:
+        >>> suggest_flow(project, "solo", "greenfield").recommended  # doctest: +SKIP
+        'A'
+    """
+    local = git_out(["branch", "--format=%(refname:short)"], project.root).splitlines()
+    remote = git_out(["branch", "-r", "--format=%(refname:short)"], project.root).splitlines()
+    names = local + [b.split("/", 1)[1] for b in remote if "/" in b and not b.endswith("/HEAD")]
+    return recommend_flow(names, "github.com" in git_out(["remote", "-v"], project.root), team, origin)
 
 
 def fill_branch(rule: str, work_id: str) -> str:
