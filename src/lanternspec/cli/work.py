@@ -246,10 +246,14 @@ def cmd_work(a: argparse.Namespace) -> int:
         print(msg("Default branch: {name}", name=flow.default_branch))
         print(msg("Branches: {items}", items=", ".join(flow.branches)))
         return 0
+    if a.here and (a.action != "branch" or a.into or a.from_ref or a.branch_name):
+        raise CliError(msg("--here is for `lantern work branch W-012 --here`, on its own"))
+    if a.into and a.action not in ("branch", "start"):
+        raise CliError(msg("--into is for `lantern work branch` and `lantern work start`"))
     if a.action == "branch":
-        print(work.ensure_branch(project, a.ids[0], a.from_ref, a.branch_name))
+        print(work.work_here(project, a.ids[0]) if a.here else work.ensure_branch(project, a.ids[0], a.from_ref, a.branch_name, a.into))
     elif a.action == "start":
-        _print(work.start(project, a.ids, install=not a.no_install))
+        _print(work.start(project, a.ids, install=not a.no_install, into=a.into))
     elif a.action == "list":
         _print(work.list_works(project))
     elif a.action == "finish":
@@ -485,6 +489,8 @@ def register(add: Add) -> None:
     p.add_argument("--no-install", action="store_true")
     p.add_argument("--from", dest="from_ref", help=msg("branch: start from this branch instead of the base branch"))
     p.add_argument("--name", dest="branch_name", help=msg("branch: use this branch name and keep it in the plan"))
+    p.add_argument("--into", help=msg("branch · start: this work only, start from and merge into this branch instead of the base branch"))
+    p.add_argument("--here", action="store_true", help=msg("branch: this work only, no work branch, commit straight to the current branch"))
     p.add_argument("--no-test", action="store_true")
     p.add_argument("--keep", action="store_true")
     p = add("pack", cmd_pack, msg("Work pack (a one-off summary for the AI)"))

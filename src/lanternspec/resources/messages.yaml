@@ -209,6 +209,19 @@
 "{wid}  {b}  (no worktree)  {progress}": {ko: "{wid}  {b}  (worktree 없음)  {progress}"}
 "✔ Tests passed (`{cmd}`)": {ko: "✔ 테스트 통과 (`{cmd}`)"}
 "ℹ No build.test, so tests were skipped": {ko: "ℹ build.test가 없어 테스트를 건너뜀"}
+"{wid} is on {name} already — to work there directly: lantern work branch {wid} --here": {ko: "{wid}: 이미 {name} 브랜치입니다 — 그 브랜치에서 바로 작업하려면: lantern work branch {wid} --here"}
+"{name} already started from another branch, so its commits would all go to {into} — to start over from {into}, delete it first: git branch -D {name}": {ko: "{name} 브랜치는 이미 다른 곳에서 시작해, 그 커밋이 모두 {into}로 들어갑니다 — {into}에서 새로 시작하려면 먼저 지우세요: git branch -D {name}"}
+"This folder isn't on a branch — run `git checkout <branch>` first": {ko: "이 폴더가 브랜치 위에 있지 않습니다 — 먼저 `git checkout <브랜치>`를 실행하세요"}
+"{here} is the branch of {owner} — move to the branch to work on first": {ko: "{here} 브랜치는 {owner}의 브랜치입니다 — 작업할 브랜치로 먼저 옮기세요"}
+"{wid} already has its branch {name} — continue there, or delete it first": {ko: "{wid}: 이미 {name} 브랜치가 있습니다 — 거기서 이어 하거나 먼저 지우세요"}
+"⚠ {wid}: no work branch, so commits go straight to {here}": {ko: "⚠ {wid}: 작업 브랜치 없이 {here}에 바로 커밋합니다"}
+"⚠ {wid} merges into {target}, not the usual {usual}": {ko: "⚠ {wid}: 평소의 {usual} 대신 {target}에 합칩니다"}
+"✔ The work is already on {base}, so there is nothing to merge": {ko: "✔ 작업이 이미 {base}에 있어 합칠 것이 없습니다"}
+"⚠ {usual} doesn't have this yet — merge {target} into {usual} too": {ko: "⚠ {usual}에는 아직 이 변경이 없습니다 — {target} 브랜치를 {usual}에도 합치세요"}
+"--here is for `lantern work branch W-012 --here`, on its own": {ko: "--here는 `lantern work branch W-012 --here`처럼 단독으로 씁니다"}
+"--into is for `lantern work branch` and `lantern work start`": {ko: "--into는 `lantern work branch`와 `lantern work start`에서 씁니다"}
+"branch · start: this work only, start from and merge into this branch instead of the base branch": {ko: "branch · start: 이 작업만 기준 브랜치 대신 이 브랜치에서 시작하고 여기로 합침"}
+"branch: this work only, no work branch, commit straight to the current branch": {ko: "branch: 이 작업만 작업 브랜치 없이 지금 브랜치에 바로 커밋"}
 "{base} isn't open in any folder — run `git checkout {base}` in {root} and try again": {ko: "{base} 브랜치가 열린 폴더가 없습니다 — {root}에서 `git checkout {base}` 후 다시 실행하세요"}
 "ℹ This session is inside {path}, so it stays. Do the next steps in {into}; to clean up afterwards: cd \"{into}\" && lantern work finish {wid} --no-test": {ko: "ℹ 이 세션이 {path} 안에 있어 폴더를 남겨 둡니다. 다음 단계는 {into}에서 하세요. 끝난 뒤 정리: cd \"{into}\" && lantern work finish {wid} --no-test"}
 "✔ Removed worktree: {path}": {ko: "✔ worktree 정리: {path}"}

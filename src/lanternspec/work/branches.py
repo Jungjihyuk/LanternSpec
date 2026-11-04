@@ -3,6 +3,7 @@
 Responsibilities:
     - the branch of a work (named by `git.branch`), in this folder or in its own worktree
     - link a work and its branch: a name that can't be worked out from the rule is kept in the plan's `branch`
+    - one-off exceptions a person asks for (merge elsewhere · no work branch), kept in this repository's git config
     - recommend a branch flow from the project's state (for /l-init)
     - warn when parallel works say they will change the same tables or files
     - finish a work: test, merge into the base branch, clean up; archive its folder and fix links
@@ -172,6 +173,33 @@ def _rule(project: Project) -> str:
     return str(project.profile.get("git.branch") or "work/{id}")
 
 
+def _exception(project: Project, wid: str, key: str) -> str:
+    # git config, not the plan: every worktree sees it at once, whichever branch holds the plan's latest version
+    return git_out(["config", "--get", f"lantern.{wid}.{key}"], project.root)
+
+
+def _usual_base(project: Project) -> str:
+    return str(project.profile.get("git.base") or "main")
+
+
+def merge_target(project: Project, work_id: str) -> str:
+    """Return the branch a work merges into: the one a person chose for this work, else `git.base`.
+
+    Args:
+        project: The project.
+        work_id: The work, e.g. "w-012".
+
+    Returns:
+        The branch name.
+
+    Example:
+        >>> merge_target(project, "w-012")  # doctest: +SKIP
+        'dev'
+    """
+    wid = work_id.upper()
+    return _exception(project, wid, "into") or _exception(project, wid, "here") or _usual_base(project)
+
+
 def branch_name(project: Project, work_id: str) -> str | None:
     """Return the branch of a work: the one kept in its plan, else its old `work/` branch, else what the rule gives.
 
@@ -187,6 +215,9 @@ def branch_name(project: Project, work_id: str) -> str | None:
         'work/W-012'
     """
     wid = work_id.upper()
+    here = _exception(project, wid, "here")
+    if here:
+        return here
     folder = project.find_work(wid)
     plan = project.doc_path(folder, "plan") if folder else None
     if plan is not None and plan.exists():
@@ -265,10 +296,63 @@ def current_branch(cwd: Path) -> str:
 
 
 def _base(project: Project) -> str:
-    base = str(project.profile.get("git.base") or "main")
+    base = _usual_base(project)
     if _branch_exists(project, base):
         return base
     return "HEAD"
+
+
+def _keep_into(project: Project, wid: str, name: str, into: str) -> None:
+    """Check a one-off merge target and keep it; a branch that already started elsewhere can't change its target."""
+    if not _branch_exists(project, into):
+        raise WorkError(msg("Branch {name} doesn't exist", name=into))
+    if into == name:
+        raise WorkError(msg("{wid} is on {name} already — to work there directly: lantern work branch {wid} --here", wid=wid, name=name))
+    if _branch_exists(project, name) and _exception(project, wid, "into") != into:
+        raise WorkError(
+            msg(
+                "{name} already started from another branch, so its commits would all go to {into} — "
+                "to start over from {into}, delete it first: git branch -D {name}",
+                name=name,
+                into=into,
+            )
+        )
+    git(["config", f"lantern.{wid}.into", into], project.root)
+
+
+def _forget_exceptions(project: Project, wid: str) -> None:
+    git(["config", "--remove-section", f"lantern.{wid}"], project.root)
+
+
+def work_here(project: Project, work_id: str) -> str:
+    """Work on the current branch directly, with no work branch, because a person asked for it.
+
+    Args:
+        project: The project.
+        work_id: The work, e.g. "W-012".
+
+    Returns:
+        What happened, as a message.
+
+    Raises:
+        WorkError: HEAD is detached, this is another work's branch, or the work already has its own branch.
+
+    Example:
+        >>> work_here(project, "W-012")  # doctest: +SKIP
+        '⚠ W-012 작업 브랜치 없이 main에 바로 커밋합니다'
+    """
+    wid = work_id.upper()
+    here = current_branch(project.root)
+    if not here or here == "HEAD":
+        raise WorkError(msg("This folder isn't on a branch — run `git checkout <branch>` first"))
+    owner = work_of_branch(project, here)
+    if owner and owner != wid:
+        raise WorkError(msg("{here} is the branch of {owner} — move to the branch to work on first", here=here, owner=owner))
+    own = branch_name(project, wid)
+    if own and own != here and _branch_exists(project, own):
+        raise WorkError(msg("{wid} already has its branch {name} — continue there, or delete it first", wid=wid, name=own))
+    git(["config", f"lantern.{wid}.here", here], project.root)
+    return msg("⚠ {wid}: no work branch, so commits go straight to {here}", wid=wid, here=here)
 
 
 def _behind_remote(project: Project, base: str) -> str | None:
@@ -284,7 +368,7 @@ def _behind_remote(project: Project, base: str) -> str | None:
     return msg("⚠ origin/{base} has {count} commits this {base} doesn't — run `git pull` on {base} first", base=base, count=count)
 
 
-def ensure_branch(project: Project, work_id: str, from_ref: str | None = None, name: str | None = None) -> str:
+def ensure_branch(project: Project, work_id: str, from_ref: str | None = None, name: str | None = None, into: str | None = None) -> str:
     """Switch this folder to the work's branch, creating it from the base branch when needed (/l-build W-012).
 
     A new branch is not made on top of another branch unless asked: that would carry the other
@@ -295,13 +379,15 @@ def ensure_branch(project: Project, work_id: str, from_ref: str | None = None, n
         work_id: The work, e.g. "W-012".
         from_ref: Start a new branch from here instead of the base branch.
         name: Use this branch name and keep it in the plan; needed when the rule has blanks.
+        into: Merge this work into this branch instead of the base branch, and start from it too.
 
     Returns:
         What happened, as a message.
 
     Raises:
         WorkError: No name can be worked out, the name breaks the rule, this folder is on another
-            branch and from_ref is not given, or git could not switch or create the branch.
+            branch and from_ref is not given, the merge target can't be used, or git could not
+            switch or create the branch.
 
     Example:
         >>> ensure_branch(project, "W-012")  # doctest: +SKIP
@@ -319,6 +405,8 @@ def ensure_branch(project: Project, work_id: str, from_ref: str | None = None, n
                 wid=wid,
             )
         )
+    if into:
+        _keep_into(project, wid, target, into)
     if current_branch(project.root) == target:
         result = msg("Already on branch {name}", name=target)
     elif _branch_exists(project, target):
@@ -327,9 +415,10 @@ def ensure_branch(project: Project, work_id: str, from_ref: str | None = None, n
             raise WorkError(r.stderr.strip())
         result = msg("Switched to branch {name}", name=target)
     else:
-        base = _base(project)
+        chosen = _exception(project, wid, "into")
+        base = chosen or _base(project)
         here = current_branch(project.root)
-        if from_ref is None and base != "HEAD" and here != base:
+        if from_ref is None and not chosen and base != "HEAD" and here != base:
             raise WorkError(
                 msg(
                     "This folder is on {here}, not the base branch {base} — run `git checkout {base}`, "
@@ -351,7 +440,12 @@ def ensure_branch(project: Project, work_id: str, from_ref: str | None = None, n
         plan = project.doc_path(folder, "plan") if folder else None
         if plan is not None and plan.exists():
             write(plan, frontmatter.set_fields(read(plan), {"branch": name}, touch=False))
-    return result
+    return result + _other_target_note(project, wid)
+
+
+def _other_target_note(project: Project, wid: str) -> str:
+    target, usual = merge_target(project, wid), _usual_base(project)
+    return "" if target == usual else "\n" + msg("⚠ {wid} merges into {target}, not the usual {usual}", wid=wid, target=target, usual=usual)
 
 
 # --------------------------------------------------------------------------- worktrees
@@ -480,7 +574,7 @@ def _install(path: Path) -> str | None:
     return None
 
 
-def start(project: Project, work_ids: list[str], install: bool = True, parent: Path | None = None) -> list[str]:
+def start(project: Project, work_ids: list[str], install: bool = True, parent: Path | None = None, into: str | None = None) -> list[str]:
     """Start works in parallel, each in its own worktree next to the project folder.
 
     Each worktree gets `.env*` files copied, the docs folder linked in local mode, and
@@ -491,6 +585,7 @@ def start(project: Project, work_ids: list[str], install: bool = True, parent: P
         work_ids: The works to start, e.g. ["W-012", "W-013"].
         install: Install dependencies in each new worktree.
         parent: Folder to put the worktrees in; the project's parent when None.
+        into: Merge these works into this branch instead of the base branch, and start from it too.
 
     Returns:
         Messages: conflict warnings, then one line per work with how to open it.
@@ -507,7 +602,6 @@ def start(project: Project, work_ids: list[str], install: bool = True, parent: P
     msgs: list[str] = []
     msgs += conflicts(project, work_ids)
     parent = parent or project.root.parent
-    base = _base(project)
     for wid in work_ids:
         wid = wid.upper()
         folder = project.find_work(wid, include_archive=False)
@@ -527,6 +621,9 @@ def start(project: Project, work_ids: list[str], install: bool = True, parent: P
                     wid=wid,
                 )
             )
+        if into:
+            _keep_into(project, wid, name, into)
+        base = _exception(project, wid, "into") or _base(project)
         args = ["worktree", "add", str(path), name] if _branch_exists(project, name) else ["worktree", "add", "-b", name, str(path), base]
         r = git(args, project.root)
         if r.returncode != 0:
@@ -545,7 +642,7 @@ def start(project: Project, work_ids: list[str], install: bool = True, parent: P
                 msg("⚠ {wid}: the work folder isn't committed yet, so it's not in the worktree — commit the documents first", wid=wid)
             )
         note = _install(path) if install else None
-        msgs.append(f"• {wid}: {path} ({name})" + (f" · {note}" if note else ""))
+        msgs.append(f"• {wid}: {path} ({name})" + (f" · {note}" if note else "") + _other_target_note(project, wid))
         msgs.append(msg('    In a terminal: cd "{path}" && claude "/l-build {wid}"', path=path, wid=wid))
     return msgs
 
@@ -563,6 +660,11 @@ def _progress(project: Project, wid: str, root: Path | None = None) -> str:
         return msg("no tasks")
     ts = parse_tasks(read(project.doc_path(folder, "tasks")), project.names)
     return msg("{sum}/{count} done", sum=sum(t.done for t in ts), count=len(ts))
+
+
+def _target_of(project: Project, wid: str) -> str:
+    target = merge_target(project, wid)
+    return "" if target == _usual_base(project) else f"  → {target}"
 
 
 def list_works(project: Project) -> list[str]:
@@ -586,18 +688,29 @@ def list_works(project: Project) -> list[str]:
             continue
         dirty = bool(git_out(["status", "--porcelain", "--untracked-files=no"], wt.path))
         note = msg("  (uncommitted changes)") if dirty else ""
-        out.append(f"{wid}  {wt.branch}  {wt.path}  {_progress(project, wid, wt.path)}{note}")
+        out.append(f"{wid}  {wt.branch}  {wt.path}  {_progress(project, wid, wt.path)}{note}{_target_of(project, wid)}")
     for b in git_out(["branch", "--list", "--format=%(refname:short)"], project.root).splitlines():
         wid = work_of_branch(project, b)
         if wid and not any(wt.branch == b for wt in trees):
-            out.append(msg("{wid}  {b}  (no worktree)  {progress}", wid=wid, b=b, progress=_progress(project, wid)))
+            out.append(
+                msg("{wid}  {b}  (no worktree)  {progress}", wid=wid, b=b, progress=_progress(project, wid)) + _target_of(project, wid)
+            )
     return out or [msg("No parallel works in progress")]
+
+
+def _catch_up_note(project: Project, target: str) -> list[str]:
+    usual = _usual_base(project)
+    if target == usual:
+        return []
+    return [msg("⚠ {usual} doesn't have this yet — merge {target} into {usual} too", usual=usual, target=target)]
 
 
 def finish(project: Project, work_id: str, test: bool = True, keep: bool = False) -> list[str]:
     """Finish a work: bring in the base branch, run the tests, merge into the base branch, and clean up.
 
+    The base branch here is `merge_target`: `git.base` unless a person chose another for this work.
     The merge happens in the folder where the base branch is open, wherever this runs from.
+    A work done directly on that branch (`--here`) has nothing to merge, so only the tests run.
     A worktree this runs from inside stays, because a session is working in it.
     With `git.pr: work` it stops before merging: the PR does that, and the branch stays.
 
@@ -622,9 +735,10 @@ def finish(project: Project, work_id: str, test: bool = True, keep: bool = False
     name = branch_name(project, wid)
     if name is None or not _branch_exists(project, name):
         raise WorkError(msg("Branch {name} doesn't exist", name=name or fill_branch(_rule(project), wid)))
-    base = str(project.profile.get("git.base") or "main")
+    base = merge_target(project, wid)
     if not _branch_exists(project, base):
         raise WorkError(msg("Base branch {base} doesn't exist (lantern.yaml git.base)", base=base))
+    direct = name == base
     msgs: list[str] = []
     wt = work_worktree(project, wid)
     main_folder = worktrees(project)[0].path  # git lists the main folder first
@@ -639,8 +753,8 @@ def finish(project: Project, work_id: str, test: bool = True, keep: bool = False
     if behind:
         msgs.append(behind)
     # the tests below must see what the base branch will hold after the merge
-    r = git(["merge", "--no-edit", base], work_path, env={"LANTERN_SKIP_HOOKS": "1"})
-    if r.returncode != 0:
+    r = git(["merge", "--no-edit", base], work_path, env={"LANTERN_SKIP_HOOKS": "1"}) if not direct else None
+    if r is not None and r.returncode != 0:
         conflicted = git_out(["diff", "--name-only", "--diff-filter=U"], work_path).replace("\n", " · ")
         git(["merge", "--abort"], work_path)
         raise WorkError(
@@ -662,6 +776,13 @@ def finish(project: Project, work_id: str, test: bool = True, keep: bool = False
             msgs.append(msg("✔ Tests passed (`{cmd}`)", cmd=cmd))
         else:
             msgs.append(msg("ℹ No build.test, so tests were skipped"))
+    next_step = msg("Next: summary of the current-state update → approval → update → lantern work archive ") + wid
+    if direct:
+        _forget_exceptions(project, wid)
+        msgs.append(msg("✔ The work is already on {base}, so there is nothing to merge", base=base))
+        msgs.append(next_step)
+        msgs.extend(_catch_up_note(project, base))
+        return msgs
     pr = project.profile.get("git.pr")
     if pr == "work":
         msgs.append(
@@ -727,13 +848,17 @@ def finish(project: Project, work_id: str, test: bool = True, keep: bool = False
                     return msgs
                 msgs.append(msg("✔ Removed worktree: {path}", path=own.path))
             r = git(["branch", "-d", name], into)
+            if r.returncode == 0:
+                _forget_exceptions(project, wid)
             msgs.append(
                 msg("✔ Deleted branch: {name}", name=name)
                 if r.returncode == 0
                 else msg("⚠ Couldn't delete the branch: {strip}", strip=r.stderr.strip())
             )
-    msgs.append(msg("Next: summary of the current-state update → approval → update → lantern work archive ") + wid)
-    if pr == "deploy":
+    msgs.append(next_step)
+    catch_up = _catch_up_note(project, base)
+    msgs.extend(catch_up)
+    if pr == "deploy" and not catch_up:
         deploy = project.profile.get("git.deploy")
         msgs.append(msg("To send it out later: /l-pr ({base} → {deploy})", base=base, deploy=deploy))
     return msgs

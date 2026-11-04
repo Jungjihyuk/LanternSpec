@@ -581,6 +581,128 @@ def test_finish_from_another_works_worktree_leaves_that_worktree_alone(repo, mon
     assert sh(second, "git", "branch", "--show-current").stdout.strip() == "work/W-002"
 
 
+def _dev_project(repo):
+    init_project(repo)
+    repo.git("branch", "dev")
+    repo("profile", "set", "git.base=dev", "git.pr=deploy", "git.deploy=main")
+    repo("scaffold", "work", "장애 수정")
+    repo.git("add", "-A")
+    commit(repo, "docs: 기획 [lantern]")
+    repo.git("checkout", "-q", "dev")
+    repo.git("merge", "-q", "main")
+    write(repo, "only_dev.txt", "배포 전\n")
+    repo.git("add", "only_dev.txt")
+    commit(repo, "feat: 아직 배포 전 [W-999-T01]")
+
+
+def test_into_starts_from_and_merges_into_that_branch_without_the_base_branchs_code(repo):
+    _dev_project(repo)
+    _, out = repo("work", "branch", "W-001", "--into", "main")
+    assert "평소의 dev 대신 main" in out and _branch_now(repo) == "work/W-001"
+    assert not (repo.root / "only_dev.txt").exists()
+    write(repo, "fix.py", "x = 1\n")
+    repo.git("add", "fix.py")
+    commit(repo, "fix: 장애 [W-001-T01]")
+    _, listed = repo("work", "list")
+    assert "→ main" in listed
+    repo.git("checkout", "-q", "dev")
+    _, out = repo("work", "finish", "W-001", "--no-test", ok=False)
+    assert "→ main 머지" in out and "dev에는 아직" in out and "/l-pr" not in out
+    tree = repo.git("ls-tree", "--name-only", "main").stdout
+    assert "fix.py" in tree and "only_dev.txt" not in tree
+    assert "fix.py" not in repo.git("ls-tree", "--name-only", "dev").stdout
+    assert repo.git("config", "--get", "lantern.W-001.into", check=False).stdout.strip() == ""
+
+
+def test_into_is_seen_from_every_worktree_and_survives_until_cleanup(repo, monkeypatch):
+    _dev_project(repo)
+    _, out = repo("work", "start", "W-001", "--into", "main", "--no-install")
+    assert "평소의 dev 대신 main" in out
+    first = repo.root.parent / "proj-W-001"
+    assert not (first / "only_dev.txt").exists()
+    _commit_in(first, "fix.py", "fix: 장애 [W-001-T01]")
+    repo.git("checkout", "-q", "main")
+    monkeypatch.chdir(first)
+    _, out = repo("work", "finish", "W-001", "--no-test")
+    assert "→ main 머지" in out and "남겨 둡니다" in out
+    assert (repo.root / "fix.py").exists()
+    monkeypatch.chdir(repo.root)
+    _, out = repo("work", "finish", "W-001", "--no-test")
+    assert "worktree 정리" in out and "→ main 머지" in out
+    assert "fix.py" not in repo.git("ls-tree", "--name-only", "dev").stdout
+
+
+def test_into_refuses_a_branch_that_already_started_elsewhere(repo):
+    _dev_project(repo)
+    repo("work", "branch", "W-001")
+    assert (repo.root / "only_dev.txt").exists()
+    code, out = repo("work", "branch", "W-001", "--into", "main", ok=False)
+    assert code == 1 and "git branch -D work/W-001" in out
+    assert repo.git("config", "--get", "lantern.W-001.into", check=False).stdout.strip() == ""
+
+
+def test_into_needs_a_branch_that_exists(repo):
+    _dev_project(repo)
+    code, out = repo("work", "branch", "W-001", "--into", "없는브랜치", ok=False)
+    assert code == 1 and "없는브랜치" in out and _branch_now(repo) == "dev"
+
+
+def test_here_commits_on_the_current_branch_and_finish_only_tests(repo):
+    _dev_project(repo)
+    before = repo.git("branch", "--list").stdout
+    _, out = repo("work", "branch", "W-001", "--here")
+    assert "dev에 바로 커밋" in out and repo.git("branch", "--list").stdout == before
+    _, listed = repo("work", "list")
+    assert "W-001  dev" in listed
+    write(repo, "fix.py", "x = 1\n")
+    repo.git("add", "fix.py")
+    commit(repo, "fix: 바로 [W-001-T01]")
+    repo("profile", "set", 'build.test="false"')
+    repo.git("add", "-A")
+    commit(repo, "chore: 테스트 [W-001]")
+    code, out = repo("work", "finish", "W-001", ok=False)
+    assert code == 1 and "테스트 실패" in out
+    repo("profile", "set", 'build.test="true"')
+    repo.git("add", "-A")
+    commit(repo, "chore: 테스트 [W-001]")
+    tip = repo.git("rev-parse", "dev").stdout
+    _, out = repo("work", "finish", "W-001")
+    assert "합칠 것이 없습니다" in out and repo.git("rev-parse", "dev").stdout == tip
+    assert repo.git("branch", "--list", "dev").stdout.strip() != ""
+    _, out = repo("work", "list")
+    assert "W-001" not in out
+
+
+def test_here_on_main_warns_that_dev_still_needs_it(repo):
+    _dev_project(repo)
+    repo.git("checkout", "-q", "main")
+    _, out = repo("work", "branch", "W-001", "--here")
+    assert "main에 바로 커밋" in out
+    _, out = repo("work", "finish", "W-001", "--no-test")
+    assert "합칠 것이 없습니다" in out and "dev에는 아직" in out
+
+
+def test_here_refuses_another_works_branch_and_an_existing_branch(repo):
+    _dev_project(repo)
+    repo("work", "branch", "W-001")
+    repo("scaffold", "work", "다른 작업")
+    code, out = repo("work", "branch", "W-002", "--here", ok=False)
+    assert code == 1 and "W-001의 브랜치" in out
+    repo.git("checkout", "-q", "dev")
+    code, out = repo("work", "branch", "W-001", "--here", ok=False)
+    assert code == 1 and "work/W-001" in out
+
+
+def test_here_and_into_are_refused_where_they_mean_nothing(repo):
+    _dev_project(repo)
+    code, out = repo("work", "branch", "W-001", "--here", "--into", "main", ok=False)
+    assert code != 0 and "--here" in out
+    code, out = repo("work", "start", "W-001", "--here", ok=False)
+    assert code != 0 and "--here" in out
+    code, out = repo("work", "finish", "W-001", "--into", "main", ok=False)
+    assert code != 0 and "--into" in out
+
+
 def test_a_new_work_branch_warns_when_the_remote_base_is_ahead(repo, tmp_path):
     init_project(repo)
     _work(repo)
