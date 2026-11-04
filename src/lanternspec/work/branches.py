@@ -550,6 +550,10 @@ def start(project: Project, work_ids: list[str], install: bool = True, parent: P
     return msgs
 
 
+def _same_folder(a: Path, b: Path) -> bool:
+    return a.resolve() == b.resolve()
+
+
 def _progress(project: Project, wid: str, root: Path | None = None) -> str:
     base = Project(root=root, profile=project.profile) if root else project
     folder = base.find_work(wid, include_archive=False) if base.docs.exists() else None
@@ -593,6 +597,8 @@ def list_works(project: Project) -> list[str]:
 def finish(project: Project, work_id: str, test: bool = True, keep: bool = False) -> list[str]:
     """Finish a work: bring in the base branch, run the tests, merge into the base branch, and clean up.
 
+    The merge happens in the folder where the base branch is open, wherever this runs from.
+    A worktree this runs from inside stays, because a session is working in it.
     With `git.pr: work` it stops before merging: the PR does that, and the branch stays.
 
     Args:
@@ -606,7 +612,7 @@ def finish(project: Project, work_id: str, test: bool = True, keep: bool = False
 
     Raises:
         WorkError: The branch is missing, there are uncommitted changes, the tests failed,
-            the base branch is missing or not checked out, or a merge conflicted (it is aborted).
+            the base branch is missing or not open in any folder, or a merge conflicted (it is aborted).
 
     Example:
         >>> finish(project, "W-012", test=False)[0]  # doctest: +SKIP
@@ -621,12 +627,12 @@ def finish(project: Project, work_id: str, test: bool = True, keep: bool = False
         raise WorkError(msg("Base branch {base} doesn't exist (lantern.yaml git.base)", base=base))
     msgs: list[str] = []
     wt = work_worktree(project, wid)
-    in_place = wt is None or wt.path.resolve() == project.root.resolve()
-    work_path = wt.path if wt else project.root
+    main_folder = worktrees(project)[0].path  # git lists the main folder first
+    work_path = wt.path if wt else main_folder
     if git_out(["status", "--porcelain", "--untracked-files=no"], work_path):
         raise WorkError(msg("{work_path} has uncommitted changes — commit and run again", work_path=work_path))
     if wt is None:
-        r = git(["checkout", name], project.root)
+        r = git(["checkout", name], main_folder)
         if r.returncode != 0:
             raise WorkError(r.stderr.strip())
     behind = _behind_remote(project, base)
@@ -668,52 +674,64 @@ def finish(project: Project, work_id: str, test: bool = True, keep: bool = False
             )
         )
         return msgs
-    if in_place:
-        r = git(["checkout", base], project.root)
+    into = next((t.path for t in worktrees(project) if t.branch == base), None)
+    if into is None:
+        if not _same_folder(work_path, main_folder):
+            raise WorkError(
+                msg("{base} isn't open in any folder — run `git checkout {base}` in {root} and try again", base=base, root=main_folder)
+            )
+        r = git(["checkout", base], main_folder)
         if r.returncode != 0:
             raise WorkError(r.stderr.strip())
-    elif current_branch(project.root) != base:
-        raise WorkError(
-            msg("This folder ({root}) is not on branch {base} — run `git checkout {base}` and try again", root=project.root, base=base)
-        )
-    if git_out(["status", "--porcelain", "--untracked-files=no"], project.root):
-        raise WorkError(msg("{root} has uncommitted changes", root=project.root))
+        into = main_folder
+    if git_out(["status", "--porcelain", "--untracked-files=no"], into):
+        raise WorkError(msg("{root} has uncommitted changes", root=into))
     folder = project.find_work(wid)
     title = work_name_of(folder) if folder else ""
-    r = git(
-        ["merge", "--no-ff", name, "-m", f"merge: {wid} {title} [{wid}]".replace("  ", " ")], project.root, env={"LANTERN_SKIP_HOOKS": "1"}
-    )
+    r = git(["merge", "--no-ff", name, "-m", f"merge: {wid} {title} [{wid}]".replace("  ", " ")], into, env={"LANTERN_SKIP_HOOKS": "1"})
     if r.returncode != 0:
-        git(["merge", "--abort"], project.root)
+        git(["merge", "--abort"], into)
         raise WorkError(msg("Merge conflict — resolve it yourself:\n{stdout}{stderr}", stdout=r.stdout, stderr=r.stderr))
     msgs.append(msg("✔ Merged {name} → {base}", name=name, base=base))
     if not keep:
-        if wt and not in_place:
-            # only the .env* copies made by `work start` may be thrown away with the folder
-            stray = [
-                l[3:]
-                for l in git_out(["status", "--porcelain", "--untracked-files=all"], wt.path).splitlines()
-                if l.startswith("??") and not Path(l[3:].strip('"')).name.startswith(".env")
-            ]
-            if stray:
-                msgs.append(
-                    msg(
-                        "⚠ Keeping the worktree because it has new uncommitted files: {items} — clean up, then git worktree remove",
-                        items=", ".join(stray[:3]),
-                    )
+        own = wt if wt and not _same_folder(wt.path, main_folder) else None
+        if own and _same_folder(own.path, project.root):
+            msgs.append(
+                msg(
+                    "ℹ This session is inside {path}, so it stays. Do the next steps in {into}; "
+                    'to clean up afterwards: cd "{into}" && lantern work finish {wid} --no-test',
+                    path=own.path,
+                    into=into,
+                    wid=wid,
                 )
-                return msgs
-            r = git(["worktree", "remove", "--force", str(wt.path)], project.root)
-            if r.returncode != 0:
-                msgs.append(msg("⚠ Couldn't remove the worktree: {strip}", strip=r.stderr.strip()))
-                return msgs
-            msgs.append(msg("✔ Removed worktree: {path}", path=wt.path))
-        r = git(["branch", "-d", name], project.root)
-        msgs.append(
-            msg("✔ Deleted branch: {name}", name=name)
-            if r.returncode == 0
-            else msg("⚠ Couldn't delete the branch: {strip}", strip=r.stderr.strip())
-        )
+            )
+        else:
+            if own:
+                # only the .env* copies made by `work start` may be thrown away with the folder
+                stray = [
+                    l[3:]
+                    for l in git_out(["status", "--porcelain", "--untracked-files=all"], own.path).splitlines()
+                    if l.startswith("??") and not Path(l[3:].strip('"')).name.startswith(".env")
+                ]
+                if stray:
+                    msgs.append(
+                        msg(
+                            "⚠ Keeping the worktree because it has new uncommitted files: {items} — clean up, then git worktree remove",
+                            items=", ".join(stray[:3]),
+                        )
+                    )
+                    return msgs
+                r = git(["worktree", "remove", "--force", str(own.path)], into)
+                if r.returncode != 0:
+                    msgs.append(msg("⚠ Couldn't remove the worktree: {strip}", strip=r.stderr.strip()))
+                    return msgs
+                msgs.append(msg("✔ Removed worktree: {path}", path=own.path))
+            r = git(["branch", "-d", name], into)
+            msgs.append(
+                msg("✔ Deleted branch: {name}", name=name)
+                if r.returncode == 0
+                else msg("⚠ Couldn't delete the branch: {strip}", strip=r.stderr.strip())
+            )
     msgs.append(msg("Next: summary of the current-state update → approval → update → lantern work archive ") + wid)
     if pr == "deploy":
         deploy = project.profile.get("git.deploy")

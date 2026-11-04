@@ -491,6 +491,96 @@ def test_finish_says_how_to_deploy_when_the_base_goes_out_by_pr(repo):
     assert _branch_now(repo) == "dev"
 
 
+def _two_worktrees(repo):
+    init_project(repo)
+    repo("scaffold", "work", "하나")
+    repo("scaffold", "work", "둘")
+    repo.git("add", "-A")
+    commit(repo, "docs: 기획 [lantern]")
+    repo("work", "start", "W-001", "W-002", "--no-install")
+    return repo.root.parent / "proj-W-001", repo.root.parent / "proj-W-002"
+
+
+def _commit_in(folder, name, message):
+    (folder / name).write_text("x\n", encoding="utf-8")
+    sh(folder, "git", "add", name)
+    sh(folder, "git", "commit", "-q", "-m", message)
+
+
+def test_finish_from_inside_a_worktree_merges_where_the_base_is_open(repo, monkeypatch):
+    first, second = _two_worktrees(repo)
+    _commit_in(first, "a.py", "feat: a [W-001-T01]")
+    _commit_in(second, "b.py", "feat: b [W-002-T01]")
+    monkeypatch.chdir(first)
+    _, out = repo("work", "finish", "W-001", "--no-test")
+    assert "→ main 머지" in out and "남겨 둡니다" in out and "lantern work finish W-001 --no-test" in out
+    assert (repo.root / "a.py").exists() and _branch_now(repo) == "main"
+    assert sh(first, "git", "branch", "--show-current").stdout.strip() == "work/W-001" and first.exists()
+    assert sh(second, "git", "branch", "--show-current").stdout.strip() == "work/W-002"
+    assert (second / "b.py").exists() and not (second / "a.py").exists()
+    monkeypatch.chdir(repo.root)
+    _, out = repo("work", "finish", "W-001", "--no-test")
+    assert "worktree 정리" in out and "브랜치 삭제" in out and not first.exists()
+
+
+def test_finish_merges_in_the_worktree_that_has_the_base_open(repo, monkeypatch):
+    init_project(repo)
+    repo("profile", "set", "git.base=dev")
+    repo("scaffold", "work", "하나")
+    repo.git("add", "-A")
+    commit(repo, "docs: 기획 [lantern]")
+    dev = repo.root.parent / "proj-dev"
+    repo.git("worktree", "add", "-q", "-b", "dev", str(dev))
+    repo("work", "start", "W-001", "--no-install")
+    first = repo.root.parent / "proj-W-001"
+    _commit_in(first, "a.py", "feat: a [W-001-T01]")
+    monkeypatch.chdir(first)
+    _, out = repo("work", "finish", "W-001", "--no-test")
+    assert "→ dev 머지" in out
+    assert (dev / "a.py").exists() and not (repo.root / "a.py").exists() and _branch_now(repo) == "main"
+
+
+def test_finish_stops_before_merging_when_the_base_is_open_nowhere(repo, monkeypatch):
+    first, _ = _two_worktrees(repo)
+    _commit_in(first, "a.py", "feat: a [W-001-T01]")
+    repo.git("checkout", "-q", "-b", "other")
+    monkeypatch.chdir(first)
+    code, out = repo("work", "finish", "W-001", "--no-test", ok=False)
+    assert code == 1 and "git checkout main" in out
+    assert "a.py" not in repo.git("ls-tree", "--name-only", "main").stdout
+    assert _branch_now(repo) == "other"
+    assert sh(first, "git", "branch", "--show-current").stdout.strip() == "work/W-001"
+
+
+def test_finish_stops_when_the_folder_to_merge_in_has_changes(repo, monkeypatch):
+    first, _ = _two_worktrees(repo)
+    _commit_in(first, "a.py", "feat: a [W-001-T01]")
+    (repo.root / "lantern.yaml").write_text((repo.root / "lantern.yaml").read_text(encoding="utf-8") + "\n", encoding="utf-8")
+    monkeypatch.chdir(first)
+    code, out = repo("work", "finish", "W-001", "--no-test", ok=False)
+    assert code == 1 and "커밋 안 된 변경" in out and str(repo.root.name) in out
+    assert "a.py" not in repo.git("ls-tree", "--name-only", "main").stdout
+
+
+def test_finish_from_another_works_worktree_leaves_that_worktree_alone(repo, monkeypatch):
+    init_project(repo)
+    repo("scaffold", "work", "하나")
+    repo("scaffold", "work", "둘")
+    repo.git("add", "-A")
+    commit(repo, "docs: 기획 [lantern]")
+    repo("work", "branch", "W-001")
+    write(repo, "a.py", "x\n")
+    repo.git("add", "a.py")
+    commit(repo, "feat: a [W-001-T01]")
+    repo.git("checkout", "-q", "main")
+    repo("work", "start", "W-002", "--no-install")
+    second = repo.root.parent / "proj-W-002"
+    monkeypatch.chdir(second)
+    _, out = repo("work", "finish", "W-001", "--no-test")
+    assert "→ main 머지" in out and (repo.root / "a.py").exists()
+    assert sh(second, "git", "branch", "--show-current").stdout.strip() == "work/W-002"
+
+
 def test_a_new_work_branch_warns_when_the_remote_base_is_ahead(repo, tmp_path):
     init_project(repo)
     _work(repo)

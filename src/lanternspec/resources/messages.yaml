@@ -209,7 +209,8 @@
 "{wid}  {b}  (no worktree)  {progress}": {ko: "{wid}  {b}  (worktree 없음)  {progress}"}
 "✔ Tests passed (`{cmd}`)": {ko: "✔ 테스트 통과 (`{cmd}`)"}
 "ℹ No build.test, so tests were skipped": {ko: "ℹ build.test가 없어 테스트를 건너뜀"}
-"This folder ({root}) is not on branch {base} — run `git checkout {base}` and try again": {ko: "이 폴더({root})가 {base} 브랜치가 아닙니다 — `git checkout {base}` 후 다시 실행하세요"}
+"{base} isn't open in any folder — run `git checkout {base}` in {root} and try again": {ko: "{base} 브랜치가 열린 폴더가 없습니다 — {root}에서 `git checkout {base}` 후 다시 실행하세요"}
+"ℹ This session is inside {path}, so it stays. Do the next steps in {into}; to clean up afterwards: cd \"{into}\" && lantern work finish {wid} --no-test": {ko: "ℹ 이 세션이 {path} 안에 있어 폴더를 남겨 둡니다. 다음 단계는 {into}에서 하세요. 끝난 뒤 정리: cd \"{into}\" && lantern work finish {wid} --no-test"}
 "✔ Removed worktree: {path}": {ko: "✔ worktree 정리: {path}"}
 "✔ Deleted branch: {name}": {ko: "✔ 브랜치 삭제: {name}"}
 "⚠ Couldn't delete the branch: {strip}": {ko: "⚠ 브랜치를 지우지 못했습니다: {strip}"}
