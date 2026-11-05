@@ -29,6 +29,7 @@ First check the CLI is there with `lantern --version`. If it isn't, only tell th
   - Round 2: the follow-up to 3 ("Where will people use it?" allows several answers) · 4 (only when it is asked) · 5 · 6
   - Round 3: question 7, and only what the earlier answers call for — project name · publishing docs · branch flow · (team) member names · (external) API document
   - Round 4: only if a knowledge store was chosen in 5 — the three questions under "If a knowledge store was chosen"
+  - Choosing the technologies: each answer changes the next question, so ask in order instead of in a batch
 <!-- lantern:endif -->
 <!-- lantern:if !tool=claude -->
 - Put **only one question** in each message. When you get the answer, go straight to the next question (no summary in between).
@@ -49,8 +50,19 @@ First check the CLI is there with `lantern --version`. If it isn't, only tell th
 5. Do you keep study notes in a knowledge store? None / an Obsidian vault / a plain Markdown folder — ask **only the kind** (path and write mode come below)
 6. Design tool? Claude Design / Figma / Canva / none — Figma and Canva need that tool's MCP server connected to this AI tool (if it isn't, explain how to connect it, and take exported files until then)
 7. **Does it connect to outside tools or services?** (AI tools · payments · outside APIs · a structure that takes plugins and so on) — this answer and the project kind from 3 choose the design principles
-   - Before asking about languages, find them with `lantern principles detect`. If nothing is found (a new project), ask separately: "What will you build it with? Python · TypeScript · Swift · Rust · Go"
+   - Before asking about languages, find them with `lantern principles detect`. If nothing is found (a new project), decide by the answer to 3
+     - A service or app: follow **Choosing the technologies** below
+     - Anything else: ask "What will you build it with? Python · TypeScript · Swift · Rust · Go"
    - **Don't ask about size** — lines of code are measured, and team size comes from question 2
+
+**Choosing the technologies** (only for a new service or app) — ask in order after the answers to 1–7
+```bash
+lantern template show "<<file.tech_criteria>>"
+```
+- Follow this document's "Decision tree" as written. Ask only the questions in the tree, and don't change its recommendations by your own judgment.
+- Use the tree's words for the choices. When proposing a technology, give its pros and cons from "Technology comparison" in one line, and show any alternative with it.
+- Put the chosen technologies' languages in `--languages`. Leave out languages `lantern profile write` doesn't accept (Java and so on), and say "LanternSpec doesn't have code rules for this language yet."
+- Don't ask about infrastructure or design patterns here.
 
 **Then ask** (only what the earlier answers call for)
 - Project name — when the folder name is the only candidate, ask in a plain message: "Name the project <folder name>? To use another name, type it"
@@ -128,6 +140,7 @@ If the knowledge store has `--areas-from`, read its folders with `lantern knowle
 - If B was chosen and `dev` is to be created, `git branch dev` (after the first commit if there is none yet). Ask the person again before pushing it. Don't create or change any other branch.
 - Then `lantern scaffold init`
 - Finally `lantern upgrade` — the skills were installed before these answers, so remake them to carry the chosen settings (the branch flow and so on).
+- If technologies were chosen, write them in the parts section of `<<file.architecture>>` and ask "This is hard to undo. Record why with `/l-adr`?"
 
 ## 4. 🌱 Greenfield — a short interview for the draft project definition
 Ask the three `<<marker.required>>` blanks of `docs/<<folder.current>>/<<file.project_definition>>` **in order**. Build each next blank's candidates from the answers before it, so the person only picks or edits.

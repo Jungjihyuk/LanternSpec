@@ -20,6 +20,7 @@ argument-hint: "<what to decide> [--work W-NNN]"
    lantern scaffold adr "<what to decide>" [--work W-012]
    ```
 2. Fill in: <<marker.glance>> (the decision in one line) · context (what had to be decided, and why now) · options considered (pros and cons of each — keep the ones not chosen) · decision (what, the deciding reason, who · when) · consequences (what gets easier · harder · which documents change).
+   For a technology choice, base it on `docs/<<folder.rules>>/<<file.tech_criteria>>`, and note the evaluation criteria used with that document's reference date and template version.
 3. Status: starts as `<<adr_status.proposed>>`. When the person decides, `lantern meta set "<ADR file>" status="<<adr_status.accepted>>"`.
    When it overturns an earlier decision, mark the old ADR: `lantern meta set "<old ADR>" status="<<adr_status.superseded>>" superseded_by=ADR-NNN`.
 4. Link: an `[[ADR-NNN …]]` link in `## Decisions · failed attempts` of the work's `<<file.record>>`; if it came from the design, add the ID to `adr` in `<<file.design>>`'s frontmatter.

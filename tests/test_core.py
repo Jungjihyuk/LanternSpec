@@ -63,7 +63,7 @@ def _keys(data):
 
 def test_enabled_docs_follow_the_08_table():
     solo = _keys({})
-    assert {"project-definition", "features", "architecture", "data", "schema", "unit-log"} <= solo
+    assert {"project-definition", "features", "architecture", "data", "schema", "unit-log", "tech-criteria"} <= solo
     assert not solo & {"api", "server-ops", "collab", "meetings", "screens", "legacy", "debt-cards"}
     team = _keys({"project": {"team": "team", "members": ["a"]}})
     assert {"collab", "meetings"} <= team

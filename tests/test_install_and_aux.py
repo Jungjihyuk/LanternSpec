@@ -501,3 +501,16 @@ def test_install_explains_next_steps_and_other_ai_tools(repo, monkeypatch):
     assert "Claude Code는 `claude`, Codex는 `codex`" in out and "(Codex는 `$l-init`)" in out
     assert "이 컴퓨터에" not in out  # once everything is set up, nothing more is suggested
     assert "H-" not in out  # internal spec numbers never reach the user
+
+
+def test_template_show_reads_the_bundled_template_before_the_project_has_one(repo):
+    for name, title in (("기술 선택 기준", "# 📘 기술 선택 기준"), ("Tech Selection Criteria.md", "# 📘 Tech Selection Criteria")):
+        code, out = repo("template", "show", name)
+        assert code == 0 and title in out
+        assert "lantern:template-only" not in out
+
+    code, out = repo("template", "show", "없는 양식", ok=False)
+    assert code == 1 and "없는 양식" in out
+
+    code, out = repo("template", "show", ok=False)
+    assert code == 1 and "template show" in out

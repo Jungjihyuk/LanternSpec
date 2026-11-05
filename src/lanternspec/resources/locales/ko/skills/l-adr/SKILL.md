@@ -20,6 +20,7 @@ argument-hint: "<결정할 일> [--work W-NNN]"
    lantern scaffold adr "<결정할 일>" [--work W-012]
    ```
 2. 채우기: <<marker.glance>>(결정 한 줄) · 배경(무엇을 정해야 했고 왜 지금인가) · 검토한 선택지(선택지마다 장단점 — 고르지 않은 것도 지우지 않음) · 결정(무엇을, 결정적 이유, 누가 · 언제) · 결과 · 영향(쉬워지는 것 · 어려워지는 것 · 바뀌는 문서).
+   기술 선택이면 `docs/<<folder.rules>>/<<file.tech_criteria>>`를 근거로 쓰고, 근거가 된 평가 기준 · 그 문서의 기준일과 템플릿 버전을 함께 적는다.
 3. 상태: 처음은 `<<adr_status.proposed>>`. 사람이 정하면 `lantern meta set "<ADR 파일>" status="<<adr_status.accepted>>"`.
    이전 결정을 뒤집으면 옛 ADR을 `lantern meta set "<옛 ADR>" status="<<adr_status.superseded>>" superseded_by=ADR-NNN`.
 4. 잇기: 작업 `<<file.record>>`의 `## 결정 · 실패한 시도`에 `[[ADR-NNN …]]` 링크, 설계에서 나왔으면 `<<file.design>>` frontmatter `adr`에 ID 추가.

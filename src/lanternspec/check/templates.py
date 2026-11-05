@@ -1,6 +1,6 @@
 """`lantern template …` — the scripted half of /l-template.
 
-list · lint · level · bump · outdated · diff · new · usage · migrate
+list · show · lint · level · bump · outdated · diff · new · usage · migrate
 
 Responsibilities:
     - list the project's templates and compare them with the bundled base
@@ -20,6 +20,7 @@ from pathlib import Path
 
 from ..core import frontmatter, state, templating
 from ..core.messages import msg
+from ..core.names import languages as name_languages
 from ..core.project import Project, git, nfc, read, today, write
 from ..work.scaffold import base_template_names, base_template_text, base_values, condition_context, template_version
 from .check_docs import Finding, _active_doc, semver, version_gap
@@ -77,6 +78,33 @@ def template_path(project: Project, name: str) -> Path:
     raise FileNotFoundError(
         msg("Template '{name}' is not in {rel} (lantern template list)", name=name, rel=project.rel(project.templates_dir))
     )
+
+
+def show(name: str, language: str) -> str:
+    """Return a template bundled with the package, so skills can read it before the project has its own copy.
+
+    A skill runs before lantern.yaml exists, when the project's language is still the default,
+    so a name not found in that language is looked up in the other language packs.
+
+    Args:
+        name: Template name, with or without `.md`.
+        language: The language to look in first.
+
+    Returns:
+        The template text without its own change log.
+
+    Raises:
+        FileNotFoundError: No language pack has that template.
+
+    Example:
+        >>> show("Tech Selection Criteria.md", "ko").splitlines()[0]
+        '---'
+    """
+    stem = name.removesuffix(".md")
+    for lang in [language, *(other for other in name_languages() if other != language)]:
+        if nfc(stem) in base_template_names(lang):
+            return templating.strip_template_only(base_template_text(stem, lang))
+    raise FileNotFoundError(msg("No base template '{name}'", name=stem))
 
 
 def names(project: Project) -> list[str]:

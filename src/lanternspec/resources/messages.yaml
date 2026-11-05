@@ -847,7 +847,8 @@
 
 # cli/check.py
 "Check document formats": {ko: "양식 검사"}
-"Templates: list · lint · level · bump · outdated · diff · usage · new · migrate": {ko: "양식: list · lint · level · bump · outdated · diff · usage · new · migrate"}
+"Templates: list · show · lint · level · bump · outdated · diff · usage · new · migrate": {ko: "양식: list · show · lint · level · bump · outdated · diff · usage · new · migrate"}
+"lantern template show <name>": {ko: "lantern template show <이름>"}
 "Brownfield legacy documents: adopt · todos": {ko: "브라운필드 기존 문서: adopt · todos"}
 "Install · remove · show git hooks": {ko: "git hook 설치 · 제거 · 상태"}
 "Check that the layout matches lantern.yaml": {ko: "구조가 lantern.yaml과 맞는지 점검"}

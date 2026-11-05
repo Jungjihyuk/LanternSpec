@@ -50,6 +50,10 @@ def cmd_template(a: argparse.Namespace) -> int:
         a.level = "auto"
     if a.action == "list":
         _print(tc.list_rows(project) or [msg("No templates — lantern scaffold init")])
+    elif a.action == "show":
+        if not a.name:
+            raise CliError(msg("lantern template show <name>"))
+        print(tc.show(a.name, project.language))
     elif a.action == "lint":
         from ..check.check_docs import Report
 
@@ -202,8 +206,8 @@ def register(add: Add) -> None:
     p.add_argument("--strict", action="store_true", help=msg("Treat warnings as failures"))
     p = add("lint", cmd_lint, msg("Code lint · type check (each part's commands, or lantern.yaml build.lint · build.typecheck)"))
     p.add_argument("--ci", action="store_true", help=msg("For CI: leave out parts with ci: false, and follow build.ci_lint"))
-    p = add("template", cmd_template, msg("Templates: list · lint · level · bump · outdated · diff · usage · new · migrate"))
-    p.add_argument("action", choices=["list", "lint", "level", "bump", "outdated", "diff", "usage", "new", "migrate"])
+    p = add("template", cmd_template, msg("Templates: list · show · lint · level · bump · outdated · diff · usage · new · migrate"))
+    p.add_argument("action", choices=["list", "show", "lint", "level", "bump", "outdated", "diff", "usage", "new", "migrate"])
     p.add_argument("name", nargs="?")
     p.add_argument("level", nargs="?", help="bump: patch|minor|major|auto")
     p.add_argument("--auto", dest="level_auto", action="store_true")

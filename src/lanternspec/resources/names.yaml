@@ -16,7 +16,7 @@ folders:                    # docs/ 아래 폴더
   works: {ko: "2. 작업", en: "2. Work"}
   archive: {ko: "2. 작업/보관", en: "2. Work/Archive"}
   current: {ko: "3. 현재 상태", en: "3. Current State"}
-  rules: {ko: "3. 현재 상태/규칙", en: "3. Current State/Rules"}  # 지금 지킬 것: 협업 규칙 · 개발 원칙 · 작업 나누기 기준 · 용어집
+  rules: {ko: "3. 현재 상태/규칙", en: "3. Current State/Rules"}  # 지금 지킬 것: 협업 규칙 · 개발 원칙 · 작업 나누기 기준 · 기술 선택 기준 · 용어집
   decisions: {ko: "3. 현재 상태/결정 기록", en: "3. Current State/Decisions"}  # 왜 그렇게 정했나: ADR
   deploy_ops: {ko: "3. 현재 상태/배포 · 운영", en: "3. Current State/Deployment and Operations"}
   ops: {ko: "4. 운영 기록", en: "4. Operations"}
@@ -47,6 +47,7 @@ docs:                       # 문서 이름 (확장자 없이) — 템플릿 이
   known_tech: {ko: "아는 기술", en: "Known Tech"}
   unit_log: {ko: "작업 나누기 기준", en: "Work Division Rules"}
   glossary: {ko: "용어집", en: "Glossary"}
+  tech_criteria: {ko: "기술 선택 기준", en: "Tech Selection Criteria"}
   legacy_map: {ko: "기존 문서 지도", en: "Legacy Map"}
   project_definition: {ko: "프로젝트 정의서", en: "Project Definition"}
   features: {ko: "기능 목록", en: "Feature List"}

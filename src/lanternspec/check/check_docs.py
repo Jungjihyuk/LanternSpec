@@ -749,7 +749,7 @@ def _check_tasks(project: Project, path: Path, text: str, rel: str) -> list[Find
 
 
 def term_findings(project: Project, paths: list[Path]) -> list[Finding]:
-    """Point out the glossary's words to avoid in documents (the glossary itself and generated documents aside).
+    """Point out the glossary's words to avoid in documents (the glossary, general tech criteria and generated documents aside).
 
     Args:
         project: The project.
@@ -767,10 +767,11 @@ def term_findings(project: Project, paths: list[Path]) -> list[Finding]:
     terms, _ = terms_mod.merged(project)
     if not any(t.avoid for t in terms):
         return []
-    glossary = terms_mod.glossary_path(project).resolve()
+    rules = project.folder("rules")
+    skipped = {terms_mod.glossary_path(project).resolve(), (rules / project.names.file("tech_criteria")).resolve()}
     out = []
     for p in paths:
-        if p.resolve() == glossary:
+        if p.resolve() in skipped:
             continue
         text = read(p)
         if is_generated(frontmatter.parse(text).meta):
