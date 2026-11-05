@@ -14,6 +14,7 @@ Not here:
 
 from __future__ import annotations
 
+import os
 import re
 import shutil
 import subprocess
@@ -319,7 +320,15 @@ def _keep_into(project: Project, wid: str, name: str, into: str) -> None:
                 into=into,
             )
         )
-    git(["config", f"lantern.{wid}.into", into], project.root)
+    _remember(project, wid, "into", into)
+
+
+def _remember(project: Project, wid: str, key: str, value: str) -> None:
+    r = git(["config", f"lantern.{wid}.{key}", value], project.root)
+    if r.returncode != 0:  # going on would send the work to the usual branch without a word
+        raise WorkError(
+            msg("Couldn't keep this work's choice in git config — run this outside the AI tool's sandbox: {strip}", strip=r.stderr.strip())
+        )
 
 
 def _forget_exceptions(project: Project, wid: str) -> None:
@@ -353,7 +362,7 @@ def work_here(project: Project, work_id: str) -> str:
     own = branch_name(project, wid)
     if own and own != here and _branch_exists(project, own):
         raise WorkError(msg("{wid} already has its branch {name} — continue there, or delete it first", wid=wid, name=own))
-    git(["config", f"lantern.{wid}.here", here], project.root)
+    _remember(project, wid, "here", here)
     return msg("⚠ {wid}: no work branch, so commits go straight to {here}", wid=wid, here=here)
 
 
@@ -442,7 +451,7 @@ def ensure_branch(project: Project, work_id: str, from_ref: str | None = None, n
         plan = project.doc_path(folder, "plan") if folder else None
         if plan is not None and plan.exists():
             write(plan, frontmatter.set_fields(read(plan), {"branch": name}, touch=False))
-        git(["config", f"lantern.{wid}.branch", name], project.root)
+        _remember(project, wid, "branch", name)
     return result + _other_target_note(project, wid)
 
 
@@ -602,6 +611,10 @@ def start(project: Project, work_ids: list[str], install: bool = True, parent: P
     """
     if git(["rev-parse", "--verify", "HEAD"], project.root).returncode != 0:
         raise WorkError(msg("No commits yet, so a worktree can't be made — commit first"))
+    from ..core import state
+    from ..tools import resolve
+
+    tools = resolve(state.load(project).get("tools") or ["claude"])
     msgs: list[str] = []
     msgs += conflicts(project, work_ids)
     parent = parent or project.root.parent
@@ -646,7 +659,11 @@ def start(project: Project, work_ids: list[str], install: bool = True, parent: P
             )
         note = _install(path) if install else None
         msgs.append(f"• {wid}: {path} ({name})" + (f" · {note}" if note else "") + _other_target_note(project, wid))
-        msgs.append(msg('    In a terminal: cd "{path}" && claude "/l-build {wid}"', path=path, wid=wid))
+        target = merge_target(project, wid)
+        merge_folder = next((t.path for t in worktrees(project) if t.branch == target), worktrees(project)[0].path)
+        for tool in tools:
+            command = tool.worktree_command(path, wid, merge_folder)
+            msgs.append(msg('    In a terminal: cd "{path}" && {command}', path=path, command=command))
     return msgs
 
 
@@ -714,7 +731,8 @@ def finish(project: Project, work_id: str, test: bool = True, keep: bool = False
     The base branch here is `merge_target`: `git.base` unless a person chose another for this work.
     The merge happens in the folder where the base branch is open, wherever this runs from.
     A work done directly on that branch (`--here`) has nothing to merge, so only the tests run.
-    A worktree this runs from inside stays, because a session is working in it.
+    A worktree this runs from inside stays, because a session is working in it. So does one this
+    session can't delete (an AI tool's sandbox), since git would stop halfway through removing it.
     With `git.pr: work` it stops before merging: the PR does that, and the branch stays.
 
     Args:
@@ -759,13 +777,15 @@ def finish(project: Project, work_id: str, test: bool = True, keep: bool = False
     r = git(["merge", "--no-edit", base], work_path, env={"LANTERN_SKIP_HOOKS": "1"}) if not direct else None
     if r is not None and r.returncode != 0:
         conflicted = git_out(["diff", "--name-only", "--diff-filter=U"], work_path).replace("\n", " · ")
+        if not conflicted:  # not a conflict at all, e.g. the git folder can't be written
+            raise WorkError(r.stderr.strip() or r.stdout.strip())
         git(["merge", "--abort"], work_path)
         raise WorkError(
             msg(
                 "{name} conflicts with {base}: {files} — on {name}, run `git merge {base}`, resolve it, then run this again",
                 name=name,
                 base=base,
-                files=conflicted or r.stdout.strip(),
+                files=conflicted,
             )
         )
     if test:
@@ -824,6 +844,17 @@ def finish(project: Project, work_id: str, test: bool = True, keep: bool = False
                 msg(
                     "ℹ This session is inside {path}, so it stays. Do the next steps in {into}; "
                     'to clean up afterwards: cd "{into}" && lantern work finish {wid} --no-test',
+                    path=own.path,
+                    into=into,
+                    wid=wid,
+                )
+            )
+        elif own and not os.access(own.path.parent, os.W_OK):
+            msgs.append(
+                msg(
+                    "ℹ This session can't delete {path}, so it stays. Don't run `git worktree remove` here: "
+                    "it stops halfway and breaks the folder. A person cleans it up in a terminal: "
+                    'cd "{into}" && lantern work finish {wid} --no-test',
                     path=own.path,
                     into=into,
                     wid=wid,

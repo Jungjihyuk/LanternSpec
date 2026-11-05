@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import re
+import shlex
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -132,7 +133,7 @@ class Tool:
 
     Shared code knows only this class; each tool overrides what its format needs.
     Methods with a default (skill_meta, skill_extras, install_config, check_config, hooks, written_paths,
-    read_transcript) are overridden only by tools that need them.
+    read_transcript, worktree_command) are overridden only by tools that need them.
 
     Attributes:
         name: Key used on the command line and in installed.json, e.g. "claude".
@@ -277,6 +278,24 @@ class Tool:
             ['.claude/settings.json (hooks)']
         """
         return []
+
+    def worktree_command(self, path: Path, work_id: str, merge_folder: Path) -> str:
+        """Build the terminal command that builds a work in its own worktree with this tool.
+
+        Args:
+            path: The work's worktree.
+            work_id: The work, e.g. "W-012".
+            merge_folder: The folder where the branch it merges into is open.
+
+        Returns:
+            The command, quoted for a shell.
+
+        Example:
+            >>> from lanternspec.tools import get
+            >>> get("claude").worktree_command(Path("../app-W-012"), "W-012", Path("."))
+            "claude '/l-build W-012'"
+        """
+        return shlex.join([self.launch, f"{self.command_prefix}l-build {work_id}"])
 
     def check_config(self, project: Project) -> list[tuple[str, str]]:
         """Check that the tool will actually read our rules in this project (for `lantern doctor`).

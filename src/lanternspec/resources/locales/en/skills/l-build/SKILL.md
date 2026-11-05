@@ -130,7 +130,7 @@ When `lantern task next W-012` says every task is done:
    lantern work finish W-012
    lantern work archive W-012      # work folder → <<folder.archive>>/ (links are fixed too)
    ```
-   If `finish` says **the folder stays**, it ran inside a worktree: from `archive` on, through step 4 below and committing the documents, move to the folder it names, and finally run the clean-up command it gives.
+   If `finish` says **the folder stays**, it ran inside a worktree: from `archive` on, through step 4 below and committing the documents, move to the folder it names, and finally run the clean-up command it gives. If that says the session can't delete the folder, don't remove it another way (`git worktree remove` stops halfway and breaks it): show the person the command to run in a terminal.
 <!-- lantern:endif -->
 <!-- lantern:if git.pr=work -->
 3. Bring the base branch into the work branch and test; merging is left to the PR. On a conflict, stop and tell the person:

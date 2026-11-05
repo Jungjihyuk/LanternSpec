@@ -6,12 +6,14 @@ protocol comes from claude.ClaudeHooks; only what differs is written here.
 
 from __future__ import annotations
 
+import json
 import re
+import shlex
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from ..core.messages import msg
-from ..core.project import Project, read, write
+from ..core.project import Project, git_out, read, write
 from .base import MCP_NAME, HookInput, HookReply, Tool, Turn, jsonl_records, merge_json_file, replace_hook_entries
 from .claude import ClaudeHooks, hook_specific_output
 
@@ -21,6 +23,7 @@ if TYPE_CHECKING:
 
 PATCH_FILE = re.compile(r"^\*\*\* (?:Add|Update) File: (.+)$", re.M)
 INJECTED = ("# AGENTS.md", "<")  # starts of text Codex adds to user messages itself (AGENTS.md, environment context)
+WORKTREE_PROFILE = "lantern-worktree"
 
 
 class Codex(ClaudeHooks, Tool):
@@ -167,6 +170,50 @@ class Codex(ClaudeHooks, Tool):
             "PreCompact": [entry("pre-compact", 10)],
             "Stop": [entry("stop", 10)],
         }
+
+    def worktree_command(self, path: Path, work_id: str, merge_folder: Path) -> str:
+        r"""Implement Tool.worktree_command: open Codex with a permission profile that lets git work from a worktree.
+
+        Codex keeps a linked worktree's git folder read-only, so commits fail there. For this one
+        session the profile opens what committing and merging write, and keeps the sandbox on: git
+        hooks and `.git/config` stay read-only, so settings kept there can't change from inside it.
+
+        Args:
+            path: The work's worktree.
+            work_id: The work, e.g. "W-012".
+            merge_folder: The folder where the branch it merges into is open.
+
+        Returns:
+            The command, quoted for a shell.
+
+        Example:
+            >>> Codex().worktree_command(Path("../app-W-012"), "W-012", Path("../app"))  # doctest: +SKIP
+            "codex -c 'permissions.lantern-worktree={…}' -c 'default_permissions=\"lantern-worktree\"' '$l-build W-012'"
+        """
+
+        def git_path(folder: Path, what: str) -> str:
+            return git_out(["rev-parse", "--path-format=absolute", what], folder)
+
+        common = git_path(path, "--git-common-dir")
+        access = {
+            common: "write",
+            git_path(path, "--git-dir"): "write",
+            git_path(merge_folder, "--git-dir"): "write",
+            f"{common}/hooks": "read",
+            f"{common}/config": "read",
+            str(merge_folder.resolve()): "write",
+        }
+        rules = ",".join(f"{json.dumps(k, ensure_ascii=False)}={json.dumps(v)}" for k, v in access.items())
+        return shlex.join(
+            [
+                self.launch,
+                "-c",
+                f'permissions.{WORKTREE_PROFILE}={{extends=":workspace",filesystem={{{rules}}}}}',
+                "-c",
+                f'default_permissions="{WORKTREE_PROFILE}"',
+                f"{self.command_prefix}l-build {work_id}",
+            ]
+        )
 
     def install_config(self, project: Project, mcp: bool) -> list[str]:
         """Implement Tool.install_config: hooks go into `.codex/hooks.json`, the MCP server (when asked) into `.codex/config.toml`.

@@ -130,7 +130,7 @@ lantern scaffold idea "<짧은 제목>" --kind <유형> --raw "W-012 구현 중 
    lantern work finish W-012
    lantern work archive W-012      # 작업 폴더 → <<folder.archive>>/ (링크도 고쳐 준다)
    ```
-   `finish`가 **폴더를 남겨 둔다**고 하면 worktree 안에서 실행한 것이다: `archive`부터 아래 4번과 문서 커밋까지 안내된 폴더로 옮겨서 하고, 끝으로 안내된 정리 명령을 실행한다.
+   `finish`가 **폴더를 남겨 둔다**고 하면 worktree 안에서 실행한 것이다: `archive`부터 아래 4번과 문서 커밋까지 안내된 폴더로 옮겨서 하고, 끝으로 안내된 정리 명령을 실행한다. 그 명령이 세션에서 폴더를 지울 수 없다고 하면 다른 방법으로 지우지 말고(`git worktree remove`는 중간에 멈춰 폴더를 망가뜨린다) 터미널에서 실행할 명령을 사람에게 보여 준다.
 <!-- lantern:endif -->
 <!-- lantern:if git.pr=work -->
 3. 기준 브랜치를 작업 브랜치에 받아 테스트하고, 합치는 것은 PR에 맡긴다. 충돌하면 멈추고 사람에게 알린다:

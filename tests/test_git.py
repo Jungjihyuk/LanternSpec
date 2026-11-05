@@ -2,6 +2,11 @@
 work worktrees · scan · sync adopt."""
 
 import json
+import os
+import shlex
+import shutil
+import subprocess
+import tomllib
 
 import pytest
 
@@ -579,6 +584,90 @@ def test_finish_from_another_works_worktree_leaves_that_worktree_alone(repo, mon
     _, out = repo("work", "finish", "W-001", "--no-test")
     assert "→ main 머지" in out and (repo.root / "a.py").exists()
     assert sh(second, "git", "branch", "--show-current").stdout.strip() == "work/W-002"
+
+
+def test_finish_reports_a_failed_merge_as_it_is_when_nothing_conflicts(repo):
+    first, _ = _two_worktrees(repo)
+    _commit_in(first, "a.py", "feat: a [W-001-T01]")
+    _commit_in(repo.root, "base.py", "chore: 기준 [W-001]")
+    lock = repo.root / ".git" / "worktrees" / "proj-W-001" / "index.lock"
+    lock.write_text("", encoding="utf-8")
+    code, out = repo("work", "finish", "W-001", "--no-test", ok=False)
+    lock.unlink()
+    assert code == 1 and "index.lock" in out and "충돌" not in out
+
+
+def test_finish_leaves_a_worktree_this_session_cannot_delete_whole(repo):
+    first, _ = _two_worktrees(repo)
+    _commit_in(first, "a.py", "feat: a [W-001-T01]")
+    parent = first.parent
+    mode = parent.stat().st_mode
+    parent.chmod(0o555)
+    if os.access(parent, os.W_OK):  # e.g. running as root
+        parent.chmod(mode)
+        pytest.skip("this user can write anywhere")
+    try:
+        _, out = repo("work", "finish", "W-001", "--no-test")
+    finally:
+        parent.chmod(mode)
+    assert "지울 수 없어" in out and "lantern work finish W-001 --no-test" in out
+    assert (first / "a.py").exists() and sh(repo.root, "git", "rev-parse", "--verify", "work/W-001").returncode == 0
+    assert (repo.root / "a.py").exists()
+    _, out = repo("work", "finish", "W-001", "--no-test")
+    assert "worktree 정리" in out and not first.exists()
+
+
+def _codex_start_line(repo, wid):
+    _, out = repo("work", "start", wid, "--no-install")
+    return next(line for line in out.splitlines() if "codex " in line).split("&& ", 1)[1]
+
+
+def test_work_start_prints_a_command_for_each_installed_tool(repo):
+    init_project(repo)
+    repo("install", "--tools", "claude,codex,antigravity")
+    repo("scaffold", "work", "하나")
+    repo.git("add", "-A")
+    commit(repo, "docs: 기획 [lantern]")
+    _, out = repo("work", "start", "W-001", "--no-install")
+    assert "claude '/l-build W-001'" in out and "agy -i '/l-build W-001'" in out and "'$l-build W-001'" in out
+
+
+def test_codex_worktree_command_opens_only_what_git_needs(repo):
+    init_project(repo)
+    repo("install", "--tools", "codex")
+    repo("scaffold", "work", "하나")
+    repo.git("add", "-A")
+    commit(repo, "docs: 기획 [lantern]")
+    args = shlex.split(_codex_start_line(repo, "W-001"))
+    wt = repo.root.parent / "proj-W-001"
+    profile = tomllib.loads(args[2])["permissions"]["lantern-worktree"]
+    git_dir = (repo.root / ".git").resolve()
+    assert profile["extends"] == ":workspace" and profile["filesystem"] == {
+        str(git_dir): "write",
+        str(git_dir / "worktrees" / wt.name): "write",
+        str(git_dir / "hooks"): "read",
+        str(git_dir / "config"): "read",
+        str(repo.root.resolve()): "write",
+    }
+    assert args[3:] == ["-c", 'default_permissions="lantern-worktree"', "$l-build W-001"]
+
+
+def test_codex_sandbox_commits_with_the_worktree_command_but_keeps_git_config_closed(repo):
+    if shutil.which("codex") is None:
+        pytest.skip("codex is not installed")
+    init_project(repo)
+    repo("install", "--tools", "codex")
+    repo("scaffold", "work", "하나")
+    repo.git("add", "-A")
+    commit(repo, "docs: 기획 [lantern]")
+    args = shlex.split(_codex_start_line(repo, "W-001"))
+    wt = repo.root.parent / "proj-W-001"
+    sandbox = ["codex", "sandbox", *args[1:5], "-P", "lantern-worktree", "-C", str(wt), "--"]
+    env = {**os.environ, "LANTERN_SKIP_HOOKS": "1"}
+    r = subprocess.run([*sandbox, "git", "commit", "--allow-empty", "-qm", "chore: x [W-001]"], capture_output=True, text=True, env=env)
+    assert r.returncode == 0, r.stderr
+    r = subprocess.run([*sandbox, "git", "config", "lantern.W-001.x", "1"], capture_output=True, text=True, env=env)
+    assert r.returncode != 0
 
 
 def _dev_project(repo):

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import re
+import shlex
 from pathlib import Path
 from typing import Any
 
@@ -45,6 +46,23 @@ class Antigravity(Tool):
     )
     verified_version = "1.4.10"
     rules_max_bytes = 24_000  # its guide: each rules file is cut at 24,000 bytes
+
+    def worktree_command(self, path: Path, work_id: str, merge_folder: Path) -> str:
+        """Implement Tool.worktree_command: a first prompt for an interactive session goes through `-i`.
+
+        Args:
+            path: The work's worktree.
+            work_id: The work, e.g. "W-012".
+            merge_folder: The folder where the branch it merges into is open.
+
+        Returns:
+            The command, quoted for a shell.
+
+        Example:
+            >>> Antigravity().worktree_command(Path("../app-W-012"), "W-012", Path("."))
+            "agy -i '/l-build W-012'"
+        """
+        return shlex.join([self.launch, "-i", f"{self.command_prefix}l-build {work_id}"])
 
     # ---- config
     def hooks(self) -> dict[str, Any]:

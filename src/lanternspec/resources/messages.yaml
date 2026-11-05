@@ -190,7 +190,7 @@
 "✔ Merged {name} → {base}": {ko: "✔ {name} → {base} 머지"}
 "table {m}": {ko: "테이블 {m}"}
 "No commits yet, so a worktree can't be made — commit first": {ko: "커밋이 하나도 없어 worktree를 만들 수 없습니다 — 먼저 커밋하세요"}
-"    In a terminal: cd \"{path}\" && claude \"/l-build {wid}\"": {ko: "    터미널에서: cd \"{path}\" && claude \"/l-build {wid}\""}
+"    In a terminal: cd \"{path}\" && {command}": {ko: "    터미널에서: cd \"{path}\" && {command}"}
 "  (uncommitted changes)": {ko: "  (커밋 안 된 변경 있음)"}
 "No parallel works in progress": {ko: "진행 중인 동시 작업이 없습니다"}
 "Branch {name} doesn't exist": {ko: "{name} 브랜치가 없습니다"}
@@ -222,8 +222,10 @@
 "--into is for `lantern work branch` and `lantern work start`": {ko: "--into는 `lantern work branch`와 `lantern work start`에서 씁니다"}
 "branch · start: this work only, start from and merge into this branch instead of the base branch": {ko: "branch · start: 이 작업만 기준 브랜치 대신 이 브랜치에서 시작하고 여기로 합침"}
 "branch: this work only, no work branch, commit straight to the current branch": {ko: "branch: 이 작업만 작업 브랜치 없이 지금 브랜치에 바로 커밋"}
+"Couldn't keep this work's choice in git config — run this outside the AI tool's sandbox: {strip}": {ko: "이 작업의 선택을 git 설정에 남기지 못했습니다 — AI 도구의 샌드박스 밖에서 실행하세요: {strip}"}
 "{base} isn't open in any folder — run `git checkout {base}` in {root} and try again": {ko: "{base} 브랜치가 열린 폴더가 없습니다 — {root}에서 `git checkout {base}` 후 다시 실행하세요"}
 "ℹ This session is inside {path}, so it stays. Do the next steps in {into}; to clean up afterwards: cd \"{into}\" && lantern work finish {wid} --no-test": {ko: "ℹ 이 세션이 {path} 안에 있어 폴더를 남겨 둡니다. 다음 단계는 {into}에서 하세요. 끝난 뒤 정리: cd \"{into}\" && lantern work finish {wid} --no-test"}
+"ℹ This session can't delete {path}, so it stays. Don't run `git worktree remove` here: it stops halfway and breaks the folder. A person cleans it up in a terminal: cd \"{into}\" && lantern work finish {wid} --no-test": {ko: "ℹ 이 세션은 {path} 폴더를 지울 수 없어 남겨 둡니다. 여기서 `git worktree remove`를 실행하지 마세요: 중간에 멈춰 폴더가 망가집니다. 사람이 터미널에서 정리하세요: cd \"{into}\" && lantern work finish {wid} --no-test"}
 "✔ Removed worktree: {path}": {ko: "✔ worktree 정리: {path}"}
 "✔ Deleted branch: {name}": {ko: "✔ 브랜치 삭제: {name}"}
 "⚠ Couldn't delete the branch: {strip}": {ko: "⚠ 브랜치를 지우지 못했습니다: {strip}"}
