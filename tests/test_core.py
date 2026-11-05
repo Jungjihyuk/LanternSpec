@@ -68,6 +68,8 @@ def test_enabled_docs_follow_the_08_table():
     team = _keys({"project": {"team": "team", "members": ["a"]}})
     assert {"collab", "meetings"} <= team
     assert "api" not in _keys({"project": {"server": "external"}})
+    assert "server-ops" in _keys({"project": {"server": "external"}})
+    assert "server-ops" not in _keys({"project": {"server": "none"}})
     assert "api" in _keys({"project": {"server": "external"}, "docs": {"extra": ["api"]}})
     custom = _keys({"project": {"server": "custom"}})
     assert {"api", "server-ops"} <= custom

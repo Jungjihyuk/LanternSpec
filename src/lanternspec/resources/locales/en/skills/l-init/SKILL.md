@@ -1,33 +1,33 @@
 ---
 name: l-init
-description: Set up LanternSpec for a project — seven questions decide what kind of project it is (new/existing · team size · screens · server · knowledge store · design tool · project kind), then create lantern.yaml · the docs/ folders · templates · MOC · a draft project definition · development principles · git hooks. Once per project, and again when the project changes (solo → team, adding web …). Use when setting up LanternSpec docs in a project or re-running after the project profile changed.
+description: Set up LanternSpec for a project — up to seven questions decide what kind of project it is (new/existing · team size · project kind · screens · server · knowledge store · design tool), then create lantern.yaml · the docs/ folders · templates · MOC · a draft project definition · development principles · git hooks. Once per project, and again when the project changes (solo → team, adding web …). Use when setting up LanternSpec docs in a project or re-running after the project profile changed.
 invocation: manual
 argument-hint: "[what changed (when re-running)]"
 ---
 
 # /l-init — build the document structure that fits this project
 
-**Purpose:** seven questions decide which documents to turn on or off and which development principles to follow, then build that structure. Every format (files · folders · numbers) is made by `lantern` commands; you ask, judge and fill the blanks.
+**Purpose:** up to seven questions decide which documents to turn on or off and which development principles to follow, then build that structure. Every format (files · folders · numbers) is made by `lantern` commands; you ask, judge and fill the blanks.
 
 First check the CLI is there with `lantern --version`. If it isn't, only tell the user how to install it (`uv tool install lanternspec`) and stop.
 
 ## 0. First time, or running again?
 - **No** `lantern.yaml` → start at step 1.
-- **There is one** → go to [Running again](#running-again). Don't ask the seven questions again.
+- **There is one** → go to [Running again](#running-again). Don't ask the questions from the start again.
 
-## 1. Seven questions — ask one at a time, collect the answers, write them all at once
+## 1. Questions — ask one at a time, collect the answers, write them all at once
 **How to ask**
 - Find out what you can first and use it as the recommended answer: is there code (`git ls-files`) · languages (`lantern principles detect`) · branches (`git branch`).
 - **One decision per question.** Don't pack several answers into one question ("and if so, also tell me A and B") — ask for each separately.
 - Offer choices so the person only has to pick, and mark the recommended one.
-- For answers that must be typed, such as a path or a name, **look for candidates first and offer them as choices**. If there are candidates, add "if none fits, type it in the box at the bottom" to the question; **if there are none**, ask in a plain message instead of a choice question.
+- For answers that must be typed, such as a path or a name, **look for candidates first and offer them as choices**. With 2 or more candidates, add "if none fits, type it in the box at the bottom" to the question. **With one candidate**, ask in a plain message that names it instead of a choice question ("Use X? To use something else, type it"); **with none**, ask in a plain message.
 - For a free answer with no candidates (a one-sentence introduction · team member names), ask in a plain message instead of a choice question (AGENTS.md "How to ask").
 - Don't create files or run commands as answers come in. **Collect every answer**, then write them all at once in step 2.
 <!-- lantern:if tool=claude -->
 - Use the question tool (AskUserQuestion) and send **up to 4 questions at a time**. They appear one by one, and the answers come back together.
-  - Round 1: questions 1 · 2 · 3 · 4 (3 allows several answers)
-  - Round 2: questions 5 · 6, and the two parts of 7 (kind · outside connections)
-  - Round 3: only what the earlier answers call for — project name · publishing docs · branch flow · (team) member names · (external) API document
+  - Round 1: questions 1 · 2 · 3
+  - Round 2: the follow-up to 3 ("Where will people use it?" allows several answers) · 4 (only when it is asked) · 5 · 6
+  - Round 3: question 7, and only what the earlier answers call for — project name · publishing docs · branch flow · (team) member names · (external) API document
   - Round 4: only if a knowledge store was chosen in 5 — the three questions under "If a knowledge store was chosen"
 <!-- lantern:endif -->
 <!-- lantern:if !tool=claude -->
@@ -37,26 +37,32 @@ First check the CLI is there with `lantern --version`. If it isn't, only tell th
 **Questions**
 1. 🌱 A new project (greenfield), or 🏠 one with existing code (brownfield)? — recommend brownfield if there is code already
 2. How many people? Solo / two or more (team)
-3. What are you building? (the screen side, several allowed) Web · desktop · mobile · none
-4. How is the backend (server code and data storage) handled? — this asks whether *you write* server code, not *where* it runs
-   - None (none): no server; everything runs inside the app or web page, data is stored on the device or in the browser
-   - Outside service (external): use a ready-made backend such as Supabase or Firebase — you don't write server code
-   - Build your own (custom): you write the server code — wherever it runs: AWS · GCP · Vercel · your own servers (even if only run locally)
+3. What are you building? Follow up according to the answer. Offer the choices in these words, and don't show the stored values
+   - Service · app — people use it through screens or an API (`--kind service`). Then ask **"Where will people use it? (several allowed)"** Website (`web`) · desktop program (`desktop`) · mobile app (`mobile`) · no screens, API server only (`--clients none`)
+   - Tool · library — a CLI, a plugin, or code that goes into other code (`--clients none`). Then ask **"How will it be used?"** CLI tool (`--kind cli`) · library · plugin (`--kind library`)
+   - Data · ML — data processing, model training (`--kind data --clients none`)
+   - Script · experiment — code you run once or try out (`--kind script --clients none`)
+4. Does a server have work to do? (accounts, storing data, calling outside APIs and so on) — if 3 was tool · library or script · experiment, don't ask and use `--server none`. Split by whether *you write* server code, not *where* it runs. Offer the choices in these words, and don't show the stored values
+   - Build it yourself — FastAPI, Spring, Express and so on (stored as `custom`: you write the server code, wherever it runs, even if only locally)
+   - Use an existing service — Supabase, Firebase and so on (stored as `external`: you don't write server code)
+   - Not needed — runs inside the browser or device only (stored as `none`)
 5. Do you keep study notes in a knowledge store? None / an Obsidian vault / a plain Markdown folder — ask **only the kind** (path and write mode come below)
 6. Design tool? Claude Design / Figma / Canva / none — Figma and Canva need that tool's MCP server connected to this AI tool (if it isn't, explain how to connect it, and take exported files until then)
-7. What kind of project is it? Script · experiment (script) / CLI tool (cli) / library · plugin (library) / service — web · app (service) / data · ML (data). And **does it connect to outside tools or services?** (AI tools · payments · external APIs · a plugin system …) — the design principles are chosen from these answers
+7. **Does it connect to outside tools or services?** (AI tools · payments · outside APIs · a structure that takes plugins and so on) — this answer and the project kind from 3 choose the design principles
    - Before asking about languages, find them with `lantern principles detect`. If nothing is found (a new project), ask separately: "What will you build it with? Python · TypeScript · Swift · Rust · Go"
    - **Don't ask about size** — lines of code are measured, and team size comes from question 2
 
 **Then ask** (only what the earlier answers call for)
-- Project name — recommend the folder name
-- "Publish the documents to GitHub too?" — yes (shared, default) / no (local: documents stay only on the `docs-local` branch of the same repository and are never pushed. Good for private notes or public repositories)
+- Project name — when the folder name is the only candidate, ask in a plain message: "Name the project <folder name>? To use another name, type it"
+- "Publish the documents to GitHub too?" — offer the choices in these words, and don't show the stored values
+  - Yes — they go up with the code (default, stored as `shared`)
+  - No — they stay on this computer (stored as `local`: documents stay only on the `docs-local` branch of the same repository. Suits private notes · public repositories)
 - Branch flow — see "Choosing the branch flow" below
 - (if 2 is team) team member names — there are no candidates, so ask in a plain message: "Please list the people working with you, separated by commas"
 - (if 4 is external) "Create an API document too?" — if yes, `--extra api`
 
 **If a knowledge store was chosen** (only when 5 is not none, one at a time)
-- **Where is it?** — look for candidates first: for Obsidian, folders that contain `.obsidian` (`find ~ -maxdepth 4 -name .obsidian -type d`); for a Markdown folder, near the documents folder. Offer the paths found as choices (up to 3); if none are found, ask in a plain message: "What is the path of your notes folder?"
+- **Where is it?** — look for candidates first: for Obsidian, folders that contain `.obsidian` (`find ~ -maxdepth 4 -name .obsidian -type d`); for a Markdown folder, near the documents folder. With 2 or more paths found, offer them as choices (up to 3); with one, ask in a plain message "Is this the right path?"; if none are found, ask in a plain message: "What is the path of your notes folder?"
 - **How should new notes be made?** — write to the store right away once approved (direct, recommended) / never touch the store, only make draft files (propose_only)
 - **(only when the store has folders split by topic) Use those folders as topics too?** (optional) — first skim the store's top-level folders; if there is no folder whose subfolders look like topics (e.g. `2. Study`), **skip this question**. If there is, say what it means first: "Unfamiliar technologies are kept as debt cards, and each card gets one topic (now: backend · frontend · data · ai · infra · other). Your store seems to have folders split by topic — use those names as topics too? This has nothing to do with the project's structure." Offer the folders found and "only the default topics" (recommended).
 

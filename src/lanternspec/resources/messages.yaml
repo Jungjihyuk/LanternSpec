@@ -171,6 +171,7 @@
 "{name} can't be a branch name": {ko: "{name}은 브랜치 이름으로 쓸 수 없습니다"}
 "The branch rule {rule} has blanks to fill — choose a name: `lantern work branch {wid} --name <name>`": {ko: "브랜치 규칙 {rule}에 채울 칸이 있습니다 — 이름을 정하세요: `lantern work branch {wid} --name <이름>`"}
 "⚠ origin/{base} has {count} commits this {base} doesn't — run `git pull` on {base} first": {ko: "⚠ origin/{base}에 이쪽 {base}에 없는 커밋이 {count}개 있습니다 — {base}에서 먼저 `git pull`을 하세요"}
+"ℹ Took {base}'s side of generated documents, which the wrap-up rebuilds: {files}": {ko: "ℹ 자동 생성 문서는 {base} 쪽을 받았습니다 (마무리에서 다시 만듭니다): {files}"}
 "{name} conflicts with {base}: {files} — on {name}, run `git merge {base}`, resolve it, then run this again": {ko: "{name}이 {base}와 충돌합니다: {files} — {name}에서 `git merge {base}`로 직접 해결한 뒤 다시 실행하세요"}
 "✔ {name} is up to date with {base}. It merges through a PR: current-state update → lantern work archive {wid} → commit → /l-pr": {ko: "✔ {name}에 {base}의 변경을 반영했습니다. 합치는 것은 PR로 합니다: 현재 상태 반영 → lantern work archive {wid} → 커밋 → /l-pr"}
 "To send it out later: /l-pr ({base} → {deploy})": {ko: "배포할 때: /l-pr ({base} → {deploy})"}
@@ -1154,7 +1155,7 @@
 "How it's deployed (hosting · stores · signing …)": {ko: "배포 방식 (호스팅 · 스토어 · 서명 등)"}
 "Platform integration (push · deep links · URL schemes …)": {ko: "플랫폼 연동 (푸시 · 딥링크 · URL 스킴 등)"}
 "API style (REST · GraphQL …) and authentication": {ko: "API 형태 (REST · GraphQL 등)와 인증 방식"}
-"Where the server is deployed and how it's run": {ko: "서버 배포 위치와 운영 방법"}
+"Where the server or outside service runs and how it's run": {ko: "서버나 외부 서비스의 위치와 운영 방법"}
 "Team member names (project.members) and review · branch rules": {ko: "팀원 이름 (project.members)과 리뷰 · 브랜치 규칙"}
 "Technologies you already know well (left out of debt candidates)": {ko: "이미 잘 아는 기술 (부채 후보에서 뺄 것)"}
 

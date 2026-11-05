@@ -125,7 +125,7 @@ When `lantern task next W-012` says every task is done:
    - Data: merge the design's DBML changes into `<<folder.current>>/<<folder.data>>/schema.dbml` → `lantern check-dbml` → `lantern dbml render`
    - When each applied document was checked: `lantern meta set "<document>" checked_commit=$(git rev-parse --short HEAD)` (and `code` if more code paths are involved)
 <!-- lantern:if !git.pr=work -->
-3. Merge the work branch into the base branch and clean up (bring in the base branch → test → merge → clean up). On a conflict, stop and tell the person:
+3. Merge the work branch into the base branch and clean up (bring in the base branch → test → merge → clean up). On a conflict, follow **On a conflict** below:
    ```bash
    lantern work finish W-012
    lantern work archive W-012      # work folder → <<folder.archive>>/ (links are fixed too)
@@ -133,13 +133,20 @@ When `lantern task next W-012` says every task is done:
    If `finish` says **the folder stays**, it ran inside a worktree: from `archive` on, through step 4 below and committing the documents, move to the folder it names, and finally run the clean-up command it gives. If that says the session can't delete the folder, don't remove it another way (`git worktree remove` stops halfway and breaks it): show the person the command to run in a terminal.
 <!-- lantern:endif -->
 <!-- lantern:if git.pr=work -->
-3. Bring the base branch into the work branch and test; merging is left to the PR. On a conflict, stop and tell the person:
+3. Bring the base branch into the work branch and test; merging is left to the PR. On a conflict, follow **On a conflict** below:
    ```bash
    lantern work finish W-012       # bring in the base branch → test (no merge)
    lantern work archive W-012      # work folder → <<folder.archive>>/ (links are fixed too)
    ```
    After committing the documents, tell the person to run `/l-pr`.
 <!-- lantern:endif -->
+   **On a conflict:** when only generated documents conflict, `finish` handles it. When it stops because other files conflict too, run `git merge <base branch>` on the work branch as it says, and handle each file:
+   - **Generated documents** (`<<file.moc>>` · `<<file.report>>` · `<<folder.past_reports>>` · `<<file.debt_status>>`): take the base branch's side with `git checkout --theirs -- <file>`. Step 4 below rebuilds them.
+   - **Written documents in `<<folder.current>>`:** keep the facts from **both** sides. Don't delete a line another work wrote or take one side's whole file. In the frontmatter, make `updated` the later date and `code` the combined list, and set `checked_commit` again after the merge commit. If the same fact differs between sides, check which is right in the merged code; if the code can't tell, `git merge --abort` and ask the person.
+   - **Data · API documents:** show the person the combined result and ask (even under `auto`). Once approved, check it with `lantern check-dbml`.
+   - **Code and anything else:** don't resolve it yourself. `git merge --abort` and tell the person which files conflicted.
+
+   When all are handled: `lantern check` → `git add <files>` → `git commit --no-edit` → run `lantern work finish W-012` again.
 4. Common wrap-up + drift check + refresh the report:
    ```bash
    lantern close l-build --work W-012

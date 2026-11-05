@@ -916,8 +916,8 @@ def enabled_docs(profile: Profile) -> list[DocSpec]:
         ]
     if server == "custom" or (server == "external" and "api" in extra):
         out.append(doc("api", msg("custom server") if server == "custom" else msg("external service + API on")))
-    if server == "custom":
-        out.append(doc("server-ops", msg("custom server")))
+    if server in ("custom", "external"):  # an outside service still has keys, permissions, backups and limits to keep track of
+        out.append(doc("server-ops", msg("custom server") if server == "custom" else msg("external service")))
     if profile.team:
         out += [doc("collab", msg("2 or more people")), folder("meetings", msg("2 or more people"))]
     if profile.knowledge:
@@ -941,7 +941,7 @@ FOLLOW_UP_QUESTIONS = {
     "deploy": "How it's deployed (hosting · stores · signing …)",
     "platform": "Platform integration (push · deep links · URL schemes …)",
     "api": "API style (REST · GraphQL …) and authentication",
-    "server-ops": "Where the server is deployed and how it's run",
+    "server-ops": "Where the server or outside service runs and how it's run",
     "collab": "Team member names (project.members) and review · branch rules",
     "known-tech": "Technologies you already know well (left out of debt candidates)",
 }

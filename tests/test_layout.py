@@ -30,6 +30,7 @@ def _old_layout(r, *extra):
     (d / "3. 현재 상태/규칙/협업 규칙.md").rename(d / OLD / "협업 규칙.md")
     (d / "3. 현재 상태/결정 기록/ADR-001 인증 방식.md").rename(d / OLD / "ADR-001 인증 방식.md")
     (d / "3. 현재 상태/배포 · 운영/배포.md").rename(d / "3. 현재 상태/배포.md")
+    (d / "3. 현재 상태/배포 · 운영/서버 배포 · 운영.md").unlink()  # 0.1.2 gave an outside service no operations document
     for empty in ("3. 현재 상태/규칙", "3. 현재 상태/결정 기록", "3. 현재 상태/배포 · 운영"):
         (d / empty).rmdir()
     _old_template_copy(r, d)

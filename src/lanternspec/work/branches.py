@@ -667,6 +667,27 @@ def start(project: Project, work_ids: list[str], install: bool = True, parent: P
     return msgs
 
 
+def _is_generated(project: Project, rel: str) -> bool:
+    """Tell whether a file is a document `lantern close` or `lantern report` rebuilds whole."""
+    path = nfc(str(project.root / rel))
+    whole = (
+        project.moc,
+        project.folder("reports") / project.names.file("report"),
+        project.folder("debt") / project.names.file("debt_status"),
+    )
+    return path in {nfc(str(p)) for p in whole} or path.startswith(nfc(str(project.folder("past_reports"))) + "/")
+
+
+def _take_base_side(work_path: Path, files: list[str]) -> bool:
+    """Finish a merge of the base branch by taking its side of these files; False when that can't be done (e.g. it deleted one)."""
+    env = {"LANTERN_SKIP_HOOKS": "1"}
+    return (
+        all(git(["checkout", "--theirs", "--", f], work_path).returncode == 0 for f in files)
+        and git(["add", "--", *files], work_path).returncode == 0
+        and git(["commit", "--no-edit"], work_path, env=env).returncode == 0
+    )
+
+
 def _same_folder(a: Path, b: Path) -> bool:
     return a.resolve() == b.resolve()
 
@@ -731,6 +752,7 @@ def finish(project: Project, work_id: str, test: bool = True, keep: bool = False
     The base branch here is `merge_target`: `git.base` unless a person chose another for this work.
     The merge happens in the folder where the base branch is open, wherever this runs from.
     A work done directly on that branch (`--here`) has nothing to merge, so only the tests run.
+    Conflicts only in generated documents resolve themselves; any other conflict stops the merge.
     A worktree this runs from inside stays, because a session is working in it. So does one this
     session can't delete (an AI tool's sandbox), since git would stop halfway through removing it.
     With `git.pr: work` it stops before merging: the PR does that, and the branch stays.
@@ -776,18 +798,27 @@ def finish(project: Project, work_id: str, test: bool = True, keep: bool = False
     # the tests below must see what the base branch will hold after the merge
     r = git(["merge", "--no-edit", base], work_path, env={"LANTERN_SKIP_HOOKS": "1"}) if not direct else None
     if r is not None and r.returncode != 0:
-        conflicted = git_out(["diff", "--name-only", "--diff-filter=U"], work_path).replace("\n", " · ")
+        conflicted = git_out(["diff", "--name-only", "--diff-filter=U"], work_path).splitlines()
         if not conflicted:  # not a conflict at all, e.g. the git folder can't be written
             raise WorkError(r.stderr.strip() or r.stdout.strip())
-        git(["merge", "--abort"], work_path)
-        raise WorkError(
-            msg(
-                "{name} conflicts with {base}: {files} — on {name}, run `git merge {base}`, resolve it, then run this again",
-                name=name,
-                base=base,
-                files=conflicted,
+        if all(_is_generated(project, f) for f in conflicted) and _take_base_side(work_path, conflicted):
+            msgs.append(
+                msg(
+                    "ℹ Took {base}'s side of generated documents, which the wrap-up rebuilds: {files}",
+                    base=base,
+                    files=" · ".join(conflicted),
+                )
             )
-        )
+        else:
+            git(["merge", "--abort"], work_path)
+            raise WorkError(
+                msg(
+                    "{name} conflicts with {base}: {files} — on {name}, run `git merge {base}`, resolve it, then run this again",
+                    name=name,
+                    base=base,
+                    files=" · ".join(conflicted),
+                )
+            )
     if test:
         cmd = project.profile.get("build.test")
         if cmd:

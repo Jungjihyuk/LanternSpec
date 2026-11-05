@@ -28,6 +28,7 @@ def test_init_creates_the_profile_structure(repo):
     ]:
         assert (d / rel).exists(), rel
     assert not (d / "3. 현재 상태/API.md").exists()  # external server: API only when asked
+    assert (d / "3. 현재 상태/배포 · 운영/서버 배포 · 운영.md").exists()  # but its keys, permissions and limits have a place
     assert not (d / "📒 부채").exists()  # no knowledge store → learning line off
     deploy = (d / "3. 현재 상태/배포 · 운영/배포.md").read_text(encoding="utf-8")
     assert "## 모바일" in deploy and "## 웹" not in deploy and "lantern:if" not in deploy
@@ -44,7 +45,7 @@ def test_rerun_init_adds_new_docs_and_marks_unneeded(repo):
     init_project(repo)
     repo("profile", "set", "project.clients=[web]", "project.server=custom")
     _, plan = repo("scaffold", "init", "--plan")
-    assert "API.md" in plan and "서버 배포 · 운영.md" in plan
+    assert "API.md" in plan
     assert "물을 것" in plan
     repo("scaffold", "init")
     d = docs(repo)
@@ -54,6 +55,7 @@ def test_rerun_init_adds_new_docs_and_marks_unneeded(repo):
     assert "사용 안 함" in plan
     repo("scaffold", "init")
     assert meta(d / "3. 현재 상태/API.md")["status"] == "사용 안 함"
+    assert meta(d / "3. 현재 상태/배포 · 운영/서버 배포 · 운영.md")["status"] == "사용 안 함"
     assert meta(d / "3. 현재 상태/배포 · 운영/배포.md")["status"] == "사용 안 함"
     # never deleted, and switching back re-enables
     repo("profile", "set", "project.server=custom")

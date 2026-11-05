@@ -670,6 +670,54 @@ def test_codex_sandbox_commits_with_the_worktree_command_but_keeps_git_config_cl
     assert r.returncode != 0
 
 
+def _both_edit(first, second, rel):
+    for folder, text in ((first, "a\n"), (second, "b\n")):
+        path = folder / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+        sh(folder, "git", "add", "-A")
+        sh(folder, "git", "commit", "-q", "-m", "docs: 기록 [W-001]")
+
+
+def test_finish_resolves_conflicts_only_in_generated_documents_by_taking_the_base_side(repo):
+    first, second = _two_worktrees(repo)
+    for rel in ("docs/개발문서 MOC.md", "docs/4. 운영 기록/보고/현황.md", "docs/4. 운영 기록/보고/지난 보고/2026-11-05.md"):
+        _both_edit(first, second, rel)
+    repo("work", "finish", "W-001", "--no-test")
+    _, out = repo("work", "finish", "W-002", "--no-test")
+    assert "자동 생성 문서는 main 쪽을 받았습니다" in out and "개발문서 MOC.md" in out
+    assert (repo.root / "docs/개발문서 MOC.md").read_text(encoding="utf-8") == "a\n"
+    assert sh(repo.root, "git", "status", "--porcelain", "--untracked-files=no").stdout == ""
+
+
+def test_finish_stops_on_a_generated_document_conflict_mixed_with_anything_else(repo):
+    first, second = _two_worktrees(repo)
+    _both_edit(first, second, "docs/개발문서 MOC.md")
+    _both_edit(first, second, "docs/3. 현재 상태/기능 목록.md")
+    repo("work", "finish", "W-001", "--no-test")
+    code, out = repo("work", "finish", "W-002", "--no-test", ok=False)
+    assert code == 1 and "충돌합니다" in out and "기능 목록.md" in out and "개발문서 MOC.md" in out
+    assert sh(second, "git", "status", "--porcelain", "--untracked-files=no").stdout == ""
+
+
+def test_finish_stops_when_the_base_side_of_a_generated_document_is_gone(repo):
+    first, second = _two_worktrees(repo)
+    moc = "docs/개발문서 MOC.md"
+    (repo.root / moc).parent.mkdir(parents=True, exist_ok=True)
+    _commit_in(repo.root, moc, "docs: 지도 [lantern]")
+    for folder in (first, second):
+        sh(folder, "git", "merge", "-q", "main")
+    sh(first, "git", "rm", "-q", moc)
+    sh(first, "git", "commit", "-q", "-m", "docs: 지움 [W-001]")
+    (second / moc).write_text("b\n", encoding="utf-8")
+    sh(second, "git", "add", "-A")
+    sh(second, "git", "commit", "-q", "-m", "docs: 고침 [W-002]")
+    repo("work", "finish", "W-001", "--no-test")
+    code, out = repo("work", "finish", "W-002", "--no-test", ok=False)
+    assert code == 1 and "충돌합니다" in out
+    assert sh(second, "git", "status", "--porcelain", "--untracked-files=no").stdout == ""
+
+
 def _dev_project(repo):
     init_project(repo)
     repo.git("branch", "dev")
