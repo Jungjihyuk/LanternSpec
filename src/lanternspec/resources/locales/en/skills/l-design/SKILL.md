@@ -31,6 +31,8 @@ Draw the parts and flows that change in Mermaid. The text explains the diagram. 
 1. Take the list of screens from the user scenarios and acceptance criteria in `<<file.plan>>`.
 2. Make one Design canvas named after the work, with one board per screen. Follow the design system if there is one.
    Draw boards as static markup with no live values, so the saved file opens on its own outside the canvas.
+   - If the work changes an existing screen, keep the screen before the change first: capture the running screen, or redraw it on the canvas from its code, and save it in `<<folder.screens>>/<<folder.screens_current>>/` (this folder doesn't count as a mockup). Draw the changed screen on the next board of the same canvas.
+   - If there's no design system and the code has shared UI parts, mention it once: "If you move the existing buttons, colors and fonts into a Claude design system, the mockups come out looking like the current app. If you'd like that, run `/design-sync`."
 3. Also save each board file (`.dc.html`) in `<<folder.works>>/W-012 …/<<folder.screens>>/`. Note the canvas link in the design for reference.
 4. Show the person the canvas link and get it confirmed. If a requirement turns out missing, fix the acceptance criteria in `<<file.plan>>` first, then redo the screens.
    If the person edited the canvas themselves, read those files again and update the files in `<<folder.screens>>/`.

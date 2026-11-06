@@ -163,6 +163,11 @@ lantern scaffold init --plan        # 만들 폴더 · 문서 목록 (아직 아
    - 🚚 옮기기 — 계속 쓸 문서 → 원할 때 `/l-template migrate "<<folder.legacy>>/….md"`
 4. **빈칸 묻기:** 필수 칸만 · 짐작되면 "이게 맞나요?"로 · 한 문서의 질문은 묶어서 · "모름"은 `<<marker.unknown>>`.
 5. **덤:** `lantern legacy todos`로 기존 문서의 TODO · 나중에 할 것을 모아 아이디어 후보로 보여 준다. 사용자가 고른 것만 `/l-idea`로 기록한다.
+<!-- lantern:if tool=claude -->
+6. **디자인 시스템** (디자인 도구로 Claude Design을 고르고, 화면이 있는 프로젝트일 때): 코드에 버튼 · 입력창 · 색 같은 공통 UI 부품이 있으면 한 번 안내한다.
+   "기존 버튼 · 색 · 글꼴을 Claude의 디자인 시스템으로 옮겨 두면, 새 화면 시안이 지금 앱과 같은 모양으로 나와요. 원하시면 `/design-sync`를 실행해 주세요."
+   실행은 사람이 한다. 하지 않아도 다음 단계는 그대로 진행한다.
+<!-- lantern:endif -->
 
 ## 6. git hook · CI · Obsidian
 "커밋할 때 작업 ID · 스키마 기록 · 양식을 검사하는 git hook을 설치할까요? (기본은 경고만)" → 예면 `lantern hooks install`.

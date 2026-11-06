@@ -30,6 +30,7 @@ folders:                    # docs/ 아래 폴더
   note_drafts: {ko: "📒 부채/노트 초안", en: "📒 Debt/Note Drafts"}
   domain: {ko: "📚 도메인 지식", en: "📚 Domain Knowledge"}  # 모든 단계에서 꺼내 보는 참고서 (사람이 넣고, 필요할 때만 읽는다)
   screens: {ko: "화면", en: "Screens"}  # 작업 폴더 · 현재 상태 안의 화면 시안 폴더
+  screens_current: {ko: "지금", en: "Current"}  # 작업의 화면 폴더 안, 바꾸기 전 화면 (시안으로 세지 않는다)
   data: {ko: "데이터", en: "Data"}  # 현재 상태 안의 데이터 폴더
 
 docs:                       # 문서 이름 (확장자 없이) — 템플릿 이름이자, 이름이 정해진 문서의 파일 이름

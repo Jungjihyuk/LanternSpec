@@ -219,6 +219,11 @@ def test_task_dependencies_unknowns_and_mockup_gate(repo):
     _, out = repo("task", "next", "W-001")
     assert "지금 시작할 수 있는 할 일이 없습니다" in out
     assert "W-001-T01: ❓ 확인 필요" in out and "화면 시안 없음" in out and "W-001-T02 먼저" in out
+    current = work_dir(repo, "W-001") / "화면" / "지금"
+    current.mkdir(parents=True)
+    (current / "홈.png").write_bytes(b"")  # the screen before the change isn't a mockup
+    _, out = repo("task", "next", "W-001")
+    assert "화면 시안 없음" in out
     (work_dir(repo, "W-001") / "화면" / "홈.html").write_text("<html></html>", encoding="utf-8")
     _, out = repo("task", "next", "W-001")
     assert "▶ W-001-T02" in out

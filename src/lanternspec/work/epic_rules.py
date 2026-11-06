@@ -170,6 +170,8 @@ MOCKUP_EXT = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg", ".html", ".htm",
 def has_mockup(work_dir: Path, names: Names) -> bool:
     """Tell whether a work folder has a screen mockup (an image, HTML or PDF in its mockup folder, `화면/`).
 
+    Captures of the screen before the change (`화면/지금/`) don't count.
+
     Args:
         work_dir: The work folder.
         names: The project's names (the mockup folder's name).
@@ -183,7 +185,8 @@ def has_mockup(work_dir: Path, names: Names) -> bool:
         False
     """
     d = work_dir / names.folder("screens")
-    return d.exists() and any(p.suffix.lower() in MOCKUP_EXT for p in d.rglob("*") if p.is_file())
+    before = d / names.folder("screens_current")  # captures of the screen before the change aren't mockups
+    return d.exists() and any(p.suffix.lower() in MOCKUP_EXT and before not in p.parents for p in d.rglob("*") if p.is_file())
 
 
 def run(project: Project, work_id: str | None = None) -> list[Finding]:

@@ -162,6 +162,11 @@ Ask the three `<<marker.required>>` blanks of `docs/<<folder.current>>/<<file.pr
    - 🚚 Move — documents that stay in use → when wanted, `/l-template migrate "<<folder.legacy>>/….md"`
 4. **Ask about blanks:** required blanks only · if you can guess, ask "is this right?" · group the questions for one document · "don't know" becomes `<<marker.unknown>>`.
 5. **Bonus:** gather TODOs · "later" items from the existing documents with `lantern legacy todos` and show them as idea candidates. Record only the ones the user picks, with `/l-idea`.
+<!-- lantern:if tool=claude -->
+6. **Design system** (when Claude Design was chosen as the design tool and the project has screens): if the code has shared UI parts such as buttons, inputs and colors, mention it once.
+   "If you move the existing buttons, colors and fonts into a Claude design system, new screen mockups come out looking like the current app. If you'd like that, run `/design-sync`."
+   The person runs it. If they don't, carry on with the next steps as usual.
+<!-- lantern:endif -->
 
 ## 6. git hooks · CI · Obsidian
 "Install git hooks that check task IDs · schema records · document formats at commit time? (they only warn by default)" → if yes, `lantern hooks install`.
