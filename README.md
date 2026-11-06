@@ -282,7 +282,7 @@ Picks design principles and code conventions from a table, based on the project 
 `lantern eval` uses the run log to compare cost (time · tool calls) and results (format errors at wrap-up) per skill, model and setting.
 
 ### Design tools
-Claude Design, Figma and Canva through each tool's MCP.
+Claude Design: in Claude Code, the AI draws wireframes on a Design canvas itself. Figma and Canva work through each tool's MCP.
 Import mockups with `lantern screen import`; `lantern screen compare` finds where the built screen differs from the mockup.
 
 ## CLI at a glance

@@ -48,7 +48,7 @@ argument-hint: "[바뀐 점 (다시 실행할 때)]"
    - 기존 서비스 활용 — Supabase, Firebase 등 (저장값 `external`: 서버 코드를 직접 쓰지 않음)
    - 필요 없음 — 브라우저나 기기 안에서만 동작 (저장값 `none`)
 5. 공부 노트를 모아 둔 지식 저장소가 있나? 없음 / Obsidian 볼트 / 일반 Markdown 폴더 — **종류만** 묻는다 (경로 · 쓰기 방식은 아래에서 따로)
-6. 디자인 도구는? Claude Design / Figma / Canva / 없음 — Figma · Canva는 그 도구의 MCP 서버가 이 AI 도구에 연결돼 있어야 한다 (없으면 연결 방법을 안내하고, 연결 전까지는 내보낸 파일을 받는다)
+6. 디자인 도구는? Claude Design / Figma / Canva / 없음 — Claude Design은 Claude 안의 Design 캔버스다. Claude Code에서는 AI가 와이어프레임을 직접 그리고, 다른 AI 도구에서는 Claude에서 만든 화면을 HTML로 받는다. Figma · Canva는 그 도구의 MCP 서버가 이 AI 도구에 연결돼 있어야 한다 (없으면 연결 방법을 안내하고, 연결 전까지는 내보낸 파일을 받는다)
 7. **바깥 도구 · 서비스에 붙나?** (AI 도구 · 결제 · 외부 API · 플러그인을 받는 구조 등) — 3번의 프로젝트 종류와 이 답으로 설계 원칙을 고른다
    - 언어는 묻기 전에 먼저 `lantern principles detect`로 알아본다. 알아본 것이 없으면(새 프로젝트) 3번의 답에 따라 정한다
      - 서비스 · 앱: **기술 선택**을 따른다 (아래)

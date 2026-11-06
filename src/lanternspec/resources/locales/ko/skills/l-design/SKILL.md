@@ -1,6 +1,6 @@
 ---
 name: l-design
-description: 어떻게 만들지 설계 — 작업(W-NNN)에서 바뀌는 부분만 구조(Mermaid) · 화면(Claude Design 시안 파일) · 데이터(DBML 변경분 + 마이그레이션 계획)로 <<file.design>>에 쓰고, 되돌리기 어려운 선택은 결정 기록(ADR)으로 넘기고, 사람 승인(설계 게이트)을 받는다. Use after /l-plan when a work needs a design.
+description: 어떻게 만들지 설계 — 작업(W-NNN)에서 바뀌는 부분만 구조(Mermaid) · 화면(와이어프레임 · 시안 파일) · 데이터(DBML 변경분 + 마이그레이션 계획)로 <<file.design>>에 쓰고, 되돌리기 어려운 선택은 결정 기록(ADR)으로 넘기고, 사람 승인(설계 게이트)을 받는다. Use after /l-plan when a work needs a design.
 invocation: model
 argument-hint: "W-NNN"
 ---
@@ -37,7 +37,7 @@ lantern scaffold doc W-012 "<<doc.design>>"
 4. 사람에게 캔버스 링크를 보여 주고 확인을 받는다. 빠진 요구사항이 나오면 `<<file.plan>>`의 수락 기준을 먼저 고치고 화면을 다시 만든다.
    사람이 캔버스에서 직접 고쳤으면 그 파일을 다시 읽어 `<<folder.screens>>/`의 파일을 바꾼다.
 
-**쓸 수 없으면** (Codex, Antigravity 등) 사람에게 시안을 받는다: "Claude에서 화면을 만들고 **HTML로 내보내** `<<folder.screens>>/` 폴더에 넣어 주세요". Claude Code로 넘기기(handoff) 묶음(zip · 폴더)을 받으면 `lantern screen import W-012 <묶음>`으로 `<<folder.screens>>/` 아래에 푼다.
+**쓸 수 없으면** (Codex, Antigravity 등) 사람에게 시안을 받는다: "Claude에서 화면을 만들고 **HTML로 내보내** `<<folder.screens>>/` 폴더에 넣어 주세요". 화면 파일을 zip이나 폴더로 받으면 `lantern screen import W-012 <묶음>`으로 `<<folder.screens>>/` 아래에 푼다.
 <!-- lantern:endif -->
 <!-- lantern:if design.tool=figma -->
 Figma MCP 서버(Dev Mode MCP)로 해당 프레임을 읽는다 → 프레임을 **이미지로 내보내** `<<folder.works>>/W-012 …/<<folder.screens>>/`에 저장한다 (`lantern screen import W-012 <파일 · 폴더>`). 구현에 필요한 값(색 · 간격 · 컴포넌트 이름)은 MCP가 준 것을 설계서 표에 옮긴다. Figma 링크만 적고 끝내지 않는다 — 팀원과 AI가 열 수 있는 **파일**이 원본이다.

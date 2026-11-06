@@ -48,7 +48,7 @@ First check the CLI is there with `lantern --version`. If it isn't, only tell th
    - Use an existing service — Supabase, Firebase and so on (stored as `external`: you don't write server code)
    - Not needed — runs inside the browser or device only (stored as `none`)
 5. Do you keep study notes in a knowledge store? None / an Obsidian vault / a plain Markdown folder — ask **only the kind** (path and write mode come below)
-6. Design tool? Claude Design / Figma / Canva / none — Figma and Canva need that tool's MCP server connected to this AI tool (if it isn't, explain how to connect it, and take exported files until then)
+6. Design tool? Claude Design / Figma / Canva / none — Claude Design is the Design canvas inside Claude. In Claude Code the AI draws the wireframes itself; in other AI tools, take the screens made in Claude as HTML. Figma and Canva need that tool's MCP server connected to this AI tool (if it isn't, explain how to connect it, and take exported files until then)
 7. **Does it connect to outside tools or services?** (AI tools · payments · outside APIs · a structure that takes plugins and so on) — this answer and the project kind from 3 choose the design principles
    - Before asking about languages, find them with `lantern principles detect`. If nothing is found (a new project), decide by the answer to 3
      - A service or app: follow **Choosing the technologies** below

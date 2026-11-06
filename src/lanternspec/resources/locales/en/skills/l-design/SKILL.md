@@ -1,6 +1,6 @@
 ---
 name: l-design
-description: Design how to build it — write only what changes in a work (W-NNN) into <<file.design>> as structure (Mermaid) · screens (Claude Design mockup files) · data (DBML changes + a migration plan), hand hard-to-reverse choices to a decision record (ADR), and get the person's approval (the design gate). Use after /l-plan when a work needs a design.
+description: Design how to build it — write only what changes in a work (W-NNN) into <<file.design>> as structure (Mermaid) · screens (wireframe · mockup files) · data (DBML changes + a migration plan), hand hard-to-reverse choices to a decision record (ADR), and get the person's approval (the design gate). Use after /l-plan when a work needs a design.
 invocation: model
 argument-hint: "W-NNN"
 ---
@@ -37,7 +37,7 @@ Draw the parts and flows that change in Mermaid. The text explains the diagram. 
 4. Show the person the canvas link and get it confirmed. If a requirement turns out missing, fix the acceptance criteria in `<<file.plan>>` first, then redo the screens.
    If the person edited the canvas themselves, read those files again and update the files in `<<folder.screens>>/`.
 
-**If it isn't available** (Codex, Antigravity and so on), get the mockups from the person: "Please make the screens in Claude, **export them as HTML** and put them in the `<<folder.screens>>/` folder". If you get a Claude Code handoff bundle (zip · folder), unpack it under `<<folder.screens>>/` with `lantern screen import W-012 <bundle>`.
+**If it isn't available** (Codex, Antigravity and so on), get the mockups from the person: "Please make the screens in Claude, **export them as HTML** and put them in the `<<folder.screens>>/` folder". If you get the screen files as a zip or a folder, unpack them under `<<folder.screens>>/` with `lantern screen import W-012 <bundle>`.
 <!-- lantern:endif -->
 <!-- lantern:if design.tool=figma -->
 Read the frame through the Figma MCP server (Dev Mode MCP) → **export the frame as an image** and save it in `<<folder.works>>/W-012 …/<<folder.screens>>/` (`lantern screen import W-012 <file · folder>`). Copy the values needed to build it (colors · spacing · component names) from the MCP into the design's tables. Don't stop at a Figma link — the **file** that teammates and the AI can open is the source.

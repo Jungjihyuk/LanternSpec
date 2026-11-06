@@ -280,7 +280,7 @@ AI가 쓴 기술 중 모르는 것은 내 지식 저장소의 노트와 비교�
 `lantern eval`이 실행 기록으로 스킬 · 모델 · 설정마다 비용(시간 · 도구 호출)과 결과(마무리 때 양식 오류)를 비교한다.
 
 ### 디자인 도구
-Claude Design · Figma · Canva를 각 도구의 MCP로 쓴다.
+Claude Design은 Claude Code에서 AI가 Design 캔버스에 와이어프레임을 직접 그리고, Figma · Canva는 각 도구의 MCP로 쓴다.
 시안은 `lantern screen import`로 가져오고, `lantern screen compare`가 구현 화면과 시안의 차이를 먼저 찾아 보여 준다.
 
 ## CLI 한눈에
