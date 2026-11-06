@@ -222,9 +222,14 @@ def test_task_dependencies_unknowns_and_mockup_gate(repo):
     (work_dir(repo, "W-001") / "화면" / "홈.html").write_text("<html></html>", encoding="utf-8")
     _, out = repo("task", "next", "W-001")
     assert "▶ W-001-T02" in out
-    # ui work without a "시안과 같다" criterion is flagged
+    # the mockup and its criterion come from /l-design, so they are flagged only once the design is approved
+    (work_dir(repo, "W-001") / "화면" / "홈.html").unlink()
     _, out = repo("check", "--epic", "W-001")
-    assert "시안과 같다" in out
+    assert "시안과 같다" not in out and "시안이 없습니다" not in out
+    repo("scaffold", "doc", "W-001", "설계")
+    repo("design", "approve", "W-001", "--by", "지혁")
+    _, out = repo("check", "--epic", "W-001")
+    assert "시안과 같다" in out and "/l-design으로 만들어" in out
 
 
 def test_close_logs_a_run(repo):

@@ -129,7 +129,7 @@
 "{id}: the result can be read several ways ('{strip}')": {ko: "{id}: 결과가 여러 뜻으로 읽힙니다 ('{strip}')"}
 "Split it into two criteria": {ko: "기준을 둘로 나누세요"}
 "e.g. AC-n Result: the screen matches the mockup screens/sign-in.png": {ko: "예: AC-n 결과: 화면이 화면/로그인.png 시안과 같다"}
-"Export it as HTML from Claude Design and put it in the screens folder": {ko: "Claude Design에서 HTML로 내보내 화면/에 두세요"}
+"Make it with /l-design and put it in the screens folder": {ko: "/l-design으로 만들어 화면/에 두세요"}
 
 # work/screen.py
 "top": {ko: "위"}

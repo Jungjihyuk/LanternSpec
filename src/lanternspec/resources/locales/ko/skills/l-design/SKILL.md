@@ -27,7 +27,15 @@ lantern scaffold doc W-012 "<<doc.design>>"
 
 ## 3. 🎨 화면
 <!-- lantern:if design.tool=claude-design -->
-Claude Design으로 시안을 만든다 → **파일로** `<<folder.works>>/W-012 …/<<folder.screens>>/`에 저장한다: HTML 내보내기(권장 — AI가 직접 읽고 git에 남음) 또는 이미지. Claude Code로 넘기기(handoff) 묶음(zip · 폴더)을 받으면 `lantern screen import W-012 <묶음>`으로 `<<folder.screens>>/` 아래에 푼다.
+**Claude의 Design 도구를 쓸 수 있으면** (artifact 도구에 Design 타입이 있으면) 와이어프레임을 직접 만든다.
+1. `<<file.plan>>`의 사용자 시나리오와 수락 기준에서 화면 목록을 뽑는다.
+2. 작업 이름으로 Design 캔버스를 하나 만들고, 화면마다 보드를 하나씩 그린다. 디자인 시스템이 있으면 그것을 따른다.
+   보드는 움직이는 값 없이 정적인 마크업으로 그린다 — 저장한 파일이 캔버스 밖에서도 그대로 열린다.
+3. 각 보드 파일(`.dc.html`)을 `<<folder.works>>/W-012 …/<<folder.screens>>/`에도 저장한다. 캔버스 링크는 설계서에 참고로 적는다.
+4. 사람에게 캔버스 링크를 보여 주고 확인을 받는다. 빠진 요구사항이 나오면 `<<file.plan>>`의 수락 기준을 먼저 고치고 화면을 다시 만든다.
+   사람이 캔버스에서 직접 고쳤으면 그 파일을 다시 읽어 `<<folder.screens>>/`의 파일을 바꾼다.
+
+**쓸 수 없으면** (Codex, Antigravity 등) 사람에게 시안을 받는다: "Claude에서 화면을 만들고 **HTML로 내보내** `<<folder.screens>>/` 폴더에 넣어 주세요". Claude Code로 넘기기(handoff) 묶음(zip · 폴더)을 받으면 `lantern screen import W-012 <묶음>`으로 `<<folder.screens>>/` 아래에 푼다.
 <!-- lantern:endif -->
 <!-- lantern:if design.tool=figma -->
 Figma MCP 서버(Dev Mode MCP)로 해당 프레임을 읽는다 → 프레임을 **이미지로 내보내** `<<folder.works>>/W-012 …/<<folder.screens>>/`에 저장한다 (`lantern screen import W-012 <파일 · 폴더>`). 구현에 필요한 값(색 · 간격 · 컴포넌트 이름)은 MCP가 준 것을 설계서 표에 옮긴다. Figma 링크만 적고 끝내지 않는다 — 팀원과 AI가 열 수 있는 **파일**이 원본이다.
@@ -38,7 +46,10 @@ Canva MCP 서버로 디자인을 찾아 **PNG 또는 PDF로 내보내** `<<folde
 <!-- lantern:if design.tool=none -->
 시안은 와이어프레임 · 레퍼런스 이미지 · HTML 파일로 `<<folder.works>>/W-012 …/<<folder.screens>>/`에 둔다.
 <!-- lantern:endif -->
-**공유 링크는 받지 않는다** (조직 밖에서 안 열릴 수 있음). **그림이 원본**이고 설계서 글은 그림을 설명한다. 표에 화면 · 시안 파일 · 설명을 적는다.
+**링크만으로 끝내지 않는다** (나중에 바뀌거나 조직 밖에서 안 열릴 수 있음). 링크는 참고로 적고, `<<folder.screens>>/`의 **파일이 원본**이다. 설계서 글은 그림을 설명한다. 표에 화면 · 시안 파일 · 설명을 적는다.
+<!-- lantern:if plan.ui_reference=required -->
+시안을 넣었으면 `<<file.plan>>`에 수락 기준을 더한다: `- [ ] AC-n 결과: 화면이 화면/<파일> 시안과 같다`
+<!-- lantern:endif -->
 
 ## 4. 🗄 데이터
 - 현재 ERD(`<<folder.current>>/<<folder.data>>/schema.dbml`) 대비 **변경분**만 ```` ```dbml ```` 블록에 쓴다 (바뀌는 테이블은 완성된 정의로).

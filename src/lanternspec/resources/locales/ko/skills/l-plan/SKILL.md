@@ -78,11 +78,11 @@ lantern check --epic W-012
 ```
 ⚠ 애매한 말 · 여러 뜻 · 형식 경고는 고친다. 뜻을 모르겠으면 사람에게 묻는다.
 
+## 6. 화면 (화면이 바뀌는 작업)
+화면이 바뀌는 작업이면 `ui: true`(`--ui`)다. 사용자 시나리오에 **필요한 화면과 화면마다 하는 일**을 적는다 (예: "로그인 화면 — 이메일과 비밀번호를 넣고 로그인한다").
+와이어프레임은 여기서 만들지 않는다. `/l-design`이 이 목록과 수락 기준으로 만든다.
 <!-- lantern:if plan.ui_reference=required -->
-## 6. 화면 시안 (plan.ui_reference: required)
-화면이 바뀌는 작업이면 `ui: true`(`--ui`)이고 **시안이 있어야** 진행한다. 시안으로 인정하는 것: `<<folder.works>>/W-012 …/<<folder.screens>>/` 아래 이미지(와이어프레임 · 레퍼런스) · HTML 파일(Claude Design · artifact 내보내기). 공유 링크는 받지 않는다.
-- 없으면 시안을 요청한다<!-- lantern:if design.tool=claude-design -->: "Claude Design에서 화면을 만들고 **HTML로 내보내** `<<folder.screens>>/` 폴더에 넣어 주세요"<!-- lantern:endif --><!-- lantern:if design.tool=figma -->: Figma MCP로 프레임을 이미지로 내보내 `lantern screen import W-012 <파일>`<!-- lantern:endif --><!-- lantern:if design.tool=canva -->: Canva MCP로 PNG · PDF로 내보내 `lantern screen import W-012 <파일>`<!-- lantern:endif -->.
-- 수락 기준에 자동으로 추가한다: `- [ ] AC-n 결과: 화면이 화면/<파일> 시안과 같다`
+이 프로젝트는 화면 작업에 시안이 있어야 구현을 시작한다 (`plan.ui_reference: required`). 시안과 "화면이 시안과 같다" 수락 기준은 `/l-design`이 더한다.
 <!-- lantern:endif -->
 
 <!-- lantern:if knowledge -->

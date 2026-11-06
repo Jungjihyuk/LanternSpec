@@ -78,11 +78,11 @@ lantern check --epic W-012
 ```
 Fix ⚠ vague words · several meanings · format warnings. If you can't tell what was meant, ask the person.
 
+## 6. Screens (work that changes screens)
+Work that changes screens has `ui: true` (`--ui`). In the user scenarios, write **the screens needed and what each one does** (e.g. "Sign-in screen — enter an email and password and sign in").
+Don't make wireframes here. `/l-design` makes them from this list and the acceptance criteria.
 <!-- lantern:if plan.ui_reference=required -->
-## 6. Screen mockups (plan.ui_reference: required)
-Work that changes screens has `ui: true` (`--ui`) and **needs a mockup** to proceed. Accepted as a mockup: images (wireframes · references) or HTML files (Claude Design · artifact exports) under `<<folder.works>>/W-012 …/<<folder.screens>>/`. Share links are not accepted.
-- If there is none, ask for one<!-- lantern:if design.tool=claude-design -->: "Please make the screen in Claude Design, **export it as HTML** and put it in the `<<folder.screens>>/` folder"<!-- lantern:endif --><!-- lantern:if design.tool=figma -->: export the frame as an image with the Figma MCP, then `lantern screen import W-012 <file>`<!-- lantern:endif --><!-- lantern:if design.tool=canva -->: export as PNG · PDF with the Canva MCP, then `lantern screen import W-012 <file>`<!-- lantern:endif -->.
-- Add to the acceptance criteria automatically: `- [ ] AC-n Then: the screen matches the <<folder.screens>>/<file> mockup`
+This project needs a mockup before building screen work (`plan.ui_reference: required`). `/l-design` adds the mockup and the "the screen matches the mockup" acceptance criterion.
 <!-- lantern:endif -->
 
 <!-- lantern:if knowledge -->

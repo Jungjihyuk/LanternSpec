@@ -24,7 +24,8 @@ def check_criteria(project: Project, plan: Path) -> list[Finding]:
 
     Numbers must be unique and in order, blanks filled, the format match `plan.ac_format`,
     and the result must be checkable (no vague words) and mean one thing (no "또는").
-    Screen work under `plan.ui_reference: required` also needs a mockup and a "matches the mockup" criterion.
+    Screen work under `plan.ui_reference: required` also needs a mockup and a "matches the mockup" criterion,
+    once its design is approved (the mockup comes from /l-design).
 
     Args:
         project: The project.
@@ -118,7 +119,9 @@ def check_criteria(project: Project, plan: Path) -> list[Finding]:
         if len(result.strip()) < 4:
             out.append(Finding("warn", rel, "ac-result", msg("{id}: the result is too short", id=ac.id), line))
     # screen work under ui_reference=required needs a "matches the mockup" criterion
-    if project.profile.get("plan.ui_reference") == "required" and meta.get("ui") is True:
+    # the mockup comes from /l-design, so it is only missing once the design is approved
+    approved = design_approved(plan.parent, n)
+    if project.profile.get("plan.ui_reference") == "required" and meta.get("ui") is True and approved:
         if not any(n.acceptance("mockup") in ac.text.lower() for ac in acs):
             out.append(
                 Finding(
@@ -136,10 +139,29 @@ def check_criteria(project: Project, plan: Path) -> list[Finding]:
                     rel,
                     "mockup-missing",
                     msg("No screen mockup (an image · HTML under the screens folder)"),
-                    hint=msg("Export it as HTML from Claude Design and put it in the screens folder"),
+                    hint=msg("Make it with /l-design and put it in the screens folder"),
                 )
             )
     return out
+
+
+def design_approved(work_dir: Path, names: Names) -> bool:
+    """Tell whether a work's design has been approved (`approved` in its design document).
+
+    Args:
+        work_dir: The work folder.
+        names: The project's names (the design document's name).
+
+    Returns:
+        True when the design document exists and records an approval.
+
+    Example:
+        >>> from lanternspec.core.names import load
+        >>> design_approved(Path("no-such-work"), load("ko"))
+        False
+    """
+    p = work_dir / names.file("design")
+    return p.exists() and bool(frontmatter.parse(read(p)).meta.get("approved"))
 
 
 MOCKUP_EXT = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg", ".html", ".htm", ".pdf"}

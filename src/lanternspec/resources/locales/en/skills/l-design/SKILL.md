@@ -27,7 +27,15 @@ Draw the parts and flows that change in Mermaid. The text explains the diagram. 
 
 ## 3. 🎨 Screens
 <!-- lantern:if design.tool=claude-design -->
-Make mockups in Claude Design → save them **as files** in `<<folder.works>>/W-012 …/<<folder.screens>>/`: an HTML export (recommended — the AI reads it directly and it stays in git) or images. If you get a Claude Code handoff bundle (zip · folder), unpack it under `<<folder.screens>>/` with `lantern screen import W-012 <bundle>`.
+**If Claude's Design tool is available** (the artifact tool has a Design type), make the wireframes yourself.
+1. Take the list of screens from the user scenarios and acceptance criteria in `<<file.plan>>`.
+2. Make one Design canvas named after the work, with one board per screen. Follow the design system if there is one.
+   Draw boards as static markup with no live values, so the saved file opens on its own outside the canvas.
+3. Also save each board file (`.dc.html`) in `<<folder.works>>/W-012 …/<<folder.screens>>/`. Note the canvas link in the design for reference.
+4. Show the person the canvas link and get it confirmed. If a requirement turns out missing, fix the acceptance criteria in `<<file.plan>>` first, then redo the screens.
+   If the person edited the canvas themselves, read those files again and update the files in `<<folder.screens>>/`.
+
+**If it isn't available** (Codex, Antigravity and so on), get the mockups from the person: "Please make the screens in Claude, **export them as HTML** and put them in the `<<folder.screens>>/` folder". If you get a Claude Code handoff bundle (zip · folder), unpack it under `<<folder.screens>>/` with `lantern screen import W-012 <bundle>`.
 <!-- lantern:endif -->
 <!-- lantern:if design.tool=figma -->
 Read the frame through the Figma MCP server (Dev Mode MCP) → **export the frame as an image** and save it in `<<folder.works>>/W-012 …/<<folder.screens>>/` (`lantern screen import W-012 <file · folder>`). Copy the values needed to build it (colors · spacing · component names) from the MCP into the design's tables. Don't stop at a Figma link — the **file** that teammates and the AI can open is the source.
@@ -38,7 +46,10 @@ Find the design through the Canva MCP server and **export it as PNG or PDF** int
 <!-- lantern:if design.tool=none -->
 Keep mockups as wireframes · reference images · HTML files in `<<folder.works>>/W-012 …/<<folder.screens>>/`.
 <!-- lantern:endif -->
-**Share links are not accepted** (they may not open outside the organization). **The picture is the source**; the design text explains it. List screen · mockup file · notes in the table.
+**Don't stop at a link** (it may change later or not open outside the organization). Note links for reference; the **files** in `<<folder.screens>>/` are the source, and the design text explains them. List screen · mockup file · notes in the table.
+<!-- lantern:if plan.ui_reference=required -->
+Once the mockups are in, add an acceptance criterion to `<<file.plan>>`: `- [ ] AC-n Result: the screen matches the mockup screens/<file>`
+<!-- lantern:endif -->
 
 ## 4. 🗄 Data
 - Write only the **changes** against the current ERD (`<<folder.current>>/<<folder.data>>/schema.dbml`) in a ```` ```dbml ```` block (changed tables as complete definitions).

@@ -6,8 +6,8 @@ created: ${today}
 updated: ${today}
 links: ${links}
 template: Design
-template_version: 1.0.1
-based_on: 1.0.1
+template_version: 1.0.2
+based_on: 1.0.2
 parts: []
 approved: ""
 adr: []
@@ -34,8 +34,8 @@ flowchart LR
 
 ## 🎨 Screens
 > [!guide] The **picture** is the reference; the text explains it.
-> - Keep mockups as files (images · HTML exports) under the work's `Screens/` folder and link them
-> - Don't use share links such as Figma's. They may change or stop opening later
+> - Keep mockups as files (images · HTML) under the work's `Screens/` folder and link them
+> - Note canvas or Figma links for reference only. They may change or stop opening later, so the files are the source
 
 | Screen | Mockup file | Notes |
 |---|---|---|
@@ -68,3 +68,4 @@ flowchart LR
 |---|---|---|
 | 1.0.0 | 2026-10-27 | Base template |
 | 1.0.1 | 2026-11-02 | Clearer writing guides (long ones split into lines, symbols and internal names in words) |
+| 1.0.2 | 2026-11-06 | Canvas · Figma links noted for reference, files as the source |
