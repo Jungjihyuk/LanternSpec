@@ -563,8 +563,7 @@ def conflicts(project: Project, work_ids: list[str]) -> list[str]:
         >>> conflicts(project, ["W-012", "W-013"])  # doctest: +SKIP
         ['⚠ W-012 · W-013가 같은 곳을 고칩니다: 테이블 users']
     """
-    running = [wid for wt in worktrees(project) if (wid := work_of_branch(project, wt.branch))]
-    ids = list(dict.fromkeys([w.upper() for w in work_ids] + running))
+    ids = list(dict.fromkeys([w.upper() for w in work_ids] + _running_works(project)))
     points = {w: _touch_points(project, w) for w in ids}
     warnings = []
     for i, a in enumerate(ids):
@@ -577,6 +576,52 @@ def conflicts(project: Project, work_ids: list[str]) -> list[str]:
     return warnings
 
 
+def _running_works(project: Project) -> list[str]:
+    """Works already open in their own worktrees."""
+    return [wid for wt in worktrees(project) if (wid := work_of_branch(project, wt.branch))]
+
+
+def needs_parallel_check(project: Project, work_ids: list[str]) -> bool:
+    """Tell whether starting these works makes two or more run at once (counting the ones already running).
+
+    Args:
+        project: The project.
+        work_ids: The works about to start.
+
+    Returns:
+        True when two or more works would run in parallel.
+
+    Example:
+        >>> needs_parallel_check(project, ["W-012", "W-013"])  # doctest: +SKIP
+        True
+    """
+    return len(dict.fromkeys([w.upper() for w in work_ids] + _running_works(project))) >= 2
+
+
+def overlap(project: Project, work_ids: list[str]) -> list[str]:
+    """Show what works about to run together share, without starting them: same tables or files, and linked decisions.
+
+    Args:
+        project: The project.
+        work_ids: The works to check, e.g. ["W-012", "W-013"].
+
+    Returns:
+        Shared touch points (works already running included), then each work's linked decision records.
+
+    Example:
+        >>> overlap(project, ["W-012", "W-013"])  # doctest: +SKIP
+        ['⚠ W-012 · W-013가 같은 곳을 고칩니다: 테이블 users', 'W-012 결정 기록: ADR-003']
+    """
+    out = conflicts(project, work_ids) or [msg("No shared tables or files in the designs")]
+    for wid in dict.fromkeys([w.upper() for w in work_ids] + _running_works(project)):
+        folder = project.find_work(wid, include_archive=False)
+        design = project.doc_path(folder, "design") if folder else None
+        adrs = frontmatter.parse(read(design)).meta.get("adr") if design and design.exists() else None
+        items = adrs if isinstance(adrs, list) else [adrs] if adrs else []
+        out.append(msg("{wid} decision records: {items}", wid=wid, items=", ".join(map(str, items)) or msg("none")))
+    return out
+
+
 def _install(path: Path) -> str | None:
     for lock, cmd in LOCKFILES:
         if (path / lock).exists():
@@ -586,7 +631,14 @@ def _install(path: Path) -> str | None:
     return None
 
 
-def start(project: Project, work_ids: list[str], install: bool = True, parent: Path | None = None, into: str | None = None) -> list[str]:
+def start(
+    project: Project,
+    work_ids: list[str],
+    install: bool = True,
+    parent: Path | None = None,
+    into: str | None = None,
+    skip_check: bool = False,
+) -> list[str]:
     """Start works in parallel, each in its own worktree next to the project folder.
 
     Each worktree gets `.env*` files copied, the docs folder linked in local mode, and
@@ -598,12 +650,14 @@ def start(project: Project, work_ids: list[str], install: bool = True, parent: P
         install: Install dependencies in each new worktree.
         parent: Folder to put the worktrees in; the project's parent when None.
         into: Merge these works into this branch instead of the base branch, and start from it too.
+        skip_check: Start even when two or more works would run at once without /l-parallel.
 
     Returns:
         Messages: conflict warnings, then one line per work with how to open it.
 
     Raises:
-        WorkError: The repository has no commit, a work folder is missing, or git failed.
+        WorkError: The repository has no commit, a work folder is missing, git failed, or
+            two or more works would run at once and skip_check is off.
 
     Example:
         >>> start(project, ["W-012"], install=False)[0]  # doctest: +SKIP
@@ -611,6 +665,15 @@ def start(project: Project, work_ids: list[str], install: bool = True, parent: P
     """
     if git(["rev-parse", "--verify", "HEAD"], project.root).returncode != 0:
         raise WorkError(msg("No commits yet, so a worktree can't be made — commit first"))
+    if not skip_check and needs_parallel_check(project, work_ids):
+        ids = " ".join(dict.fromkeys([w.upper() for w in work_ids] + _running_works(project)))
+        raise WorkError(
+            msg(
+                "Two or more works would run at once. In your AI tool, check the decisions they share first: "
+                "/l-parallel {ids}. To start without the check: --skip-check",
+                ids=ids,
+            )
+        )
     from ..core import state
     from ..tools import resolve
 

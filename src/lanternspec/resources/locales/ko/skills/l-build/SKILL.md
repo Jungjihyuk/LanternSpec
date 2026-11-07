@@ -21,6 +21,7 @@ argument-hint: "W-NNN | W-NNN-T03 [--report-cycle work|criterion|task]"
    lantern pack W-012     # → .lantern/pack/W-012.md
    ```
 4. `<<file.record>>`가 없으면 `lantern scaffold doc W-012 "<<doc.record>>"`
+5. 설계의 `adr`에 적힌 결정 기록을 읽고 따른다. 다른 작업과 함께 쓰는 선택(인증 · 공통 테이블 · API 형식 등)인데 설계와 결정 기록에 없으면 스스로 정하지 말고 멈추고 묻는다. 정해지면 `/l-adr`로 남기고, 보고에 "다른 동시 작업 세션에도 ADR-NNN을 읽으라고 알려 주세요"를 적는다.
 
 ## 1. 할 일 하나씩 (작은 반복)
 ```bash

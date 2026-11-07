@@ -162,7 +162,7 @@ def test_work_parallel_start_finish(repo, tmp_path):
     write(repo, ".gitignore", ".env\n")
     repo.git("add", "-A")
     commit(repo, "docs: 기획 [W-001] [lantern]")
-    _, out = repo("work", "start", "W-001", "W-002", "--no-install")
+    _, out = repo("work", "start", "W-001", "W-002", "--no-install", "--skip-check")
     assert "W-001 · W-002가 같은 곳을 고칩니다: 테이블 users, 파일 src/app.py" in out
     wt = repo.root.parent / "proj-W-001"
     assert (wt / ".env").read_text(encoding="utf-8") == "SECRET=1\n"
@@ -502,7 +502,7 @@ def _two_worktrees(repo):
     repo("scaffold", "work", "둘")
     repo.git("add", "-A")
     commit(repo, "docs: 기획 [lantern]")
-    repo("work", "start", "W-001", "W-002", "--no-install")
+    repo("work", "start", "W-001", "W-002", "--no-install", "--skip-check")
     return repo.root.parent / "proj-W-001", repo.root.parent / "proj-W-002"
 
 
@@ -578,7 +578,7 @@ def test_finish_from_another_works_worktree_leaves_that_worktree_alone(repo, mon
     repo.git("add", "a.py")
     commit(repo, "feat: a [W-001-T01]")
     repo.git("checkout", "-q", "main")
-    repo("work", "start", "W-002", "--no-install")
+    repo("work", "start", "W-002", "--no-install", "--skip-check")
     second = repo.root.parent / "proj-W-002"
     monkeypatch.chdir(second)
     _, out = repo("work", "finish", "W-001", "--no-test")
@@ -1071,3 +1071,23 @@ def test_a_finished_parallel_work_points_to_l_finish(repo, monkeypatch):
     repo("task", "done", "W-001-T01")  # outside a worktree the same state leads to the usual wrap-up
     _, out = repo("task", "next", "W-001")
     assert "현재 상태 반영 단계로" in out and "/l-finish" not in out
+
+
+def test_starting_works_in_parallel_asks_for_l_parallel_first(repo):
+    init_project(repo)
+    repo("scaffold", "work", "로그인")
+    repo("scaffold", "work", "프로필")
+    repo.git("add", "-A")
+    commit(repo, "docs: 기획 [lantern]")
+    code, out = repo("work", "start", "W-001", "W-002", "--no-install", ok=False)
+    assert code == 1 and "/l-parallel W-001 W-002" in out and "--skip-check" in out
+    assert "proj-W-001" not in repo.git("worktree", "list").stdout
+
+    _, out = repo("work", "overlap", "W-001", "W-002")
+    assert "함께 고치는 테이블 · 파일이 없습니다" in out and "W-001 결정 기록: 없음" in out
+
+    repo("work", "start", "W-001", "--no-install")  # one work alone needs no check
+    code, out = repo("work", "start", "W-002", "--no-install", ok=False)  # but not next to a running one
+    assert code == 1 and "/l-parallel W-002 W-001" in out
+    _, out = repo("work", "start", "W-002", "--no-install", "--skip-check")
+    assert "W-002" in out

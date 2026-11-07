@@ -244,7 +244,7 @@ def cmd_unit_log(a: argparse.Namespace) -> int:
 
 
 def cmd_work(a: argparse.Namespace) -> int:
-    """`lantern work branch|start|list|finish|archive|stage` — work branches, parallel worktrees, finishing."""
+    """`lantern work branch|start|overlap|list|finish|archive|stage` — work branches, parallel worktrees, finishing."""
     from ..work import branches as work
     from ..work import stages
 
@@ -265,7 +265,9 @@ def cmd_work(a: argparse.Namespace) -> int:
     if a.action == "branch":
         print(work.work_here(project, a.ids[0]) if a.here else work.ensure_branch(project, a.ids[0], a.from_ref, a.branch_name, a.into))
     elif a.action == "start":
-        _print(work.start(project, a.ids, install=not a.no_install, into=a.into))
+        _print(work.start(project, a.ids, install=not a.no_install, into=a.into, skip_check=a.skip_check))
+    elif a.action == "overlap":
+        _print(work.overlap(project, a.ids))
     elif a.action == "list":
         _print(work.list_works(project))
     elif a.action == "finish":
@@ -494,7 +496,7 @@ def register(add: Add) -> None:
     p.add_argument("--unknown", action="store_true")
     p.add_argument("--parallel", action="store_true", help=msg("[P] can run at the same time as other [P] tasks"))
     p = add("work", cmd_work, msg("Work branches · parallel works · finish · archive · stage"))
-    p.add_argument("action", choices=["branch", "start", "list", "finish", "archive", "stage", "flow"])
+    p.add_argument("action", choices=["branch", "start", "overlap", "list", "finish", "archive", "stage", "flow"])
     p.add_argument("--team", choices=["solo", "team"], help=msg("flow: how many people work on it"))
     p.add_argument("--origin", choices=["greenfield", "brownfield"], help=msg("flow: a new project, or one with code already"))
     p.add_argument("ids", nargs="*")
@@ -505,6 +507,7 @@ def register(add: Add) -> None:
     p.add_argument("--here", action="store_true", help=msg("branch: this work only, no work branch, commit straight to the current branch"))
     p.add_argument("--no-test", action="store_true")
     p.add_argument("--keep", action="store_true")
+    p.add_argument("--skip-check", action="store_true", help=msg("start: start works in parallel without /l-parallel"))
     p = add("pack", cmd_pack, msg("Work pack (a one-off summary for the AI)"))
     p.add_argument("work")
     p.add_argument("--out")

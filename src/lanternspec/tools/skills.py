@@ -30,6 +30,7 @@ SKILL_NAMES = [
     "l-plan",
     "l-design",
     "l-task",
+    "l-parallel",
     "l-build",
     "l-finish",
     "l-learn",

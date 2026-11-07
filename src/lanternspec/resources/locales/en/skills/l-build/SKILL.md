@@ -21,6 +21,7 @@ Current settings: report cycle `<<build.report_cycle>>` · applying to the curre
    lantern pack W-012     # → .lantern/pack/W-012.md
    ```
 4. If `<<file.record>>` doesn't exist, `lantern scaffold doc W-012 "<<doc.record>>"`
+5. Read and follow the decision records listed under `adr` in the design. For a choice other works share (authentication · shared tables · API format and so on) that neither the design nor a decision record settles, don't decide it yourself: stop and ask. Once decided, record it with `/l-adr`, and add to the report "Please tell the other parallel sessions to read ADR-NNN too."
 
 ## 1. One task at a time (the small loop)
 ```bash
