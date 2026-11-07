@@ -1091,3 +1091,15 @@ def test_starting_works_in_parallel_asks_for_l_parallel_first(repo):
     assert code == 1 and "/l-parallel W-002 W-001" in out
     _, out = repo("work", "start", "W-002", "--no-install", "--skip-check")
     assert "W-002" in out
+
+
+def test_overlap_shows_files_changed_in_common_and_new_dependencies(repo):
+    first, second = _two_worktrees(repo)
+    for folder, dep, wid in ((first, '"jsonwebtoken": "9.0.2"', "W-001"), (second, '"express-session": "1.18.1"', "W-002")):
+        (folder / "package.json").write_text('{\n  "dependencies": {\n    ' + dep + "\n  }\n}\n", encoding="utf-8")
+        (folder / "auth.ts").write_text(f"// {wid}\n", encoding="utf-8")
+        sh(folder, "git", "add", "package.json", "auth.ts")
+        sh(folder, "git", "commit", "-q", "-m", f"feat: 인증 [{wid}-T01]")
+    _, out = repo("work", "overlap", "W-001", "W-002")
+    assert "W-001 · W-002가 같은 파일을 고쳤습니다: auth.ts, package.json" in out
+    assert '+ package.json: "jsonwebtoken": "9.0.2"' in out and '+ package.json: "express-session": "1.18.1"' in out

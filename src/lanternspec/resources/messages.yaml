@@ -194,6 +194,8 @@
 "Two or more works would run at once. In your AI tool, check the decisions they share first: /l-parallel {ids}. To start without the check: --skip-check": {ko: "동시에 진행할 작업이 2개 이상이에요. AI 도구에서 /l-parallel {ids}로 함께 정할 결정을 먼저 점검하세요. 점검 없이 시작하려면 --skip-check"}
 "No shared tables or files in the designs": {ko: "설계에서 함께 고치는 테이블 · 파일이 없습니다"}
 "{wid} decision records: {items}": {ko: "{wid} 결정 기록: {items}"}
+"⚠ {a} · {b} changed the same files: {items}": {ko: "⚠ {a} · {b}가 같은 파일을 고쳤습니다: {items}"}
+"{wid} new dependency lines:": {ko: "{wid}가 새로 더한 의존성:"}
 "start: start works in parallel without /l-parallel": {ko: "start: /l-parallel 점검 없이 동시 작업 시작"}
 "    In a terminal: cd \"{path}\" && {command}": {ko: "    터미널에서: cd \"{path}\" && {command}"}
 "  (uncommitted changes)": {ko: "  (커밋 안 된 변경 있음)"}

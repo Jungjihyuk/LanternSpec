@@ -18,6 +18,20 @@ Current settings: current-state update `<<build.merge_approval>>`<!-- lantern:if
 - If `git status` shows uncommitted changes, stop and say: "The base folder has uncommitted changes. Another wrap-up may be in progress."
 - Show the works "waiting for /l-finish" from `lantern work list`, and let the person choose which to merge now and in what order (only those given as arguments, if any).
 
+## 0½. Before merging — was the same job done two ways?
+git can't catch the same job built two ways when it merges without a conflict. Look for it before merging:
+```bash
+lantern work overlap W-001 W-002     # files really changed in common · dependencies added · decision records
+```
+Compare each work's `<<file.record>>` (decisions · failed attempts), `<<file.design>>` and the result above, looking for:
+different sign-in methods · different libraries doing the same job · APIs of the same kind with different shapes · the same idea built as different tables.
+
+If you find one, don't merge those works yet; show the person **what differs · which you recommend and why · the choices**:
+- **Align on one:** once decided, record it with `/l-adr`. Leave the work that must change unmerged, and add to the final report "In the W-002 session, change it to follow ADR-NNN, then run `/l-finish` again." This skill doesn't change code.
+- **Keep both:** record why with `/l-adr`, then merge.
+
+If nothing overlaps, go straight to step 1.
+
 <!-- lantern:if !git.pr=work -->
 ## 1. Merge one at a time (in the chosen order)
 ```bash

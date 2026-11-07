@@ -598,27 +598,71 @@ def needs_parallel_check(project: Project, work_ids: list[str]) -> bool:
     return len(dict.fromkeys([w.upper() for w in work_ids] + _running_works(project))) >= 2
 
 
+def _dependency_files() -> list[str]:
+    """File names that hold a project's dependencies, from each language's conventions (globs left out)."""
+    from ..core import principles
+
+    names = [str(p).partition(":")[0] for lang in principles.language_names() for p in principles.conventions(lang)["detect"]]
+    return list(dict.fromkeys(n for n in names if "*" not in n))
+
+
+def _built(project: Project, wid: str) -> tuple[set[str], list[str]] | None:
+    """Code files a work's branch changed and dependency lines it added, against its base; None before any commit."""
+    name = branch_name(project, wid)
+    if name is None or not _branch_exists(project, name):
+        return None
+    base = merge_target(project, wid)
+    if name == base or git_out(["rev-list", "--count", f"{base}..{name}"], project.root) in ("", "0"):
+        return None
+    docs = project.profile.docs_root.rstrip("/") + "/"
+    files = {f for f in git_out(["diff", "--name-only", f"{base}...{name}"], project.root).splitlines() if not f.startswith(docs)}
+    specs = [f":(glob)**/{n}" for n in _dependency_files()]
+    added, current = [], ""
+    for line in git_out(["diff", "--unified=0", f"{base}...{name}", "--", *specs], project.root).splitlines():
+        if line.startswith("+++ "):
+            current = line[6:] if line.startswith("+++ b/") else ""
+        elif line.startswith("+") and current and line[1:].strip():
+            added.append(f"{current}: {line[1:].strip()}")
+    return files, added
+
+
 def overlap(project: Project, work_ids: list[str]) -> list[str]:
-    """Show what works about to run together share, without starting them: same tables or files, and linked decisions.
+    """Show what works running together share: same tables or files, linked decisions, and what they built.
+
+    Before the works start this reads their designs. Once a work's branch has commits, it also
+    shows the code files works really changed in common and the dependencies each added, so
+    /l-finish can spot the same job done two ways (two sign-in methods, two date libraries).
 
     Args:
         project: The project.
         work_ids: The works to check, e.g. ["W-012", "W-013"].
 
     Returns:
-        Shared touch points (works already running included), then each work's linked decision records.
+        Shared touch points from the designs (works already running included), each work's
+        linked decision records, then files changed in common and new dependency lines.
 
     Example:
         >>> overlap(project, ["W-012", "W-013"])  # doctest: +SKIP
         ['⚠ W-012 · W-013가 같은 곳을 고칩니다: 테이블 users', 'W-012 결정 기록: ADR-003']
     """
     out = conflicts(project, work_ids) or [msg("No shared tables or files in the designs")]
-    for wid in dict.fromkeys([w.upper() for w in work_ids] + _running_works(project)):
+    ids = list(dict.fromkeys([w.upper() for w in work_ids] + _running_works(project)))
+    for wid in ids:
         folder = project.find_work(wid, include_archive=False)
         design = project.doc_path(folder, "design") if folder else None
         adrs = frontmatter.parse(read(design)).meta.get("adr") if design and design.exists() else None
         items = adrs if isinstance(adrs, list) else [adrs] if adrs else []
         out.append(msg("{wid} decision records: {items}", wid=wid, items=", ".join(map(str, items)) or msg("none")))
+    built = {wid: b for wid in ids if (b := _built(project, wid))}
+    for i, a in enumerate(built):
+        for b in list(built)[i + 1 :]:
+            common = built[a][0] & built[b][0]
+            if common:
+                out.append(msg("⚠ {a} · {b} changed the same files: {items}", a=a, b=b, items=", ".join(sorted(common))))
+    for wid, (_, added) in built.items():
+        if added:
+            out.append(msg("{wid} new dependency lines:", wid=wid))
+            out += [f"  + {line}" for line in added]
     return out
 
 
