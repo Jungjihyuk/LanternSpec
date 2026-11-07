@@ -110,7 +110,11 @@ When every task is done, run all the acceptance tests together<!-- lantern:if bu
 <!-- lantern:endif -->
 
 ## 4. When everything is done — apply to the current state
-When `lantern task next W-012` says every task is done:
+If `lantern task next W-012` says **"This folder is a worktree for parallel work"**, stop here. `/l-finish` brings the documents several works share up to date from the base folder in one go:
+- Commit `<<file.tasks>>` and `<<file.record>>`. Don't touch the current-state documents, the archive or the report.
+- Final report: the evidence summary (tasks · commits · tests · acceptance criteria) and "Please run `/l-finish W-012` in the base folder."
+
+Otherwise, when it says every task is done:
 1. Show **one summary** of the design changes to merge into the current state:
    ```
    📘 Feature List  ✚ Sign in with Google (W-012)

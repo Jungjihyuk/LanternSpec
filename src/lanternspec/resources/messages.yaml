@@ -193,6 +193,7 @@
 "No commits yet, so a worktree can't be made — commit first": {ko: "커밋이 하나도 없어 worktree를 만들 수 없습니다 — 먼저 커밋하세요"}
 "    In a terminal: cd \"{path}\" && {command}": {ko: "    터미널에서: cd \"{path}\" && {command}"}
 "  (uncommitted changes)": {ko: "  (커밋 안 된 변경 있음)"}
+"  · waiting for /l-finish": {ko: "  · /l-finish 대기"}
 "No parallel works in progress": {ko: "진행 중인 동시 작업이 없습니다"}
 "Branch {name} doesn't exist": {ko: "{name} 브랜치가 없습니다"}
 "{work_path} has uncommitted changes — commit and run again": {ko: "{work_path}에 커밋 안 된 변경이 있습니다 — 커밋하고 다시 실행하세요"}
@@ -1065,6 +1066,8 @@
 "· Nothing to change (every document exists already)": {ko: "· 바뀔 것이 없습니다 (모든 문서가 이미 있음)"}
 "· Nothing new to make": {ko: "· 새로 만들 것이 없습니다"}
 "✅ All tasks done — on to updating the current state": {ko: "✅ 모든 할 일 완료 — 현재 상태 반영 단계로"}
+"✅ All tasks done": {ko: "✅ 모든 할 일 완료"}
+"ℹ This folder is a worktree for parallel work. Wrap up {wid} with /l-finish {wid} in the base folder": {ko: "ℹ 이 폴더는 동시 작업용 worktree예요. {wid}의 마무리는 기준 폴더에서 /l-finish {wid}로 해요"}
 "To ask: ": {ko: "물을 것: "}
 "✔ Archived: {rel}": {ko: "✔ 보관: {rel}"}
 "✔ {value} → {value2} ({count} documents)": {ko: "✔ {value} → {value2} ({count}개 문서)"}

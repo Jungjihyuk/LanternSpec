@@ -107,6 +107,7 @@ def cmd_idea(a: argparse.Namespace) -> int:
 
 def cmd_task(a: argparse.Namespace) -> int:
     """`lantern task next|start|done|reopen|list|ac|estimate` — task progress inside /l-build."""
+    from ..work import branches
     from ..work import tasks as task_cmd
 
     project = _p()
@@ -139,6 +140,7 @@ def cmd_task(a: argparse.Namespace) -> int:
                         "title": res.task.title if res.task else None,
                         "work": project.rel(res.work) if res.work else None,
                         "all_done": res.all_done,
+                        "parallel_work": branches.parallel_work_here(project),
                         "skipped": [{"id": i, "reason": r} for i, r in res.skipped],
                         "order_changes": task_cmd.changed_order(project, a.target),
                     },
@@ -152,7 +154,17 @@ def cmd_task(a: argparse.Namespace) -> int:
             n = project.names
             print(f"▶ {t.id} {t.title} [{n.attr('size')}:: {t.size or '?'}] [{n.attr('criteria')}:: {', '.join(t.criteria) or '—'}]")
         elif res.all_done:
-            print(msg("✅ All tasks done — on to updating the current state"))
+            here = branches.parallel_work_here(project)
+            if here:
+                print(msg("✅ All tasks done"))
+                print(
+                    msg(
+                        "ℹ This folder is a worktree for parallel work. Wrap up {wid} with /l-finish {wid} in the base folder",
+                        wid=here,
+                    )
+                )
+            else:
+                print(msg("✅ All tasks done — on to updating the current state"))
         else:
             print(msg("No task can start now"))
         for tid, why in res.skipped:

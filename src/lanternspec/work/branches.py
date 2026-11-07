@@ -692,15 +692,46 @@ def _same_folder(a: Path, b: Path) -> bool:
     return a.resolve() == b.resolve()
 
 
-def _progress(project: Project, wid: str, root: Path | None = None) -> str:
+def _task_counts(project: Project, wid: str, root: Path | None = None) -> tuple[int, int] | None:
+    """(done, total) tasks of a work as its folder (or `root`) sees them; None without a task list."""
     base = Project(root=root, profile=project.profile) if root else project
     folder = base.find_work(wid, include_archive=False) if base.docs.exists() else None
     if folder is None:
         folder = project.find_work(wid, include_archive=False)
     if folder is None or not project.doc_path(folder, "tasks").exists():
-        return msg("no tasks")
+        return None
     ts = parse_tasks(read(project.doc_path(folder, "tasks")), project.names)
-    return msg("{sum}/{count} done", sum=sum(t.done for t in ts), count=len(ts))
+    return sum(t.done for t in ts), len(ts)
+
+
+def _progress(project: Project, wid: str, root: Path | None = None) -> str:
+    counts = _task_counts(project, wid, root)
+    if counts is None:
+        return msg("no tasks")
+    return msg("{sum}/{count} done", sum=counts[0], count=counts[1])
+
+
+def parallel_work_here(project: Project) -> str | None:
+    """Tell which work's parallel worktree this runs in, if any.
+
+    Works in their own worktrees leave the shared wrap-up (current state, archive, report) to
+    /l-finish in the base folder, so /l-build stops after its own work there.
+
+    Args:
+        project: The project, loaded from the folder this runs in.
+
+    Returns:
+        The work ID when this runs inside a work's worktree other than the main folder; None otherwise.
+
+    Example:
+        >>> parallel_work_here(project)  # doctest: +SKIP
+        'W-012'
+    """
+    trees = worktrees(project)
+    if not trees or _same_folder(trees[0].path, project.root):
+        return None
+    here = next((t for t in trees if _same_folder(t.path, project.root)), None)
+    return work_of_branch(project, here.branch) if here else None
 
 
 def _target_of(project: Project, wid: str) -> str:
@@ -711,6 +742,8 @@ def _target_of(project: Project, wid: str) -> str:
 def list_works(project: Project) -> list[str]:
     """List the works running on their own branches, with progress and uncommitted changes.
 
+    A worktree whose tasks are all done is marked as waiting for /l-finish.
+
     Args:
         project: The project.
 
@@ -719,7 +752,7 @@ def list_works(project: Project) -> list[str]:
 
     Example:
         >>> list_works(project)  # doctest: +SKIP
-        ['W-012  work/W-012  /Users/me/app-W-012  1/3 완료']
+        ['W-012  work/W-012  /Users/me/app-W-012  3/3 완료  · /l-finish 대기']
     """
     out = []
     trees = worktrees(project)
@@ -729,6 +762,9 @@ def list_works(project: Project) -> list[str]:
             continue
         dirty = bool(git_out(["status", "--porcelain", "--untracked-files=no"], wt.path))
         note = msg("  (uncommitted changes)") if dirty else ""
+        counts = _task_counts(project, wid, wt.path)
+        if counts and counts[1] and counts[0] == counts[1] and not _same_folder(wt.path, trees[0].path):
+            note += msg("  · waiting for /l-finish")
         out.append(f"{wid}  {wt.branch}  {wt.path}  {_progress(project, wid, wt.path)}{note}{_target_of(project, wid)}")
     for b in git_out(["branch", "--list", "--format=%(refname:short)"], project.root).splitlines():
         wid = work_of_branch(project, b)

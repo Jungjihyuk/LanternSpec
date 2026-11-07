@@ -1048,3 +1048,26 @@ def test_the_init_skill_leaves_the_recommendation_to_the_command(repo):
     text = _skill(repo, "l-init")
     assert "lantern work flow --team" in text and "A. 단순하게" in text
     assert "release/*" not in text  # the rule itself lives only in the code
+
+
+def test_a_finished_parallel_work_points_to_l_finish(repo, monkeypatch):
+    init_project(repo)
+    repo("scaffold", "work", "로그인")
+    repo("scaffold", "doc", "W-001", "할 일")
+    repo("task", "add", "W-001", "로그인 만들기", "--size", "S")
+    repo.git("add", "-A")
+    commit(repo, "docs: 기획 [lantern]")
+    repo("work", "start", "W-001", "--no-install")
+    first = repo.root.parent / "proj-W-001"
+
+    monkeypatch.chdir(first)
+    repo("task", "done", "W-001-T01")
+    _, out = repo("task", "next", "W-001")
+    assert "동시 작업용 worktree" in out and "/l-finish W-001" in out
+
+    monkeypatch.chdir(repo.root)
+    _, out = repo("work", "list")
+    assert "/l-finish 대기" in out
+    repo("task", "done", "W-001-T01")  # outside a worktree the same state leads to the usual wrap-up
+    _, out = repo("task", "next", "W-001")
+    assert "현재 상태 반영 단계로" in out and "/l-finish" not in out

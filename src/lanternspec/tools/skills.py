@@ -31,6 +31,7 @@ SKILL_NAMES = [
     "l-design",
     "l-task",
     "l-build",
+    "l-finish",
     "l-learn",
     "l-report",
     "l-template",

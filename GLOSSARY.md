@@ -32,6 +32,7 @@ LanternSpec이 이름을 쓰는 여러 곳(lantern.yaml 키 · enums.yaml 목록
 | `design` | 설계 — 기획을 어떻게 만들지, 승인 | lantern.yaml(`design.*`) · 문서 · CLI(승인 기록) · 스킬 |
 | `task` · `tasks` | 할 일 — 작업 안의 한 줄 단위 일 | 문서 · CLI · 스킬 |
 | `build` | 구현 단계. lantern.yaml `build.*`는 구현 때 쓰는 설정 (확인 명령 · 보고 주기 · 루프) | lantern.yaml · 스킬 |
+| `finish` | 작업 마무리 — 합치기와 정리. `lantern work finish`는 작업 하나를 합치고, `/l-finish`는 동시 작업 여러 개를 합친 뒤 현재 상태를 맞춘다 | CLI · 스킬 |
 | `work` · `works` | 작업 — 기능 · 변경 하나 = 폴더 하나 | 폴더 · CLI |
 | `check` | 문서 양식 검사. lantern.yaml `check.*`는 그 기준 (최대 줄 수) | lantern.yaml · CLI · 스킬 |
 | `report` · `reports` | 현황 보고 | lantern.yaml(`report.views`) · 문서 · 폴더 · CLI · 스킬 |
