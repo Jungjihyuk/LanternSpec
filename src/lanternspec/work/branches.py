@@ -760,6 +760,7 @@ def start(
             link = path / docs_rel
             if not link.exists():
                 link.symlink_to(project.docs, target_is_directory=True)
+            _ignore_docs_link(project)
         elif not (path / docs_rel / project.docs_rel(folder)).exists():
             msgs.append(
                 msg("⚠ {wid}: the work folder isn't committed yet, so it's not in the worktree — commit the documents first", wid=wid)
@@ -793,6 +794,23 @@ def _take_base_side(work_path: Path, files: list[str]) -> bool:
         and git(["add", "--", *files], work_path).returncode == 0
         and git(["commit", "--no-edit"], work_path, env=env).returncode == 0
     )
+
+
+def _ignore_docs_link(project: Project) -> None:
+    """Keep the local-mode docs link in a worktree out of git, in the repository's own exclude file.
+
+    `.gitignore` says `docs/`, which matches only a folder; the link is a file to git, so it
+    would show as new and block `finish` from removing the worktree.
+    """
+    common = git_out(["rev-parse", "--path-format=absolute", "--git-common-dir"], project.root)
+    if not common:
+        return
+    exclude = Path(common) / "info" / "exclude"
+    line = "/" + project.profile.docs_root
+    lines = read(exclude).splitlines() if exclude.exists() else []
+    if line not in lines:
+        exclude.parent.mkdir(parents=True, exist_ok=True)
+        write(exclude, "\n".join([*lines, line]) + "\n")
 
 
 def _same_folder(a: Path, b: Path) -> bool:
@@ -1040,7 +1058,9 @@ def finish(project: Project, work_id: str, test: bool = True, keep: bool = False
                 stray = [
                     l[3:]
                     for l in git_out(["status", "--porcelain", "--untracked-files=all"], own.path).splitlines()
-                    if l.startswith("??") and not Path(l[3:].strip('"')).name.startswith(".env")
+                    if l.startswith("??")
+                    and not Path(l[3:].strip('"')).name.startswith(".env")
+                    and l[3:].strip('"').rstrip("/") != project.profile.docs_root  # the local-mode docs link
                 ]
                 if stray:
                     msgs.append(

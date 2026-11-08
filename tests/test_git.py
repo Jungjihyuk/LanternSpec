@@ -1120,3 +1120,16 @@ def test_close_commits_a_works_documents_on_the_docs_branch_in_local_mode(repo):
     assert sh(d, "git", "log", "-1", "--format=%s").stdout.strip() == "docs: W-001 기획 [W-001]"
     assert "W-002" in sh(d, "git", "status", "--porcelain").stdout  # the other work stays uncommitted
     assert "W-001" not in repo.git("log", "--format=%s").stdout  # nothing lands in the code repository
+
+
+def test_the_local_mode_docs_link_in_a_worktree_stays_out_of_git(local_repo):
+    r = local_repo
+    r("docs-mode", "local")
+    r("scaffold", "work", "로그인")
+    r("work", "start", "W-001", "--no-install")
+    first = r.root.parent / "proj-W-001"
+    assert (first / "docs").is_symlink()
+    assert "docs" not in sh(first, "git", "status", "--porcelain").stdout  # not a new file
+    sh(first, "git", "commit", "-q", "--allow-empty", "-m", "feat: 로그인 [W-001-T01]")
+    _, out = r("work", "finish", "W-001", "--no-test")
+    assert "worktree 정리" in out and not first.exists()
