@@ -867,7 +867,8 @@ def _target_of(project: Project, wid: str) -> str:
 def list_works(project: Project) -> list[str]:
     """List the works running on their own branches, with progress and uncommitted changes.
 
-    A worktree whose tasks are all done is marked as waiting for /l-finish.
+    A worktree whose tasks are all done is marked as waiting for /l-finish, and a branch left
+    without a worktree that is already merged into its target is marked for deletion.
 
     Args:
         project: The project.
@@ -894,8 +895,12 @@ def list_works(project: Project) -> list[str]:
     for b in git_out(["branch", "--list", "--format=%(refname:short)"], project.root).splitlines():
         wid = work_of_branch(project, b)
         if wid and not any(wt.branch == b for wt in trees):
+            target = merge_target(project, wid)
+            merged = target != b and git(["merge-base", "--is-ancestor", b, target], project.root).returncode == 0
             out.append(
-                msg("{wid}  {b}  (no worktree)  {progress}", wid=wid, b=b, progress=_progress(project, wid)) + _target_of(project, wid)
+                msg("{wid}  {b}  (no worktree)  {progress}", wid=wid, b=b, progress=_progress(project, wid))
+                + _target_of(project, wid)
+                + (msg("  · merged into {target} — delete it with git branch -d {b}", target=target, b=b) if merged else "")
             )
     return out or [msg("No parallel works in progress")]
 

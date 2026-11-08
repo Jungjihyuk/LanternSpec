@@ -57,6 +57,7 @@ lantern work finish W-001     # 기준 브랜치 받기 → 테스트 (머지는
 - 승인 규칙은 `/l-build`와 같다. **데이터 구조 · API 변경은 값과 상관없이 묻는다.**
 
 ## 3. 보관 · 보고
+`lantern work list`에 "합쳐짐"으로 남은 이번 작업의 브랜치가 있으면 `git branch -d <브랜치>`로 지운다 (worktree 정리가 중간에 멈추면 브랜치가 남는다). 지우지 못하면 마지막 보고에 명령을 적는다.
 ```bash
 lantern work archive W-001    # 합친 작업마다
 lantern close l-finish

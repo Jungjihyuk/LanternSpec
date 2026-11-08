@@ -57,6 +57,7 @@ lantern work finish W-001     # bring in the base branch → test (no merge)
 - The approval rules are the same as `/l-build`. **Always ask about data structure · API changes, whatever the setting.**
 
 ## 3. Archive · report
+If `lantern work list` shows a branch of these works as "merged", delete it with `git branch -d <branch>` (a branch stays behind when cleaning up the worktree stops halfway). If it can't be deleted, put the command in the final report.
 ```bash
 lantern work archive W-001    # for each merged work
 lantern close l-finish

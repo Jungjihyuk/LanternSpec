@@ -1133,3 +1133,14 @@ def test_the_local_mode_docs_link_in_a_worktree_stays_out_of_git(local_repo):
     sh(first, "git", "commit", "-q", "--allow-empty", "-m", "feat: 로그인 [W-001-T01]")
     _, out = r("work", "finish", "W-001", "--no-test")
     assert "worktree 정리" in out and not first.exists()
+
+
+def test_work_list_points_out_a_merged_branch_left_behind(repo):
+    first, _ = _two_worktrees(repo)
+    sh(first, "git", "commit", "-q", "--allow-empty", "-m", "feat: 하나 [W-001-T01]")
+    repo("work", "finish", "W-001", "--no-test", "--keep")  # merged, but the worktree and branch stay
+    repo.git("worktree", "remove", "--force", str(first))
+    _, out = repo("work", "list")
+    line = next(l for l in out.splitlines() if l.startswith("W-001"))
+    assert "main에 합쳐짐 — git branch -d work/W-001" in line
+    assert "합쳐짐" not in next(l for l in out.splitlines() if l.startswith("W-002"))
