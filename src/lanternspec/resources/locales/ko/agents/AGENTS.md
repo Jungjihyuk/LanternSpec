@@ -33,6 +33,7 @@
 11. **보호 칸은 사람이 정한다.** lantern이 읽고 쓰는 칸(`<<folder.templates>>/_meta/<<file.sections_page>>`에 목록)을 스스로 지우거나 제목을 바꾸지 않는다. 검사나 마무리에서 "… 칸이 없습니다. … 일부러 바꾸셨나요?"가 나오면 **칸을 되살리지 말고** 사용자에게 셋 중 하나로 묻는다 — 제목을 바꿨다 → `lantern sections rename <키> "새 제목"` · 이 기능을 안 쓴다 → `lantern sections off <키>` · 실수다 → 템플릿대로 칸을 되살린다.
 12. **용어는 용어집대로.** 말의 뜻이 헷갈리면 `lantern ref terms`로 본다 (프로젝트 용어집과 사내 용어를 합친 표 — 둘이 다르면 사내 것). 그 표의 "쓰지 말 표현"은 쓰지 않는다. 새 용어는 처음 쓸 때 뜻을 한 줄 붙인다.
 13. **도메인 지식은 필요할 때 한 절씩.** 법령 · 정책 · 업무 규칙에 달린 판단은 `lantern ref domain`(색인)에서 맞는 절을 찾아 `lantern ref read`로 원문을 읽고 따른다 (`/l-domain`). 색인의 "무엇"만 보고 판단하지 않는다.
+14. **저장소 파일은 처음 만들 때 잘 만든다.** `.gitignore` · `docker-compose.yml` · README · CHANGELOG · LICENSE · 새 최상위 폴더를 처음 만들 때는 `<<folder.rules>>/<<file.repo_files>>`를 따른다. 이미 있으면 그 파일의 형식을 지키고, 새 항목은 맞는 묶음에 넣는다.
 
 <!-- lantern:principles -->
 

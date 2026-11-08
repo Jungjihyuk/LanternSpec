@@ -27,7 +27,7 @@ First check the CLI is there with `lantern --version`. If it isn't, only tell th
 - Use the question tool (AskUserQuestion) and send **up to 4 questions at a time**. They appear one by one, and the answers come back together.
   - Round 1: questions 1 · 2 · 3
   - Round 2: the follow-up to 3 ("Where will people use it?" allows several answers) · 4 (only when it is asked) · 5 · 6
-  - Round 3: question 7, and only what the earlier answers call for — project name · publishing docs · branch flow · (team) member names · (external) API document
+  - Round 3: question 7, and only what the earlier answers call for — project name · how long it runs · making the repository public · publishing docs · branch flow · (team) member names · (external) API document
   - Round 4: only if a knowledge store was chosen in 5 — the three questions under "If a knowledge store was chosen"
   - Choosing the technologies: each answer changes the next question, so ask in order instead of in a batch
 <!-- lantern:endif -->
@@ -62,13 +62,17 @@ lantern template show "<<file.tech_criteria>>"
 - Follow this document's "Decision tree" as written. Ask only the questions in the tree, and don't change its recommendations by your own judgment.
 - Use the tree's words for the choices. When proposing a technology, give its pros and cons from "Technology comparison" in one line, and show any alternative with it.
 - Put the chosen technologies' languages in `--languages`. Leave out languages `lantern profile write` doesn't accept (Java and so on), and say "LanternSpec doesn't have code rules for this language yet."
-- Don't ask about infrastructure or design patterns here.
+- Don't ask about deployment infrastructure or design patterns here. Ask about the development environment (Docker) as the tree says.
 
 **Then ask** (only what the earlier answers call for)
 - Project name — when the folder name is the only candidate, ask in a plain message: "Name the project <folder name>? To use another name, type it"
 - "Publish the documents to GitHub too?" — offer the choices in these words, and don't show the stored values
   - Yes — they go up with the code (default, stored as `shared`)
   - No — they stay on this computer (stored as `local`: documents stay only on the `docs-local` branch of the same repository. Suits private notes · public repositories)
+- "How long will this project run?" — offer the choices in these words, and don't show the stored values
+  - A quick try (default, stored as `short`)
+  - Run for a long time — with a README · CHANGELOG, and the folder structure decided together (stored as `long`)
+- "Will the repository be public for anyone to see? (This is separate from publishing the documents.)" — public / private (default). If public, decide the license next: ask the questions in the "LICENSE" section of `lantern template show "<<file.repo_files>>"` in order, and recommend the license that fits the answers, with the reason. If private, don't ask.
 - Branch flow — see "Choosing the branch flow" below
 - (if 2 is team) team member names — there are no candidates, so ask in a plain message: "Please list the people working with you, separated by commas"
 - (if 4 is external) "Create an API document too?" — if yes, `--extra api`
@@ -111,7 +115,7 @@ lantern profile write --language en --name "<name>" --origin greenfield|brownfie
   --clients web,mobile --server none|external|custom [--extra api] \
   [--knowledge "<knowledge store path>" --knowledge-type obsidian|folder --knowledge-write direct|propose_only [--areas-from "2. Study"]] \
   --design claude-design|figma|canva|none --remote shared|local --base main --pr none|deploy|work [--deploy main] [--branch "feature/{id}-{slug}"] \
-  --kind script|cli|library|service|data --external yes|no [--languages python,typescript]
+  --kind script|cli|library|service|data --external yes|no [--languages python,typescript] --lifespan short|long
 lantern principles detect --write   # record code size · languages · check commands (build.format · lint · typecheck)
 lantern principles show             # the chosen design principles · code conventions
 lantern scaffold init --plan        # the folders · documents it would create (creates nothing yet)
@@ -141,6 +145,8 @@ If the knowledge store has `--areas-from`, read its folders with `lantern knowle
 - Then `lantern scaffold init`
 - Finally `lantern upgrade` — the skills were installed before these answers, so remake them to carry the chosen settings (the branch flow and so on).
 - If technologies were chosen, write them in the parts section of `<<file.architecture>>` and ask "This is hard to undo. Record why with `/l-adr`?"
+- For a project run for a long time (`long`) with technologies chosen, show 2–3 folder structure candidates that fit them, following "Folder structure" in `<<folder.rules>>/<<file.repo_files>>`, and decide together. Record the decision with `/l-adr`.
+- If the repository is to be public, create `LICENSE` from the chosen license's standard full text (fill in only the year and the copyright holder). Don't write the text from memory; if unsure, get the official text from the person.
 
 ## 4. 🌱 Greenfield — a short interview for the draft project definition
 Ask the three `<<marker.required>>` blanks of `docs/<<folder.current>>/<<file.project_definition>>` **in order**. Build each next blank's candidates from the answers before it, so the person only picks or edits.

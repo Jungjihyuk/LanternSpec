@@ -28,6 +28,7 @@ def _old_layout(r, *extra):
     (d / "3. 현재 상태/규칙/작업 나누기 기준.md").unlink()
     (d / "3. 현재 상태/규칙/용어집.md").unlink()  # 0.1.2 had no glossary
     (d / "3. 현재 상태/규칙/기술 선택 기준.md").unlink()  # nor tech criteria
+    (d / "3. 현재 상태/규칙/저장소 파일 규칙.md").unlink()  # nor repository file rules
     (d / "3. 현재 상태/규칙/협업 규칙.md").rename(d / OLD / "협업 규칙.md")
     (d / "3. 현재 상태/결정 기록/ADR-001 인증 방식.md").rename(d / OLD / "ADR-001 인증 방식.md")
     (d / "3. 현재 상태/배포 · 운영/배포.md").rename(d / "3. 현재 상태/배포.md")

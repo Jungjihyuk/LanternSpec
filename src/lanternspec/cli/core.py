@@ -46,6 +46,8 @@ def cmd_profile(a: argparse.Namespace) -> int:
             proj["clients"] = [] if a.clients in ("none", "없음") else _csv(a.clients)
         if a.kind is not None:
             proj["kind"] = a.kind
+        if a.lifespan is not None:
+            proj["lifespan"] = a.lifespan
         if a.external is not None:
             proj["external"] = a.external in ("yes", "true", "예")
         if a.languages is not None:
@@ -378,6 +380,7 @@ def register(add: Add) -> None:
         "comment-language",
         "kind",
         "languages",
+        "lifespan",
         "extra",
         "knowledge",
         "knowledge-type",

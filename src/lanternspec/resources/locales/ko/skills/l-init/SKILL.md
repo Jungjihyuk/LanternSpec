@@ -27,7 +27,7 @@ argument-hint: "[바뀐 점 (다시 실행할 때)]"
 - 질문 도구(AskUserQuestion)로 **한 번에 최대 4개씩** 묶어 보낸다. 화면에는 질문이 하나씩 나오고, 답은 한꺼번에 돌아온다.
   - 1회: 1 · 2 · 3번
   - 2회: 3번에 이어지는 질문("어디에서 쓰나요?"는 여러 개를 고를 수 있게) · 4번(묻는 경우만) · 5 · 6번
-  - 3회: 7번과 앞 답에 따라 필요한 것만 — 프로젝트 이름 · 문서 올리기 · 브랜치 방식 · (team이면) 팀원 이름 · (external이면) API 문서
+  - 3회: 7번과 앞 답에 따라 필요한 것만 — 프로젝트 이름 · 얼마나 오래 만드나 · 저장소 공개 · 문서 올리기 · 브랜치 방식 · (team이면) 팀원 이름 · (external이면) API 문서
   - 4회: 5번에서 지식 저장소를 골랐을 때만 — 아래 "지식 저장소를 골랐으면"의 세 질문
   - 기술 선택은 앞 답에 따라 다음 질문이 달라지므로 묶지 않고 차례로 묻는다
 <!-- lantern:endif -->
@@ -62,13 +62,17 @@ lantern template show "<<file.tech_criteria>>"
 - 이 문서의 "의사결정 트리"를 그대로 따른다. 트리에 적힌 질문만 하고, 추천을 네 판단으로 바꾸지 않는다.
 - 선택지 문구는 트리의 말을 쓰고, 기술을 제안할 때는 "대표 기술 비교"의 장점 · 단점을 한 줄로 함께 알린다. 대안이 있으면 같이 보여 준다.
 - 고른 기술의 언어를 `--languages`에 넣는다. `lantern profile write`가 받지 않는 언어(Java 등)는 빼고, "이 언어의 코드 규칙은 아직 LanternSpec에 없어요"라고 알린다.
-- 인프라와 디자인 패턴은 여기서 묻지 않는다.
+- 배포 인프라와 디자인 패턴은 여기서 묻지 않는다. 개발 환경(Docker)은 트리에 있는 대로 묻는다.
 
 **이어서 묻는다** (앞 답에 따라 필요한 것만)
 - 프로젝트 이름 — 후보가 폴더 이름 하나뿐이면 평범한 메시지로: "프로젝트 이름을 <폴더 이름>으로 할까요? 다른 이름을 쓰려면 적어 주세요"
 - "문서도 GitHub에 함께 올릴까요?" — 선택지는 아래 문구 그대로 내고, 저장값은 화면에 쓰지 않는다
   - 예 — 코드와 함께 올려요 (기본, 저장값 `shared`)
   - 아니요 — 이 컴퓨터에만 둬요 (저장값 `local`: 문서는 같은 저장소의 `docs-local` 브랜치에만 둔다. 혼자 보는 메모 · 공개 저장소에 어울림)
+- "얼마나 오래 만들 프로젝트인가요?" — 선택지는 아래 문구 그대로 내고, 저장값은 화면에 쓰지 않는다
+  - 짧게 시험해 볼 프로젝트 (기본, 저장값 `short`)
+  - 오래 운영할 프로젝트 — README · CHANGELOG를 갖추고 폴더 구조를 함께 정해요 (저장값 `long`)
+- "저장소를 누구나 볼 수 있게 공개할 건가요? (문서를 올릴지와는 별개예요)" — 공개 / 비공개(기본). 공개면 이어서 라이선스를 정한다: `lantern template show "<<file.repo_files>>"`의 "LICENSE" 절에 있는 질문을 차례로 묻고, 답에 맞는 라이선스를 이유와 함께 추천한다. 비공개면 묻지 않는다.
 - 브랜치 방식 — 아래 "브랜치 방식 고르기"
 - 코드 주석(docstring · 주석)은 어떤 언어로 쓸까요? 한국어 / 영어 — 문서는 한국어로 만들고, 코드 안의 설명만 따로 정한다. 혼자 · 한국어 팀이면 한국어, 공개 오픈소스로 낼 거면 영어를 추천
 - (2번이 team이면) 팀원 이름 — 후보를 만들 수 없으니 평범한 메시지로: "함께하는 사람 이름을 쉼표로 적어 주세요"
@@ -112,7 +116,7 @@ lantern profile write --name "<이름>" --origin greenfield|brownfield --team so
   --clients web,mobile --server none|external|custom [--extra api] \
   [--knowledge "<지식 저장소 경로>" --knowledge-type obsidian|folder --knowledge-write direct|propose_only [--areas-from "2. Study"]] \
   --design claude-design|figma|canva|none --remote shared|local --base main --pr none|deploy|work [--deploy main] [--branch "feature/{id}-{slug}"] \
-  --kind script|cli|library|service|data --external yes|no [--languages python,typescript] --comment-language ko|en
+  --kind script|cli|library|service|data --external yes|no [--languages python,typescript] --comment-language ko|en --lifespan short|long
 lantern principles detect --write   # 코드 규모 · 언어 · 확인 명령(build.format · lint · typecheck)을 기록
 lantern principles show             # 고른 설계 원칙 · 코드 컨벤션
 lantern scaffold init --plan        # 만들 폴더 · 문서 목록 (아직 아무것도 안 만듦)
@@ -142,6 +146,8 @@ lantern scaffold init --plan        # 만들 폴더 · 문서 목록 (아직 아
 - 그다음 `lantern scaffold init`
 - 끝으로 `lantern upgrade` — 스킬은 답을 받기 전에 설치됐으므로, 고른 설정(브랜치 방식 등)이 스킬에 들어가도록 다시 만든다.
 - 기술 선택을 했으면 고른 기술을 `<<file.architecture>>`의 부품 칸에 적고, "되돌리기 어려운 선택이니 `/l-adr`로 이유를 남길까요?"라고 묻는다.
+- 오래 운영할 프로젝트(`long`)이고 기술 선택을 했으면, `<<folder.rules>>/<<file.repo_files>>`의 "폴더 구조"대로 고른 기술에 맞는 후보 2~3개를 보여 주고 정한다. 정하면 `/l-adr`로 남긴다.
+- 저장소를 공개하기로 했으면 고른 라이선스의 표준 전문으로 `LICENSE`를 만든다 (연도 · 저작권자만 채운다). 전문을 기억으로 쓰지 말고, 확실하지 않으면 사람에게 공식 전문을 받는다.
 
 ## 4. 🌱 그린필드 — 짧은 인터뷰로 프로젝트 정의서 초안
 `docs/<<folder.current>>/<<file.project_definition>>`의 `<<marker.required>>` 칸 세 개를 **차례로** 묻는다. 앞 답을 바탕으로 다음 칸의 후보를 만들어, 사람은 고르거나 고쳐 쓰기만 하게 한다.

@@ -1104,6 +1104,7 @@
 "  kind: {s}              # {items} — what the design principles are chosen by": {ko: "  kind: {s}              # {items} — 설계 원칙을 고르는 기준"}
 "  external: {s}         # connects to outside tools · services (AI tools · payments · external APIs …)": {ko: "  external: {s}         # 바깥 도구 · 서비스(AI 도구 · 결제 · 외부 API 등)에 붙나"}
 "  languages: {s}        # languages to choose code conventions for ({items})": {ko: "  languages: {s}        # 코드 컨벤션을 고를 언어 ({items})"}
+"  lifespan: {s}          # short (a quick try) | long (run for a long time: README · CHANGELOG · folder structure agreed with you)": {ko: "  lifespan: {s}          # short(짧게 시험) | long(오래 운영: README · CHANGELOG · 폴더 구조를 함께 정함)"}
 "  code_size: {s}         # small | medium | large — measured (lantern principles detect). When it crosses a boundary, lantern doctor asks whether to raise it": {ko: "  code_size: {s}         # small | medium | large — 잰 값 (lantern principles detect). 경계를 넘으면 lantern doctor가 올릴지 묻는다"}
 "  remote: {s}          # shared (pushed together) | local (documents not pushed) — change it with lantern docs-mode": {ko: "  remote: {s}          # shared(같이 올림) | local(문서는 원격에 안 올림) — 바꿀 때는 lantern docs-mode"}
 "  commit: {s}          # auto (a skill commits its work's documents when it closes) | manual (you commit them)": {ko: "  commit: {s}          # auto(스킬이 마칠 때 그 작업의 문서를 커밋) | manual(직접 커밋)"}

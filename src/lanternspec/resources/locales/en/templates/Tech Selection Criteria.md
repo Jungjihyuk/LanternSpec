@@ -122,7 +122,7 @@ Existing services (Supabase, Firebase and so on) are judged by the common criter
 | Data location | Can data stay in the needed region to meet regulations? |
 
 ## Decision tree
-First ask "Is there a language or framework you want to use?" If there is, use it and follow the tree only for what's still undecided. Each path has at most three new questions, counting this one.
+First ask "Is there a language or framework you want to use?" If there is, use it and follow the tree only for what's still undecided. Each path has at most three new questions, counting this one. The development environment (Docker) question is counted separately.
 
 ### Screens: web
 "Does it need to show up well in search results?" (Basis: SEO, Rendering)
@@ -159,6 +159,12 @@ Follow the answer to the server question.
   - Handling many concurrent connections → Go
 
 When building the server yourself, don't ask about the DB. Propose PostgreSQL and show MySQL and SQLite as alternatives. (Basis: Data consistency, Data model)
+
+When building the server yourself, also ask about the development environment: "Set up the development environment with Docker?" (Basis: Deployment · Operations, Compatibility)
+- Yes — every computer runs the same DB and server (recommended for a team or with a DB server)
+- No — each person installs and runs them
+
+Record the choice in the technology ADR too. With Docker, the compose file follows the format in the repository file rules.
 
 ## Technology comparison
 Status is one of Recommended, Conditional or Not recommended. Change the status of a technology no longer suggested instead of deleting its row.

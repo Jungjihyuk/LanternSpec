@@ -45,6 +45,7 @@ DEFAULTS: dict[str, Any] = {
         "external": False,
         "languages": [],
         "code_size": None,
+        "lifespan": "short",
     },
     "docs": {"root": "docs/", "remote": "shared", "commit": "auto", "extra": [], "sections": {}, "unused_sections": []},
     "knowledge": None,
@@ -68,6 +69,7 @@ CHOICES: dict[str, tuple[str, ...]] = {
     "project.origin": ("greenfield", "brownfield"),
     "project.team": ("solo", "team"),
     "project.server": ("none", "external", "custom"),
+    "project.lifespan": ("short", "long"),
     "project.kind": principles.kind_names(),
     "project.comment_language": tuple(principles.comment_languages()),
     "project.code_size": principles.SIZES,
@@ -511,6 +513,11 @@ def render(data: dict[str, Any]) -> str:
             items=", ".join(principles.language_names()),
         ),
         msg(
+            "  lifespan: {s}          # short (a quick try) | long (run for a long time: "
+            "README · CHANGELOG · folder structure agreed with you)",
+            s=s(p.get("lifespan", "short")),
+        ),
+        msg(
             "  code_size: {s}         # small | medium | large — measured (lantern principles detect). "
             "When it crosses a boundary, lantern doctor asks whether to raise it",
             s=s(p.get("code_size")),
@@ -834,6 +841,7 @@ DOC_FOLDERS: dict[str, tuple[str, ...]] = {
     "unit-log": ("rules",),
     "glossary": ("rules",),
     "tech-criteria": ("rules",),
+    "repo-files": ("rules",),
     "collab": ("rules",),
     "principles": ("rules",),
     "known-tech": ("debt",),
@@ -910,6 +918,7 @@ def enabled_docs(profile: Profile) -> list[DocSpec]:
         doc("unit-log", msg("always")),
         doc("glossary", msg("always")),
         doc("tech-criteria", msg("always")),
+        doc("repo-files", msg("always")),
         folder("domain", msg("always")),
         generated("domain-moc", msg("always (generated)")),
         folder("reports", msg("always"), "past_reports"),

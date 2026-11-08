@@ -504,7 +504,12 @@ def test_install_explains_next_steps_and_other_ai_tools(repo, monkeypatch):
 
 
 def test_template_show_reads_the_bundled_template_before_the_project_has_one(repo):
-    for name, title in (("기술 선택 기준", "# 📘 기술 선택 기준"), ("Tech Selection Criteria.md", "# 📘 Tech Selection Criteria")):
+    for name, title in (
+        ("기술 선택 기준", "# 📘 기술 선택 기준"),
+        ("Tech Selection Criteria.md", "# 📘 Tech Selection Criteria"),
+        ("저장소 파일 규칙", "# 📘 저장소 파일 규칙"),
+        ("Repository File Rules", "# 📘 Repository File Rules"),
+    ):
         code, out = repo("template", "show", name)
         assert code == 0 and title in out
         assert "lantern:template-only" not in out
@@ -545,3 +550,13 @@ def test_close_commits_only_the_work_documents(repo):
     (login / "기획.md").write_text((login / "기획.md").read_text(encoding="utf-8") + "\n또 바꿈\n", encoding="utf-8")
     _, out = repo("close", "l-plan", "--work", "W-001", "--commit", "--no-check")
     assert "docs.commit: manual" in out and "W-001" in repo.git("status", "--porcelain").stdout
+
+
+def test_lifespan_is_short_by_default_and_takes_long(repo):
+    init_project(repo)
+    _, out = repo("profile", "show")
+    assert "lifespan: short" in out
+    repo("profile", "set", "project.lifespan=long")
+    assert "lifespan: long" in repo("profile", "show")[1]
+    code, out = repo("profile", "set", "project.lifespan=forever", ok=False)
+    assert code != 0 and "lifespan" in out
