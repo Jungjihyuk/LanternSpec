@@ -14,6 +14,7 @@ Input: `$ARGUMENTS` — `W-012`.
 ## 0. Before starting
 - Read `<<file.plan>>`. **If any `<<marker.unknown>>` remains, ask first** (at most <<plan.max_questions>>, highest impact first).
 - Read only the related parts of the current state: `<<folder.current>>/<<file.architecture>>` · `<<folder.screens>>/` · `<<folder.data>>/schema.dbml`.
+- Read the decisions already made: the decision records in `<<folder.decisions>>/` with status `<<adr_status.accepted>>` that relate to this work (authentication · data · API · technology choices and so on). Follow them instead of asking again. If one must change, ask the person; if they agree, replace it with a new decision record (`/l-adr`).
 - When a design choice depends on domain rules, read only the sections tied to the work (`lantern ref domain --work W-012`) with `lantern ref read` — don't skim the whole index again.
 
 ## 1. Create <<file.design>> · pick sections
@@ -62,6 +63,7 @@ Once the mockups are in, add an acceptance criterion to `<<file.plan>>`: `- [ ] 
 ## 5. Hard-to-reverse choices → /l-adr
 **Record:** tool choices that are hard to change (database · framework · auth method · outside service) · data structure changes · public API changes · decisions that changed direction. **Don't record:** small libraries (one line in `<<file.record>>`) · code cleanup.
 Check question: "in six months, will someone ask 'why did we do this?'" — the AI **only suggests**; the person decides whether to record it. But **data structure changes are always** recorded. To record one, call `/l-adr` and add the ID to `adr` in <<file.design>>'s frontmatter.
+List in `adr` **the existing decisions this design follows** as well (e.g. a profile design that follows the sign-in method → `[ADR-002, ADR-003]`). `/l-build` and `/l-parallel` read the decisions from this list.
 
 ## 6. The design gate — current setting: design.approval = <<design.approval>>
 The approval screen is a **3-line summary** + choices:

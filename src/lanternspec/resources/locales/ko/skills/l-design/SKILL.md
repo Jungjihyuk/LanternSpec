@@ -14,6 +14,7 @@ argument-hint: "W-NNN"
 ## 0. 시작 전
 - `<<file.plan>>`를 읽는다. **`<<marker.unknown>>`가 남아 있으면 먼저 묻는다** (최대 <<plan.max_questions>>개, 영향 큰 순).
 - 현재 상태에서 관련된 부분만 읽는다: `<<folder.current>>/<<file.architecture>>` · `<<folder.screens>>/` · `<<folder.data>>/schema.dbml`.
+- 이미 정한 결정을 읽는다: `<<folder.decisions>>/`에서 상태가 `<<adr_status.accepted>>`인 결정 기록 중 이 작업과 관련된 것 (인증 · 데이터 · API · 기술 선택 등). 이미 정한 것은 다시 묻지 않고 따른다. 바꿔야 하면 사람에게 묻고, 바꾸기로 하면 새 결정 기록으로 이전 것을 대신한다 (`/l-adr`).
 - 설계 판단이 도메인 규칙에 달렸으면 `lantern ref domain --work W-012`에 연결된 절만 `lantern ref read`로 읽는다 (색인 전체를 다시 훑지 않는다).
 
 ## 1. <<file.design>> 만들기 · 칸 고르기
@@ -62,6 +63,7 @@ Canva MCP 서버로 디자인을 찾아 **PNG 또는 PDF로 내보내** `<<folde
 ## 5. 되돌리기 어려운 선택 → /l-adr
 **남김:** 바꾸기 어려운 도구 선택(DB · 프레임워크 · 인증 방식 · 외부 서비스) · 데이터 구조 변경 · 공개 API 변경 · 방향을 바꾼 결정. **안 남김:** 작은 라이브러리(`<<file.record>>`에 한 줄) · 코드 정리.
 판단 질문: "6개월 뒤 '왜 이렇게 했지?'가 나올까?" — AI는 **제안만**, 남길지는 사람이 정한다. 단 **데이터 구조 변경은 항상** 남긴다. 남기면 `/l-adr`을 부르고 <<file.design>> frontmatter `adr`에 ID를 적는다.
+`adr`에는 **이 설계가 따르는 기존 결정도** 함께 적는다 (예: 로그인 방식을 따르는 프로필 설계 → `[ADR-002, ADR-003]`). `/l-build`와 `/l-parallel`은 이 목록을 보고 결정을 읽는다.
 
 ## 6. 설계 승인 게이트 — 지금 설정: design.approval = <<design.approval>>
 승인 화면은 **요약 3줄** + 선택지:
