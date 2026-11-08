@@ -46,7 +46,7 @@ DEFAULTS: dict[str, Any] = {
         "languages": [],
         "code_size": None,
     },
-    "docs": {"root": "docs/", "remote": "shared", "extra": [], "sections": {}, "unused_sections": []},
+    "docs": {"root": "docs/", "remote": "shared", "commit": "auto", "extra": [], "sections": {}, "unused_sections": []},
     "knowledge": None,
     "design": {"tool": "none", "approval": "required"},
     "git": {"hooks": "warn", "base": "main", "branch": "work/{id}", "pr": "none", "deploy": "main"},
@@ -72,6 +72,7 @@ CHOICES: dict[str, tuple[str, ...]] = {
     "project.comment_language": tuple(principles.comment_languages()),
     "project.code_size": principles.SIZES,
     "docs.remote": ("shared", "local"),
+    "docs.commit": ("auto", "manual"),
     "knowledge.type": ("obsidian", "folder", "notion"),
     "knowledge.write": ("direct", "propose_only"),
     "design.tool": ("claude-design", "figma", "canva", "none"),
@@ -520,6 +521,10 @@ def render(data: dict[str, Any]) -> str:
         msg(
             "  remote: {s}          # shared (pushed together) | local (documents not pushed) — change it with lantern docs-mode",
             s=s(docs["remote"]),
+        ),
+        msg(
+            "  commit: {s}          # auto (a skill commits its work's documents when it closes) | manual (you commit them)",
+            s=s(docs.get("commit", "auto")),
         ),
     ]
     if docs.get("extra"):

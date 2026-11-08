@@ -44,7 +44,7 @@ lantern idea status IDEA-014 "<<idea_status.reviewing>>"   # 아이디어에서 
 lantern scaffold work "<작업 이름>" --idea IDEA-014 [--ui] [--branch "<브랜치 이름>"]  # 화면이 바뀌는 작업이면 --ui
 lantern idea status IDEA-014 "<<idea_status.worked>>" --work W-012
 ```
-- 브랜치 이름 규칙은 `<<git.branch>>`이다. `{id}` 말고 다른 칸이 있으면 사람과 이름을 정해 `--branch`로 넘기고, 문서를 기준 브랜치에 커밋한다 (다른 브랜치에서도 이 작업의 브랜치를 알 수 있게). `{id}`만 있으면 넘기지 않는다.
+- 브랜치 이름 규칙은 `<<git.branch>>`이다. `{id}` 말고 다른 칸이 있으면 사람과 이름을 정해 `--branch`로 넘긴다. 마무리의 `lantern close`가 문서를 지금 브랜치(기준 브랜치)에 커밋해, 다른 브랜치에서도 이 작업의 브랜치를 알 수 있다. `{id}`만 있으면 넘기지 않는다.
 - **아이디어 없이 바로** 시작하면 아이디어 카드를 뒤에서 함께 만든다: `lantern scaffold idea "<이름>" --raw "<사용자 설명>" --status "<<idea_status.worked>>"` → 그 ID로 `scaffold work --idea` → `idea status … "<<idea_status.worked>>" --work …`.
 - **기존 작업에 넣기**면 폴더를 만들지 않고 그 작업의 `<<file.plan>>`에 시나리오 · 수락 기준을 보탠 뒤 `lantern idea status IDEA-014 "<<idea_status.worked>>" --work W-010`.
 - **나눠 담기**면 조각마다 위 둘 중 하나를 한다. 새 작업 조각은 폴더를 만들고, 기존 작업 조각은 그 작업의 `<<file.plan>>`에 보탠다. 그리고 작업마다 `lantern idea status IDEA-014 "<<idea_status.worked>>" --work W-0NN`을 한 번씩 실행한다 (아이디어에 작업 링크가 하나씩 더해진다).
@@ -92,6 +92,6 @@ lantern check --epic W-012
 
 ## 공통 마무리
 ```bash
-lantern close l-plan --work W-012
+lantern close l-plan --work W-012 --commit
 ```
 보고 3줄: 만든 작업 · 남은 `<<marker.unknown>>` · 다음 `/l-design W-012`.

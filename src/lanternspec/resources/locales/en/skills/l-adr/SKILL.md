@@ -27,5 +27,5 @@ argument-hint: "<what to decide> [--work W-NNN]"
 
 ## Common wrap-up
 ```bash
-lantern close l-adr [--work W-012]
+lantern close l-adr [--work W-012 --commit]
 ```

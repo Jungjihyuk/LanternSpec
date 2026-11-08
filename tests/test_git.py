@@ -1103,3 +1103,20 @@ def test_overlap_shows_files_changed_in_common_and_new_dependencies(repo):
     _, out = repo("work", "overlap", "W-001", "W-002")
     assert "W-001 · W-002가 같은 파일을 고쳤습니다: auth.ts, package.json" in out
     assert '+ package.json: "jsonwebtoken": "9.0.2"' in out and '+ package.json: "express-session": "1.18.1"' in out
+
+
+def test_close_commits_a_works_documents_on_the_docs_branch_in_local_mode(repo):
+    from lanternspec.core.project import git_version
+
+    if git_version(repo.root) < (2, 42, 0):
+        pytest.skip("git 2.42+ needed for worktree --orphan")
+    init_project(repo)
+    repo("docs-mode", "local")
+    repo("scaffold", "work", "로그인")
+    repo("scaffold", "work", "프로필")
+    d = docs(repo)
+    _, out = repo("close", "l-plan", "--work", "W-001", "--commit", "--no-check")
+    assert "커밋 — docs: W-001 기획 [W-001]" in out
+    assert sh(d, "git", "log", "-1", "--format=%s").stdout.strip() == "docs: W-001 기획 [W-001]"
+    assert "W-002" in sh(d, "git", "status", "--porcelain").stdout  # the other work stays uncommitted
+    assert "W-001" not in repo.git("log", "--format=%s").stdout  # nothing lands in the code repository

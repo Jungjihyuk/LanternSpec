@@ -42,6 +42,6 @@ lantern task add W-012 "<무엇>" --size S|M|L --ac AC-1 [--after T01] [--screen
 "<<marker.glance>>"에 할 일 수 · 큰 흐름을 한 줄로 쓰고, 단계를 올린다:
 ```bash
 lantern work stage W-012 "<<work_status.tasks>>"
-lantern close l-task --work W-012
+lantern close l-task --work W-012 --commit
 ```
 **다음:** `/l-build W-012`.

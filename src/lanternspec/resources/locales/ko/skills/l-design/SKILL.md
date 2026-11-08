@@ -91,6 +91,6 @@ lantern design approve W-012 --by "<승인한 사람>"     # auto로 통과했�
 
 ## 공통 마무리
 ```bash
-lantern close l-design --work W-012
+lantern close l-design --work W-012 --commit
 ```
 **다음:** `/l-task W-012`.

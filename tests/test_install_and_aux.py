@@ -514,3 +514,34 @@ def test_template_show_reads_the_bundled_template_before_the_project_has_one(rep
 
     code, out = repo("template", "show", ok=False)
     assert code == 1 and "template show" in out
+
+
+def test_close_commits_only_the_work_documents(repo):
+    init_project(repo)
+    repo("scaffold", "work", "로그인")
+    repo("scaffold", "work", "프로필")
+    repo.git("add", "-A")
+    repo.git("commit", "-q", "-m", "docs: 기획 [lantern]")
+    d = docs(repo)
+    login = next((d / "2. 작업").glob("W-001 *"))
+    profile = next((d / "2. 작업").glob("W-002 *"))
+    (login / "기획.md").write_text((login / "기획.md").read_text(encoding="utf-8") + "\n바꿈\n", encoding="utf-8")
+    (profile / "기획.md").write_text((profile / "기획.md").read_text(encoding="utf-8") + "\n다른 작업\n", encoding="utf-8")
+
+    _, out = repo("close", "l-plan", "--work", "W-001", "--commit", "--no-check")
+    assert "커밋 — docs: W-001 기획 [W-001]" in out
+    left = repo.git("status", "--porcelain").stdout
+    assert "W-002" in left and "W-001" not in left
+    assert repo.git("log", "-1", "--format=%s").stdout.strip() == "docs: W-001 기획 [W-001]"
+
+    _, out = repo("close", "l-plan", "--work", "W-001", "--commit", "--no-check")
+    assert "W-001에서 커밋할 문서가 없습니다" in out
+    _, out = repo("close", "l-idea", "--commit", "--no-check")
+    assert "--work가 있어야" in out
+
+    repo("profile", "set", "docs.commit=manual")
+    repo.git("add", "lantern.yaml")
+    repo.git("commit", "-q", "-m", "chore: 설정 [lantern]")
+    (login / "기획.md").write_text((login / "기획.md").read_text(encoding="utf-8") + "\n또 바꿈\n", encoding="utf-8")
+    _, out = repo("close", "l-plan", "--work", "W-001", "--commit", "--no-check")
+    assert "docs.commit: manual" in out and "W-001" in repo.git("status", "--porcelain").stdout

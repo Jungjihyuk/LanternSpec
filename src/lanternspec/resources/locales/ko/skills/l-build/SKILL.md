@@ -53,7 +53,7 @@ lantern task start W-012-T03     # [<<attr.start>>:: 시각]을 정확히 찍는
    코드 + `<<file.tasks>>` + `<<file.record>>`를 **한 커밋에**: `git add … && git commit -m "feat: <무엇> [W-012-T03]"` (사용자의 커밋 규칙을 따르고 ID는 끝에). 커밋 후 증거 표의 커밋 칸을 채워 다음 커밋에 함께 넣는다.
 <!-- lantern:endif -->
 <!-- lantern:if docs.remote=local -->
-   코드 커밋 `git commit -m "feat: <무엇> [W-012-T03]"` → 그 번호로 문서 커밋 `git -C docs add -A && git -C docs commit -m "docs: W-012-T03 기록 (code $(git rev-parse --short HEAD))"`. 코드 커밋에 `docs/`를 넣지 않는다.
+   코드 커밋 `git commit -m "feat: <무엇> [W-012-T03]"` → 그 번호로 문서 커밋 `git -C docs add -- "<<folder.works>>/W-012 …" && git -C docs commit -m "docs: W-012-T03 기록 (code $(git rev-parse --short HEAD))" -- "<<folder.works>>/W-012 …"` (이 작업 폴더만 — 동시 작업 중인 다른 작업의 문서를 섞지 않는다). 코드 커밋에 `docs/`를 넣지 않는다.
 <!-- lantern:endif -->
    여러 할 일을 한 커밋에 섞지 않는다. 할 일이 크면 같은 ID로 여러 커밋도 된다. 커밋 메시지에 AI가 작업했다는 표시(`Co-Authored-By` · `Generated with …` 등)를 넣지 않는다.
 5. **수락 기준 체크포인트:** `task done`이 `AC 체크포인트: AC-1`을 알리면 그 AC만 따로 확인한다(관련 테스트 · 동작 확인). 통과하면 `lantern task ac W-012 AC-1`.

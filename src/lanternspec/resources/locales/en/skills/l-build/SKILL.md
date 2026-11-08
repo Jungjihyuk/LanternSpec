@@ -53,7 +53,7 @@ Read a 📌 verbatim section again right before turning its rule into code. Know
    Code + `<<file.tasks>>` + `<<file.record>>` **in one commit**: `git add … && git commit -m "feat: <what> [W-012-T03]"` (follow the user's commit rules, with the ID at the end). After committing, fill the commit column of the evidence table and include it in the next commit.
 <!-- lantern:endif -->
 <!-- lantern:if docs.remote=local -->
-   Code commit `git commit -m "feat: <what> [W-012-T03]"` → then a docs commit pointing to it: `git -C docs add -A && git -C docs commit -m "docs: W-012-T03 log (code $(git rev-parse --short HEAD))"`. Never put `docs/` in a code commit.
+   Code commit `git commit -m "feat: <what> [W-012-T03]"` → then a docs commit pointing to it: `git -C docs add -- "<<folder.works>>/W-012 …" && git -C docs commit -m "docs: W-012-T03 log (code $(git rev-parse --short HEAD))" -- "<<folder.works>>/W-012 …"` (this work's folder only, so documents of other works running in parallel stay out). Never put `docs/` in a code commit.
 <!-- lantern:endif -->
    Don't mix several tasks in one commit. A big task may have several commits with the same ID. Don't put any mark that AI did the work (`Co-Authored-By` · `Generated with …` and so on) in the commit message.
 5. **Acceptance-criterion checkpoint:** when `task done` announces a checkpoint for `AC-1`, check that AC on its own (related tests · trying the behavior). If it passes, `lantern task ac W-012 AC-1`.

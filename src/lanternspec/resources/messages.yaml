@@ -789,6 +789,12 @@
 
 # tools/close.py
 "✔ Run recorded — {skill}{value} (.lantern/runs.jsonl)": {ko: "✔ 실행 기록 — {skill}{value} (.lantern/runs.jsonl)"}
+"✔ Committed — {message}": {ko: "✔ 커밋 — {message}"}
+"ℹ Nothing to commit for {work}": {ko: "ℹ {work}에서 커밋할 문서가 없습니다"}
+"ℹ docs.commit: manual — documents to commit: {items}": {ko: "ℹ docs.commit: manual — 커밋할 문서: {items}"}
+"ℹ --commit needs --work, so nothing was committed": {ko: "ℹ --commit은 --work가 있어야 해서 커밋하지 않았습니다"}
+"⚠ Couldn't commit: {strip}": {ko: "⚠ 커밋하지 못했습니다: {strip}"}
+"Commit the documents of the work (--work) when lantern.yaml docs.commit is auto": {ko: "lantern.yaml docs.commit이 auto면 그 작업(--work)의 문서를 커밋"}
 "✔ map — MOC updated": {ko: "✔ map — MOC 갱신"}
 "✔ check — {files} documents are well-formed": {ko: "✔ check — 문서 {files}개 양식에 맞음"}
 
@@ -1099,6 +1105,7 @@
 "  languages: {s}        # languages to choose code conventions for ({items})": {ko: "  languages: {s}        # 코드 컨벤션을 고를 언어 ({items})"}
 "  code_size: {s}         # small | medium | large — measured (lantern principles detect). When it crosses a boundary, lantern doctor asks whether to raise it": {ko: "  code_size: {s}         # small | medium | large — 잰 값 (lantern principles detect). 경계를 넘으면 lantern doctor가 올릴지 묻는다"}
 "  remote: {s}          # shared (pushed together) | local (documents not pushed) — change it with lantern docs-mode": {ko: "  remote: {s}          # shared(같이 올림) | local(문서는 원격에 안 올림) — 바꿀 때는 lantern docs-mode"}
+"  commit: {s}          # auto (a skill commits its work's documents when it closes) | manual (you commit them)": {ko: "  commit: {s}          # auto(스킬이 마칠 때 그 작업의 문서를 커밋) | manual(직접 커밋)"}
 "  tool: {s}       # claude-design | figma | canva (each tool's MCP) | none": {ko: "  tool: {s}       # claude-design | figma | canva (각 도구의 MCP) | none"}
 "  approval: {s}  # required (always approve) | auto (skip small designs) | off": {ko: "  approval: {s}  # required(항상 승인) | auto(작은 설계는 건너뜀) | off"}
 "  hooks: {s}              # warn (warning only) | block — applies only to commit message · schema log · document format checks": {ko: "  hooks: {s}              # warn(경고만) | block(막기) — 커밋 메시지 · 스키마 기록 · 문서 양식 검사에만 적용"}

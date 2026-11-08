@@ -27,5 +27,5 @@ argument-hint: "<결정할 일> [--work W-NNN]"
 
 ## 공통 마무리
 ```bash
-lantern close l-adr [--work W-012]
+lantern close l-adr [--work W-012 --commit]
 ```

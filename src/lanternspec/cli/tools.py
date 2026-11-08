@@ -160,7 +160,9 @@ def cmd_close(a: argparse.Namespace) -> int:
     """`lantern close <skill>` — every skill's common close: check → map → debt status → run record."""
     from ..tools import close
 
-    _print(close.close(_p(), a.skill, work=a.work, start=a.start, model=a.model, check=not a.no_check, do_map=not a.no_map))
+    _print(
+        close.close(_p(), a.skill, work=a.work, start=a.start, model=a.model, check=not a.no_check, do_map=not a.no_map, commit=a.commit)
+    )
     return 0
 
 
@@ -200,3 +202,6 @@ def register(add: Add) -> None:
     p.add_argument("--model")
     p.add_argument("--no-check", action="store_true")
     p.add_argument("--no-map", action="store_true")
+    p.add_argument(
+        "--commit", action="store_true", help=msg("Commit the documents of the work (--work) when lantern.yaml docs.commit is auto")
+    )

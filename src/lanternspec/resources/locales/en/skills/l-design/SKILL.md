@@ -91,6 +91,6 @@ When the design brings in a new technology or library, gather candidates by the 
 
 ## Common wrap-up
 ```bash
-lantern close l-design --work W-012
+lantern close l-design --work W-012 --commit
 ```
 **Next:** `/l-task W-012`.
