@@ -44,11 +44,12 @@ Record each decision with `/l-adr`. For each related work, add its ID to `adr` i
 lantern work start W-001 W-002 --skip-check
 ```
 - If there was nothing to decide together, say "Nothing needs deciding together" and start right away.
-- Don't start now the works chosen to go in order.
+- If going in order leaves only one work to start now, don't make a worktree (don't run `lantern work start`). Give the order: "Run `/l-build W-001` in the base folder. When it's done, `/l-build W-002`."
+- If two or more works are left to start together, start only those with `lantern work start`, and note each postponed work in the final report as "W-00N after W-00M is merged".
 - Show the way to open each work exactly as the command gives it (one line per terminal).
 
 ## Common wrap-up
 ```bash
 lantern close l-parallel
 ```
-**Next:** run `/l-build` in each terminal with the command given. When all are done, `/l-finish` in the base folder.
+**Next:** if the works started together, run `/l-build` in each terminal with the command given, and `/l-finish` in the base folder when all are done. If they go in order, run `/l-build` in the base folder in the order given above.
