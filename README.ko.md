@@ -82,7 +82,7 @@ lantern install                  # 이 프로젝트에 스킬 · 규칙 · hook 
 
 ## 흐름과 스킬
 
-이 문서에 나오는 개념의 뜻과 쓰이는 곳은 [개념 사전](https://github.com/Jungjihyuk/LanternSpec/blob/main/CONCEPTS.ko.md)에 모아 두었다.
+이 문서에 나오는 개념의 뜻과 쓰이는 곳은 [개념 사전](https://github.com/Jungjihyuk/LanternSpec/blob/main/CONCEPTS.ko.md)에 모아 두었다. LanternSpec 자체를 고치려면 흐름 · 폴더 · 기준을 왜 이렇게 정했는지 적은 [설계 근거](https://github.com/Jungjihyuk/LanternSpec/blob/main/RATIONALE.ko.md)를 먼저 본다.
 
 ```mermaid
 flowchart LR
@@ -101,7 +101,7 @@ flowchart LR
 | `/l-idea` | 대화 속 생각을 원문 + 정리본으로 바로 기록 | `1. 아이디어/IDEA-001 …` |
 | `/l-plan` | 무엇을 · 왜 — 작업 폴더와 수락 기준 | `2. 작업/W-001 …/기획.md` |
 | `/l-design` | 어떻게 — 바뀌는 구조 · 화면 · 데이터(DBML)만, 와이어프레임, 승인 게이트 | `설계.md`, `화면/`, ADR |
-| `/l-task` | 순서 있는 할 일 목록 (크기 · 수락 기준 · 의존) | `할 일.md` |
+| `/l-task` | 순서 있는 할 일 목록 (크기 15m · 1h · 반나절 · 1d · 수락 기준 · 의존 · 조사 할 일) | `할 일.md` |
 | `/l-build` | 구현 → 테스트 → 할 일마다 커밋, **증거로** 보고, 화면은 직접 열어 확인, 끝나면 현재 상태에 반영 (동시 작업의 worktree에서는 자기 할 일까지만) | 코드, `기록.md` |
 | `/l-learn` | 모르는 기술을 지식 저장소와 비교 → 🟢 · 🟡 · 🔴, 부채 카드 · 학습 노트 초안 | `📒 부채/카드/D-001 …` |
 | `/l-report` | 칸반 · 타임라인 · 도메인 · 추적 · 부채 · 문서와 코드가 맞는지 + 3줄 요약 | `4. 운영 기록/보고/현황.md` |
@@ -136,7 +136,7 @@ docs/
 ├─ 2. 작업/W-001 …/        기획 · 설계 · 할 일 · 기록 — 일하는 동안 고치는 곳은 여기뿐
 │   └─ 보관/
 ├─ 3. 현재 상태/           지금 시스템의 모습 — 작업이 끝날 때만 승인 후 갱신
-│   └─ 규칙/(기술 선택 기준 · 저장소 파일 규칙 …) · 결정 기록/ · 배포 · 운영/ · 용어집 …
+│   └─ 규칙/(기술 선택 기준 · 할 일 나누기 기준 · 저장소 파일 규칙 …) · 결정 기록/ · 배포 · 운영/ · 용어집 …
 ├─ 4. 운영 기록/           보고 · 세션 기록 · (2인 이상) 회의록
 ├─ 5. 기존 문서/           (기존 프로젝트) 원본 보관 — 고치지 않음
 ├─ 📒 부채/               카드 1장 = 부채 1개
@@ -154,7 +154,8 @@ lantern이 읽고 쓰는 칸(보호 칸, 예: 기록의 "지금 상황")도 이�
 
 ### Obsidian으로 보기
 `docs/` 폴더를 Obsidian에서 볼트로 열면 바로 읽기 좋게 설정이 들어 있다 (`docs/.obsidian/`).
-`lantern obsidian plugins`로 플러그인을 넣으면 보고서의 타임라인을 날짜별 막대로 보여 주는 Lantern Timeline도 함께 들어간다. 시작 전인 할 일은 막대를 끌어 옮기거나 양 끝을 끌어 기간을 바꿀 수 있고, `[시작 예정::]` · `[마감 예정::]`에 저장된다.
+`lantern obsidian plugins`로 플러그인을 넣으면 보고서의 타임라인을 막대로 보여 주는 Lantern Timeline도 함께 들어간다. 일한 구간은 자세한 칸(5분 ~ 1시간)으로, 할 일이 없던 시간은 접어서 보여 주고, 끝난 할 일 옆에 걸린 시간을 적는다. 시작 전인 할 일은 막대를 끌어 옮기거나 양 끝을 끌어 기간을 바꿀 수 있고, `[시작 예정::]` · `[마감 예정::]`에 저장된다.
+할 일 목록(`할 일.md`)은 표처럼 보인다 — 이름은 왼쪽에, 크기 · 먼저 · 기준은 오른쪽 열에. 파일은 할 일 한 줄 그대로다.
 
 - **폴더 색 · 폴더와 파일 아이콘 · callout · 인용문 모양** — 문서 단계마다 폴더 색이 다르고, 폴더와 파일 앞에 아이콘이 붙고, callout과 인용문이 깔끔하게 보인다. 어떤 테마 위에서도 동작한다.
 - **상태 · 종류 고르기** — 문서 종류마다 그 종류의 선택지만 메뉴로 고른다 (Metadata Menu). 선택지는 `enums.yaml`에서 만들어져, 이름을 바꾸면 같이 바뀐다.
@@ -297,7 +298,7 @@ Claude Design은 Claude Code에서 AI가 Design 캔버스에 와이어프레임�
 프로필   profile show|docs|write|set · principles show|detect · parts [add|ignore] · enums list|rename · sections list|rename|off|on
 문서     scaffold init [--plan] | work | doc | idea | adr | meeting | custom · new-id · map · meta get|set
 검사     check [--changed] [--epic W-012] · check-pr · lint [--ci] · check-dbml · dbml render|from-sql|diff
-일       task next [--all]|start|done|ac|list|estimate · task add [--parallel] · pack · screen import|compare
+일       task next [--all]|start|done|ac|list|estimate · task add [--parallel] [--spike] · pack · screen import|compare
          work branch|start|list|overlap|finish|archive|stage|flow · design approve · unit-log add · idea find|status
 배움     knowledge search|read|propose|write|areas · debt find|new|ask|resolve|promote|practice|known|status|list · mcp
 보고     report [--views] [--summary] · status · resume [--session] [--more] · scan [--tests] [--ci] · sync adopt · eval · obsidian plugins

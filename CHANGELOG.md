@@ -7,6 +7,26 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+Upgrade: `uv tool upgrade lanternspec` → `lantern upgrade` in each project (refreshes skills, the tasks template and Obsidian settings). `lantern scaffold init` makes the new rules document, and `lantern upgrade --apply` writes older sizes (S · M · L) with the new names
+
+### Added
+- **Task Breakdown Rules document** — `Rules/` gets the size table with "split anything bigger than 1d", where an unknown goes (idea · design decision · spike task · needs answer) and how spike tasks work. `/l-task` · `/l-build` read and follow it
+- **Spike tasks** — `lantern task add --spike` puts `[spike]` before the title. Its size is a time limit, and its conclusion goes in an ADR or the log
+- **The task list as a table (Obsidian)** — task names on the left, size · after · criteria in columns on the right. The file keeps one line per task
+- **Timeline: idle time folded** — stretches with no task for an hour or more fold into `⋯ 5 h ⋯`. Column size (5 minutes to an hour) fits the note's width, and a date list moves between days
+- **Timeline: time taken** — `T01 · 7 min` beside a finished task, and the total time worked beside a finished work
+
+### Changed
+- **Task size names** — `S · M · L` → `15m · 1h · half · 1d` (`반나절` in Korean). The time a person would take with focus; older names are still read
+- **Timeline lines** — only "must finish first" is drawn, and in a finished work it appears when a task is pointed at. A bar's tooltip lists what must finish first
+- **Timeline legend and marks** — the legend shows only what the chart has, after "one column = 10 min"; the hour row has units; a work's span is a bracket (├──┤); short task names sit beside their bars
+- **Empty report views** — a kanban, debt status or timeline with nothing to show is left out, heading and all, and the "views:" line lists only what is shown
+- **`lantern enums rename`** — renaming a size renames it on task lines too
+
+### Fixed
+- **Tasks piling up on the timeline** — tasks an AI finished in minutes piled into one column with tangled lines
+- **Document links in kanban cards** — a task's card carried links like `— [[Design#…]]`
+
 ## [0.3.0] - 2026-11-10
 
 **How to move:** `lantern harness suggest` is now `lantern build-mode suggest` (the old name still works for now, with a notice). Where you called `lantern work start` directly while another work was running, go through `/l-parallel` or add `--skip-check`. Codex reads the new permission profile only after the project is trusted, and a `sandbox_mode` in your own settings wins over it (`lantern doctor` points this out).

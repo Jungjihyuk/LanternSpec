@@ -84,7 +84,7 @@ Then call `/l-init` inside your AI tool (`$l-init` in Codex).
 
 ## Flow and skills
 
-What the concepts in this document mean and where they are used is gathered in [Concepts](https://github.com/Jungjihyuk/LanternSpec/blob/main/CONCEPTS.md).
+What the concepts in this document mean and where they are used is gathered in [Concepts](https://github.com/Jungjihyuk/LanternSpec/blob/main/CONCEPTS.md). To change LanternSpec itself, start with the [design rationale](https://github.com/Jungjihyuk/LanternSpec/blob/main/RATIONALE.md), which records why the flow, folders and rules are the way they are.
 
 ```mermaid
 flowchart LR
@@ -103,7 +103,7 @@ flowchart LR
 | `/l-idea` | records a thought from the conversation, as said and as summarised | `1. Ideas/IDEA-001 …` |
 | `/l-plan` | what and why — a work folder and acceptance criteria | `2. Work/W-001 …/Plan.md` |
 | `/l-design` | how — only the structure, screens and data (DBML) that change, wireframes, behind an approval gate | `Design.md`, `Screens/`, ADR |
-| `/l-task` | an ordered task list (size · acceptance criteria · dependencies) | `Tasks.md` |
+| `/l-task` | an ordered task list (size 15m · 1h · half · 1d · acceptance criteria · dependencies · spike tasks) | `Tasks.md` |
 | `/l-build` | implement → test → one commit per task, report **with evidence**, open and check screens itself, merge into the current state when done (in a parallel worktree, only its own tasks) | code, `Log.md` |
 | `/l-learn` | compares unfamiliar tech with your knowledge base → 🟢 · 🟡 · 🔴, debt cards and draft study notes | `📒 Debt/Cards/D-001 …` |
 | `/l-report` | kanban · timeline · domain · traceability · debt · docs-vs-code status + a three-line report | `4. Operations/Reports/Status Report.md` |
@@ -138,7 +138,7 @@ docs/
 ├─ 2. Work/W-001 …/       plan · design · tasks · log — the only place edited while working
 │   └─ Archive/           archive
 ├─ 3. Current State/     what the system looks like now — updated only when work is done, after approval
-│   └─ Rules/ (Tech Selection Criteria · Repository File Rules …) · Decisions/ · Deployment and Operations/ · Glossary …
+│   └─ Rules/ (Tech Selection Criteria · Task Breakdown Rules · Repository File Rules …) · Decisions/ · Deployment and Operations/ · Glossary …
 ├─ 4. Operations/        reports · session logs · (teams of 2+) meeting notes
 ├─ 5. Legacy Docs/       (existing projects) original documents, kept unchanged
 ├─ 📒 Debt/              understanding debt — one card per debt
@@ -156,7 +156,8 @@ Sections lantern reads and writes (protected sections, such as "Now" in a log) m
 
 ### Viewing the docs in Obsidian
 Open the `docs/` folder as a vault in Obsidian and it is already set up for reading (`docs/.obsidian/`).
-`lantern obsidian plugins` also adds Lantern Timeline, which shows the report's timeline as bars by day. Drag a task that has not started to move it, or drag its ends to change its length; the dates are saved in its planned and due attributes.
+`lantern obsidian plugins` also adds Lantern Timeline, which shows the report's timeline as bars: stretches with work in fine columns (5 minutes to an hour), time with no task folded away, and how long each finished task took beside it. Drag a task that has not started to move it, or drag its ends to change its length; the dates are saved in its planned and due attributes.
+The task list (`Tasks.md`) reads like a table: names on the left, size · after · criteria in columns on the right. The file keeps one line per task.
 
 - **Folder colors, folder and file icons, callouts and quotes** — each document stage has its own folder color, folders and files get icons, and callouts and quotes look clean. Works on top of any theme.
 - **Picking status and kind** — each document type offers only its own choices in a menu (Metadata Menu). The choices are generated from `enums.yaml`, so renaming a value updates them too.
@@ -299,7 +300,7 @@ setup      install [--language] [--tools] [--mcp] [--ci|--no-ci] [--pr-template]
 profile    profile show|docs|write|set · principles show|detect · parts [add|ignore] · enums list|rename · sections list|rename|off|on
 documents  scaffold init [--plan] | work | doc | idea | adr | meeting | custom · new-id · map · meta get|set
 checks     check [--changed] [--epic W-012] · check-pr · lint [--ci] · check-dbml · dbml render|from-sql|diff
-work       task next [--all]|start|done|ac|list|estimate · task add [--parallel] · pack · screen import|compare
+work       task next [--all]|start|done|ac|list|estimate · task add [--parallel] [--spike] · pack · screen import|compare
            work branch|start|list|overlap|finish|archive|stage|flow · design approve · unit-log add · idea find|status
 learning   knowledge search|read|propose|write|areas · debt find|new|ask|resolve|promote|practice|known|status|list · mcp
 reports    report [--views] [--summary] · status · resume [--session] [--more] · scan [--tests] [--ci] · sync adopt · eval · obsidian plugins
