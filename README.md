@@ -84,6 +84,8 @@ Then call `/l-init` inside your AI tool (`$l-init` in Codex).
 
 ## Flow and skills
 
+What the concepts in this document mean and where they are used is gathered in [Concepts](https://github.com/Jungjihyuk/LanternSpec/blob/main/CONCEPTS.md).
+
 ```mermaid
 flowchart LR
   S["⚙️ /l-init"] --> I
@@ -271,12 +273,12 @@ Picks design principles and code conventions from a table, based on the project 
 - See the result with `lantern principles show`; run lint and type checks with `lantern lint` (in each part's folder when there are parts)
 - CI (`lantern install --ci`) prepares tools and checks in each part's folder. Leave a heavy part out with `ci: false` on that part in `lantern.yaml`. In existing projects, lint and type errors only warn at first and CI passes; once they are clean, set `build.ci_lint: block`.
 
-### How the AI works
-`lantern harness suggest` looks at code size, work in progress, whether tests exist and past runs, and recommends one of three modes.
+### Build mode
+`lantern build-mode suggest` looks at code size, work in progress, whether tests exist and past runs, and recommends **one axis at a time**.
 
-- **Harness:** small loops inside one task. The default for small projects
-- **Loop:** reruns the whole work item until the acceptance tests pass
-- **Graph:** splits independent work items into worktrees so several agents work at the same time
+- **Loop scope:** check each task (the default for small projects) or loop automatically until the acceptance tests pass — `--apply` sets `build.loop`
+- **Task delegation:** whether to hand `[P]` tasks that don't depend on each other in one work to sub-agents
+- **Parallel works:** whether to run different works at once in worktrees (checked with `/l-parallel`)
 
 ### Evaluation
 `lantern eval` uses the run log to compare cost (time · tool calls) and results (format errors at wrap-up) per skill, model and setting.
@@ -288,7 +290,7 @@ Import mockups with `lantern screen import`; `lantern screen compare` finds wher
 ## CLI at a glance
 
 ```text
-setup      install [--language] [--tools] [--mcp] [--ci|--no-ci] [--pr-template] [--commit-template] · upgrade [--apply] · doctor · harness suggest
+setup      install [--language] [--tools] [--mcp] [--ci|--no-ci] [--pr-template] [--commit-template] · upgrade [--apply] · doctor · build-mode suggest
 profile    profile show|docs|write|set · principles show|detect · parts [add|ignore] · enums list|rename · sections list|rename|off|on
 documents  scaffold init [--plan] | work | doc | idea | adr | meeting | custom · new-id · map · meta get|set
 checks     check [--changed] [--epic W-012] · check-pr · lint [--ci] · check-dbml · dbml render|from-sql|diff

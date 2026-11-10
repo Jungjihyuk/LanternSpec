@@ -82,6 +82,8 @@ lantern install                  # 이 프로젝트에 스킬 · 규칙 · hook 
 
 ## 흐름과 스킬
 
+이 문서에 나오는 개념의 뜻과 쓰이는 곳은 [개념 사전](https://github.com/Jungjihyuk/LanternSpec/blob/main/CONCEPTS.ko.md)에 모아 두었다.
+
 ```mermaid
 flowchart LR
   S["⚙️ /l-init"] --> I
@@ -269,12 +271,12 @@ AI가 쓴 기술 중 모르는 것은 내 지식 저장소의 노트와 비교�
 - 확인: `lantern principles show` · 린트와 타입 검사 실행: `lantern lint` (영역이 있으면 영역마다 그 폴더에서)
 - CI(`lantern install --ci`)는 영역마다 그 폴더에서 도구를 준비하고 검사한다. 무거운 영역은 `lantern.yaml`의 그 영역에 `ci: false`를 적어 뺀다. 기존 프로젝트의 린트 · 타입 오류는 처음에는 경고만 하고 CI를 통과시키며, 오류를 정리하면 `build.ci_lint: block`으로 올린다.
 
-### AI 작업 방식
-`lantern harness suggest`가 코드 크기 · 진행 중 작업 · 테스트 유무 · 지난 실행 기록을 보고 셋 중 하나를 추천한다.
+### 구현 방식
+`lantern build-mode suggest`가 코드 크기 · 진행 중 작업 · 테스트 유무 · 지난 실행 기록을 보고 **축마다 따로** 추천한다.
 
-- **하네스:** 할 일 하나 안에서 작게 반복한다. 작은 프로젝트의 기본값
-- **루프:** 수락 기준 테스트가 통과할 때까지 작업 전체를 다시 돈다
-- **그래프:** 서로 독립인 작업을 worktree로 나눠 여러 에이전트가 동시에 한다
+- **반복 범위:** 할 일마다 확인(작은 프로젝트의 기본값) 또는 수락 기준 테스트가 통과할 때까지 자동 반복 — `--apply`로 `build.loop`에 적용
+- **할 일 나눠 맡기기:** 한 작업 안에서 서로 기대지 않는 `[P]` 할 일을 서브 에이전트에 맡길 만한지
+- **작업 동시 진행:** 서로 다른 작업을 worktree로 나눠 동시에 진행할 만한지 (`/l-parallel`로 점검)
 
 ### 평가
 `lantern eval`이 실행 기록으로 스킬 · 모델 · 설정마다 비용(시간 · 도구 호출)과 결과(마무리 때 양식 오류)를 비교한다.
@@ -286,7 +288,7 @@ Claude Design은 Claude Code에서 AI가 Design 캔버스에 와이어프레임�
 ## CLI 한눈에
 
 ```text
-설치     install [--language] [--tools] [--mcp] [--ci|--no-ci] [--pr-template] [--commit-template] · upgrade [--apply] · doctor · harness suggest
+설치     install [--language] [--tools] [--mcp] [--ci|--no-ci] [--pr-template] [--commit-template] · upgrade [--apply] · doctor · build-mode suggest
 프로필   profile show|docs|write|set · principles show|detect · parts [add|ignore] · enums list|rename · sections list|rename|off|on
 문서     scaffold init [--plan] | work | doc | idea | adr | meeting | custom · new-id · map · meta get|set
 검사     check [--changed] [--epic W-012] · check-pr · lint [--ci] · check-dbml · dbml render|from-sql|diff
