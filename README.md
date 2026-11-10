@@ -55,7 +55,7 @@ Then call `/l-init` inside your AI tool (`$l-init` in Codex).
 ## Quick start
 
 ```
-/l-init                       answer 7 questions → lantern.yaml · docs/ · draft project definition · design principles
+/l-init                       answer a few questions → lantern.yaml · docs/ · draft project definition · design principles
 /l-idea dark mode support     record an idea right away → 1. Ideas/IDEA-001
 /l-plan IDEA-001              what and why, with acceptance criteria → 2. Work/W-001 …/Plan.md
 /l-design W-001               how — only the structure, screens and data that change; a person approves
@@ -99,7 +99,7 @@ flowchart LR
 
 | Skill | What it does | What it leaves |
 |---|---|---|
-| `/l-init` | sets up the document structure and design principles from 7 questions (new or existing · team size · screens · server · knowledge base · design tool · project kind), and picks the branch flow | `lantern.yaml`, `docs/`, project definition, MOC, design principles |
+| `/l-init` | sets up the document structure and design principles from the questions the earlier answers call for (new or existing · team size · project kind · server · knowledge base · design tool · technology choice and so on), and picks the branch flow | `lantern.yaml`, `docs/`, project definition, MOC, design principles |
 | `/l-idea` | records a thought from the conversation, as said and as summarised | `1. Ideas/IDEA-001 …` |
 | `/l-plan` | what and why — a work folder and acceptance criteria | `2. Work/W-001 …/Plan.md` |
 | `/l-design` | how — only the structure, screens and data (DBML) that change, behind an approval gate | `Design.md`, `Screens/`, ADR |

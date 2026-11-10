@@ -27,6 +27,24 @@ PATCH_FILE = re.compile(r"^\*\*\* (?:Add|Update) File: (.+)$", re.M)
 INJECTED = ("# AGENTS.md", "<")  # starts of text Codex adds to user messages itself (AGENTS.md, environment context)
 WORKTREE_PROFILE = "lantern-worktree"
 PROJECT_PROFILE = "lantern"
+# what a session may do with a repository's git folder: commit and merge, but not change its hooks or settings
+GIT_ACCESS = {"": "write", "hooks": "read", "config": "read"}
+
+
+def git_access(git_dir: str) -> dict[str, str]:
+    """Map a git folder and its protected parts to the access our permission profiles give them.
+
+    Args:
+        git_dir: The git folder, absolute (`/repo/.git`) or relative to the project root (`.git`).
+
+    Returns:
+        Path → "write" or "read".
+
+    Example:
+        >>> git_access(".git")
+        {'.git': 'write', '.git/hooks': 'read', '.git/config': 'read'}
+    """
+    return {f"{git_dir}/{part}" if part else git_dir: level for part, level in GIT_ACCESS.items()}
 
 
 class Codex(ClaudeHooks, Tool):
@@ -197,13 +215,10 @@ class Codex(ClaudeHooks, Tool):
         def git_path(folder: Path, what: str) -> str:
             return git_out(["rev-parse", "--path-format=absolute", what], folder)
 
-        common = git_path(path, "--git-common-dir")
         access = {
-            common: "write",
+            **git_access(git_path(path, "--git-common-dir")),
             git_path(path, "--git-dir"): "write",
             git_path(merge_folder, "--git-dir"): "write",
-            f"{common}/hooks": "read",
-            f"{common}/config": "read",
             str(merge_folder.resolve()): "write",
         }
         rules = ",".join(f"{json.dumps(k, ensure_ascii=False)}={json.dumps(v)}" for k, v in access.items())
@@ -336,9 +351,7 @@ def add_permissions_toml(existing_text: str) -> str:
             f"{header}\n"
             'extends = ":workspace"\n\n'
             f'[permissions.{PROJECT_PROFILE}.filesystem.":workspace_roots"]\n'
-            '".git" = "write"\n'
-            '".git/hooks" = "read"\n'
-            '".git/config" = "read"\n'
+            + "".join(f'"{path}" = "{level}"\n' for path, level in git_access(".git").items())
         )
         text = (text.rstrip() + "\n\n" if text.strip() else "") + block
     if not re.search(r"(?m)^\s*default_permissions\s*=", text):

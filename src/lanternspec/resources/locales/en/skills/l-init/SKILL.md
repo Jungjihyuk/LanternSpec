@@ -1,13 +1,13 @@
 ---
 name: l-init
-description: Set up LanternSpec for a project — up to seven questions decide what kind of project it is (new/existing · team size · project kind · screens · server · knowledge store · design tool), then create lantern.yaml · the docs/ folders · templates · MOC · a draft project definition · development principles · git hooks. Once per project, and again when the project changes (solo → team, adding web …). Use when setting up LanternSpec docs in a project or re-running after the project profile changed.
+description: Set up LanternSpec for a project — questions picked by the earlier answers decide what kind of project it is (new/existing · team size · project kind · screens · server · knowledge store · design tool), then create lantern.yaml · the docs/ folders · templates · MOC · a draft project definition · development principles · git hooks. Once per project, and again when the project changes (solo → team, adding web …). Use when setting up LanternSpec docs in a project or re-running after the project profile changed.
 invocation: manual
 argument-hint: "[what changed (when re-running)]"
 ---
 
 # /l-init — build the document structure that fits this project
 
-**Purpose:** up to seven questions decide which documents to turn on or off and which development principles to follow, then build that structure. Every format (files · folders · numbers) is made by `lantern` commands; you ask, judge and fill the blanks.
+**Purpose:** questions picked by the earlier answers decide which documents to turn on or off and which development principles to follow, then build that structure. Every format (files · folders · numbers) is made by `lantern` commands; you ask, judge and fill the blanks.
 
 First check the CLI is there with `lantern --version`. If it isn't, only tell the user how to install it (`uv tool install lanternspec`) and stop.
 

@@ -1,13 +1,13 @@
 ---
 name: l-init
-description: LanternSpec 프로젝트 준비 — 최대 7개의 질문으로 프로젝트 성격(신규/기존 · 인원 · 프로젝트 종류 · 화면 · 서버 · 지식 저장소 · 디자인 도구)을 정하고 lantern.yaml · docs/ 폴더 · 템플릿 · MOC · 프로젝트 정의서 초안 · 개발 원칙 · git hook을 만든다. 프로젝트당 한 번, 성격이 바뀌면 다시 (1인→2인, 웹 추가 등). Use when setting up LanternSpec docs in a project or re-running after the project profile changed.
+description: LanternSpec 프로젝트 준비 — 앞 답에 따라 필요한 질문만 골라 프로젝트 성격(신규/기존 · 인원 · 프로젝트 종류 · 화면 · 서버 · 지식 저장소 · 디자인 도구)을 정하고 lantern.yaml · docs/ 폴더 · 템플릿 · MOC · 프로젝트 정의서 초안 · 개발 원칙 · git hook을 만든다. 프로젝트당 한 번, 성격이 바뀌면 다시 (1인→2인, 웹 추가 등). Use when setting up LanternSpec docs in a project or re-running after the project profile changed.
 invocation: manual
 argument-hint: "[바뀐 점 (다시 실행할 때)]"
 ---
 
 # /l-init — 프로젝트에 맞는 문서 구조 만들기
 
-**목적:** 최대 7개의 질문으로 어떤 문서를 켜고 끌지, 어떤 개발 원칙을 따를지 정하고, 그 구조를 만든다. 형식(파일 · 폴더 · 번호)은 전부 `lantern` 명령이 만들고, 너는 묻고 · 판단하고 · 빈칸을 채운다.
+**목적:** 앞 답에 따라 필요한 질문만 골라 어떤 문서를 켜고 끌지, 어떤 개발 원칙을 따를지 정하고, 그 구조를 만든다. 형식(파일 · 폴더 · 번호)은 전부 `lantern` 명령이 만들고, 너는 묻고 · 판단하고 · 빈칸을 채운다.
 
 먼저 `lantern --version`으로 CLI가 있는지 확인한다. 없으면 설치 안내(`uv tool install lanternspec`)만 하고 멈춘다.
 
