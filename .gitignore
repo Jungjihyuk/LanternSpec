@@ -4,7 +4,7 @@
 # 1. Environment   — 개발 환경이 생성 (OS: macOS · Windows)
 # 2. Python        — Python 툴체인이 생성 (uv · ruff · pytest · 빌드)
 # 3. Documentation — 개인 확인용 문서
-# 4. AI / Agent    — AI 도구가 생성 (Claude, Codex, Gemini 등)
+# 4. AI / Agent    — AI 도구가 생성 (Claude Code, Codex, Antigravity 등)
 # ============================================================
 
 
@@ -43,13 +43,16 @@ SPEC_COVERAGE.md
 
 
 # ====================== 4. AI / Agent Tools =========================
+
+## Codex · Antigravity
 .agents/
 
-## Claude
-.claude/
+## Claude Code (개인 설정은 빼고, 프로젝트 스킬은 올린다 — /release-notes)
+.claude/*
+!.claude/skills/
 
 ## Codex
 .codex/
 
-## Antigravity 
+## Antigravity
 .antigravitycli/
