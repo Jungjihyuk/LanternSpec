@@ -211,6 +211,162 @@ body {
 """
 
 
+# A task line drawn as a table row: its name on the left, wrapping, and these fields in fixed columns on the right.
+# role → (width in em, gap from the right edge in em). The names show once, over the first task of a list, like a header.
+TASK_COLUMNS = {
+    "size": (2.5, 21.5),
+    "after": (6, 15),
+    "criteria": (14.5, 0),
+}
+# Shown small after the task's name, when a task has them: rarer fields, and the start of a task still in progress.
+TASK_NOTES = ("screen", "owner")
+# Left out of the list: the timeline shows when tasks ran and were planned.
+TASK_HIDDEN = ("finish", "start_plan", "due_plan")
+FIELD_FONT = 0.85
+
+
+def task_fields_css(names: Names) -> str:
+    """Build the CSS that draws LanternSpec task lines as table rows, in reading and live preview alike.
+
+    The name wraps on the left; size, what must finish first and acceptance criteria sit in fixed columns on the right,
+    named once over the first task of each list. Only lines with a size field change; the file keeps one line per task.
+    Dataview draws each `[name:: value]` as a box whose key carries `data-dv-key`, which places it.
+
+    Args:
+        names: The project's names (task field names).
+
+    Returns:
+        CSS text.
+
+    Example:
+        >>> from lanternspec.core.names import load
+        >>> css = task_fields_css(load("ko"))
+        >>> 'data-dv-key="크기"' in css and 'data-dv-key="기준"' in css
+        True
+    """
+
+    def key(role: str) -> str:
+        return f'.inline-field-key[data-dv-key="{names.attr(role)}"]'
+
+    def field(role: str) -> str:
+        return f".dataview.inline-field:has({key(role)})"
+
+    rows = [
+        f".markdown-rendered li.task-list-item:has({key('size')})",
+        f".HyperMD-task-line:has({key('size')})",
+    ]
+    firsts = [
+        f".markdown-rendered li.task-list-item:first-child:has({key('size')})",
+        f".HyperMD-task-line:has({key('size')}):not(.HyperMD-task-line + .HyperMD-task-line)",
+    ]
+
+    def each(selectors: list[str], inner: str = "") -> str:
+        return ",\n".join(f"{s} {inner}".rstrip() for s in selectors)
+
+    right = max(width + gap for width, gap in TASK_COLUMNS.values()) + 1
+
+    def em(n: float) -> str:
+        # the task line's em, fixed where the line sets it, so smaller field and label fonts (and a theme's) can't move a column
+        return f"calc({n} * var(--ls-em))"
+
+    out = [
+        "",
+        "@property --ls-em { syntax: '<length>'; inherits: true; initial-value: 16px; }",
+        "/* "
+        + msg("tasks — each line as a table row: the name wraps on the left, size · after · criteria in columns on the right")
+        + " */",
+        each(rows) + " {",
+        "  --ls-em: 1em;",
+        "  position: relative;",
+        f"  padding-right: {right}em;",
+        "  padding-block: 0.3em;",
+        "  min-height: 2.2em;",
+        "  border-bottom: 1px solid var(--background-modifier-border);",
+        "}",
+        "/* " + msg("the first task of a list leaves a line above it for the column names") + " */",
+        each(firsts) + " {",
+        "  padding-top: 1.6em;",
+        "}",
+        each(rows, ".dataview.inline-field") + " {",
+        f"  font-size: {FIELD_FONT}em;",
+        "  background: none;",
+        "  padding: 0;",
+        "}",
+        each(rows, ".dataview.inline-field-key") + ",",
+        each(rows, ".dataview.inline-field-value") + " {",
+        "  font-family: var(--font-text);",
+        "  background: none;",
+        "  padding: 0;",
+        "}",
+        each(rows, ".dataview.inline-field-key") + " {",
+        "  color: var(--text-faint);",
+        "  padding-right: 4px;",
+        "}",
+        each(rows, ".dataview.inline-field-value") + " {",
+        "  color: var(--text-muted);",
+        "}",
+    ]
+    columns = ",\n".join(f"{s} {field(r)}" for s in rows for r in TASK_COLUMNS)
+    out += [
+        columns + " {",
+        "  position: absolute;",
+        f"  top: {em(0.45)};",
+        "  white-space: normal;",
+        "  word-break: keep-all;",
+        "  line-break: strict;",
+        "  overflow: hidden;",
+        "  display: -webkit-box;",
+        "  -webkit-box-orient: vertical;",
+        "  -webkit-line-clamp: 2;",
+        "}",
+        "/* " + msg("column names: written once over the first task of a list, whichever fields it has") + " */",
+        ",\n".join(f"{s} {field(r)} .dataview.inline-field-key" for s in rows for r in TASK_COLUMNS) + " {",
+        "  display: none;",
+        "}",
+        ",\n".join(f"{s} {field(r)}" for s in firsts for r in TASK_COLUMNS) + " {",
+        f"  top: {em(1.75)};",
+        "}",
+        each(firsts, f"{field('size')}") + " {",
+        "  overflow: visible;",
+        "}",
+    ]
+    labels = [(f" {field('size')}::before", "size"), ("::before", "after"), ("::after", "criteria")]
+    for where, role in labels:
+        width, gap = TASK_COLUMNS[role]
+        inside = where.startswith(" ")  # a field's own label is placed within the field, already in the field's font
+        out += [
+            ",\n".join(f"{s}{where}" for s in firsts) + " {",
+            f'  content: "{names.attr(role)}";',
+            "  position: absolute;",
+            # both land at the same height over the first task
+            f"  top: {em(0.5 - 1.75)};" if inside else f"  top: {em(0.5)};",
+            *(["  left: 0;"] if inside else [f"  right: {em(gap)};", f"  width: {em(width)};"]),
+            f"  font-size: {em(FIELD_FONT)};",
+            "  font-weight: 600;",
+            "  color: var(--text-faint);",
+            "}",
+        ]
+    for role, (width, gap) in TASK_COLUMNS.items():
+        out += [
+            ",\n".join(f"{s} {field(role)}" for s in rows) + " {",
+            f"  right: {em(gap)};",
+            f"  width: {em(width)};",
+            "}",
+        ]
+    out += [
+        "/* " + msg("rarer fields and the start of a task in progress stay small after its name") + " */",
+        ",\n".join(f"{s} {field(r)}" for s in rows for r in (*TASK_NOTES, "start")) + " {",
+        "  margin-left: 0.6em;",
+        "}",
+        "/* " + msg("when tasks ran and were planned is left to the timeline") + " */",
+        ",\n".join(f"{s} {field(r)}" for s in rows for r in TASK_HIDDEN) + ",",
+        ",\n".join(f"{s.replace(':has(', f':has({key("finish")}):has(', 1)} {field('start')}" for s in rows) + " {",
+        "  display: none;",
+        "}",
+    ]
+    return "\n".join(out)
+
+
 def class_dir(names: Names) -> str:
     """Return the fileClass folder inside the vault (docs/), with a trailing slash — Metadata Menu uses it as a prefix as is.
 
@@ -280,6 +436,7 @@ def snippet_css(names: Names) -> str:
                 "no border. Only variables Obsidian exposes"
             ),
         ).replace("QUOTE_NOTE", msg("quotes (>) — flush left in reading mode too, the same width as callouts (no indent)")),
+        task_fields_css(names),
     ]
     return "\n".join(lines)
 
