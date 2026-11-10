@@ -1,7 +1,7 @@
 """Parse and edit the task lines of `할 일.md` and the acceptance criteria of `기획.md`.
 
 Task line:
-    - [ ] W-012-T02 무엇 [크기:: M] [기준:: AC-1] [먼저:: T01] [담당:: 이름]
+    - [ ] W-012-T02 무엇 [크기:: 반나절] [기준:: AC-1] [먼저:: T01] [담당:: 이름]
 
 Attribute names (`크기` …) and the "❓ 확인 필요" marker come from the project's names.yaml (core/names.py);
 parsed attributes are keyed by role ("size" · "criteria" · "after" …), so callers never spell a name.
@@ -10,6 +10,7 @@ Responsibilities:
     - read task lines and acceptance-criteria lines (outside code fences)
     - change one attribute or the check box of a line
     - tell why a task cannot start yet
+    - what each task size means in hours, and which size an older name stands for
 
 Not here:
     - the `lantern task` commands that use these → work/tasks.py
@@ -20,12 +21,37 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
+from .enums import Enums
 from .messages import msg
 from .names import Names
 
 TASK_LINE = re.compile(r"^(\s*)- \[( |x|X)\] (W-\d{3,}-T\d{2,})\b\s*(.*)$")
 ATTR = re.compile(r"\[([^\[\]:]+?)::\s*([^\[\]]*?)\s*\]")
 AC_LINE = re.compile(r"^(\s*)- \[( |x|X)\] (AC-\d+)\b\s*(.*)$")
+
+# What each size means: hours of focused work by a person (not the AI's time). The names (15m · 1h · 반나절 or half · 1d) are in enums.yaml.
+SIZE_HOURS = {"xs": 0.25, "s": 1.0, "m": 4.0, "l": 8.0}
+WORKDAY_HOURS = SIZE_HOURS["l"]  # the largest size is one working day; more than that is split
+LEGACY_SIZES = {"S": "s", "M": "m", "L": "l"}  # the names before 15m · 1h · 반나절 · 1d, still read
+
+
+def size_role(enums: Enums, value: str) -> str:
+    """Tell which size a task's size value stands for.
+
+    Args:
+        enums: The project's lists (the size names).
+        value: The value written in `[크기:: …]`.
+
+    Returns:
+        "xs", "s", "m" or "l"; "" for an empty or unknown value.
+
+    Example:
+        >>> from lanternspec.core.enums import load
+        >>> size_role(load(), "반나절"), size_role(load(), "M"), size_role(load(), "huge")
+        ('m', 'm', '')
+    """
+    role = enums["size"].role_of(value) if enums.get("size") else ""
+    return role if role in SIZE_HOURS else LEGACY_SIZES.get(value, "")
 
 
 @dataclass
@@ -41,6 +67,7 @@ class Task:
         raw: The line exactly as written.
         unknown: The "❓ 확인 필요" marker when the line carries it; "" otherwise.
         parallel: Whether the line carries `[P]` (can run alongside other `[P]` tasks).
+        spike: Whether the line carries the spike marker (`[조사]`): it finds something out, within its size.
 
     Example:
         >>> from lanternspec.core.names import load
@@ -57,6 +84,7 @@ class Task:
     raw: str
     unknown: str = ""
     parallel: bool = False  # [P] — can run alongside other [P] tasks (parallel agents)
+    spike: bool = False  # [조사] — finds out what can only be learned by trying; its size is a time limit
 
     @property
     def work_id(self) -> str:
@@ -97,7 +125,7 @@ class Task:
 
     @property
     def size(self) -> str:
-        """The size attribute (S · M · L), or ""."""
+        """The size attribute as written (e.g. "반나절"), or ""."""
         return self.attrs.get("size", "")
 
     @property
@@ -178,6 +206,7 @@ def parse_tasks(text: str, names: Names) -> list[Task]:
                 raw=line,
                 unknown=unknown if unknown in rest else "",
                 parallel="[P]" in rest,
+                spike=names.marker("spike") in rest,
             )
         )
     return tasks

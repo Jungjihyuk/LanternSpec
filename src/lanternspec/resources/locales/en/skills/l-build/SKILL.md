@@ -34,6 +34,11 @@ lantern task start W-012-T03     # stamps [<<attr.start>>:: time] exactly
 **Domain knowledge:** when some is tied to the task, read **only those sections, right as it starts** — run the `lantern ref read …` lines that `lantern ref domain --work W-012 --task T03` shows.
 Read a 📌 verbatim section again right before turning its rule into code. Knowledge that becomes necessary mid-build: find and read it with `/l-domain`, then tie it with `lantern ref attach`.
 
+**Spike tasks** (`<<marker.spike>>` before the title): what they produce is a conclusion, not code. The rules are under "Spike tasks" in `docs/<<folder.rules>>/<<file.task_rules>>`.
+- The size is a time limit. If there is no conclusion within it, stop and ask a person.
+- If it settles what to choose, record it with `/l-adr` with the evidence checked (call results · where the trial code is). If it only establishes a fact, write it in `<<file.record>>`.
+- Don't commit the trial code. If it's needed, rebuild it properly in the building task after. If the conclusion differs from the design, stop and ask before moving to the next task.
+
 1. Build it. When something not in the design comes up, sort it with "Things outside the plan" below before changing anything.
 2. Test it<!-- lantern:if build.lint -->, and run lint and type check too (`lantern lint`)<!-- lantern:endif -->. On failure, fix and retry — **at most 3 times**. If the third try fails, stop and report.
 3. Leave evidence in `<<file.record>>`:
@@ -71,7 +76,7 @@ Read a 📌 verbatim section again right before turning its rule into code. Know
    - **If you can't check it yourself** (<!-- lantern:if verify.browser=none -->this project chose to have a person check<!-- lantern:endif --><!-- lantern:if !verify.browser=none -->no browser control, or it failed to run<!-- lantern:endif -->), leave the task done but don't check off the acceptance criterion. Add one line to `<<file.record>>` and carry on without stopping:
      `- Waiting for a person: <screen> — run <command>, open <address>, look at <what> (AC-n)`
 <!-- lantern:if plan.ui_reference=required -->
-   - **Whether it matches the mockup** is for a person to decide. If the mockup is a PNG too, point out the differences first with the automatic comparison: `lantern screen compare "<<folder.screens>>/build/login.png" "<<folder.screens>>/login.png"` (a hint only). Then **show the capture and the mockup side by side and ask the user**: "Does it match the mockup?" → if it does, check off the AC; if not, for each difference `lantern task add W-012 "<match the difference>" --size S --ac AC-n --screen "<screen>"`. If there's no capture, leave this question as "Waiting for a person" too.
+   - **Whether it matches the mockup** is for a person to decide. If the mockup is a PNG too, point out the differences first with the automatic comparison: `lantern screen compare "<<folder.screens>>/build/login.png" "<<folder.screens>>/login.png"` (a hint only). Then **show the capture and the mockup side by side and ask the user**: "Does it match the mockup?" → if it does, check off the AC; if not, for each difference `lantern task add W-012 "<match the difference>" --size <<size.s>> --ac AC-n --screen "<screen>"`. If there's no capture, leave this question as "Waiting for a person" too.
 <!-- lantern:endif -->
 
 ## 1½. Things outside the plan
@@ -118,7 +123,7 @@ When a new technology comes in while building, collect it as a candidate (leave 
 ## 3½. The big loop (build.loop: on · at most <<build.loop_limit>> times)
 When every task is done, run all the acceptance tests together<!-- lantern:if build.test --> (`<<build.test>>`)<!-- lantern:endif -->.
 - All pass → step 4.
-- Any acceptance criterion fails → add a task to fix each failure (`lantern task add W-012 "<make AC-n pass>" --size S --ac AC-n`) and go round again from step 1. Write in `<<file.record>>`: "big loop round n: failing ACs · the cause in one line".
+- Any acceptance criterion fails → add a task to fix each failure (`lantern task add W-012 "<make AC-n pass>" --size <<size.s>> --ac AC-n`) and go round again from step 1. Write in `<<file.record>>`: "big loop round n: failing ACs · the cause in one line".
 - If they still fail after <<build.loop_limit>> rounds, stop and report (what was done · remaining failures · what needs choosing).
 <!-- lantern:endif -->
 

@@ -58,13 +58,13 @@ def test_check_task_file_rules(repo):
     repo("scaffold", "doc", "W-001", "할 일")
     tf = work_dir(repo, "W-001") / "할 일.md"
     text = tf.read_text(encoding="utf-8").replace(
-        "- [ ] W-001-T01 {{할 일 (필수)}} [크기:: {{S · M · L}}] [기준:: {{AC-1}}]",
+        "- [ ] W-001-T01 {{할 일 (필수)}} [크기:: {{15m · 1h · 반나절 · 1d}}] [기준:: {{AC-1}}]",
         "- [ ] W-001-T01 하나 [크기:: XL] [기준:: AC-9] [먼저:: T02]\n- [ ] W-001-T02 둘 [크기:: S] [먼저:: T01]\n- [ ] W-001-T02 셋",
     )
     tf.write_text(text, encoding="utf-8")
     code, out = repo("check", str(tf), ok=False)
     assert "할 일 ID가 겹칩니다: W-001-T02" in out
-    assert "크기는 S · M · L" in out and "크기가 없습니다" in out
+    assert "크기는 15m · 1h · 반나절 · 1d" in out and "크기가 없습니다" in out
     assert "수락 기준 AC-9이 기획.md에 없습니다" in out
     assert "먼저 끝나야 할 일이 순환합니다" in out
     assert "담당이 없습니다" in out

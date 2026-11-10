@@ -12,6 +12,7 @@ Not here:
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any
 
@@ -180,10 +181,45 @@ def add_missing_roles(project: Project) -> list[str]:
     return out
 
 
+def drop_legacy_sizes(project: Project) -> list[str]:
+    """Remove the older size names (S · M · L) from the project's enums.yaml once nothing uses them.
+
+    A name given a role (someone kept it on purpose) stays.
+
+    Args:
+        project: The project.
+
+    Returns:
+        A message when something was removed.
+
+    Example:
+        >>> drop_legacy_sizes(project)  # doctest: +SKIP
+        ['✔ enums.yaml size: S · M · L 뺌']
+    """
+    from .taskfile import LEGACY_SIZES
+
+    path = project.enums_file
+    size = project.enums.get("size")
+    if not path.exists() or size is None:
+        return []
+    gone = [name for name in LEGACY_SIZES if name in size.values and not size.role_of(name)]
+    if not gone:
+        return []
+    text = read(path)
+    block = re.search(r"^size:[ \t]*$(.*?)(?=^\S|\Z)", text, re.M | re.S)
+    if block is None:
+        return []
+    body = re.sub(r"^[ \t]+(" + "|".join(gone) + r"):[^\n]*\n", "", block.group(1), flags=re.M)
+    write(path, text[: block.start(1)] + body + text[block.end(1) :])
+    project.reload_enums()
+    return [msg("✔ enums.yaml size: dropped {items}", items=" · ".join(gone))]
+
+
 def rename_enum_value(project: Project, enum: str, old: str, new: str) -> list[Path]:
     """Rename an enum value in enums.yaml and in every document that stores it (`lantern enums rename`).
 
     Code, skills and templates find values by role, so they need no edit (skills are re-rendered by install).
+    A task size is stored on task lines (`[크기:: …]`), so those are renamed too.
     Templates are skipped because they hold `${role}` tokens, not names.
 
     Args:
@@ -222,6 +258,21 @@ def rename_enum_value(project: Project, enum: str, old: str, new: str) -> list[P
         body = read(doc)
         updates = enums_mod.doc_value_updates(project.enums, enum, frontmatter.parse(body).meta, old, new)
         if updates:
-            write(doc, frontmatter.set_fields(body, updates, touch=False))
+            body = frontmatter.set_fields(body, updates, touch=False)
+        if enum == "size":
+            body = _rename_task_sizes(project, body, old, new)
+        if body != read(doc):
+            write(doc, body)
             changed.append(doc)
     return changed
+
+
+def _rename_task_sizes(project: Project, text: str, old: str, new: str) -> str:
+    """Rename one size on the task lines of a document; other lines stay as they are."""
+    from .taskfile import TASK_LINE, set_attr
+
+    lines = text.split("\n")
+    for i, line in enumerate(lines):
+        if TASK_LINE.match(line) and re.search(r"\[" + re.escape(project.names.attr("size")) + r"::\s*" + re.escape(old) + r"\s*\]", line):
+            lines[i] = set_attr(line, "size", new, project.names)
+    return "\n".join(lines)

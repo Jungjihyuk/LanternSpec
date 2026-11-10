@@ -18,7 +18,7 @@ from typing import Any
 
 from ..core.messages import msg
 from ..core.project import Project, read
-from ..core.taskfile import parse_tasks
+from ..core.taskfile import parse_tasks, size_role
 
 CONFIG_KEYS = [
     "design.approval",
@@ -103,10 +103,11 @@ def task_durations(project: Project) -> dict[str, list[float]]:
         project: The project.
 
     Returns:
-        Size (S · M · L, or "?") → hours of each finished task.
+        Size name (e.g. "half"; a task written with an older name counts under the new one, "?" without a size)
+        → hours of each finished task.
 
     Example:
-        >>> task_durations(project)["S"]  # doctest: +SKIP
+        >>> task_durations(project)["half"]  # doctest: +SKIP
         [1.5, 2.0]
     """
     out: dict[str, list[float]] = defaultdict(list)
@@ -117,7 +118,8 @@ def task_durations(project: Project) -> dict[str, list[float]]:
         for t in parse_tasks(read(tf), project.names):
             a, b = _dt_of(t.started), _dt_of(t.finished)
             if t.done and a and b and b > a:
-                out[t.size or "?"].append((b - a).total_seconds() / 3600)
+                role = size_role(project.enums, t.size)
+                out[project.enums.value("size", role) if role else t.size or "?"].append((b - a).total_seconds() / 3600)
     return out
 
 

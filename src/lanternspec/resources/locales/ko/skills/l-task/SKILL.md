@@ -1,6 +1,6 @@
 ---
 name: l-task
-description: 설계를 순서 있는 할 일 목록으로 쪼개기 — 작업(W-NNN)의 <<file.plan>> · <<file.design>>를 읽어 <<file.tasks>>에 W-NNN-T01 형식으로 할 일마다 크기(S/M/L) · 연결된 수락 기준 · 먼저 끝나야 할 일을 적는다. Use after /l-design is approved, before /l-build.
+description: 설계를 순서 있는 할 일 목록으로 쪼개기 — 작업(W-NNN)의 <<file.plan>> · <<file.design>>를 읽어 <<file.tasks>>에 W-NNN-T01 형식으로 할 일마다 크기 · 연결된 수락 기준 · 먼저 끝나야 할 일을 적는다. Use after /l-design is approved, before /l-build.
 invocation: model
 argument-hint: "W-NNN"
 ---
@@ -14,6 +14,7 @@ argument-hint: "W-NNN"
 ## 0. 시작 전
 - `<<file.design>>`가 승인됐는지 본다 (frontmatter `approved`). 비어 있으면<!-- lantern:if design.approval=off --> (design.approval: off라 게이트는 없다) 그대로 진행한다.<!-- lantern:endif --><!-- lantern:if !design.approval=off --> 멈추고 `/l-design W-012`의 승인 게이트를 먼저 거치자고 말한다.<!-- lantern:endif -->
 - `<<file.plan>>`의 수락 기준(AC)과 `<<file.design>>`를 읽는다.
+- `docs/<<folder.rules>>/<<file.task_rules>>`를 읽는다 — 크기 · 모르는 것을 둘 곳 · 조사 할 일의 기준이 여기 있다. 없으면 `lantern template show "<<file.task_rules>>"`.
 
 ## 1. 할 일 목록 만들기
 ```bash
@@ -21,14 +22,14 @@ lantern scaffold doc W-012 "<<doc.tasks>>"
 ```
 그다음 할 일을 **작업하기 좋은 순서대로** 하나씩 넣는다 (번호는 스크립트가 매긴다):
 ```bash
-lantern task add W-012 "<무엇>" --size S|M|L --ac AC-1 [--after T01] [--screen "<화면 이름>"]<!-- lantern:if team --> --owner "<담당>"<!-- lantern:endif -->
+lantern task add W-012 "<무엇>" --size <<size.xs>>|<<size.s>>|<<size.m>>|<<size.l>> --ac AC-1 [--after T01] [--spike] [--screen "<화면 이름>"]<!-- lantern:if team --> --owner "<담당>"<!-- lantern:endif -->
 ```
 - **순서:** 먼저 끝나야 할 일 → 데이터 · 바탕 → 기능 → 화면 → 마무리. 한 번에 확인할 수 있는 단위로.
-- **크기**는 네가 정한다 (S 한두 시간 · M 반나절 · L 하루).
+- **크기**는 기준 문서의 크기 표대로 정한다 — 사람이 집중했을 때 걸릴 시간이다. `<<size.l>>`을 넘을 것 같으면 나누고, 애매하면 큰 쪽으로.
 - **예정일은 넣지 않는다.** 사람이 날짜를 말했을 때만 `--start-plan 2026-11-01 --due-plan 2026-11-03`.
 - 긴 설명은 쓰지 말고 `<<file.design>>`의 해당 부분을 링크한다.
 - 다른 할 일과 **동시에 해도 되는** 할 일(서로 다른 파일, 먼저 끝나야 할 일 없음)은 `--parallel` (`[P]` 표시 — 병렬 에이전트가 함께 맡을 수 있다).
-- 모르는 것이 있는 할 일은 `--unknown` (줄 끝에 `<<marker.unknown>>`) — `/l-build`가 건너뛴다.
+- **모르는 것은 기준 문서의 "모르는 것을 어디에 두나" 표대로 둔다.** 따져 보면 정할 수 있는 선택은 할 일로 미루지 말고 설계로 돌려보낸다(`/l-design`). 직접 해 봐야 아는 것은 조사 할 일로 넣는다: `--spike` (제목 앞에 `<<marker.spike>>` — 크기는 시간 상한, 결론에 따라 달라지는 할 일은 `--after`로 그 뒤에). 사람만 답할 수 있는 것이 있는 할 일은 `--unknown` (줄 끝에 `<<marker.unknown>>`) — `/l-build`가 건너뛴다.
 - 화면 할 일은 `--screen`을 붙인다<!-- lantern:if plan.ui_reference=required --> (시안이 없으면 `/l-build`가 시작하지 않는다)<!-- lantern:endif -->. 화면 할 일은 **만드는 일**로 쓴다. "화면을 눈으로 확인"을 따로 할 일로 만들지 않는다 — `/l-build`가 화면 할 일이 끝날 때 확인한다.
 - `lantern ref domain --work W-012`에 도메인 지식이 나오면, 절마다 그것을 쓰는 할 일을 정해 다시 연결한다: `lantern ref attach "<주소>" --work W-012 --task "T02 T03"` (쓰는 할 일을 한 번에 모두 — 다시 연결하면 그 줄이 바뀐다).
 

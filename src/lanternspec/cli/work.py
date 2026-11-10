@@ -220,6 +220,7 @@ def cmd_task_add(a: argparse.Namespace) -> int:
         due_plan=a.due_plan or "",
         unknown=a.unknown,
         parallel=a.parallel,
+        spike=a.spike,
     )
     print(f"✔ {t.raw.strip()}")
     return 0
@@ -483,7 +484,7 @@ def register(add: Add) -> None:
     p.add_argument("work")
     p.add_argument("what")
     for flag, default in (
-        ("size", "M"),
+        ("size", ""),
         ("ac", None),
         ("after", None),
         ("owner", None),
@@ -494,6 +495,7 @@ def register(add: Add) -> None:
         p.add_argument(f"--{flag}", default=default)
     p.add_argument("--unknown", action="store_true")
     p.add_argument("--parallel", action="store_true", help=msg("[P] can run at the same time as other [P] tasks"))
+    p.add_argument("--spike", action="store_true", help=msg("a spike: finds out what only trying can tell, within its size"))
     p = add("work", cmd_work, msg("Work branches · parallel works · finish · archive · stage"))
     p.add_argument("action", choices=["branch", "start", "overlap", "list", "finish", "archive", "stage", "flow"])
     p.add_argument("--team", choices=["solo", "team"], help=msg("flow: how many people work on it"))

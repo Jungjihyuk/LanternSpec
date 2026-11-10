@@ -84,7 +84,7 @@ def test_an_english_project_end_to_end(repo):
     assert frontmatter.parse((work / "Plan.md").read_text(encoding="utf-8")).meta["status"] == "Plan"
     repo("task", "add", "W-001", "Sign-in button", "--size", "S", "--ac", "AC-1")
     tasks = (work / "Tasks.md").read_text(encoding="utf-8")
-    assert "- [ ] W-001-T01 Sign-in button [size:: S] [ac:: AC-1]" in tasks and "{{Task" not in tasks
+    assert "- [ ] W-001-T01 Sign-in button [size:: 1h] [ac:: AC-1]" in tasks and "{{Task" not in tasks
     repo("task", "start", "W-001-T01")
     assert "[started:: " in (work / "Tasks.md").read_text(encoding="utf-8")
     _, out = repo("check", str(work / "Plan.md"))

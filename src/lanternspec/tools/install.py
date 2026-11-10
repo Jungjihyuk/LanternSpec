@@ -552,8 +552,20 @@ def upgrade(project: Project, force: bool = False, apply: bool = False) -> Insta
     from ..core.meta import add_missing_roles
 
     added = add_missing_roles(project)  # before the skills are written: they name these values
+    from ..work.tasks import legacy_sizes, rename_legacy_sizes
+
+    resized = rename_legacy_sizes(project) if apply else []
     report = install(project, None, force=force)
-    report.templates = [*added, *upgrade_templates(project, force=force)]
+    report.templates = [*added, *resized, *upgrade_templates(project, force=force)]
+    old_sizes = sum(len(lines) for lines in legacy_sizes(project).values())
+    if old_sizes:
+        report.warnings.append(
+            msg(
+                "ℹ {count} tasks still use the older sizes S · M · L → lantern upgrade --apply writes them as {sizes}",
+                count=old_sizes,
+                sizes=" · ".join(project.enums.value("size", role) for role in ("s", "m", "l")),
+            )
+        )
     if project.docs.exists():  # documents a newer version turns on (e.g. the glossary) are made by scaffold init, never here
         from ..work.scaffold import init_plan
 

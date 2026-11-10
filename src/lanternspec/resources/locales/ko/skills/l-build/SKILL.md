@@ -34,6 +34,11 @@ lantern task start W-012-T03     # [<<attr.start>>:: 시각]을 정확히 찍는
 **도메인 지식:** 그 할 일에 연결된 것이 있으면 시작하자마자 **그 절만** 읽는다 — `lantern ref domain --work W-012 --task T03`이 보여 주는 `lantern ref read …`를 실행한다.
 📌 원문 필수 절은 그 규칙을 코드로 옮기기 직전에 다시 읽는다. 구현 중 새로 필요해진 지식은 `/l-domain`으로 찾아 읽고 `lantern ref attach`로 연결한다.
 
+**조사 할 일** (제목 앞에 `<<marker.spike>>`): 결과물은 코드가 아니라 결론이다. 기준은 `docs/<<folder.rules>>/<<file.task_rules>>`의 "조사 할 일".
+- 크기가 시간 상한이다. 그 안에 결론이 나지 않으면 멈추고 사람에게 묻는다.
+- 무엇을 고를지 정해졌으면 `/l-adr`로 남기고 확인한 근거(호출 결과 · 시험 코드 위치)를 적는다. 사실만 확인했으면 `<<file.record>>`에 남긴다.
+- 시험 코드는 커밋하지 않는다. 필요하면 뒤의 구현 할 일에서 정식으로 다시 만든다. 결론이 설계와 다르면 다음 할 일로 넘어가기 전에 멈추고 묻는다.
+
 1. 구현한다. 설계에 없는 일이 생기면 고치기 전에 아래 "구현 중 벗어난 일"로 나눈다.
 2. 테스트한다<!-- lantern:if build.lint --> · 린트 · 타입 검사도 돌린다 (`lantern lint`)<!-- lantern:endif -->. 실패하면 고치고 다시 — **최대 3번**. 3번째도 실패하면 멈추고 보고한다.
 3. `<<file.record>>`에 증거를 남긴다:
@@ -71,7 +76,7 @@ lantern task start W-012-T03     # [<<attr.start>>:: 시각]을 정확히 찍는
    - **직접 확인할 수 없으면**(<!-- lantern:if verify.browser=none -->이 프로젝트는 사람이 확인하도록 정했다<!-- lantern:endif --><!-- lantern:if !verify.browser=none -->브라우저 기능이 없거나 실행에 실패함<!-- lantern:endif -->) 할 일은 끝낸 것으로 두되 해당 수락 기준은 체크하지 않는다. `<<file.record>>`에 한 줄 남기고 멈추지 않고 계속한다:
      `- 사람 확인 대기: <화면> — <실행 명령> 후 <주소>에서 <볼 곳> (AC-n)`
 <!-- lantern:if plan.ui_reference=required -->
-   - **시안과 같은지**는 사람이 정한다. 시안도 PNG면 먼저 자동 비교로 다른 곳을 짚는다: `lantern screen compare "<<folder.screens>>/구현/로그인.png" "<<folder.screens>>/로그인.png"` (참고용). 그다음 캡처와 시안을 **나란히 보여 주고 사용자에게 묻는다**: "시안과 같나요?" → 같으면 해당 AC 체크, 다르면 다른 곳마다 `lantern task add W-012 "<다른 곳 맞추기>" --size S --ac AC-n --screen "<화면>"`. 캡처하지 못했으면 이 질문도 "사람 확인 대기"로 남긴다.
+   - **시안과 같은지**는 사람이 정한다. 시안도 PNG면 먼저 자동 비교로 다른 곳을 짚는다: `lantern screen compare "<<folder.screens>>/구현/로그인.png" "<<folder.screens>>/로그인.png"` (참고용). 그다음 캡처와 시안을 **나란히 보여 주고 사용자에게 묻는다**: "시안과 같나요?" → 같으면 해당 AC 체크, 다르면 다른 곳마다 `lantern task add W-012 "<다른 곳 맞추기>" --size <<size.s>> --ac AC-n --screen "<화면>"`. 캡처하지 못했으면 이 질문도 "사람 확인 대기"로 남긴다.
 <!-- lantern:endif -->
 
 ## 1½. 구현 중 벗어난 일
@@ -118,7 +123,7 @@ lantern scaffold idea "<짧은 제목>" --kind <유형> --raw "W-012 구현 중 
 ## 3½. 큰 반복 (build.loop: on · 최대 <<build.loop_limit>>번)
 모든 할 일이 끝나면 수락 기준 테스트를 한꺼번에 돌린다<!-- lantern:if build.test --> (`<<build.test>>`)<!-- lantern:endif -->.
 - 모두 통과 → 4단계로.
-- 실패한 수락 기준이 있으면 → 실패마다 고칠 할 일을 추가하고(`lantern task add W-012 "<AC-n 맞추기>" --size S --ac AC-n`) 1단계부터 다시 돈다. `<<file.record>>`에 "큰 반복 n번째: 실패한 AC · 원인 한 줄"을 남긴다.
+- 실패한 수락 기준이 있으면 → 실패마다 고칠 할 일을 추가하고(`lantern task add W-012 "<AC-n 맞추기>" --size <<size.s>> --ac AC-n`) 1단계부터 다시 돈다. `<<file.record>>`에 "큰 반복 n번째: 실패한 AC · 원인 한 줄"을 남긴다.
 - <<build.loop_limit>>번을 돌아도 통과하지 못하면 멈추고 보고한다 (한 일 · 남은 실패 · 골라야 할 것).
 <!-- lantern:endif -->
 

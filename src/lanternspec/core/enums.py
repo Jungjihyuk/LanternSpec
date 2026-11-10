@@ -34,6 +34,7 @@ REQUIRED_ROLES: dict[str, list[str]] = {
     "current_status": ["active", "inactive"],
     "note_draft_status": ["pending", "applied"],
     "meeting_status": ["draft", "final"],
+    "size": ["xs", "s", "m", "l"],
 }
 
 

@@ -56,4 +56,4 @@ LanternSpec이 이름을 쓰는 여러 곳(lantern.yaml 키 · enums.yaml 목록
 | `screen` · `screens` | 화면 시안 — 문서 · 폴더 · 할 일 줄의 칸 · CLI | 문서 · 폴더 · 할 일 칸 · CLI |
 | `meeting` · `meetings` | 회의록 | 문서 · 폴더 |
 | `session` · `sessions` | 세션 기록 — 진행 중인 작업이 없을 때, 대화가 요약되기 직전의 상황을 남기는 문서 (하루 하나) | 문서 · 폴더 |
-| `size` | 크기 — 할 일 줄의 `[크기:: M]`과 그 값 목록 | enums.yaml · 할 일 칸 |
+| `size` | 크기 — 할 일 줄의 `[크기:: 반나절]`과 그 값 목록 (15m · 1h · 반나절 · 1d) | enums.yaml · 할 일 칸 |

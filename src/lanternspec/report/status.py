@@ -57,7 +57,7 @@ def lines(project: Project) -> list[str]:
 
     Example:
         >>> lines(project)  # doctest: +SKIP
-        ['📦 진행 중: W-012 로그인 (구현, 할 일 1/3)', '▶ 다음 할 일: W-012-T02 버튼 [S]', '❓ 확인 필요: 없음']
+        ['📦 진행 중: W-012 로그인 (구현, 할 일 1/3)', '▶ 다음 할 일: W-012-T02 버튼 [1h]', '❓ 확인 필요: 없음']
     """
     works = project.work_dirs()
     if works:

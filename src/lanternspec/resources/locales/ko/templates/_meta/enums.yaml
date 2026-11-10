@@ -19,7 +19,7 @@
 #     유형 · 종류    idea_kind           아이디어가 기능인가 개선 · 버그 · 실험인가
 #                   debt_kind           부채가 이해 · 역량 · 기술 중 무엇인가
 #     주제          area                부채 카드가 어느 주제인가 (backend · frontend …)
-#     그 밖         size                할 일의 크기 (S · M · L)
+#     그 밖         size                할 일의 크기 (15m · 1h · 반나절 · 1d)
 #                   legacy_route        기존 문서를 흡수 · 보관 · 옮기기 중 어떻게 처리할까
 #
 #   이 파일을 읽는 곳 — 그래서 여기만 바꾸면 모두 따라 바뀐다:
@@ -176,9 +176,10 @@ size:
   label: 할 일 크기
   applies: {}
   values:
-    S: 🟢
-    M: 🟡
-    L: 🔴
+    15m: {icon: ⚪, role: xs}
+    1h: {icon: 🟢, role: s}
+    반나절: {icon: 🟡, role: m}
+    1d: {icon: 🔴, role: l}
 
 legacy_route:
   label: 기존 문서 처리 갈래

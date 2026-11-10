@@ -21,7 +21,7 @@ from ..core import frontmatter, templating
 from ..core.links import Resolver, iter_links
 from ..core.messages import msg
 from ..core.project import Project, git_out, nfc, read
-from ..core.taskfile import parse_criteria, parse_tasks
+from ..core.taskfile import parse_criteria, parse_tasks, size_role
 
 COMMON_FIELDS = ["id", "type", "status", "created", "updated", "links", "template", "template_version"]
 LEVEL_ICON = {"error": "✖", "warn": "⚠", "info": "ℹ"}
@@ -676,11 +676,22 @@ def _check_tasks(project: Project, path: Path, text: str, rel: str) -> list[Find
         line = t.line_no + 1
         if ids[t.id] > 1:
             out.append(Finding("error", rel, "task-dup", msg("Duplicate task ID: {id}", id=t.id), line))
-        if t.size and t.size not in ("S", "M", "L") and "{{" not in t.size:
-            out.append(Finding("warn", rel, "task-size", msg("{id} size is one of S · M · L (now '{size}')", id=t.id, size=t.size), line))
+        sizes = " · ".join(project.enums.values("size"))
+        if t.size and not size_role(project.enums, t.size) and "{{" not in t.size:
+            out.append(
+                Finding(
+                    "warn", rel, "task-size", msg("{id} size is one of {sizes} (now '{size}')", id=t.id, sizes=sizes, size=t.size), line
+                )
+            )
         if not t.size:
             out.append(
-                Finding("warn", rel, "task-size", msg("{id} has no size [{attr}:: S|M|L]", id=t.id, attr=project.names.attr("size")), line)
+                Finding(
+                    "warn",
+                    rel,
+                    "task-size",
+                    msg("{id} has no size [{attr}:: {sizes}]", id=t.id, attr=project.names.attr("size"), sizes=sizes),
+                    line,
+                )
             )
         for dep in t.deps:
             if dep not in known:
@@ -767,9 +778,7 @@ def term_findings(project: Project, paths: list[Path]) -> list[Finding]:
     terms, _ = terms_mod.merged(project)
     if not any(t.avoid for t in terms):
         return []
-    rules = project.folder("rules")
-    skipped = {terms_mod.glossary_path(project).resolve()}
-    skipped |= {(rules / project.names.file(role)).resolve() for role in ("tech_criteria", "repo_files")}
+    skipped = {terms_mod.glossary_path(project).resolve(), *terms_mod.general_rule_docs(project)}
     out = []
     for p in paths:
         if p.resolve() in skipped:

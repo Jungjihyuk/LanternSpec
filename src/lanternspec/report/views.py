@@ -19,7 +19,7 @@ from pathlib import Path
 from ..core import frontmatter
 from ..core.messages import msg
 from ..core.project import Project, git_out, nfc, now_minute, read, today, wikilink, work_id_of, work_name_of, write
-from ..core.taskfile import Task, TaskGraph, parse_criteria, parse_tasks
+from ..core.taskfile import SIZE_HOURS, WORKDAY_HOURS, Task, TaskGraph, parse_criteria, parse_tasks, size_role
 from ..learn import debt as debt_mod
 from . import obsidian
 
@@ -34,7 +34,6 @@ VIEW_TITLE = {  # English; msg() translates them
     "eval": "📊 AI work evaluation",
 }
 SUM_START, SUM_END = "<!-- l-report:summary:start -->", "<!-- l-report:summary:end -->"
-SIZE_DAYS = {"S": 1, "M": 2, "L": 3}
 SHORT_TIMELINE = _dt.timedelta(days=5)  # the Obsidian plugin draws finer than days up to about this long (FINE_COLUMNS hours)
 
 
@@ -126,7 +125,8 @@ def _work_bars(project: Project, w: Path, plan_meta: dict) -> list[dict]:
     bars = []
     cursor = _parse_dt(frontmatter.as_str(plan_meta.get("created")) or today()) or _dt.datetime.now()
     for t in _work_tasks(project, w):
-        days = _dt.timedelta(days=SIZE_DAYS.get(t.size, 1))
+        # a working day of the largest size; an unknown size counts as the middle one
+        days = _dt.timedelta(days=SIZE_HOURS[size_role(project.enums, t.size) or "m"] / WORKDAY_HOURS)
         start, end = _parse_dt(t.started), _parse_dt(t.finished)
         planned_s, planned_e = _parse_dt(t.attrs.get("start_plan", "")), _parse_dt(t.attrs.get("due_plan", ""))
         if start:
@@ -244,7 +244,7 @@ def timeline(project: Project) -> str:
     """Draw every work (archived ones too) on a timeline: for the Lantern Timeline plugin when it is installed, else as Mermaid.
 
     Tasks use their actual times when they have them, then planned dates, then their order and size
-    (S = 1 day · M = 2 · L = 3). The idea a work came from shows as a milestone.
+    (15m · 1h · half · 1d, a day being WORKDAY_HOURS working hours). The idea a work came from shows as a milestone.
 
     Args:
         project: The project.
@@ -272,9 +272,11 @@ def timeline(project: Project) -> str:
     return (
         chart
         + msg(
-            "\n\n> {freshness} Without planned dates it is drawn from task order and size (S=1 day · M=2 days · L=3 days); "
+            "\n\n> {freshness} Without planned dates it is drawn from task order and size ({sizes}, {workday:g} hours a day); "
             "once actual times exist, from those.",
             freshness=freshness,
+            sizes=" · ".join(project.enums.values("size")),
+            workday=WORKDAY_HOURS,
         )
         + note
     )

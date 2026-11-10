@@ -258,7 +258,7 @@ def test_parallel_tasks_and_estimates(repo):
     repo("task", "add", "W-001", "목록 화면", "--size", "M", "--parallel", "--after", "T01")
     repo("task", "add", "W-001", "설정 화면", "--size", "L", "--parallel", "--after", "T01")
     tf = work_dir(repo, "W-001") / "할 일.md"
-    assert "- [ ] W-001-T02 [P] 목록 화면 [크기:: M]" in tf.read_text(encoding="utf-8")
+    assert "- [ ] W-001-T02 [P] 목록 화면 [크기:: 반나절]" in tf.read_text(encoding="utf-8")
     _, out = repo("task", "next", "W-001", "--all")
     assert "W-001-T01" in out and "T02" not in out
     repo("task", "done", "W-001-T01")
@@ -266,7 +266,7 @@ def test_parallel_tasks_and_estimates(repo):
     ready = json.loads(out)
     assert [t["id"] for t in ready] == ["W-001-T02", "W-001-T03"] and all(t["parallel"] for t in ready)
     _, out = repo("task", "estimate", "W-001", "--from", "2026-11-02")
-    assert "W-001-T02 목록 화면 [M] → 2026-11-02 ~ 2026-11-02" in out and "(기본값)" in out
+    assert "W-001-T02 목록 화면 [반나절] → 2026-11-02 ~ 2026-11-02" in out and "(기본값)" in out
     assert "[시작 예정:: 2026-11-02]" not in tf.read_text(encoding="utf-8")
     repo("task", "estimate", "W-001", "--from", "2026-11-02", "--apply")
     text = tf.read_text(encoding="utf-8")

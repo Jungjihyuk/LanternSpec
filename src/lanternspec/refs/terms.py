@@ -292,8 +292,29 @@ def find(project: Project, word: str) -> Term | None:
     return next((t for t in merged(project)[0] if _key(t.term) == want), None)
 
 
+# Rule documents every project gets as they come: their words are LanternSpec's general advice, not this project's language.
+GENERAL_RULE_DOCS = ("tech_criteria", "repo_files", "task_rules")
+
+
+def general_rule_docs(project: Project) -> set[Path]:
+    """The rule documents every project gets as bundled (see GENERAL_RULE_DOCS), resolved.
+
+    Args:
+        project: The project.
+
+    Returns:
+        Their paths, whether they exist or not.
+
+    Example:
+        >>> sorted(p.name for p in general_rule_docs(project))  # doctest: +SKIP
+        ['기술 선택 기준.md', '저장소 파일 규칙.md', '할 일 나누기 기준.md']
+    """
+    rules = project.folder("rules")
+    return {(rules / project.names.file(role)).resolve() for role in GENERAL_RULE_DOCS}
+
+
 def in_documents(project: Project, word: str) -> bool:
-    """Tell whether the project's own documents use a word (templates, legacy originals and the debt ledger aside).
+    """Tell whether the project's own documents use a word (templates, legacy originals, the debt ledger and general rules aside).
 
     Args:
         project: The project.
@@ -307,11 +328,11 @@ def in_documents(project: Project, word: str) -> bool:
         True
     """
     pat = _pattern(word)
-    glossary = glossary_path(project).resolve()
+    skipped = {glossary_path(project).resolve(), *general_rule_docs(project)}
     debt = project.folder("debt").resolve()  # the learning track's own cards are about technologies, not the project
     for p in project.iter_docs():
         if (
-            p.resolve() != glossary
+            p.resolve() not in skipped
             and debt not in p.resolve().parents
             and any(pat.search(line) for _, line in _visible(unicodedata.normalize("NFC", read(p))))
         ):

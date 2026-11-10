@@ -18,7 +18,7 @@ lantern scan [--tests]
 ## 2. Align — recommend a direction for each item; the person confirms
 | Content | Reference (source) | When they differ |
 |---|---|---|
-| What · why (plan · acceptance criteria) | **Docs** | Fix the code → add a task `lantern task add W-012 "<align>" --size S --ac AC-n`. If the intent changed, fix the docs first and `/l-adr` |
+| What · why (plan · acceptance criteria) | **Docs** | Fix the code → add a task `lantern task add W-012 "<align>" --size <<size.s>> --ac AC-n`. If the intent changed, fix the docs first and `/l-adr` |
 | How (structure · functions · screen details) | **Code** | Update the docs to match the code |
 | Data (schema) | **Migrations** | Re-align the DBML: `lantern dbml diff --sql <migrations folder>` → fix `schema.dbml` → `lantern dbml render` |
 

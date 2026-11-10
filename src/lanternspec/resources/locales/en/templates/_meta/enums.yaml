@@ -19,7 +19,7 @@
 #     Kind           idea_kind           whether an idea is a feature, an improvement, a bug, an experiment …
 #                    debt_kind           whether a debt is understanding, competency or tech
 #     Topic          area                which topic a debt card belongs to (backend · frontend …)
-#     Other          size                the size of a task (S · M · L)
+#     Other          size                the size of a task (15m · 1h · half · 1d)
 #                    legacy_route        how to handle a legacy document: absorb · archive · move
 #
 #   Who reads this file — so changing it here changes it everywhere:
@@ -176,9 +176,10 @@ size:
   label: Task size
   applies: {}
   values:
-    S: 🟢
-    M: 🟡
-    L: 🔴
+    15m: {icon: ⚪, role: xs}
+    1h: {icon: 🟢, role: s}
+    half: {icon: 🟡, role: m}
+    1d: {icon: 🔴, role: l}
 
 legacy_route:
   label: How to handle a legacy document

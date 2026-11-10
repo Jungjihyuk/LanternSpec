@@ -19,7 +19,20 @@ from pathlib import Path
 from ..core import frontmatter
 from ..core.messages import msg
 from ..core.project import Project, git_out, now_minute, read, work_id_of, write
-from ..core.taskfile import Task, TaskGraph, drop_attr, find_task, order_changes, parse_criteria, parse_tasks, set_attr, set_checked
+from ..core.taskfile import (
+    LEGACY_SIZES,
+    SIZE_HOURS,
+    Task,
+    TaskGraph,
+    drop_attr,
+    find_task,
+    order_changes,
+    parse_criteria,
+    parse_tasks,
+    set_attr,
+    set_checked,
+    size_role,
+)
 from .epic_rules import has_mockup
 
 STAGE_ROLES = ["plan", "design", "tasks", "build", "done"]  # work_status roles, in order
@@ -339,7 +352,7 @@ def add(
     project: Project,
     work_id: str,
     what: str,
-    size: str = "M",
+    size: str = "",
     ac: list[str] | None = None,
     after: list[str] | None = None,
     owner: str = "",
@@ -348,6 +361,7 @@ def add(
     due_plan: str = "",
     unknown: bool = False,
     parallel: bool = False,
+    spike: bool = False,
 ) -> Task:
     """Append a task line with the next ID. Replaces the template's example line.
 
@@ -355,7 +369,8 @@ def add(
         project: The project.
         work_id: The work, e.g. "W-012".
         what: What to do, in one line.
-        size: "S", "M" or "L".
+        size: One of the size names in enums.yaml (Korean "15m", "1h", "반나절", "1d"); empty for the middle one.
+            An older S · M · L is written as its new name.
         ac: Acceptance criteria the task serves, e.g. ["AC-1"].
         after: Tasks of this work that must finish first, e.g. ["T01"].
         owner: Who does it (team projects).
@@ -364,21 +379,24 @@ def add(
         due_plan: Planned due date.
         unknown: Mark the line "❓ 확인 필요" — it cannot start until checked.
         parallel: Mark the line `[P]` — it can run alongside other `[P]` tasks.
+        spike: Mark the line `[조사]` — it finds out something that can only be learned by trying, within its size.
 
     Returns:
         The new task.
 
     Raises:
-        ValueError: The size is not S · M · L, a prerequisite is in another work, or the work or its `할 일.md` does not exist.
+        ValueError: The size is not one of the sizes, a prerequisite is in another work, or the work or its `할 일.md` does not exist.
 
     Example:
-        >>> add(project, "W-012", "카카오 버튼", size="S", ac=["AC-1"]).id  # doctest: +SKIP
+        >>> add(project, "W-012", "카카오 버튼", size="1h", ac=["AC-1"]).id  # doctest: +SKIP
         'W-012-T03'
     """
     import re
 
-    if size not in ("S", "M", "L"):
-        raise ValueError(msg("Size is one of S · M · L"))
+    role = size_role(project.enums, size) if size else "m"
+    if not role:
+        raise ValueError(msg("Size is one of {sizes}", sizes=" · ".join(project.enums.values("size"))))
+    size = project.enums.value("size", role)
     wid = work_id.upper()
     for dep in after or []:
         if "-T" in dep.upper() and _work_of_task(dep) != wid:
@@ -395,7 +413,8 @@ def add(
     existing = parse_tasks("\n".join(lines), n)
     num = max((int(t.id.rsplit("-T", 1)[1]) for t in existing if t.work_id == wid), default=0)
     task_id = f"{wid}-T{num + 1:02d}"
-    parts = [f"- [ ] {task_id}" + (" [P]" if parallel else "") + f" {what.strip()}", f"[{n.attr('size')}:: {size}]"]
+    flags = (" [P]" if parallel else "") + (f" {n.marker('spike')}" if spike else "")
+    parts = [f"- [ ] {task_id}{flags} {what.strip()}", f"[{n.attr('size')}:: {size}]"]
     if ac:
         parts.append(f"[{n.attr('criteria')}:: {', '.join(a.upper() for a in ac)}]")
     if after:
@@ -449,13 +468,63 @@ def ready(project: Project, work_id: str | None = None) -> list[Task]:
     return out
 
 
-DEFAULT_HOURS = {"S": 2.0, "M": 4.0, "L": 8.0}  # S an hour or two · M half a day · L a day (/l-task)
+def legacy_sizes(project: Project) -> dict[Path, list[int]]:
+    """Find task lines still sized with the older names (S · M · L), in every work including archived ones.
+
+    A name the project's enums.yaml still gives a role (someone kept it on purpose) is not counted.
+
+    Args:
+        project: The project.
+
+    Returns:
+        Tasks file → 0-based line numbers.
+
+    Example:
+        >>> legacy_sizes(project)  # doctest: +SKIP
+        {PosixPath('.../W-001 로그인/할 일.md'): [12, 13]}
+    """
+    size = project.enums.get("size")
+    out: dict[Path, list[int]] = {}
+    for w in project.work_dirs(include_archive=True):
+        tf = project.doc_path(w, "tasks")
+        if not tf.exists():
+            continue
+        found = [t.line_no for t in parse_tasks(read(tf), project.names) if t.size in LEGACY_SIZES and not (size and size.role_of(t.size))]
+        if found:
+            out[tf] = found
+    return out
+
+
+def rename_legacy_sizes(project: Project) -> list[str]:
+    """Write tasks sized S · M · L with the current names (1h · 반나절 · 1d), and drop those names from enums.yaml.
+
+    Args:
+        project: The project.
+
+    Returns:
+        One message per file changed.
+
+    Example:
+        >>> rename_legacy_sizes(project)  # doctest: +SKIP
+        ['✔ 할 일 크기 2개를 새 이름으로: docs/2. 작업/W-001 로그인/할 일.md']
+    """
+    from ..core.meta import drop_legacy_sizes
+
+    out = []
+    for tf, numbers in legacy_sizes(project).items():
+        lines = read(tf).split("\n")
+        for i in numbers:
+            old = next(t.size for t in parse_tasks(lines[i], project.names))
+            lines[i] = set_attr(lines[i], "size", project.enums.value("size", LEGACY_SIZES[old]), project.names)
+        write(tf, "\n".join(lines))
+        out.append("✔ " + msg("{count} task sizes in their new names: {path}", count=len(numbers), path=project.rel(tf)))
+    return out + drop_legacy_sizes(project)
 
 
 def estimate(project: Project, work_id: str, start: str | None = None, hours_per_day: float = 6.0, apply: bool = False) -> list[str]:
     """**Suggest** due dates from the actual median duration per size; writes only with apply.
 
-    Sizes with fewer than two finished tasks use the defaults (S 2h · M 4h · L 8h). Weekends are skipped.
+    Sizes with fewer than two finished tasks use what the size means (15m · 1h · 반나절 = 4h · 1d = 8h). Weekends are skipped.
 
     Args:
         project: The project.
@@ -472,7 +541,7 @@ def estimate(project: Project, work_id: str, start: str | None = None, hours_per
 
     Example:
         >>> estimate(project, "W-012", start="2026-10-28")[1]  # doctest: +SKIP
-        'W-012-T02 카카오 버튼 [S] → 2026-10-28 ~ 2026-10-28'
+        'W-012-T02 카카오 버튼 [1h] → 2026-10-28 ~ 2026-10-28'
     """
     import datetime as dt
     from statistics import median
@@ -480,7 +549,8 @@ def estimate(project: Project, work_id: str, start: str | None = None, hours_per
     from ..report.evaluate import task_durations
 
     hist = task_durations(project)
-    per_size = {k: (median(hist[k]) if len(hist.get(k, [])) >= 2 else DEFAULT_HOURS[k]) for k in DEFAULT_HOURS}
+    names = {role: project.enums.value("size", role) for role in SIZE_HOURS}
+    per_size = {k: (median(hist[k]) if len(hist.get(k, [])) >= 2 else SIZE_HOURS[role]) for role, k in names.items()}
     tf = _tasks_file(project, work_id)
     lines = read(tf).split("\n")
     tasks = parse_tasks("\n".join(lines), project.names)
@@ -498,7 +568,7 @@ def estimate(project: Project, work_id: str, start: str | None = None, hours_per
     for t in tasks:
         if t.done:
             continue
-        need = per_size.get(t.size, DEFAULT_HOURS["M"])
+        need = per_size[names[size_role(project.enums, t.size) or "m"]]
         begin = day
         used += need
         while used > hours_per_day:
