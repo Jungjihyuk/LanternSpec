@@ -200,6 +200,7 @@
 "    In a terminal: cd \"{path}\" && {command}": {ko: "    터미널에서: cd \"{path}\" && {command}"}
 "  (uncommitted changes)": {ko: "  (커밋 안 된 변경 있음)"}
 "  · waiting for /l-finish": {ko: "  · /l-finish 대기"}
+"  · already finished — commit or delete its leftover files, then: git worktree remove \"{path}\"": {ko: "  · 이미 끝난 작업 — 남은 파일을 커밋하거나 지운 뒤: git worktree remove \"{path}\""}
 "  · merged into {target} — delete it with git branch -d {b}": {ko: "  · {target}에 합쳐짐 — git branch -d {b}로 지워도 됩니다"}
 "No parallel works in progress": {ko: "진행 중인 동시 작업이 없습니다"}
 "Branch {name} doesn't exist": {ko: "{name} 브랜치가 없습니다"}

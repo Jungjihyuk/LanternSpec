@@ -617,6 +617,20 @@ def test_finish_leaves_a_worktree_this_session_cannot_delete_whole(repo):
     assert "worktree 정리" in out and not first.exists()
 
 
+def test_list_points_out_a_finished_works_worktree_left_by_leftover_files(repo):
+    first, _ = _two_worktrees(repo)
+    _commit_in(first, "a.py", "feat: a [W-001-T01]")
+    (first / "남은 세션 기록.md").write_text("x\n", encoding="utf-8")
+    _, out = repo("work", "finish", "W-001", "--no-test")
+    assert "남겨 둡니다" in out and first.exists()
+    _, out = repo("work", "list")
+    assert "W-001" in out and "이미 끝난 작업" not in out
+    repo("work", "archive", "W-001")
+    _, out = repo("work", "list")
+    line = next(l for l in out.splitlines() if l.startswith("W-001"))
+    assert "이미 끝난 작업" in line and f'git worktree remove "{first}"' in line and "/l-finish 대기" not in line
+
+
 def _codex_start_line(repo, wid):
     _, out = repo("work", "start", wid, "--no-install")
     return next(line for line in out.splitlines() if "codex " in line).split("&& ", 1)[1]

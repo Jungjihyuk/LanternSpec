@@ -867,8 +867,9 @@ def _target_of(project: Project, wid: str) -> str:
 def list_works(project: Project) -> list[str]:
     """List the works running on their own branches, with progress and uncommitted changes.
 
-    A worktree whose tasks are all done is marked as waiting for /l-finish, and a branch left
-    without a worktree that is already merged into its target is marked for deletion.
+    A worktree whose tasks are all done is marked as waiting for /l-finish, one whose work the main
+    folder already archived is marked for removal, and a branch left without a worktree that is
+    already merged into its target is marked for deletion.
 
     Args:
         project: The project.
@@ -882,6 +883,7 @@ def list_works(project: Project) -> list[str]:
     """
     out = []
     trees = worktrees(project)
+    main = Project(root=trees[0].path, profile=project.profile) if trees else project
     for wt in trees:
         wid = work_of_branch(project, wt.branch)
         if wid is None:
@@ -889,7 +891,10 @@ def list_works(project: Project) -> list[str]:
         dirty = bool(git_out(["status", "--porcelain", "--untracked-files=no"], wt.path))
         note = msg("  (uncommitted changes)") if dirty else ""
         counts = _task_counts(project, wid, wt.path)
-        if counts and counts[1] and counts[0] == counts[1] and not _same_folder(wt.path, trees[0].path):
+        own = not _same_folder(wt.path, trees[0].path)
+        if own and main.find_work(wid, include_archive=False) is None and main.find_work(wid):
+            note += msg('  · already finished — commit or delete its leftover files, then: git worktree remove "{path}"', path=wt.path)
+        elif counts and counts[1] and counts[0] == counts[1] and own:
             note += msg("  · waiting for /l-finish")
         out.append(f"{wid}  {wt.branch}  {wt.path}  {_progress(project, wid, wt.path)}{note}{_target_of(project, wid)}")
     for b in git_out(["branch", "--list", "--format=%(refname:short)"], project.root).splitlines():

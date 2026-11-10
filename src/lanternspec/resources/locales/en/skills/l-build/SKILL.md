@@ -112,7 +112,8 @@ When every task is done, run all the acceptance tests together<!-- lantern:if bu
 
 ## 4. When everything is done — apply to the current state
 If `lantern task next W-012` says **"This folder is a worktree for parallel work"**, stop here. `/l-finish` brings the documents several works share up to date from the base folder in one go:
-- Commit `<<file.tasks>>` and `<<file.record>>`. Don't touch the current-state documents, the archive or the report.
+- Commit all of this work's documents: `<<file.tasks>>`, `<<file.record>>`, and `<<folder.sessions>>/<date>-W-012.md` saved automatically when the conversation was compacted. Don't touch the current-state documents, the archive or the report.
+- Check that `git status` shows nothing left. If files are left, `/l-finish` can't remove this worktree even after merging it.
 - Final report: the evidence summary (tasks · commits · tests · acceptance criteria) and "Please run `/l-finish W-012` in the base folder."
 
 Otherwise, when it says every task is done:
