@@ -1,9 +1,9 @@
 {
   "id": "lantern-timeline",
   "name": "Lantern Timeline",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "minAppVersion": "1.5.0",
-  "description": "Draws the timeline of a LanternSpec report: works and tasks on a day-by-day chart.",
+  "description": "Draws the timeline of a LanternSpec report: works and tasks on a chart whose columns fit how long they took.",
   "author": "LanternSpec",
   "isDesktopOnly": false
 }

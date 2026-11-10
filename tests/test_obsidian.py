@@ -166,6 +166,24 @@ def test_the_vault_turns_off_metadata_menus_dataview_notice(repo):
     assert data["disableDataviewPrompt"] is True
 
 
+def test_a_timeline_built_in_minutes_gets_hours_on_its_axis(repo):
+    init_project(repo)
+    repo("scaffold", "work", "로그인")
+    tasks = repo.root / "docs/2. 작업/W-001 로그인/할 일.md"
+    tasks.write_text(
+        "- [x] W-001-T01 표 [크기:: S] [시작:: 2026-10-29 10:00] [완료:: 2026-10-29 10:02]\n"
+        "- [x] W-001-T02 API [크기:: S] [시작:: 2026-10-29 10:02] [완료:: 2026-10-29 10:05]\n",
+        encoding="utf-8",
+    )
+    repo("report", "--views", "timeline")
+    text = (repo.root / "docs/4. 운영 기록/보고/현황.md").read_text(encoding="utf-8")
+    assert "axisFormat %m-%d %H:%M" in text
+
+    tasks.write_text("- [ ] W-001-T01 표 [크기:: L]\n- [ ] W-001-T02 API [크기:: L]\n", encoding="utf-8")
+    repo("report", "--views", "timeline")  # six days of estimates: days on the axis
+    assert "axisFormat %m-%d\n" in (repo.root / "docs/4. 운영 기록/보고/현황.md").read_text(encoding="utf-8")
+
+
 def test_the_timeline_plugin_ships_and_writes_only_through_one_atomic_edit():
     from lanternspec import resources
 

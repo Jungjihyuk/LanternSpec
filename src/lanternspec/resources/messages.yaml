@@ -535,14 +535,12 @@
 
 # report/views.py
 "Since the last report ({date}): ✅ tasks done **{done:+d}** · 📒 new debt **{new_debt:+d}** · {label} debt **{resolved:+d}** · {works_active} works in progress": {ko: "지난 보고({date}) 대비: ✅ 완료한 할 일 **{done:+d}** · 📒 새 부채 **{new_debt:+d}** · {label} 부채 **{resolved:+d}** · 진행 중 작업 {works_active}개"}
-"_No tasks in progress._": {ko: "_진행 중인 할 일이 없습니다._"}
 "| 📥 To do ({count}) | ⛔ Blocked ({count2}) | ▶ Doing ({count3}) | ✅ Done ({count4}) |": {ko: "| 📥 할 일 ({count}) | ⛔ 막힘 ({count2}) | ▶ 진행 중 ({count3}) | ✅ 완료 ({count4}) |"}
 "_No works._": {ko: "_작업이 없습니다._"}
 "\n_No tasks yet, so only the start of each work is shown._": {ko: "\n_할 일이 아직 없어 작업 시작점만 보입니다._"}
 "| Domain | Work | Stage | Acceptance criteria | Tasks |": {ko: "| 도메인 | 작업 | 단계 | 수락 기준 | 할 일 |"}
 "| Idea | Status | Work | Commits | Last commit |": {ko: "| 아이디어 | 상태 | 작업 | 커밋 | 마지막 커밋 |"}
 "_No ideas._": {ko: "_아이디어가 없습니다._"}
-"_The learning track is off (lantern.yaml knowledge)._": {ko: "_배우는 선로가 꺼져 있습니다 (lantern.yaml knowledge)._"}
 "Open debt **{open}** · {label} {resolved} — details: {wikilink}\n\n": {ko: "열린 부채 **{open}개** · {label} {resolved}개 — 자세히: {wikilink}\n\n"}
 "_This is the first report — comparisons start with the next one._": {ko: "_첫 보고입니다 — 다음 보고부터 비교가 나옵니다._"}
 "# 📊 Status Report": {ko: "# 📊 현황 보고"}

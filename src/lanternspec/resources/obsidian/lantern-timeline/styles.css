@@ -19,6 +19,11 @@
   background-size: var(--lt-day-width) 100%, calc(var(--lt-day-width) * 7) 100%;
   background-position: 0 0, var(--lt-weekend-shift) 0;
 }
+/* columns finer than a day: the grid only, since a weekend tile would shade hours */
+.lt-fine .lt-track {
+  background-image: linear-gradient(to left, var(--background-modifier-border) 1px, transparent 1px);
+  background-size: var(--lt-day-width) 100%;
+}
 .lt-months, .lt-days { position: sticky; z-index: 4; background: var(--background-primary); color: var(--text-muted); }
 .lt-months { top: 0; height: 24px; }
 .lt-days { top: 24px; height: 24px; }

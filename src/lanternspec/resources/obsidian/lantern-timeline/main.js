@@ -8,6 +8,12 @@ const NAME_WIDTH = 300;
 const HEADER_HEIGHT = 48;
 const ROW_HEIGHT = 28;
 const MS_PER_DAY = 86400000;
+const MIN_PER_DAY = 1440;
+// A short timeline gets a finer column so tasks an AI finishes in minutes still read as a staircase:
+// the finest of these that keeps the chart within FINE_COLUMNS columns, else whole days.
+const FINE_SLOTS = [10, 60];
+const FINE_COLUMNS = 120;
+const MIN_BAR = 6;
 // The task line's format (core/taskfile.py) and the rule for its state (report/views.py), read here again to follow the file at once.
 const TASK_LINE = /^\s*- \[( |x|X)\] (W-\d{3,}-T\d{2,})\b/;
 const ATTR = /\[([^\[\]:]+?)::\s*([^\[\]]*?)\s*\]/g;
@@ -24,8 +30,27 @@ const todayNumber = () => {
   const now = new Date();
   return Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / MS_PER_DAY;
 };
-// An estimated end is the start of the next task; every other end is a day the task still takes.
-const barDays = (task) => task.dragged || [dayNumber(task.start), dayNumber(task.end) - (task.basis === "estimated" ? 1 : 0)];
+// Minutes counted the same way, so a task keeps the time of day it ran at.
+const minuteOf = (text) => {
+  const [, h, m] = text.match(/ (\d{2}):(\d{2})/) || [0, 0, 0];
+  return dayNumber(text) * MIN_PER_DAY + Number(h) * 60 + Number(m);
+};
+const nowMinute = () => {
+  const now = new Date();
+  return todayNumber() * MIN_PER_DAY + now.getHours() * 60 + now.getMinutes();
+};
+// [from, to) in minutes. Planned and dragged dates are whole days; actual and estimated times are kept as they are.
+const span = (task) => {
+  if (task.dragged) return [task.dragged[0] * MIN_PER_DAY, (task.dragged[1] + 1) * MIN_PER_DAY];
+  if (task.basis === "planned") return [dayNumber(task.start) * MIN_PER_DAY, (dayNumber(task.end) + 1) * MIN_PER_DAY];
+  const from = minuteOf(task.start);
+  return [from, Math.max(minuteOf(task.end), from + 1)];
+};
+// The whole days a bar covers, which is what dragging moves.
+const barDays = (task) => {
+  const [from, to] = span(task);
+  return [Math.floor(from / MIN_PER_DAY), Math.ceil(to / MIN_PER_DAY) - 1];
+};
 
 function readLine(line, fields) {
   const attrs = {};
@@ -102,7 +127,15 @@ function statesIn(text, startField) {
   return states;
 }
 
-function range(data, today) {
+// The columns to draw: `slot` minutes each, numbered `first`..`last`. Whole days when the work spans long.
+function scaleFor(data, today) {
+  const spans = data.works.flatMap((work) => work.tasks.map(span));
+  if (spans.length) {
+    const from = Math.min(...spans.map((s) => s[0]));
+    const to = Math.max(...spans.map((s) => s[1]));
+    const slot = FINE_SLOTS.find((size) => (to - from) / size <= FINE_COLUMNS);
+    if (slot) return { slot, first: Math.floor(from / slot) - 2, last: Math.ceil(to / slot) + 1 };
+  }
   const days = [today];
   for (const work of data.works) {
     if (work.idea) days.push(dayNumber(work.idea.date));
@@ -110,21 +143,50 @@ function range(data, today) {
     for (const task of work.tasks) days.push(...barDays(task));
   }
   // room to drag into
-  return { first: Math.min(...days) - 7, last: Math.max(today + 30, Math.max(...days) + 14) };
+  return { slot: MIN_PER_DAY, first: Math.min(...days) - 7, last: Math.max(today + 30, Math.max(...days) + 14) };
 }
 
-function place(bar, from, to, first) {
-  bar.style.left = `${(from - first) * DAY_WIDTH + 2}px`;
-  bar.style.width = `${(to - from + 1) * DAY_WIDTH - 4}px`;
+const xOf = (scale, minute) => (minute / scale.slot - scale.first) * DAY_WIDTH;
+const isDays = (scale) => scale.slot === MIN_PER_DAY;
+
+// [from, to) as drawn: whole days on a day chart, the actual minutes on a finer one.
+function drawnSpan(task, scale) {
+  const [from, to] = span(task);
+  if (!isDays(scale)) return [from, to];
+  const [first, last] = barDays(task);
+  return [first * MIN_PER_DAY, (last + 1) * MIN_PER_DAY];
 }
 
-function drawHeader(body, first, last, today) {
+const padOf = (scale) => (isDays(scale) ? 2 : 1);
+const widthOf = ([from, to], scale) => Math.max(MIN_BAR, xOf(scale, to) - xOf(scale, from) - 2 * padOf(scale));
+
+function place(bar, drawn, scale) {
+  bar.style.left = `${xOf(scale, drawn[0]) + padOf(scale)}px`;
+  bar.style.width = `${widthOf(drawn, scale)}px`;
+}
+
+function drawHeader(body, scale, today) {
+  const { first, last } = scale;
   const months = make(body, "lt-row lt-months");
   make(months, "lt-name");
   const monthTrack = make(months, "lt-track");
   const days = make(body, "lt-row lt-days");
   make(days, "lt-name");
   const dayTrack = make(days, "lt-track");
+  if (!isDays(scale)) {
+    // the date above, the hour below at each hour's first column
+    let dayStart = first;
+    for (let slot = first; slot <= last; slot++) {
+      const minute = slot * scale.slot;
+      make(dayTrack, "lt-day", minute % 60 === 0 ? String(Math.floor(minute / 60) % 24).padStart(2, "0") : "");
+      const day = Math.floor(minute / MIN_PER_DAY);
+      if (slot === last || Math.floor(((slot + 1) * scale.slot) / MIN_PER_DAY) !== day) {
+        make(monthTrack, "lt-month", dateText(day)).style.width = `${(slot - dayStart + 1) * DAY_WIDTH}px`;
+        dayStart = slot + 1;
+      }
+    }
+    return;
+  }
   let monthStart = first;
   for (let day = first; day <= last; day++) {
     const date = dateOf(day);
@@ -140,7 +202,7 @@ function drawHeader(body, first, last, today) {
   }
 }
 
-function drawArrows(svg, shown, first) {
+function drawArrows(svg, shown, scale) {
   svg.replaceChildren();
   const add = (d, className) => {
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
@@ -153,14 +215,20 @@ function drawArrows(svg, shown, first) {
     for (const id of task.after || []) {
       const before = rows.get(id);
       if (!before) continue;
-      const beforeLast = barDays(before.task)[1];
-      const from = barDays(task)[0];
-      const x1 = (beforeLast - first + 1) * DAY_WIDTH - 2;
-      const x2 = (from - first) * DAY_WIDTH + 2;
+      const beforeSpan = drawnSpan(before.task, scale);
+      const beforeEnd = beforeSpan[1];
+      const from = drawnSpan(task, scale)[0];
+      // from the bar's right edge, which a very short task's least width may push past its end
+      const x1 = xOf(scale, beforeSpan[0]) + padOf(scale) + widthOf(beforeSpan, scale);
+      const x2 = xOf(scale, from) + 2;
+      // what already happened can't be fixed, so only a task still to come is flagged
+      // (on a day chart, starting on the day the task before ends is on time)
+      const late = task.state === "todo" && from < beforeEnd - (isDays(scale) ? MIN_PER_DAY : 0);
+      // a task that starts right as the one before ends needs no line; looping one around it only tangles the chart
+      if (x2 < x1 + 12 && !late) continue;
       const middle = y - Math.sign(y - before.y) * (ROW_HEIGHT / 2);
       const route = x2 >= x1 + 12 ? `H${(x1 + x2) / 2}V${y}` : `h5V${middle}H${x2 - 7}V${y}`;
-      // what already happened can't be fixed, so only a task still to come is flagged
-      const cls = task.state === "todo" && from < beforeLast ? "lt-arrow lt-arrow-late" : "lt-arrow";
+      const cls = late ? "lt-arrow lt-arrow-late" : "lt-arrow";
       add(`M${x1} ${before.y}${route}H${x2 - 4}`, cls);
       add(`M${x2} ${y}l-5 -3v6z`, `${cls} lt-arrow-head`);
     }
@@ -225,17 +293,21 @@ class Timeline extends MarkdownRenderChild {
     event.stopPropagation();
     bar.setPointerCapture(event.pointerId);
     const [from, to] = barDays(task);
-    const { first, last } = this.days;
+    const scale = this.scale;
+    // dates move by whole days, however fine the columns are
+    const first = Math.ceil((scale.first * scale.slot) / MIN_PER_DAY);
+    const last = Math.floor(((scale.last + 1) * scale.slot) / MIN_PER_DAY) - 1;
+    const dayWidth = (DAY_WIDTH * MIN_PER_DAY) / scale.slot;
     const tip = make(bar.parentElement, "lt-tip");
     this.dragging = true;
     const show = (days) => {
       task.dragged = dragged(mode, from, to, days, first, last);
-      place(bar, ...task.dragged, first);
+      place(bar, drawnSpan(task, scale), scale);
       tip.textContent = `${dateText(task.dragged[0])} → ${dateText(task.dragged[1])}`;
-      tip.style.left = `${(task.dragged[1] - first + 1) * DAY_WIDTH + 4}px`;
+      tip.style.left = `${xOf(scale, (task.dragged[1] + 1) * MIN_PER_DAY) + 4}px`;
       this.arrows();
     };
-    const onMove = (e) => show(Math.round((e.clientX - event.clientX) / DAY_WIDTH));
+    const onMove = (e) => show(Math.round((e.clientX - event.clientX) / dayWidth));
     const stop = (e) => {
       bar.removeEventListener("pointermove", onMove);
       bar.removeEventListener("pointerup", stop);
@@ -254,7 +326,7 @@ class Timeline extends MarkdownRenderChild {
     show(0);
   }
 
-  drawWork(body, work, first) {
+  drawWork(body, work, scale) {
     const labels = this.data.labels;
     const row = make(body, "lt-row lt-work");
     const name = make(row, "lt-name");
@@ -270,16 +342,19 @@ class Timeline extends MarkdownRenderChild {
     const track = make(row, "lt-track");
 
     if (work.tasks.length) {
-      const days = work.tasks.map(barDays);
-      place(make(track, "lt-bar lt-summary"), Math.min(...days.map((d) => d[0])), Math.max(...days.map((d) => d[1])), first);
+      const spans = work.tasks.map((task) => drawnSpan(task, scale));
+      place(make(track, "lt-bar lt-summary"), [Math.min(...spans.map((s) => s[0])), Math.max(...spans.map((s) => s[1]))], scale);
     }
     for (const [date, label, cls] of [
       [work.idea && work.idea.date, work.idea && `${work.idea.id} · ${labels.idea}`, "lt-mark-idea"],
       [work.created, labels.plan, "lt-mark-plan"],
     ]) {
       if (!date) continue;
+      // a date has no time: the middle of its column on a day chart, the start of the day on a finer one
+      const left = xOf(scale, dayNumber(date) * MIN_PER_DAY) + (isDays(scale) ? DAY_WIDTH / 2 : 0) - 5;
+      if (left < 0 || left > (scale.last - scale.first + 1) * DAY_WIDTH) continue;
       const mark = make(track, `lt-mark ${cls}`);
-      mark.style.left = `${(dayNumber(date) - first) * DAY_WIDTH + DAY_WIDTH / 2 - 5}px`;
+      mark.style.left = `${left}px`;
       mark.title = `${label} · ${date}`;
     }
     if (!isOpen) return [];
@@ -290,9 +365,8 @@ class Timeline extends MarkdownRenderChild {
       link.title = `${task.id} ${task.title}`;
       link.addEventListener("click", () => this.app.workspace.openLinkText(work.file, this.sourcePath));
       const bar = make(make(line, "lt-track"), `lt-bar lt-${task.state} lt-${task.basis}`, task.id);
-      const [from, to] = barDays(task);
-      place(bar, from, to, first);
-      const end = task.basis === "actual" ? task.end : dateText(to);
+      place(bar, drawnSpan(task, scale), scale);
+      const end = task.basis === "actual" ? task.end : dateText(barDays(task)[1]);
       bar.title = `${task.id} ${task.title}\n${task.start} → ${end}\n${labels[task.state]} · ${labels[task.basis]}`;
       // only a task that has not started can move: actual times stay as they happened
       if (task.state !== "todo" || !this.data.fields) continue;
@@ -304,18 +378,26 @@ class Timeline extends MarkdownRenderChild {
     return work.tasks;
   }
 
+  // where the open works begin, for a finer chart to open at: today may be far from them
+  openStart() {
+    const open = this.data.works.filter((work) => this.folds.get(work.id) && work.tasks.length);
+    const tasks = (open.length ? open : this.data.works).flatMap((work) => work.tasks);
+    return Math.min(...tasks.map((task) => span(task)[0]));
+  }
+
   arrows() {
-    drawArrows(this.svg, this.shown, this.days.first);
+    drawArrows(this.svg, this.shown, this.scale);
   }
 
   draw() {
     if (this.dragging) return;
     const old = this.scroller;
-    const scrollDay = old && this.days.first + old.scrollLeft / DAY_WIDTH;
+    const scrollMinute = old && (this.scale.first + old.scrollLeft / DAY_WIDTH) * this.scale.slot;
     const scrollTop = old ? old.scrollTop : 0;
     const today = todayNumber();
     const data = this.data;
-    const { first, last } = (this.days = range(data, today));
+    const scale = (this.scale = scaleFor(data, today));
+    const { first, last } = scale;
     const root = document.createElement("div");
     root.className = "lt-root";
     const legend = make(root, "lt-legend");
@@ -343,14 +425,16 @@ class Timeline extends MarkdownRenderChild {
     body.style.setProperty("--lt-name-width", `${NAME_WIDTH}px`);
     body.style.setProperty("--lt-day-width", `${DAY_WIDTH}px`);
     body.style.setProperty("--lt-track-width", `${trackWidth}px`);
-    // the week tile starts with its shaded days, so it is shifted to start on a Saturday
-    const saturday = (6 - dateOf(first).getUTCDay() + 7) % 7;
-    body.style.setProperty("--lt-weekend-shift", `${saturday * DAY_WIDTH}px`);
+    if (isDays(scale)) {
+      // the week tile starts with its shaded days, so it is shifted to start on a Saturday
+      const saturday = (6 - dateOf(first).getUTCDay() + 7) % 7;
+      body.style.setProperty("--lt-weekend-shift", `${saturday * DAY_WIDTH}px`);
+    } else body.classList.add("lt-fine");
 
-    drawHeader(body, first, last, today);
+    drawHeader(body, scale, today);
     this.shown = [];
     for (const work of data.works) {
-      this.shown.push({}, ...this.drawWork(body, work, first)); // the work's own row, then its open tasks
+      this.shown.push({}, ...this.drawWork(body, work, scale)); // the work's own row, then its open tasks
     }
     this.svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     this.svg.setAttribute("class", "lt-arrows");
@@ -359,13 +443,15 @@ class Timeline extends MarkdownRenderChild {
     this.svg.style.left = `${NAME_WIDTH}px`;
     body.appendChild(this.svg);
     this.arrows();
-    make(body, "lt-today").style.left = `${NAME_WIDTH + (today - first) * DAY_WIDTH + DAY_WIDTH / 2}px`;
+    const now = isDays(scale) ? today * MIN_PER_DAY + MIN_PER_DAY / 2 : nowMinute();
+    const nowX = xOf(scale, now);
+    if (nowX >= 0 && nowX <= trackWidth) make(body, "lt-today").style.left = `${NAME_WIDTH + nowX}px`;
 
     this.el.replaceChildren(root);
     this.scroller = scroller;
     const scroll = () => {
       const visible = Math.max(scroller.clientWidth - NAME_WIDTH, 0);
-      scroller.scrollLeft = old ? (scrollDay - first) * DAY_WIDTH : (today - first) * DAY_WIDTH - visible / 2;
+      scroller.scrollLeft = old ? xOf(scale, scrollMinute) : isDays(scale) ? nowX - visible / 2 : xOf(scale, this.openStart()) - 2 * DAY_WIDTH;
       scroller.scrollTop = scrollTop;
     };
     scroll();

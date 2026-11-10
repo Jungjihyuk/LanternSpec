@@ -191,6 +191,25 @@ def test_plan_without_idea_creates_the_card(repo):
     assert "W-001" in str(meta(next((docs(repo) / "1. 아이디어").glob("IDEA-001*")))["links"])
 
 
+def test_report_leaves_out_views_with_nothing_to_show(repo):
+    init_project(repo)  # no knowledge store: the learning track is off
+    report = docs(repo) / "4. 운영 기록/보고/현황.md"
+    repo("report")
+    text = report.read_text(encoding="utf-8")
+    assert "## 🗂 칸반" not in text and "## 📅 타임라인" not in text and "## 📒 부채 현황" not in text
+    assert "보기: —" in text and frontmatter.parse(text).meta["views"] == []
+
+    repo("scaffold", "work", "로그인")
+    repo("scaffold", "doc", "W-001", "할 일")
+    tasks = work_dir(repo, "W-001") / "할 일.md"
+    tasks.write_text("- [ ] W-001-T01 로그인 API — [[설계#구조]] · [[설계#화면]] [크기:: S]\n", encoding="utf-8")
+    repo("report")
+    text = report.read_text(encoding="utf-8")
+    assert "## 🗂 칸반" in text and "## 📅 타임라인" in text and "## 📒 부채 현황" not in text
+    assert "보기: 🗂 칸반, 📅 타임라인" in text
+    assert "| W-001-T01 로그인 API [S] |" in text  # the card says what the task is, not where it is described
+
+
 def test_report_compares_with_the_previous_day(repo):
     init_project(repo)
     past = docs(repo) / "4. 운영 기록/보고/지난 보고"

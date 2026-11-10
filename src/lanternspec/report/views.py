@@ -35,6 +35,7 @@ VIEW_TITLE = {  # English; msg() translates them
 }
 SUM_START, SUM_END = "<!-- l-report:summary:start -->", "<!-- l-report:summary:end -->"
 SIZE_DAYS = {"S": 1, "M": 2, "L": 3}
+SHORT_TIMELINE = _dt.timedelta(days=5)  # the Obsidian plugin draws finer than days up to about this long (FINE_COLUMNS hours)
 
 
 def _work_tasks(project: Project, w: Path) -> list[Task]:
@@ -60,7 +61,7 @@ def kanban(project: Project) -> str:
         project: The project.
 
     Returns:
-        A Markdown table; a short note when there are no tasks.
+        A Markdown table; an empty string when no work in progress has tasks.
 
     Example:
         >>> kanban(project).splitlines()[0]  # doctest: +SKIP
@@ -71,7 +72,11 @@ def kanban(project: Project) -> str:
         tasks = _work_tasks(project, w)
         graph = TaskGraph(tasks)
         for t in tasks:
-            label = f"{t.id} {t.title}" + (f" [{t.size}]" if t.size else "") + (f" @{t.attrs['owner']}" if t.attrs.get("owner") else "")
+            label = (
+                f"{t.id} {_plain_title(t.title)}"
+                + (f" [{t.size}]" if t.size else "")
+                + (f" @{t.attrs['owner']}" if t.attrs.get("owner") else "")
+            )
             if t.done:
                 cols["done"].append(label)
             elif t.started:
@@ -82,7 +87,7 @@ def kanban(project: Project) -> str:
                 cols["todo"].append(label)
     rows = max((len(v) for v in cols.values()), default=0)
     if rows == 0:
-        return msg("_No tasks in progress._")
+        return ""
     lines = [
         msg(
             "| 📥 To do ({count}) | ⛔ Blocked ({count2}) | ▶ Doing ({count3}) | ✅ Done ({count4}) |",
@@ -113,7 +118,7 @@ def _parse_dt(s: str) -> _dt.datetime | None:
 
 def _plain_title(title: str) -> str:
     """Drop the document links a task line carries: a chart shows what the task is, not where it is described."""
-    return re.sub(r"\s*[—-]\s*$", "", re.sub(r"\[\[[^\]]*\]\]", "", title)).strip()
+    return re.sub(r"[\s—·,-]+$", "", re.sub(r"\[\[[^\]]*\]\]", "", title)).strip()
 
 
 def _work_bars(project: Project, w: Path, plan_meta: dict) -> list[dict]:
@@ -190,8 +195,17 @@ def _timeline_plugin_block(project: Project, rows: list[dict]) -> str:
 
 
 def _timeline_mermaid(rows: list[dict]) -> str:
-    """Write the rows as a Mermaid Gantt chart."""
-    lines = ["```mermaid", "gantt", "  dateFormat YYYY-MM-DD HH:mm", "  axisFormat %m-%d", "  todayMarker on"]
+    """Write the rows as a Mermaid Gantt chart, with hours on the axis when every task fits in a few days."""
+    times = [_parse_dt(t[k]) for row in rows for t in row["tasks"] for k in ("start", "end")]
+    known = [d for d in times if d]
+    short = bool(known) and max(known) - min(known) <= SHORT_TIMELINE
+    lines = [
+        "```mermaid",
+        "gantt",
+        "  dateFormat YYYY-MM-DD HH:mm",
+        f"  axisFormat {'%m-%d %H:%M' if short else '%m-%d'}",
+        "  todayMarker on",
+    ]
     for row in rows:
         wid = row["id"]
         lines.append(f"  section {_gantt_name(wid + ' ' + row['name'])}")
@@ -224,7 +238,7 @@ def timeline(project: Project) -> str:
         project: The project.
 
     Returns:
-        The chart's code block with a note on how it was drawn; a short note when there are no works.
+        The chart's code block with a note on how it was drawn; an empty string when there are no works.
 
     Example:
         >>> timeline(project).splitlines()[1]  # doctest: +SKIP
@@ -232,7 +246,7 @@ def timeline(project: Project) -> str:
     """
     rows = _timeline_rows(project)
     if not rows:
-        return msg("_No works._")
+        return ""
     if obsidian.timeline_installed(project):
         chart = _timeline_plugin_block(project, rows)
         freshness = msg(
@@ -339,14 +353,14 @@ def debt_view(project: Project) -> str:
 
     Returns:
         Open and resolved counts, a link to the status page and the kind × topic table;
-        a short note when the learning line is off.
+        an empty string when the learning track is off.
 
     Example:
         >>> debt_view(project).splitlines()[0]  # doctest: +SKIP
         '열린 부채 **3개** · ✅ 해결 1개 — 자세히: [[📒 부채/부채 현황|부채 현황]]'
     """
     if not project.folder("debt").exists():
-        return msg("_The learning track is off (lantern.yaml knowledge)._")
+        return ""
     debt_mod.write_status(project)
     s = debt_mod.stats(project)
     status = project.folder("debt") / project.names.file("debt_status")
@@ -479,6 +493,7 @@ def run(project: Project, views: list[str] | None = None, summary: list[str] | N
     """Write the report: `현황.md` (latest) and today's copy under `지난 보고/`.
 
     The three summary lines are kept from the previous `현황.md` unless new ones are given.
+    A view with nothing to show (no tasks in progress, the learning track off, no works) is left out, heading and all.
 
     Args:
         project: The project.
@@ -501,6 +516,7 @@ def run(project: Project, views: list[str] | None = None, summary: list[str] | N
         raise ValueError(msg("Unknown view: {items} (available: {items2})", items=", ".join(bad), items2=", ".join(VIEWS)))
     current = project.folder("reports") / project.names.file("report")
     sections: list[str] = []
+    shown: list[str] = []
     sync_total: int | None = None
     for v in views:
         if v == "kanban":
@@ -519,6 +535,9 @@ def run(project: Project, views: list[str] | None = None, summary: list[str] | N
             body = eval_markdown(project)
         else:
             body, sync_total = sync_view(project)
+        if not body:  # nothing to show, so the view gets no heading either
+            continue
+        shown.append(v)
         sections.append(f"## {msg(VIEW_TITLE[v])}\n\n{body}")
     if sync_total is None:  # stale docs are checked whenever the report is opened
         from . import scan
@@ -539,7 +558,7 @@ def run(project: Project, views: list[str] | None = None, summary: list[str] | N
         msg(
             "> ⚙️ Generated — `lantern report` · **as of {now_minute}** · views: {items}",
             now_minute=now_minute(),
-            items=", ".join(msg(VIEW_TITLE[v]) for v in views),
+            items=", ".join(msg(VIEW_TITLE[v]) for v in shown) or "—",
         ),
         "",
         f"> [!abstract] {project.names.marker('glance')}",
@@ -571,7 +590,7 @@ def run(project: Project, views: list[str] | None = None, summary: list[str] | N
         "status": project.enums.value("current_status", "active"),
         "generated": True,
         "updated": today(),
-        "views": views,
+        "views": shown,
         "stats": stats,
     }
     write(current, frontmatter.render(meta, body))
