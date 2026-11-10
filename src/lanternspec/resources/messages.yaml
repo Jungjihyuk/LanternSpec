@@ -1386,7 +1386,19 @@
 "whole work": {ko: "작업 전체 기간"}
 "idea added": {ko: "아이디어 등록일"}
 "plan started": {ko: "기획 시작일"}
-"comes after": {ko: "선후 관계"}
+"must finish first": {ko: "먼저 끝나야 하는 할 일"}
 "starts before the task it waits on": {ko: "먼저 할 일보다 일찍 시작"}
 "Dates not changed: the task has started, or its line is gone": {ko: "일정을 바꾸지 못했습니다. 이미 시작한 할 일이거나 그 줄이 없습니다"}
 "Done": {ko: "완료"}
+"Not started · planned": {ko: "시작 전 · 예정일"}
+"Not started · estimated": {ko: "시작 전 · 추정"}
+"One column = {{size}}": {ko: "한 칸 = {{size}}"}
+"{{hour}}h": {ko: "{{hour}}시"}
+"{{n}} min": {ko: "{{n}}분"}
+"{{n}} h": {ko: "{{n}}시간"}
+"{{n}} d": {ko: "{{n}}일"}
+"time worked": {ko: "작업 시간"}
+"time taken": {ko: "걸린 시간"}
+"In a finished work, point at a task to see what had to finish first": {ko: "끝난 작업은 할 일에 마우스를 올리면 먼저 끝나야 했던 할 일이 보여요"}
+"Must finish first: {{ids}}": {ko: "먼저 끝나야 하는 할 일: {{ids}}"}
+"Nothing must finish first": {ko: "먼저 끝나야 하는 할 일 없음"}

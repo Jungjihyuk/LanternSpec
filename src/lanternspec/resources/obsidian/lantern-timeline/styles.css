@@ -3,7 +3,8 @@
 .lt-legend-item { display: flex; align-items: center; gap: 4px; }
 .lt-swatch { position: static !important; width: 18px; height: 10px !important; padding: 0 !important; }
 .lt-scroller { overflow: auto; max-height: 70vh; border: 1px solid var(--background-modifier-border); border-radius: 6px; background: var(--background-primary); }
-.lt-body { position: relative; padding-bottom: 14px; } /* a scrollbar drawn over the chart leaves the last row free */
+.lt-body { position: relative; }
+.lt-body.lt-scrolls { padding-bottom: 14px; } /* a scrollbar drawn over the chart leaves the last row free */
 .lt-row { display: flex; box-sizing: border-box; height: 28px; border-bottom: 1px solid var(--background-modifier-border); }
 .lt-name {
   position: sticky; left: 0; z-index: 3; flex: 0 0 var(--lt-name-width); width: var(--lt-name-width);
@@ -19,7 +20,8 @@
   background-size: var(--lt-day-width) 100%, calc(var(--lt-day-width) * 7) 100%;
   background-position: 0 0, var(--lt-weekend-shift) 0;
 }
-/* columns finer than a day: the grid only, since a weekend tile would shade hours */
+/* columns finer than a day: the grid only, since a weekend tile would shade hours; an hour's name may run into the next column */
+.lt-fine .lt-day { text-align: left; padding-left: 2px; overflow: visible; white-space: nowrap; }
 .lt-fine .lt-track {
   background-image: linear-gradient(to left, var(--background-modifier-border) 1px, transparent 1px);
   background-size: var(--lt-day-width) 100%;
@@ -27,7 +29,7 @@
 .lt-months, .lt-days { position: sticky; z-index: 4; background: var(--background-primary); color: var(--text-muted); }
 .lt-months { top: 0; height: 24px; }
 .lt-days { top: 24px; height: 24px; }
-.lt-months .lt-track, .lt-days .lt-track { display: flex; background-image: none; }
+.lt-months .lt-track, .lt-days .lt-track { display: flex; background-image: none; overflow: hidden; }
 .lt-month { flex: none; box-sizing: border-box; padding: 4px 6px; font-weight: 600; white-space: nowrap; overflow: hidden; border-right: 1px solid var(--background-modifier-border); }
 .lt-day { flex: 0 0 var(--lt-day-width); text-align: center; line-height: 24px; }
 .lt-weekend { background: var(--background-secondary); }
@@ -43,7 +45,13 @@
   position: absolute; top: 5px; height: 18px; box-sizing: border-box; padding: 0 5px; border-radius: 4px;
   font-size: 11px; line-height: 18px; white-space: nowrap; overflow: hidden; color: #fff;
 }
-.lt-summary { top: 11px; height: 6px; padding: 0; border-radius: 3px; background: var(--text-faint); }
+.lt-summary {  /* a bracket ├──┤, not a bar, so it never reads as a task */
+  top: 9px; height: 10px; padding: 0; border-radius: 0; background: linear-gradient(var(--text-muted), var(--text-muted)) center / 100% 2px no-repeat;
+  border-left: 2px solid var(--text-muted); border-right: 2px solid var(--text-muted);
+}
+.lt-bar-label, .lt-total { z-index: 2; position: absolute; top: 5px; line-height: 18px; font-size: 11px; white-space: nowrap; color: var(--text-muted); pointer-events: none; }
+.lt-total { font-weight: 600; pointer-events: auto; }
+.lt-legend-column { font-weight: 600; }
 .lt-done { background: #5b9a6f; }
 .lt-doing { background: var(--interactive-accent); color: var(--text-on-accent); }
 .lt-todo { background: #8a8fa3; }
@@ -52,6 +60,8 @@
 .lt-mark-idea { background: #e0a93b; }
 .lt-mark-plan { background: var(--background-primary); border: 2px solid #e0a93b; box-sizing: border-box; }
 .lt-legend .lt-mark { position: static; margin: 0 3px; }
+.lt-mark-date { position: absolute; left: 22px; top: 5px; line-height: 18px; font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+.lt-legend-hint { font-style: italic; }
 .lt-today { position: absolute; top: 48px; bottom: 0; width: 2px; background: var(--interactive-accent); opacity: .7; z-index: 2; pointer-events: none; }
 .lt-root { user-select: none; }
 .lt-movable { cursor: grab; touch-action: none; }
@@ -64,10 +74,21 @@
   color: var(--text-normal); background: var(--background-secondary); border: 1px solid var(--background-modifier-border);
 }
 .lt-arrows { position: absolute; top: 0; z-index: 2; pointer-events: none; }
-.lt-arrow { fill: none; stroke: var(--text-muted); stroke-width: 1.2; }
+.lt-arrow { fill: none; stroke: var(--text-faint); stroke-width: 1.2; stroke-linejoin: round; transition: opacity .12s; }
+.lt-arrow-quiet { opacity: 0; }
+.lt-arrow-focus { opacity: 1; stroke: var(--text-accent); stroke-width: 1.6; }
+.lt-arrow-head.lt-arrow-focus { fill: var(--text-accent); }
 .lt-arrow-late { stroke: var(--text-error); }
-.lt-arrow-head { fill: var(--text-muted); stroke: none; }
+.lt-arrow-head { fill: var(--text-faint); stroke: none; }
 .lt-arrow-late.lt-arrow-head { fill: var(--text-error); }
-.lt-line { height: 0 !important; background: none; border-top: 2px solid var(--text-muted); }
-.lt-line-late { border-top-color: var(--text-error); }
+.lt-swatch-arrow { width: 22px; height: 10px; flex: none; }
+.lt-nav { display: flex; align-items: center; gap: 4px; margin-bottom: 6px; }
+.lt-nav button { font-size: 11px; padding: 2px 8px; height: auto; }
+.lt-nav[hidden] { display: none; }
+.lt-nav select { font-size: 11px; height: auto; padding: 2px 24px 2px 8px; }
+/* a fold: time with no task, drawn as a narrow hatched strip that says how long it was */
+.lt-fold { position: absolute; top: 48px; bottom: 0; z-index: 1; pointer-events: none;
+  background: repeating-linear-gradient(135deg, var(--background-secondary) 0 4px, transparent 4px 8px);
+  border-left: 1px dashed var(--background-modifier-border); border-right: 1px dashed var(--background-modifier-border); }
+.lt-fold-label { flex: none; text-align: center !important; padding: 0 !important; font-size: 10px; color: var(--text-faint); overflow: hidden; }
 .lt-error { color: var(--text-error); }

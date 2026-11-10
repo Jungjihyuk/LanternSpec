@@ -184,9 +184,21 @@ def _timeline_plugin_block(project: Project, rows: list[dict]) -> str:
         "span": msg("whole work"),
         "idea": msg("idea added"),
         "plan": msg("plan started"),
-        "after": msg("comes after"),
+        "after": msg("must finish first"),
         "late": msg("starts before the task it waits on"),
         "not_saved": msg("Dates not changed: the task has started, or its line is gone"),
+        "legend_todo": msg("Not started · planned"),
+        "legend_estimated": msg("Not started · estimated"),
+        "column": msg("One column = {{size}}"),
+        "hour": msg("{{hour}}h"),
+        "minutes": msg("{{n}} min"),
+        "hours": msg("{{n}} h"),
+        "days": msg("{{n}} d"),
+        "worked": msg("time worked"),
+        "elapsed": msg("time taken"),
+        "after_hint": msg("In a finished work, point at a task to see what had to finish first"),
+        "needs": msg("Must finish first: {{ids}}"),
+        "needs_none": msg("Nothing must finish first"),
     }
     names = project.names
     fields = {role: names.attr(role) for role in ("start", "start_plan", "due_plan")} | {"unknown": names.marker("unknown")}
