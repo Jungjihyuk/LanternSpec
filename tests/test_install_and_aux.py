@@ -544,6 +544,16 @@ def test_close_commits_only_the_work_documents(repo):
     _, out = repo("close", "l-idea", "--commit", "--no-check")
     assert "--work가 있어야" in out
 
+    repo("scaffold", "idea", "결제", "--status", "작업됨")
+    repo("scaffold", "idea", "알림")
+    repo("scaffold", "work", "결제", "--idea", "IDEA-001")
+    repo("idea", "status", "IDEA-001", "작업됨", "--work", "W-003")
+    _, out = repo("close", "l-plan", "--work", "W-003", "--commit", "--no-check")
+    left = repo.git("status", "--porcelain", "--untracked-files=all").stdout
+    assert "IDEA-001" not in left and "IDEA-002" in left and "W-003" not in left
+    repo.git("add", "-A")
+    repo.git("commit", "-q", "-m", "docs: 알림 [lantern]")
+
     repo("profile", "set", "docs.commit=manual")
     repo.git("add", "lantern.yaml")
     repo.git("commit", "-q", "-m", "chore: 설정 [lantern]")

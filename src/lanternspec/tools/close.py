@@ -92,7 +92,7 @@ def close(
 
 
 def work_doc_paths(project: Project, work: str) -> list[Path]:
-    """The documents a work owns: its folder, the decision records its design lists, and the generated pages close refreshes.
+    """The documents a work owns: its folder, idea cards, the decision records its design lists, and the pages close refreshes.
 
     Args:
         project: The project.
@@ -103,12 +103,12 @@ def work_doc_paths(project: Project, work: str) -> list[Path]:
 
     Example:
         >>> [p.name for p in work_doc_paths(project, "W-012")]  # doctest: +SKIP
-        ['W-012 로그인', 'ADR-002 세션 방식.md', '개발문서 MOC.md']
+        ['W-012 로그인', 'IDEA-003 카톡 로그인.md', 'ADR-002 세션 방식.md', '개발문서 MOC.md']
     """
     folder = project.find_work(work, include_archive=False)
     if folder is None:
         return []
-    paths = [folder]
+    paths = [folder, *_linked_ideas(project, project.doc_path(folder, "plan"))]
     design = project.doc_path(folder, "design")
     if design.exists():
         adrs = frontmatter.parse(read(design)).meta.get("adr")
@@ -118,6 +118,24 @@ def work_doc_paths(project: Project, work: str) -> list[Path]:
                 paths.append(found)
     paths += [project.moc, project.folder("debt") / project.names.file("debt_status")]
     return [p for p in paths if p.exists()]
+
+
+def _linked_ideas(project: Project, plan: Path) -> list[Path]:
+    """Idea cards linked with the plan in either direction (the plan names its idea, a worked idea names the plan)."""
+    ideas = project.folder("ideas")
+    if not plan.exists() or not ideas.exists():
+        return []
+    from ..core.links import Resolver, iter_links
+
+    resolver = Resolver(project.docs)
+
+    def targets(doc: Path) -> set[Path]:
+        links = frontmatter.as_list(frontmatter.parse(read(doc)).meta.get("links"))
+        found = (resolver.resolve(link, doc) for link in iter_links("\n".join(map(str, links))))
+        return {p.resolve() for p in found if p}
+
+    from_plan = targets(plan)
+    return [card for card in sorted(ideas.rglob("*.md")) if card.resolve() in from_plan or plan.resolve() in targets(card)]
 
 
 def commit_work_docs(project: Project, skill: str, work: str | None) -> str:
