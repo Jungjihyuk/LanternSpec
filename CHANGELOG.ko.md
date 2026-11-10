@@ -7,6 +7,8 @@
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-11-11
+
 업그레이드: `uv tool upgrade lanternspec` → 프로젝트마다 `lantern upgrade` (스킬 · 할 일 양식 · Obsidian 설정 갱신). 새 규칙 문서는 `lantern scaffold init`이 만들고, 예전 크기 이름(S · M · L)은 `lantern upgrade --apply`가 새 이름으로 바꾼다
 
 ### 추가
@@ -277,7 +279,8 @@
   Rust · Go)와 규모로 코드 컨벤션을 기준표대로 골라 `AGENTS.md`와 `개발 원칙.md`에 넣는다 (`principles`, `lint`)
 - **작업 방식 · 평가** — 하네스 · 루프 · 그래프 추천(`harness suggest`), 실행 기록으로 스킬 · 모델 · 설정 비교(`eval`)
 
-[Unreleased]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.10...v0.3.0
 [0.2.10]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.9...v0.2.10
 [0.2.9]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.8...v0.2.9

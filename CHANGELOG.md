@@ -7,6 +7,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-11-11
+
 Upgrade: `uv tool upgrade lanternspec` → `lantern upgrade` in each project (refreshes skills, the tasks template and Obsidian settings). `lantern scaffold init` makes the new rules document, and `lantern upgrade --apply` writes older sizes (S · M · L) with the new names
 
 ### Added
@@ -268,7 +270,8 @@ First release.
 - **Design principles and code conventions** — design principles chosen from a table by project kind · external integrations · size, and code conventions by language (Python · TypeScript · Swift · Rust · Go) and size, written into `AGENTS.md` and `개발 원칙.md` (`principles`, `lint`)
 - **Ways of working and evaluation** — harness · loop · graph recommendation (`harness suggest`); comparing skills · models · settings from the run log (`eval`)
 
-[Unreleased]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.10...v0.3.0
 [0.2.10]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.9...v0.2.10
 [0.2.9]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.8...v0.2.9
