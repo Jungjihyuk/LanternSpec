@@ -7,6 +7,40 @@
 
 ## [Unreleased]
 
+**옮기는 법:** `lantern harness suggest`는 `lantern build-mode suggest`로 이름이 바뀌었다 (옛 이름은 당분간 안내와 함께 동작한다). 다른 작업이 진행 중일 때 `lantern work start`를 바로 부르던 곳은 `/l-parallel`을 거치거나 `--skip-check`를 붙인다. Codex는 프로젝트를 신뢰(trust)한 뒤에야 새 권한 설정을 읽고, 사용자 설정에 `sandbox_mode`가 있으면 그 설정이 이긴다 (`lantern doctor`가 알려 준다).
+
+업그레이드: `uv tool upgrade lanternspec` → 프로젝트마다 `lantern upgrade` (`/l-parallel` · `/l-finish`를 설치하고, 규칙 문서 두 개 · 스킬 · 프로젝트 규칙 · Codex 권한 설정을 넣는다)
+
+### 추가
+- **`/l-parallel` — 동시 작업 시작 전 점검** — 작업들이 함께 정해야 할 것(공유 표 · 세션 · 토큰 · 권한 · 캐시)과 순서를 찾아 사람이 정하게 하고, ADR로 남긴 뒤 작업을 시작한다. 바로 시작할 작업이 하나뿐이면 worktree 없이 순서대로 진행한다
+- **`/l-finish` — 동시 작업 마무리** — 기준 폴더에서 사람 확인을 모으고, 같은 일을 두 방식으로 만든 곳을 찾은 뒤, 작업을 하나씩 합친다. 현재 상태 반영 · 보관 · 보고는 한 번에 하고, 합친 브랜치를 지운다
+- **`lantern work overlap`** — 작업들이 함께 쓰는 표 · 파일 · 결정 기록, 함께 바꾼 코드 파일, 새로 넣은 의존성을 시작하지 않고 보여 준다
+- **기술 선택 기준 문서** — `규칙/`에 평가 기준 · 결정 트리 · 기술 비교표를 둔다. `/l-init`은 새 서비스 · 앱의 기술을 이 트리대로 추천하고, `/l-adr`은 기준 · 날짜 · 양식 버전을 함께 남긴다
+- **저장소 파일 규칙 문서** — `.gitignore` · `docker-compose.yml`의 주석 구조, 프로젝트 수명에 따른 README · CHANGELOG 형식, 질문으로 고르는 라이선스, 폴더 구조를 담는다. 프로젝트 AGENTS.md가 이 파일들을 처음 만들 때 이 문서를 따르게 한다
+- **`/l-init` 새 질문** — 얼마나 오래 쓸 프로젝트인지(`project.lifespan`), 저장소를 공개할지(공개면 LICENSE를 만든다), 서버를 만들면 개발 환경을 Docker로 맞출지를 묻는다
+- **화면 확인** — `/l-build`가 화면 할 일을 AI 도구의 브라우저로 열어 캡처하고 인수 조건을 확인한다. 할 수 없으면 "사람 확인 대기"를 남기고 계속 진행하며, 합치기 전에 모아서 사람에게 묻는다. 설정은 `verify.browser`
+- **문서 자동 커밋** — `/l-plan` · `/l-design` · `/l-task` · `/l-adr`이 끝날 때 그 작업의 문서만 커밋한다 (작업 폴더 · 설계가 따르는 결정 기록 · 연결된 아이디어 카드). 설정은 `docs.commit: auto | manual`, 명령은 `lantern close --commit`
+- **`/l-design` 와이어프레임** — Claude Design 캔버스에 와이어프레임을 그려 `화면/`에 저장하고, 바꾸기 전 화면은 `화면/지금/`에 따로 둔다. 기존 UI가 있으면 `/l-init`이 `/design-sync`를 한 번 알려 준다
+- **`lantern template show`** — 프로젝트에 아직 없는 기본 양식을 읽는다
+- **한 작업만 다른 브랜치로** — `lantern work branch · start --into <브랜치>`는 그 작업만 다른 브랜치에서 시작해 거기로 합치고, `--here`는 작업 브랜치 없이 지금 브랜치에 커밋한다
+- **Codex 권한 설정** — `lantern install` · `upgrade`가 `.codex/config.toml`에 `lantern` 권한 설정을 넣어 Codex가 커밋할 수 있게 하고, git hook과 config는 읽기만 하게 둔다. `lantern work start`는 도구마다 worktree를 여는 명령을 보여 준다
+
+### 바뀜
+- **`lantern harness` → `lantern build-mode`** — 반복 범위 · 할 일 나눠 맡기기 · 작업 동시 진행을 축마다 따로 추천한다. `--apply`는 반복 범위만 바꾼다
+- **`/l-plan`은 필요한 화면 목록만** — 시안을 묻지 않는다. "시안과 같다" 인수 조건은 설계 때 더하고, 시안이 없다는 경고는 설계를 승인한 뒤에만 한다
+- **`/l-design`이 지난 결정을 따른다** — 관련된 결정 기록을 읽고 다시 묻지 않으며, 설계의 `adr` 목록에 따른 결정도 넣는다
+- **동시 작업은 점검 뒤에 시작** — 둘 이상의 작업이 함께 돌게 되면 `lantern work start`가 `--skip-check` 없이는 시작하지 않는다
+- **worktree 안의 `/l-build`** — 자기 할 일과 기록만 커밋하고 멈춘다. 마무리는 기준 폴더의 `/l-finish`가 한다
+- **보관 미루기** — 다른 worktree에서 진행 중인 작업이 링크하고 있으면 `lantern work archive`가 완료로만 표시하고 폴더는 그대로 둔다. `--now`는 바로 보관한다
+- **`lantern work list` 표시** — `/l-finish` 대기, 이미 합쳐진 브랜치(지우는 명령과 함께), 끝난 작업의 남은 worktree, 보관 대기를 보여 준다
+- **`/l-init` 질문 순서** — 무엇을 만드는지를 어디서 쓰는지보다 먼저 쉬운 선택지로 묻고, 후보가 둘 이상일 때만 고르게 한다
+
+### 고침
+- **worktree끼리 기록이 섞이던 문제** — 대화 요약 전에 저장하는 기록이 그 worktree의 작업에만 쓰이고, 날짜별 세션 문서도 worktree마다 따로 둔다
+- **local 모드의 `docs` 링크가 새 파일로 잡히던 문제** — 저장소의 exclude 파일에 넣어 git이 무시하게 했다
+- **만들어진 문서의 합치기 충돌** — 기준 쪽을 따른다. `/l-build`에 문서 · 데이터 · 코드 충돌을 푸는 순서를 넣었다
+- **작업 마치기** — 기준 브랜치가 열린 폴더에서 합치고, 지울 수 없는 worktree는 통째로 남긴다. 충돌이 없는데 합치기가 실패하면 충돌이 아니라고 알려 준다
+
 ## [0.2.10] - 2026-11-04
 
 업그레이드: `uv tool upgrade lanternspec` → 프로젝트마다 `lantern upgrade` (`/l-pr`을 설치하고 스킬의 새 규칙을 넣는다). `dev`나 PR을 쓰려면 `lantern profile set git.pr=deploy` 처럼 설정한 뒤 `lantern upgrade`를 한 번 더 한다

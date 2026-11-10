@@ -102,9 +102,9 @@ flowchart LR
 | `/l-init` | sets up the document structure and design principles from the questions the earlier answers call for (new or existing · team size · project kind · server · knowledge base · design tool · technology choice and so on), and picks the branch flow | `lantern.yaml`, `docs/`, project definition, MOC, design principles |
 | `/l-idea` | records a thought from the conversation, as said and as summarised | `1. Ideas/IDEA-001 …` |
 | `/l-plan` | what and why — a work folder and acceptance criteria | `2. Work/W-001 …/Plan.md` |
-| `/l-design` | how — only the structure, screens and data (DBML) that change, behind an approval gate | `Design.md`, `Screens/`, ADR |
+| `/l-design` | how — only the structure, screens and data (DBML) that change, wireframes, behind an approval gate | `Design.md`, `Screens/`, ADR |
 | `/l-task` | an ordered task list (size · acceptance criteria · dependencies) | `Tasks.md` |
-| `/l-build` | implement → test → one commit per task, report **with evidence**, merge into the current state when done | code, `Log.md` |
+| `/l-build` | implement → test → one commit per task, report **with evidence**, open and check screens itself, merge into the current state when done (in a parallel worktree, only its own tasks) | code, `Log.md` |
 | `/l-learn` | compares unfamiliar tech with your knowledge base → 🟢 · 🟡 · 🔴, debt cards and draft study notes | `📒 Debt/Cards/D-001 …` |
 | `/l-report` | kanban · timeline · domain · traceability · debt · docs-vs-code status + a three-line report | `4. Operations/Reports/Status Report.md` |
 | `/l-template` | create, refine and migrate templates (without losing content) | `0. Templates/…` |
@@ -116,6 +116,8 @@ flowchart LR
 | `/l-ref` | brings in company rules, glossaries and domain knowledge, indexes them by section and gets each section's use approved | the index, company rules in `AGENTS.md`, `Glossary.md` |
 | `/l-domain` | when domain rules matter, finds the matching section in the index and reads just that section word for word | (the plan's "Domain Knowledge Used") |
 | `/l-pr` | writes the title and body for the direction that fits the branch flow, and opens the PR once confirmed (never merges) | — |
+| `/l-parallel` | before starting several works at once, checks what they must decide together and their order, records the decisions as ADRs, then opens a worktree per work | ADR |
+| `/l-finish` | when parallel works are done, gathers person checks in the base folder, merges them one at a time, then updates the current state, archives and reports once | current state, `Archive/` |
 
 ### How it works
 - **Scripts handle the format, the AI writes the content.** Numbering, files, folders, checks and status changes all go through the `lantern` command; the AI only writes content.
@@ -136,7 +138,7 @@ docs/
 ├─ 2. Work/W-001 …/       plan · design · tasks · log — the only place edited while working
 │   └─ Archive/           archive
 ├─ 3. Current State/     what the system looks like now — updated only when work is done, after approval
-│   └─ Rules/ · Decisions/ · Deployment and Operations/ · Glossary …
+│   └─ Rules/ (Tech Selection Criteria · Repository File Rules …) · Decisions/ · Deployment and Operations/ · Glossary …
 ├─ 4. Operations/        reports · session logs · (teams of 2+) meeting notes
 ├─ 5. Legacy Docs/       (existing projects) original documents, kept unchanged
 ├─ 📒 Debt/              understanding debt — one card per debt
@@ -183,6 +185,8 @@ Work branches are named `work/W-012` by default; change it with `git.branch` in 
 git:
   branch: feature/{id}-{slug}   # → feature/W-012-login (blanks other than {id} are named for each work)
 ```
+
+To run several works at once, check them with `/l-parallel`, run `/l-build` in each work's worktree in its own terminal, and merge them with `/l-finish` in the base folder once all are done.
 
 ## Supported AI tools
 
@@ -286,6 +290,7 @@ Picks design principles and code conventions from a table, based on the project 
 ### Design tools
 Claude Design: in Claude Code, the AI draws wireframes on a Design canvas itself. Figma and Canva work through each tool's MCP.
 Import mockups with `lantern screen import`; `lantern screen compare` finds where the built screen differs from the mockup.
+`/l-build` opens built screens with the AI tool's browser to check them, and leaves "waiting for a person" when it can't (`verify.browser`). Whether a screen matches the mockup is a person's call.
 
 ## CLI at a glance
 
@@ -295,10 +300,10 @@ profile    profile show|docs|write|set · principles show|detect · parts [add|i
 documents  scaffold init [--plan] | work | doc | idea | adr | meeting | custom · new-id · map · meta get|set
 checks     check [--changed] [--epic W-012] · check-pr · lint [--ci] · check-dbml · dbml render|from-sql|diff
 work       task next [--all]|start|done|ac|list|estimate · task add [--parallel] · pack · screen import|compare
-           work branch|start|list|finish|archive|stage|flow · design approve · unit-log add · idea find|status
+           work branch|start|list|overlap|finish|archive|stage|flow · design approve · unit-log add · idea find|status
 learning   knowledge search|read|propose|write|areas · debt find|new|ask|resolve|promote|practice|known|status|list · mcp
 reports    report [--views] [--summary] · status · resume [--session] [--more] · scan [--tests] [--ci] · sync adopt · eval · obsidian plugins
-templates  template list|lint|level|bump|outdated|diff|usage|new|migrate · legacy adopt|todos
+templates  template list|show|lint|level|bump|outdated|diff|usage|new|migrate · legacy adopt|todos
 references ref list|check|index|read · tag|exclude|rules · terms|term|glossary|candidate · domain|describe|attach · convert [--apply]|preview
 git        hooks install|uninstall|status · docs-mode local|shared
 wrap-up    close <skill>

@@ -7,6 +7,40 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+**How to move:** `lantern harness suggest` is now `lantern build-mode suggest` (the old name still works for now, with a notice). Where you called `lantern work start` directly while another work was running, go through `/l-parallel` or add `--skip-check`. Codex reads the new permission profile only after the project is trusted, and a `sandbox_mode` in your own settings wins over it (`lantern doctor` points this out).
+
+Upgrade: `uv tool upgrade lanternspec` → `lantern upgrade` in each project (installs `/l-parallel` · `/l-finish` and adds two rules documents, the skills, the project rules and the Codex permission profile)
+
+### Added
+- **`/l-parallel` — check before parallel works** — finds what the works must decide together (shared tables · sessions · tokens · permissions · caches) and their order, has a person decide, records it as ADRs, then starts the works. When only one work can start now, it goes in order without a worktree
+- **`/l-finish` — wrap up parallel works** — in the base folder, gathers person checks, looks for the same job built two ways, then merges the works one at a time. The current-state update, archive and report happen once, and merged branches are deleted
+- **`lantern work overlap`** — shows the tables, files and decision records works share, code files they changed in common, and dependencies they added, without starting anything
+- **Tech Selection Criteria document** — `Rules/` gets evaluation criteria, a decision tree and technology comparison tables. `/l-init` recommends a new service's or app's stack by the tree, and `/l-adr` notes the criteria, date and template version
+- **Repository File Rules document** — comment structure for `.gitignore` · `docker-compose.yml`, README · CHANGELOG formats by project lifespan, a license chosen by questions, and folder structure. The project AGENTS.md follows it when these files are first created
+- **New `/l-init` questions** — how long the project will run (`project.lifespan`), whether the repository is public (public ones get a LICENSE), and, when building a server, whether to set up the development environment with Docker
+- **Screen check** — `/l-build` opens and captures each screen task with the AI tool's browser and checks its acceptance criteria. When it can't, it leaves a "waiting for a person" line and carries on, and these are gathered for a person before merging. Setting: `verify.browser`
+- **Document auto-commit** — `/l-plan` · `/l-design` · `/l-task` · `/l-adr` commit only their work's documents when they finish (the work folder, the decision records the design follows, linked idea cards). Setting: `docs.commit: auto | manual`; command: `lantern close --commit`
+- **Wireframes in `/l-design`** — draws wireframes on the Claude Design canvas and saves them in `Screens/`, keeping the screen before a change in `Screens/Current/`. With an existing UI, `/l-init` mentions `/design-sync` once
+- **`lantern template show`** — reads a bundled template the project doesn't have yet
+- **One work on another branch** — `lantern work branch · start --into <branch>` starts that work from another branch and merges it there; `--here` commits straight to the current branch with no work branch
+- **Codex permission profile** — `lantern install` · `upgrade` add a `lantern` profile to `.codex/config.toml` so Codex can commit, keeping git hooks and config read-only. `lantern work start` shows the command to open the worktree in each tool
+
+### Changed
+- **`lantern harness` → `lantern build-mode`** — suggests loop scope, task delegation and parallel works separately. `--apply` changes only the loop scope
+- **`/l-plan` lists the screens needed** — it no longer asks for mockups. The "matches the mockup" acceptance criterion is added at design time, and the missing-mockup warning comes only after the design is approved
+- **`/l-design` follows earlier decisions** — reads related decision records instead of asking again, and lists the decisions it follows in the design's `adr`
+- **Parallel works start after a check** — when two or more works would run at once, `lantern work start` won't start without `--skip-check`
+- **`/l-build` in a worktree** — commits only its own tasks and log and stops; `/l-finish` in the base folder wraps up
+- **Postponed archiving** — while a work running in another worktree links to it, `lantern work archive` only marks the work done and keeps its folder; `--now` archives it anyway
+- **`lantern work list` marks** — shows works waiting for `/l-finish`, branches already merged (with the delete command), worktrees left after a work finished, and works waiting to be archived
+- **`/l-init` question order** — asks what you're building before where it's used, in plain choices, and asks to choose only when there are two or more candidates
+
+### Fixed
+- **Records mixed between worktrees** — the record saved before a conversation is summarized goes only to that worktree's work, and each worktree keeps its own daily session document
+- **The local-mode `docs` link showing as a new file** — it's added to the repository's exclude file so git ignores it
+- **Merge conflicts in generated documents** — the base side is taken, and `/l-build` has an order for resolving document, data and code conflicts
+- **Finishing a work** — merges in the folder where the base branch is open, leaves a worktree it can't delete whole, and says a failed merge is not a conflict when nothing conflicts
+
 ## [0.2.10] - 2026-11-04
 
 Upgrade: `uv tool upgrade lanternspec` → `lantern upgrade` in each project (installs `/l-pr` and puts the new rules in the skills). To use `dev` or PRs, set it like `lantern profile set git.pr=deploy`, then run `lantern upgrade` once more

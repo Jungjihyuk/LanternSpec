@@ -100,9 +100,9 @@ flowchart LR
 | `/l-init` | 앞 답에 따라 필요한 질문(신규/기존 · 인원 · 프로젝트 종류 · 서버 · 지식 저장소 · 디자인 도구 · 기술 선택 등)으로 문서 구조와 개발 원칙을 정하고, 브랜치 방식도 고른다 | `lantern.yaml`, `docs/`, 프로젝트 정의서, MOC, 개발 원칙 |
 | `/l-idea` | 대화 속 생각을 원문 + 정리본으로 바로 기록 | `1. 아이디어/IDEA-001 …` |
 | `/l-plan` | 무엇을 · 왜 — 작업 폴더와 수락 기준 | `2. 작업/W-001 …/기획.md` |
-| `/l-design` | 어떻게 — 바뀌는 구조 · 화면 · 데이터(DBML)만, 승인 게이트 | `설계.md`, `화면/`, ADR |
+| `/l-design` | 어떻게 — 바뀌는 구조 · 화면 · 데이터(DBML)만, 와이어프레임, 승인 게이트 | `설계.md`, `화면/`, ADR |
 | `/l-task` | 순서 있는 할 일 목록 (크기 · 수락 기준 · 의존) | `할 일.md` |
-| `/l-build` | 구현 → 테스트 → 할 일마다 커밋, **증거로** 보고, 끝나면 현재 상태에 반영 | 코드, `기록.md` |
+| `/l-build` | 구현 → 테스트 → 할 일마다 커밋, **증거로** 보고, 화면은 직접 열어 확인, 끝나면 현재 상태에 반영 (동시 작업의 worktree에서는 자기 할 일까지만) | 코드, `기록.md` |
 | `/l-learn` | 모르는 기술을 지식 저장소와 비교 → 🟢 · 🟡 · 🔴, 부채 카드 · 학습 노트 초안 | `📒 부채/카드/D-001 …` |
 | `/l-report` | 칸반 · 타임라인 · 도메인 · 추적 · 부채 · 문서와 코드가 맞는지 + 3줄 요약 | `4. 운영 기록/보고/현황.md` |
 | `/l-template` | 양식 만들기 · 다듬기 · 옮기기 (내용은 잃지 않음) | `0. 템플릿/…` |
@@ -114,6 +114,8 @@ flowchart LR
 | `/l-ref` | 사내 규칙 · 용어집 · 도메인 지식을 들여와 절 단위로 색인하고, 절마다 쓰임을 승인받는다 | 색인, `AGENTS.md`의 사내 규칙, `용어집.md` |
 | `/l-domain` | 도메인 규칙이 필요할 때 색인에서 맞는 절만 찾아 원문으로 읽는다 | (기획의 "참고한 도메인 지식") |
 | `/l-pr` | 브랜치 방식에 맞는 방향으로 제목 · 본문을 쓰고, 확인받은 뒤 PR을 만든다 (합치지는 않는다) | — |
+| `/l-parallel` | 여러 작업을 동시에 시작하기 전에 함께 정할 것 · 순서를 점검하고, 정한 것을 ADR로 남긴 뒤 작업마다 worktree를 연다 | ADR |
+| `/l-finish` | 동시 작업이 끝나면 기준 폴더에서 사람 확인을 모으고, 하나씩 합친 뒤 현재 상태 · 보관 · 보고를 한 번에 한다 | 현재 상태, `보관/` |
 
 ### 이렇게 동작한다
 - **형식은 스크립트가, 내용은 AI가.** 번호 · 파일 · 폴더 · 검사 · 상태 바꾸기는 모두 `lantern` 명령이 하고, AI는 내용만 쓴다.
@@ -134,7 +136,7 @@ docs/
 ├─ 2. 작업/W-001 …/        기획 · 설계 · 할 일 · 기록 — 일하는 동안 고치는 곳은 여기뿐
 │   └─ 보관/
 ├─ 3. 현재 상태/           지금 시스템의 모습 — 작업이 끝날 때만 승인 후 갱신
-│   └─ 규칙/ · 결정 기록/ · 배포 · 운영/ · 용어집 …
+│   └─ 규칙/(기술 선택 기준 · 저장소 파일 규칙 …) · 결정 기록/ · 배포 · 운영/ · 용어집 …
 ├─ 4. 운영 기록/           보고 · 세션 기록 · (2인 이상) 회의록
 ├─ 5. 기존 문서/           (기존 프로젝트) 원본 보관 — 고치지 않음
 ├─ 📒 부채/               카드 1장 = 부채 1개
@@ -181,6 +183,8 @@ lantern obsidian plugins     # 두 플러그인의 최신 공식 배포 파일�
 git:
   branch: feature/{id}-{slug}   # → feature/W-012-login ({id}가 아닌 칸은 작업마다 정한다)
 ```
+
+여러 작업을 동시에 진행하려면 `/l-parallel`로 점검한 뒤 터미널마다 그 작업의 worktree에서 `/l-build`를 돌리고, 모두 끝나면 기준 폴더에서 `/l-finish`로 합친다.
 
 ## 지원 AI 도구
 
@@ -284,6 +288,7 @@ AI가 쓴 기술 중 모르는 것은 내 지식 저장소의 노트와 비교�
 ### 디자인 도구
 Claude Design은 Claude Code에서 AI가 Design 캔버스에 와이어프레임을 직접 그리고, Figma · Canva는 각 도구의 MCP로 쓴다.
 시안은 `lantern screen import`로 가져오고, `lantern screen compare`가 구현 화면과 시안의 차이를 먼저 찾아 보여 준다.
+구현한 화면은 `/l-build`가 AI 도구의 브라우저로 열어 확인하고, 할 수 없으면 "사람 확인 대기"로 남긴다 (`verify.browser`). 시안과 같은지는 사람이 정한다.
 
 ## CLI 한눈에
 
@@ -293,10 +298,10 @@ Claude Design은 Claude Code에서 AI가 Design 캔버스에 와이어프레임�
 문서     scaffold init [--plan] | work | doc | idea | adr | meeting | custom · new-id · map · meta get|set
 검사     check [--changed] [--epic W-012] · check-pr · lint [--ci] · check-dbml · dbml render|from-sql|diff
 일       task next [--all]|start|done|ac|list|estimate · task add [--parallel] · pack · screen import|compare
-         work branch|start|list|finish|archive|stage|flow · design approve · unit-log add · idea find|status
+         work branch|start|list|overlap|finish|archive|stage|flow · design approve · unit-log add · idea find|status
 배움     knowledge search|read|propose|write|areas · debt find|new|ask|resolve|promote|practice|known|status|list · mcp
 보고     report [--views] [--summary] · status · resume [--session] [--more] · scan [--tests] [--ci] · sync adopt · eval · obsidian plugins
-양식     template list|lint|level|bump|outdated|diff|usage|new|migrate · legacy adopt|todos
+양식     template list|show|lint|level|bump|outdated|diff|usage|new|migrate · legacy adopt|todos
 참고     ref list|check|index|read · tag|exclude|rules · terms|term|glossary|candidate · domain|describe|attach · convert [--apply]|preview
 git      hooks install|uninstall|status · docs-mode local|shared
 마무리   close <스킬>
