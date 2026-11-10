@@ -7,6 +7,8 @@
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-10
+
 **옮기는 법:** `lantern harness suggest`는 `lantern build-mode suggest`로 이름이 바뀌었다 (옛 이름은 당분간 안내와 함께 동작한다). 다른 작업이 진행 중일 때 `lantern work start`를 바로 부르던 곳은 `/l-parallel`을 거치거나 `--skip-check`를 붙인다. Codex는 프로젝트를 신뢰(trust)한 뒤에야 새 권한 설정을 읽고, 사용자 설정에 `sandbox_mode`가 있으면 그 설정이 이긴다 (`lantern doctor`가 알려 준다).
 
 업그레이드: `uv tool upgrade lanternspec` → 프로젝트마다 `lantern upgrade` (`/l-parallel` · `/l-finish`를 설치하고, 규칙 문서 두 개 · 스킬 · 프로젝트 규칙 · Codex 권한 설정을 넣는다)
@@ -255,7 +257,8 @@
   Rust · Go)와 규모로 코드 컨벤션을 기준표대로 골라 `AGENTS.md`와 `개발 원칙.md`에 넣는다 (`principles`, `lint`)
 - **작업 방식 · 평가** — 하네스 · 루프 · 그래프 추천(`harness suggest`), 실행 기록으로 스킬 · 모델 · 설정 비교(`eval`)
 
-[Unreleased]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.10...HEAD
+[Unreleased]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.10...v0.3.0
 [0.2.10]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.9...v0.2.10
 [0.2.9]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.8...v0.2.9
 [0.2.8]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.7...v0.2.8

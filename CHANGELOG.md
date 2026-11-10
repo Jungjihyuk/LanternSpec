@@ -7,6 +7,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-10
+
 **How to move:** `lantern harness suggest` is now `lantern build-mode suggest` (the old name still works for now, with a notice). Where you called `lantern work start` directly while another work was running, go through `/l-parallel` or add `--skip-check`. Codex reads the new permission profile only after the project is trusted, and a `sandbox_mode` in your own settings wins over it (`lantern doctor` points this out).
 
 Upgrade: `uv tool upgrade lanternspec` → `lantern upgrade` in each project (installs `/l-parallel` · `/l-finish` and adds two rules documents, the skills, the project rules and the Codex permission profile)
@@ -246,7 +248,8 @@ First release.
 - **Design principles and code conventions** — design principles chosen from a table by project kind · external integrations · size, and code conventions by language (Python · TypeScript · Swift · Rust · Go) and size, written into `AGENTS.md` and `개발 원칙.md` (`principles`, `lint`)
 - **Ways of working and evaluation** — harness · loop · graph recommendation (`harness suggest`); comparing skills · models · settings from the run log (`eval`)
 
-[Unreleased]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.10...HEAD
+[Unreleased]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.10...v0.3.0
 [0.2.10]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.9...v0.2.10
 [0.2.9]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.8...v0.2.9
 [0.2.8]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.2.7...v0.2.8
