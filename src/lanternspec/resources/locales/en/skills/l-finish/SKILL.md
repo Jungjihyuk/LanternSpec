@@ -14,6 +14,7 @@ Input: `$ARGUMENTS` — the works to merge (`W-001 W-002`). Without it, let the 
 Current settings: current-state update `<<build.merge_approval>>`<!-- lantern:if build.test --> · tests `<<build.test>>`<!-- lantern:endif -->
 
 ## 0. Before starting
+- Before merging, read each work’s documents from its actual worktree. Report blocked merges only in the final conversation response, without writing to that work’s documents in the base folder. Make necessary changes in the owning worktree.
 - Check that this runs in the base folder. Inside a worktree, stop and say to run it again from the base folder.
 - If `git status` shows uncommitted changes, stop and say: "The base folder has uncommitted changes. Another wrap-up may be in progress."
 - Show the works "waiting for /l-finish" from `lantern work list`, and let the person choose which to merge now and in what order (only those given as arguments, if any).

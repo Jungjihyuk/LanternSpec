@@ -27,6 +27,7 @@ Find what two or more works need but neither a design nor a decision record sett
 - API format (response · error shape, address rules)
 - Shared screen parts · design rules
 - Outside services · major libraries
+- Whether one work must change or invalidate sessions, tokens, permissions or caches created by another (e.g. existing sign-in sessions after a password change)
 
 Also find where one work depends on another's result (e.g. the profile depends on the sign-in's authentication).
 
@@ -39,7 +40,11 @@ Where works depend on each other, let the person choose:
 
 Record each decision with `/l-adr`. For each related work, add its ID to `adr` in the `<<file.design>>` frontmatter and reflect it in the design text. Commit the changed documents before starting (a worktree only gets committed documents).
 
+Reflect the agreed behavior in the related designs and test tasks, including a test connecting both features (e.g. an existing persistent session after a password change).
+Do not edit documents in the base folder for works already running in worktrees. Tell their sessions which decisions and changes to apply.
+
 ## 3. Start
+Write and commit all necessary documents and records for the works before running the command below. After starting, do not edit their documents in the base folder; report start results and postponement reasons only in the conversation.
 ```bash
 lantern work start W-001 W-002 --skip-check
 ```

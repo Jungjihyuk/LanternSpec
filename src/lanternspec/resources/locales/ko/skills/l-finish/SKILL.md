@@ -14,6 +14,7 @@ argument-hint: "[W-NNN …]"
 지금 설정: 현재 상태 반영 `<<build.merge_approval>>`<!-- lantern:if build.test --> · 테스트 `<<build.test>>`<!-- lantern:endif -->
 
 ## 0. 시작 전
+- 합치기 전에는 각 작업의 실제 worktree에서 문서를 읽는다. 합치지 못한 이유는 마지막 대화 보고에만 적고, 기준 폴더의 해당 작업 문서에는 쓰지 않는다. 필요한 수정은 해당 worktree에서 진행한다.
 - 기준 폴더에서 실행 중인지 확인한다. worktree 안이면 멈추고 기준 폴더에서 다시 실행하라고 알린다.
 - `git status`에 커밋하지 않은 변경이 있으면 멈추고 알린다: "기준 폴더에 커밋하지 않은 변경이 있어요. 다른 마무리가 진행 중일 수 있어요."
 - `lantern work list`로 "/l-finish 대기" 작업을 보여 주고, 이번에 합칠 것과 순서를 고르게 한다 (인자로 받았으면 그것만).

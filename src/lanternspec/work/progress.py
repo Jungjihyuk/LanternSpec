@@ -1,9 +1,9 @@
 """Save progress into a document's "지금 상황" section just before the conversation is compacted.
 
 Responsibilities:
-    - overwrite "지금 상황" of each active work's `기록.md` with the current state (progress · next · blocked · open questions)
+    - overwrite "지금 상황" of each eligible work's `기록.md` with the current state (progress · next · blocked · open questions)
     - move what it replaced into "지난 기록" so nothing is lost
-    - without any `기록.md`, write to `4. 운영 기록/세션/<date>.md`
+    - without an eligible record, write a daily session document (separate for each parallel work)
     - read "지금 상황" back so it can be put back after compaction
 
 "지금 상황" and "지난 기록" are protected sections: they are found under any title the project gave them,
@@ -104,8 +104,9 @@ def work_state(project: Project, work: Path) -> str:
 def save_before_compact(project: Project) -> dict[Path, str]:
     """Save progress into documents and return each document's previous "지금 상황".
 
-    Overwrites "지금 상황" of every active work item that has a `기록.md`. Without any, the state of
-    all active work goes to `4. 운영 기록/세션/<date>.md` (one per day).
+    A parallel worktree saves only its own work; other folders exclude works checked out elsewhere.
+    Without a record, eligible work goes to a daily session document. Parallel worktrees add their
+    work ID to that filename so local-mode worktrees never share the same fallback document.
     Previous content moves to "지난 기록". A document is skipped when it has no "지금 상황", when
     the project turned that section off, or when old content has nowhere to go (no "지난 기록").
 
@@ -124,15 +125,28 @@ def save_before_compact(project: Project) -> dict[Path, str]:
     names = project.names
     if names.is_unused("now"):
         return {}
+    from .branches import parallel_work_here, work_of_branch, worktrees
+
+    own = parallel_work_here(project)
+    works = project.work_dirs()
+    elsewhere = {
+        wid
+        for tree in worktrees(project)
+        if tree.path.resolve() != project.root.resolve() and (wid := work_of_branch(project, tree.branch))
+    }
+    eligible = [w for w in works if work_id_of(w) == own] if own else [w for w in works if work_id_of(w) not in elsewhere]
+    if (works or own) and not eligible:
+        return {}
     stamp = now_minute()
-    records = [project.doc_path(w, "record") for w in project.work_dirs() if project.doc_path(w, "record").exists()]
+    records = [project.doc_path(w, "record") for w in eligible if project.doc_path(w, "record").exists()]
     if records:
         saved = {rec: _overwrite_now(rec, work_state(project, rec.parent), stamp, names) for rec in records}
     else:
-        session = project.folder("sessions") / f"{today()}.md"
+        key = f"{today()}{'-' + own if own else ''}"
+        session = project.folder("sessions") / f"{key}.md"
         if not session.exists():
-            create_from_template(project, names.doc("session"), session, {"id": f"SESSION-{today()}"})
-        states = [f"**{work_id_of(w)}**\n{work_state(project, w)}" for w in project.work_dirs()]
+            create_from_template(project, names.doc("session"), session, {"id": f"SESSION-{key}"})
+        states = [f"**{work_id_of(w)}**\n{work_state(project, w)}" for w in eligible]
         saved = {session: _overwrite_now(session, "\n\n".join(states) or msg("- No work in progress"), stamp, names)}
     return {path: old for path, old in saved.items() if old is not None}
 
