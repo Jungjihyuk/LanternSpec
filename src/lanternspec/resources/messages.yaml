@@ -802,6 +802,8 @@
 
 # tools/codex.py
 ".codex/hooks.json — agent hooks. Codex asks whether to trust them on first run": {ko: ".codex/hooks.json — 에이전트 hook. Codex를 처음 실행할 때 신뢰 여부를 물어봄"}
+".codex/config.toml — permissions so a session can commit. Codex uses them only after you trust this project when it first asks": {ko: ".codex/config.toml — 세션이 커밋할 수 있게 하는 권한. Codex를 처음 열 때 이 프로젝트를 신뢰해야 적용됨"}
+"Codex: sandbox_mode in {path} makes Codex ignore the project's lantern permissions, so commits fail — remove it to use them": {ko: "Codex: {path}의 sandbox_mode 때문에 Codex가 프로젝트의 lantern 권한을 무시해 커밋이 실패합니다 — 쓰려면 그 줄을 지우세요"}
 
 # tools/docs_mode.py
 "✔ Regenerated skills · AGENTS.md ({count}, with docs.remote)": {ko: "✔ 스킬 · AGENTS.md 다시 생성 ({count}개, docs.remote 반영)"}

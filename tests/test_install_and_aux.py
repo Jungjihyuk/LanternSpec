@@ -570,3 +570,40 @@ def test_lifespan_is_short_by_default_and_takes_long(repo):
     assert "lifespan: long" in repo("profile", "show")[1]
     code, out = repo("profile", "set", "project.lifespan=forever", ok=False)
     assert code != 0 and "lifespan" in out
+
+
+def test_codex_install_lets_sessions_commit_and_keeps_other_settings(repo, tmp_path, monkeypatch):
+    import tomllib
+
+    monkeypatch.setenv("CODEX_HOME", str(tmp_path / "codex-home"))
+    config = repo.root / ".codex/config.toml"
+    config.parent.mkdir()
+    config.write_text('model = "gpt-x"\n', encoding="utf-8")
+    _, out = repo("install", "--tools", "codex")
+    assert "신뢰해야 적용됨" in out
+    data = tomllib.loads(config.read_text(encoding="utf-8"))
+    assert data["model"] == "gpt-x" and data["default_permissions"] == "lantern"
+    assert data["permissions"]["lantern"]["filesystem"][":workspace_roots"] == {
+        ".git": "write",
+        ".git/hooks": "read",
+        ".git/config": "read",
+    }
+    repo("upgrade")
+    assert config.read_text(encoding="utf-8").count("[permissions.lantern]") == 1
+
+    config.write_text('default_permissions = "mine"\n', encoding="utf-8")  # a choice the user made stays
+    repo("upgrade")
+    assert tomllib.loads(config.read_text(encoding="utf-8"))["default_permissions"] == "mine"
+
+
+def test_doctor_warns_when_codex_sandbox_mode_turns_the_permissions_off(repo, tmp_path, monkeypatch):
+    home = tmp_path / "codex-home"
+    home.mkdir()
+    monkeypatch.setenv("CODEX_HOME", str(home))
+    repo("install", "--tools", "codex")
+    init_project(repo)
+    _, out = repo("doctor", ok=False)
+    assert "sandbox_mode" not in out
+    (home / "config.toml").write_text('sandbox_mode = "workspace-write"\n', encoding="utf-8")
+    _, out = repo("doctor", ok=False)
+    assert "sandbox_mode 때문에 Codex가 프로젝트의 lantern 권한을 무시" in out

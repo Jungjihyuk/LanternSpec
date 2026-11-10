@@ -1,4 +1,4 @@
-"""Codex — `.agents/skills` (called `$l-…`), hooks in `.codex/hooks.json`, MCP in `.codex/config.toml`.
+"""Codex — `.agents/skills` (called `$l-…`), hooks in `.codex/hooks.json`, permissions and MCP in `.codex/config.toml`.
 
 Hook payloads and answers follow Claude Code's schema (checked against codex 0.164), so the
 protocol comes from claude.ClaudeHooks; only what differs is written here.
@@ -7,8 +7,10 @@ protocol comes from claude.ClaudeHooks; only what differs is written here.
 from __future__ import annotations
 
 import json
+import os
 import re
 import shlex
+import tomllib
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -24,6 +26,7 @@ if TYPE_CHECKING:
 PATCH_FILE = re.compile(r"^\*\*\* (?:Add|Update) File: (.+)$", re.M)
 INJECTED = ("# AGENTS.md", "<")  # starts of text Codex adds to user messages itself (AGENTS.md, environment context)
 WORKTREE_PROFILE = "lantern-worktree"
+PROJECT_PROFILE = "lantern"
 
 
 class Codex(ClaudeHooks, Tool):
@@ -215,8 +218,44 @@ class Codex(ClaudeHooks, Tool):
             ]
         )
 
+    def check_config(self, project: Project) -> list[tuple[str, str]]:
+        """Implement Tool.check_config: warn when the user's own Codex settings turn our permission profile off.
+
+        `sandbox_mode` in any settings file Codex loads makes it use the older sandbox settings and
+        ignore `default_permissions`, so commits from a session would fail again.
+
+        Args:
+            project: The project.
+
+        Returns:
+            A warning row when the user's settings set `sandbox_mode`; nothing otherwise.
+
+        Example:
+            >>> Codex().check_config(project)  # doctest: +SKIP
+            []
+        """
+        home = Path(os.environ.get("CODEX_HOME") or Path.home() / ".codex") / "config.toml"
+        try:
+            data = tomllib.loads(read(home)) if home.exists() else {}
+        except (tomllib.TOMLDecodeError, OSError):
+            return []
+        raw = data.get("profiles")
+        profiles: dict[str, Any] = raw if isinstance(raw, dict) else {}
+        if "sandbox_mode" in data or any(isinstance(p, dict) and "sandbox_mode" in p for p in profiles.values()):
+            return [
+                (
+                    "warn",
+                    msg(
+                        "Codex: sandbox_mode in {path} makes Codex ignore the project's lantern permissions, "
+                        "so commits fail — remove it to use them",
+                        path=str(home),
+                    ),
+                )
+            ]
+        return []
+
     def install_config(self, project: Project, mcp: bool) -> list[str]:
-        """Implement Tool.install_config: hooks go into `.codex/hooks.json`, the MCP server (when asked) into `.codex/config.toml`.
+        """Implement Tool.install_config: hooks into `.codex/hooks.json`; permissions and (when asked) MCP into `.codex/config.toml`.
 
         Args:
             project: The project.
@@ -231,9 +270,18 @@ class Codex(ClaudeHooks, Tool):
         """
         merge_json_file(project.root / ".codex" / "hooks.json", lambda d: replace_hook_entries(d, self.hooks()))
         merged = [msg(".codex/hooks.json — agent hooks. Codex asks whether to trust them on first run")]
+        path = project.root / ".codex" / "config.toml"
+        text = add_permissions_toml(read(path) if path.exists() else "")
         if mcp:
-            path = project.root / ".codex" / "config.toml"
-            write(path, add_mcp_server_toml(read(path) if path.exists() else ""))
+            text = add_mcp_server_toml(text)
+        write(path, text)
+        merged.append(
+            msg(
+                ".codex/config.toml — permissions so a session can commit. "
+                "Codex uses them only after you trust this project when it first asks"
+            )
+        )
+        if mcp:
             merged.append(f".codex/config.toml — MCP {MCP_NAME}")
         return merged
 
@@ -258,3 +306,41 @@ def add_mcp_server_toml(existing_text: str) -> str:
         return existing_text
     block = f'{header}\ncommand = "lantern"\nargs = ["mcp"]\n'
     return (existing_text.rstrip() + "\n\n" if existing_text.strip() else "") + block
+
+
+def add_permissions_toml(existing_text: str) -> str:
+    r"""Add our permission profile to `.codex/config.toml` text, unless it is already there.
+
+    Codex keeps `.git` read-only inside the project by default, so commits and merges fail. The
+    profile opens `.git` and keeps its hooks and config read-only. A `default_permissions` the user
+    already chose stays; the profile is then only added for them to pick.
+
+    Args:
+        existing_text: The current file text ("" when missing).
+
+    Returns:
+        The new text.
+
+    Example:
+        >>> text = add_permissions_toml("")
+        >>> text.splitlines()[0]
+        'default_permissions = "lantern"'
+        >>> '".git" = "write"' in text and add_permissions_toml(text) == text
+        True
+    """
+    header = f"[permissions.{PROJECT_PROFILE}]"
+    text = existing_text
+    if header not in text:
+        block = (
+            "# lantern: commits and merges write to .git; its hooks and config stay read-only\n"
+            f"{header}\n"
+            'extends = ":workspace"\n\n'
+            f'[permissions.{PROJECT_PROFILE}.filesystem.":workspace_roots"]\n'
+            '".git" = "write"\n'
+            '".git/hooks" = "read"\n'
+            '".git/config" = "read"\n'
+        )
+        text = (text.rstrip() + "\n\n" if text.strip() else "") + block
+    if not re.search(r"(?m)^\s*default_permissions\s*=", text):
+        text = f'default_permissions = "{PROJECT_PROFILE}"\n\n' + text  # a top-level key must come before any table
+    return text
