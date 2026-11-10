@@ -228,4 +228,4 @@ LanternSpec이 만드는 문서는 모두 `docs/` 폴더에 있습니다.
 
 ---
 
-LanternSpec을 고치는 개발자라면 코드 안의 이름이 겹치는 곳을 정리한 [`GLOSSARY.md`](GLOSSARY.md)도 함께 보세요.
+LanternSpec을 고치는 개발자라면 흐름 · 폴더 · 기준을 왜 이렇게 정했는지 적은 [`RATIONALE.ko.md`](RATIONALE.ko.md)(설계 근거)와, 코드 안의 이름이 겹치는 곳을 정리한 [`GLOSSARY.md`](GLOSSARY.md)도 함께 보세요.

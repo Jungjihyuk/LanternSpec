@@ -228,4 +228,4 @@ Everything LanternSpec writes lives in the `docs/` folder.
 
 ---
 
-If you're changing LanternSpec itself, also see [`GLOSSARY.md`](GLOSSARY.md), which lists where names in the code overlap.
+If you're changing LanternSpec itself, also see [`RATIONALE.md`](RATIONALE.md), which records why the flow, folders and rules are the way they are, and [`GLOSSARY.md`](GLOSSARY.md), which lists where names in the code overlap.
