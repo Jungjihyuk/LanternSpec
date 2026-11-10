@@ -29,7 +29,7 @@ lantern task add W-012 "<무엇>" --size S|M|L --ac AC-1 [--after T01] [--screen
 - 긴 설명은 쓰지 말고 `<<file.design>>`의 해당 부분을 링크한다.
 - 다른 할 일과 **동시에 해도 되는** 할 일(서로 다른 파일, 먼저 끝나야 할 일 없음)은 `--parallel` (`[P]` 표시 — 병렬 에이전트가 함께 맡을 수 있다).
 - 모르는 것이 있는 할 일은 `--unknown` (줄 끝에 `<<marker.unknown>>`) — `/l-build`가 건너뛴다.
-- 화면 할 일은 `--screen`을 붙인다<!-- lantern:if plan.ui_reference=required --> (시안이 없으면 `/l-build`가 시작하지 않는다)<!-- lantern:endif -->.
+- 화면 할 일은 `--screen`을 붙인다<!-- lantern:if plan.ui_reference=required --> (시안이 없으면 `/l-build`가 시작하지 않는다)<!-- lantern:endif -->. 화면 할 일은 **만드는 일**로 쓴다. "화면을 눈으로 확인"을 따로 할 일로 만들지 않는다 — `/l-build`가 화면 할 일이 끝날 때 확인한다.
 - `lantern ref domain --work W-012`에 도메인 지식이 나오면, 절마다 그것을 쓰는 할 일을 정해 다시 연결한다: `lantern ref attach "<주소>" --work W-012 --task "T02 T03"` (쓰는 할 일을 한 번에 모두 — 다시 연결하면 그 줄이 바뀐다).
 
 ## 2. 점검

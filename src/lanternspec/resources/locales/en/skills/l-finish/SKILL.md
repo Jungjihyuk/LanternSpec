@@ -19,6 +19,11 @@ Current settings: current-state update `<<build.merge_approval>>`<!-- lantern:if
 - If `git status` shows uncommitted changes, stop and say: "The base folder has uncommitted changes. Another wrap-up may be in progress."
 - Show the works "waiting for /l-finish" from `lantern work list`, and let the person choose which to merge now and in what order (only those given as arguments, if any).
 
+## 0¼. Before merging — waiting for a person
+If a chosen work's `<<file.record>>` (the one in its worktree) still has "Waiting for a person" lines, gather them all with how to check and ask the person at once. If you can open the screen yourself, open it first and show the capture alongside.
+- Once confirmed, point the work's worktree session to check off the acceptance criteria, or, if the person asks to do it here, check them off with `lantern task ac` in that work's worktree and commit.
+- If something is off, leave that work unmerged, and add to the final report "In the W-00N session, fix <what>, then run `/l-finish` again."
+
 ## 0½. Before merging — was the same job done two ways?
 git can't catch the same job built two ways when it merges without a conflict. Look for it before merging:
 ```bash

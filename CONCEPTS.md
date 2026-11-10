@@ -34,7 +34,7 @@ LanternSpec's features sit in three layers. The split keeps the main line steady
 > A place in the core flow **where you can choose how something is done**. For example, you can choose whether screen mockups are made in Claude, Figma or Canva.
 > If the chosen tool is missing or fails, the flow doesn't stop: it falls back to asking a person for help.
 
-- Examples: the screen mockup tool, your study notes store, how often building stops for checks, whether to build several works at once
+- Examples: the screen mockup tool, how built screens are checked, your study notes store, how often building stops for checks, whether to build several works at once
 
 ### Add-on
 > A feature that is handy but **that the core flow doesn't need**.
@@ -137,6 +137,18 @@ Everything LanternSpec writes lives in the `docs/` folder.
 
 ### Evidence
 > **Proof** the AI leaves instead of just saying "it's done": changed files, the tests run and their results, the acceptance criteria checked, and commit numbers, written in the log.
+
+### Screen check
+> When a task that builds a screen is done, the AI **opens the screen itself, captures it** and checks that it shows, wraps and scrolls properly and responds when pressed. It works in AI tools that can control a browser.
+
+- Whether it matches the mockup is for a person to decide: the capture and the mockup are shown side by side.
+- Setting: `verify.browser` in `lantern.yaml` (`auto` · `none` · the name of a skill or MCP you want to use)
+
+### Waiting for a person
+> The mark left when the AI can't check a screen itself (no browser control, or it failed). Work carries on, and the checks are gathered and confirmed by a person before merging.
+
+- Example: `Waiting for a person: terms /terms — run the server, open http://localhost:8000/terms, check the line breaks (AC-2)`
+- Until a person confirms, that acceptance criterion stays unchecked, so an unchecked screen isn't merged.
 
 ### Needs answer
 > Instead of filling in something unknown with a guess, it's marked `❓ Needs answer`. A task with this mark doesn't start until a person answers.

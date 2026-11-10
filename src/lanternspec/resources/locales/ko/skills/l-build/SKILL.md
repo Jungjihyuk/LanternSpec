@@ -58,8 +58,20 @@ lantern task start W-012-T03     # [<<attr.start>>:: 시각]을 정확히 찍는
    여러 할 일을 한 커밋에 섞지 않는다. 할 일이 크면 같은 ID로 여러 커밋도 된다. 커밋 메시지에 AI가 작업했다는 표시(`Co-Authored-By` · `Generated with …` 등)를 넣지 않는다.
 5. **수락 기준 체크포인트:** `task done`이 `AC 체크포인트: AC-1`을 알리면 그 AC만 따로 확인한다(관련 테스트 · 동작 확인). 통과하면 `lantern task ac W-012 AC-1`.
 
+6. **화면 확인:** `[<<attr.screen>>:: …]` 할 일이 끝나면 실행해서 화면을 확인한다 (`lantern.yaml`의 `verify.browser`: `<<verify.browser>>`).
+<!-- lantern:if verify.browser=auto -->
+   - 이 AI 도구가 브라우저를 조종할 수 있으면(예: 브라우저 확장 · computer use · 도구에 내장된 브라우저 · Playwright MCP) 그것으로 화면을 열어 캡처한다.
+<!-- lantern:endif -->
+<!-- lantern:if !verify.browser=auto,none -->
+   - 브라우저 조종은 `<<verify.browser>>`만 쓴다. 비슷한 다른 스킬 · MCP가 있어도 쓰지 않는다.
+<!-- lantern:endif -->
+<!-- lantern:if !verify.browser=none -->
+   - 캡처는 `<<folder.screens>>/구현/<화면>.png`에 저장한다. 보이는가 · 줄바꿈 · 스크롤 · 누르면 동작하는가 같은 **기능 확인**은 캡처를 보고 판단해 해당 수락 기준을 체크하고(`lantern task ac W-012 AC-n`), 캡처를 증거에 남긴다.
+<!-- lantern:endif -->
+   - **직접 확인할 수 없으면**(<!-- lantern:if verify.browser=none -->이 프로젝트는 사람이 확인하도록 정했다<!-- lantern:endif --><!-- lantern:if !verify.browser=none -->브라우저 기능이 없거나 실행에 실패함<!-- lantern:endif -->) 할 일은 끝낸 것으로 두되 해당 수락 기준은 체크하지 않는다. `<<file.record>>`에 한 줄 남기고 멈추지 않고 계속한다:
+     `- 사람 확인 대기: <화면> — <실행 명령> 후 <주소>에서 <볼 곳> (AC-n)`
 <!-- lantern:if plan.ui_reference=required -->
-6. **화면 시안 확인:** `[<<attr.screen>>:: …]` 할 일이 끝나면 구현 화면을 캡처(`<<folder.screens>>/구현/…png`)하고, 시안도 PNG면 먼저 자동 비교로 다른 곳을 짚는다: `lantern screen compare "<<folder.screens>>/구현/로그인.png" "<<folder.screens>>/로그인.png"` (참고용). 그다음 둘을 **나란히 보여 주고 사용자에게 묻는다**: "시안과 같나요?" → 같으면 해당 AC 체크, 다르면 다른 곳마다 `lantern task add W-012 "<다른 곳 맞추기>" --size S --ac AC-n --screen "<화면>"`.
+   - **시안과 같은지**는 사람이 정한다. 시안도 PNG면 먼저 자동 비교로 다른 곳을 짚는다: `lantern screen compare "<<folder.screens>>/구현/로그인.png" "<<folder.screens>>/로그인.png"` (참고용). 그다음 캡처와 시안을 **나란히 보여 주고 사용자에게 묻는다**: "시안과 같나요?" → 같으면 해당 AC 체크, 다르면 다른 곳마다 `lantern task add W-012 "<다른 곳 맞추기>" --size S --ac AC-n --screen "<화면>"`. 캡처하지 못했으면 이 질문도 "사람 확인 대기"로 남긴다.
 <!-- lantern:endif -->
 
 ## 1½. 구현 중 벗어난 일
@@ -114,9 +126,10 @@ lantern scaffold idea "<짧은 제목>" --kind <유형> --raw "W-012 구현 중 
 `lantern task next W-012`가 **"이 폴더는 동시 작업용 worktree"**라고 알리면 여기서 멈춘다. 여러 작업이 함께 쓰는 문서는 `/l-finish`가 기준 폴더에서 한 번에 맞춘다:
 - 이 작업의 문서를 모두 커밋한다: `<<file.tasks>>`, `<<file.record>>`, 대화 압축 때 자동으로 저장된 `<<folder.sessions>>/<날짜>-W-012.md`. 현재 상태 문서 · 보관 · 보고는 건드리지 않는다.
 - `git status`에 남은 파일이 없는지 확인한다. 남은 파일이 있으면 `/l-finish`가 합친 뒤에도 이 worktree를 지우지 못한다.
-- 마지막 보고: 증거 요약(할 일 · 커밋 · 테스트 · 수락 기준)과 "기준 폴더에서 `/l-finish W-012`를 실행해 주세요".
+- 마지막 보고: 증거 요약(할 일 · 커밋 · 테스트 · 수락 기준) · 남은 "사람 확인 대기"와 "기준 폴더에서 `/l-finish W-012`를 실행해 주세요".
 
 그렇지 않고 "모든 할 일 완료"를 알리면:
+0. `<<file.record>>`에 "사람 확인 대기"가 남아 있으면 확인 방법과 함께 모아 보여 주고 사람에게 묻는다. 확인되면 해당 수락 기준을 체크하고(`lantern task ac`) 그 줄을 "사람 확인: 맞음 (날짜)"로 바꾼다. 다르다고 하면 고칠 할 일을 더하고(`lantern task add`) 1단계로 돌아간다.
 1. 설계의 변경분을 현재 상태에 합칠 **요약 한 장**을 보여 준다:
    ```
    📘 기능 목록  ✚ 카카오 로그인 (W-012)

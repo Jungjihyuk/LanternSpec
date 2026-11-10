@@ -1124,6 +1124,7 @@
 "  commit: {s}          # auto (a skill commits its work's documents when it closes) | manual (you commit them)": {ko: "  commit: {s}          # auto(스킬이 마칠 때 그 작업의 문서를 커밋) | manual(직접 커밋)"}
 "  tool: {s}       # claude-design | figma | canva (each tool's MCP) | none": {ko: "  tool: {s}       # claude-design | figma | canva (각 도구의 MCP) | none"}
 "  approval: {s}  # required (always approve) | auto (skip small designs) | off": {ko: "  approval: {s}  # required(항상 승인) | auto(작은 설계는 건너뜀) | off"}
+"  browser: {s}    # auto (the AI tool's own browser control) | none (a person checks screens) | <skill or MCP name>": {ko: "  browser: {s}    # auto(AI 도구의 브라우저 조종 기능) | none(화면은 사람이 확인) | <스킬 · MCP 이름>"}
 "  hooks: {s}              # warn (warning only) | block — applies only to commit message · schema log · document format checks": {ko: "  hooks: {s}              # warn(경고만) | block(막기) — 커밋 메시지 · 스키마 기록 · 문서 양식 검사에만 적용"}
 "  base: {s}                 # the base branch work branches merge into (main | dev …)": {ko: "  base: {s}                 # 작업 브랜치를 머지할 기준 브랜치 (main | dev …)"}
 "  capture: {s}           # manual (only when called) | ask (notice and ask) | auto (record on its own)": {ko: "  capture: {s}           # manual(직접 부를 때만) | ask(알아채고 묻기) | auto(알아서 기록)"}

@@ -29,7 +29,7 @@ lantern task add W-012 "<what>" --size S|M|L --ac AC-1 [--after T01] [--screen "
 - Don't write long descriptions; link the relevant part of `<<file.design>>`.
 - Tasks that **can run alongside** others (different files, nothing to wait for) get `--parallel` (marked `[P]` — parallel agents can take them together).
 - Tasks with something unknown get `--unknown` (`<<marker.unknown>>` at the end of the line) — `/l-build` skips them.
-- Screen tasks get `--screen`<!-- lantern:if plan.ui_reference=required --> (`/l-build` won't start them without a mockup)<!-- lantern:endif -->.
+- Screen tasks get `--screen`<!-- lantern:if plan.ui_reference=required --> (`/l-build` won't start them without a mockup)<!-- lantern:endif -->. Write a screen task as **building** something. Don't make "look at the screen" a task of its own — `/l-build` checks the screen when a screen task is done.
 - When `lantern ref domain --work W-012` lists domain knowledge, tie each section to the tasks that use it: `lantern ref attach "<address>" --work W-012 --task "T02 T03"` (all of them at once — attaching again replaces the line).
 
 ## 2. Review

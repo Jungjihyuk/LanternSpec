@@ -607,3 +607,18 @@ def test_doctor_warns_when_codex_sandbox_mode_turns_the_permissions_off(repo, tm
     (home / "config.toml").write_text('sandbox_mode = "workspace-write"\n', encoding="utf-8")
     _, out = repo("doctor", ok=False)
     assert "sandbox_mode 때문에 Codex가 프로젝트의 lantern 권한을 무시" in out
+
+
+def test_the_screen_check_follows_verify_browser(repo):
+    repo("install", "--tools", "claude")
+    init_project(repo)
+    skill = repo.root / ".claude/skills/l-build/SKILL.md"
+    text = skill.read_text(encoding="utf-8")
+    assert "브라우저를 조종할 수 있으면" in text and "사람 확인 대기" in text  # auto by default
+    repo("profile", "set", "verify.browser=none")
+    repo("upgrade")
+    text = skill.read_text(encoding="utf-8")
+    assert "사람이 확인하도록 정했다" in text and "브라우저를 조종할 수 있으면" not in text
+    repo("profile", "set", "verify.browser=playwright-mcp")
+    repo("upgrade")
+    assert "`playwright-mcp`만 쓴다" in skill.read_text(encoding="utf-8")

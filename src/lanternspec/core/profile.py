@@ -50,6 +50,7 @@ DEFAULTS: dict[str, Any] = {
     "docs": {"root": "docs/", "remote": "shared", "commit": "auto", "extra": [], "sections": {}, "unused_sections": []},
     "knowledge": None,
     "design": {"tool": "none", "approval": "required"},
+    "verify": {"browser": "auto"},
     "git": {"hooks": "warn", "base": "main", "branch": "work/{id}", "pr": "none", "deploy": "main"},
     "idea": {"capture": "manual"},
     "plan": {"max_questions": 3, "ac_format": "gwt", "ui_reference": "off"},
@@ -570,6 +571,12 @@ def render(data: dict[str, Any]) -> str:
         "design:",
         msg("  tool: {s}       # claude-design | figma | canva (each tool's MCP) | none", s=s(d["design"]["tool"])),
         msg("  approval: {s}  # required (always approve) | auto (skip small designs) | off", s=s(d["design"]["approval"])),
+        "",
+        "verify:",
+        msg(
+            "  browser: {s}    # auto (the AI tool's own browser control) | none (a person checks screens) | <skill or MCP name>",
+            s=s(d.get("verify", {}).get("browser", "auto")),
+        ),
         "",
         "git:",
         msg(

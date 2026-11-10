@@ -58,8 +58,20 @@ Read a 📌 verbatim section again right before turning its rule into code. Know
    Don't mix several tasks in one commit. A big task may have several commits with the same ID. Don't put any mark that AI did the work (`Co-Authored-By` · `Generated with …` and so on) in the commit message.
 5. **Acceptance-criterion checkpoint:** when `task done` announces a checkpoint for `AC-1`, check that AC on its own (related tests · trying the behavior). If it passes, `lantern task ac W-012 AC-1`.
 
+6. **Screen check:** when a `[<<attr.screen>>:: …]` task is done, run it and check the screen (`verify.browser` in `lantern.yaml`: `<<verify.browser>>`).
+<!-- lantern:if verify.browser=auto -->
+   - If this AI tool can control a browser (e.g. a browser extension · computer use · the tool's built-in browser · a Playwright MCP), open the screen with it and capture it.
+<!-- lantern:endif -->
+<!-- lantern:if !verify.browser=auto,none -->
+   - Control the browser only with `<<verify.browser>>`. Don't use other skills · MCPs that do something similar.
+<!-- lantern:endif -->
+<!-- lantern:if !verify.browser=none -->
+   - Save the capture in `<<folder.screens>>/build/<screen>.png`. For **functional checks** — does it show, wrap, scroll, respond when pressed — judge from the capture, check off the acceptance criterion (`lantern task ac W-012 AC-n`), and keep the capture as evidence.
+<!-- lantern:endif -->
+   - **If you can't check it yourself** (<!-- lantern:if verify.browser=none -->this project chose to have a person check<!-- lantern:endif --><!-- lantern:if !verify.browser=none -->no browser control, or it failed to run<!-- lantern:endif -->), leave the task done but don't check off the acceptance criterion. Add one line to `<<file.record>>` and carry on without stopping:
+     `- Waiting for a person: <screen> — run <command>, open <address>, look at <what> (AC-n)`
 <!-- lantern:if plan.ui_reference=required -->
-6. **Check against the mockup:** when a `[<<attr.screen>>:: …]` task is done, capture the built screen (`<<folder.screens>>/build/…png`); if the mockup is a PNG too, point out the differences first with the automatic comparison: `lantern screen compare "<<folder.screens>>/build/login.png" "<<folder.screens>>/login.png"` (a hint only). Then **show both side by side and ask the user**: "Does it match the mockup?" → if it does, check off the AC; if not, for each difference `lantern task add W-012 "<fix the difference>" --size S --ac AC-n --screen "<screen>"`.
+   - **Whether it matches the mockup** is for a person to decide. If the mockup is a PNG too, point out the differences first with the automatic comparison: `lantern screen compare "<<folder.screens>>/build/login.png" "<<folder.screens>>/login.png"` (a hint only). Then **show the capture and the mockup side by side and ask the user**: "Does it match the mockup?" → if it does, check off the AC; if not, for each difference `lantern task add W-012 "<match the difference>" --size S --ac AC-n --screen "<screen>"`. If there's no capture, leave this question as "Waiting for a person" too.
 <!-- lantern:endif -->
 
 ## 1½. Things outside the plan
@@ -114,9 +126,10 @@ When every task is done, run all the acceptance tests together<!-- lantern:if bu
 If `lantern task next W-012` says **"This folder is a worktree for parallel work"**, stop here. `/l-finish` brings the documents several works share up to date from the base folder in one go:
 - Commit all of this work's documents: `<<file.tasks>>`, `<<file.record>>`, and `<<folder.sessions>>/<date>-W-012.md` saved automatically when the conversation was compacted. Don't touch the current-state documents, the archive or the report.
 - Check that `git status` shows nothing left. If files are left, `/l-finish` can't remove this worktree even after merging it.
-- Final report: the evidence summary (tasks · commits · tests · acceptance criteria) and "Please run `/l-finish W-012` in the base folder."
+- Final report: the evidence summary (tasks · commits · tests · acceptance criteria) · any "Waiting for a person" left, and "Please run `/l-finish W-012` in the base folder."
 
 Otherwise, when it says every task is done:
+0. If `<<file.record>>` still has "Waiting for a person" lines, gather them with how to check and ask the person. Once confirmed, check off those acceptance criteria (`lantern task ac`) and change the line to "Checked by a person: matches (date)". If something is off, add a task to fix it (`lantern task add`) and go back to step 1.
 1. Show **one summary** of the design changes to merge into the current state:
    ```
    📘 Feature List  ✚ Sign in with Google (W-012)
