@@ -273,8 +273,7 @@ def cmd_work(a: argparse.Namespace) -> int:
     elif a.action == "finish":
         _print(work.finish(project, a.ids[0], test=not a.no_test, keep=a.keep))
     elif a.action == "archive":
-        dest = work.archive(project, a.ids[0])
-        print(msg("✔ Archived: {rel}", rel=project.rel(dest)))
+        _print(work.archive(project, a.ids[0], now=a.now))
     elif a.action == "stage":
         if len(a.ids) < 2:
             raise CliError(msg("lantern work stage W-012 <stage>"))
@@ -507,6 +506,7 @@ def register(add: Add) -> None:
     p.add_argument("--here", action="store_true", help=msg("branch: this work only, no work branch, commit straight to the current branch"))
     p.add_argument("--no-test", action="store_true")
     p.add_argument("--keep", action="store_true")
+    p.add_argument("--now", action="store_true", help=msg("archive: even while running works link to it"))
     p.add_argument("--skip-check", action="store_true", help=msg("start: start works in parallel without /l-parallel"))
     p = add("pack", cmd_pack, msg("Work pack (a one-off summary for the AI)"))
     p.add_argument("work")

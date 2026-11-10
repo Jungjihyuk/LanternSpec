@@ -869,7 +869,8 @@ def list_works(project: Project) -> list[str]:
 
     A worktree whose tasks are all done is marked as waiting for /l-finish, one whose work the main
     folder already archived is marked for removal, and a branch left without a worktree that is
-    already merged into its target is marked for deletion.
+    already merged into its target is marked for deletion. A done work whose archiving waits
+    (`archive_waits_for`) is listed with what it waits for.
 
     Args:
         project: The project.
@@ -897,8 +898,10 @@ def list_works(project: Project) -> list[str]:
         elif counts and counts[1] and counts[0] == counts[1] and own:
             note += msg("  · waiting for /l-finish")
         out.append(f"{wid}  {wt.branch}  {wt.path}  {_progress(project, wid, wt.path)}{note}{_target_of(project, wid)}")
+    running = {work_of_branch(project, wt.branch) for wt in trees}
     for b in git_out(["branch", "--list", "--format=%(refname:short)"], project.root).splitlines():
         wid = work_of_branch(project, b)
+        running.add(wid)
         if wid and not any(wt.branch == b for wt in trees):
             target = merge_target(project, wid)
             merged = target != b and git(["merge-base", "--is-ancestor", b, target], project.root).returncode == 0
@@ -907,6 +910,18 @@ def list_works(project: Project) -> list[str]:
                 + _target_of(project, wid)
                 + (msg("  · merged into {target} — delete it with git branch -d {b}", target=target, b=b) if merged else "")
             )
+    done = project.enums.value("work_status", "done")
+    for folder in main.work_dirs():
+        wid = work_id_of(folder)
+        plan = main.doc_path(folder, "plan")
+        if wid in running or not plan.exists() or frontmatter.parse(read(plan)).meta.get("status") != done:
+            continue
+        waits = archive_waits_for(main, wid)
+        out.append(
+            msg("{wid}  done · archived once {works} finish — now: lantern work archive {wid} --now", wid=wid, works=" · ".join(waits))
+            if waits
+            else msg("{wid}  done · waiting to be archived: lantern work archive {wid}", wid=wid)
+        )
     return out or [msg("No parallel works in progress")]
 
 
@@ -1105,22 +1120,58 @@ def finish(project: Project, work_id: str, test: bool = True, keep: bool = False
 # --------------------------------------------------------------------------- archive
 
 
-def archive(project: Project, work_id: str) -> Path:
+def archive_waits_for(project: Project, work_id: str) -> list[str]:
+    """List the works running in other worktrees whose documents link into this work's folder.
+
+    Archiving moves the folder and rewrites those links in this folder's copy of their documents,
+    which the worktree is also editing. Waiting until they finish keeps their documents untouched.
+
+    Args:
+        project: The project, loaded from the base folder.
+        work_id: The work to archive, e.g. "W-012".
+
+    Returns:
+        The IDs of the running works that link to it; empty when it can be archived now.
+
+    Example:
+        >>> archive_waits_for(project, "W-012")  # doctest: +SKIP
+        ['W-013']
+    """
+    wid = work_id.upper()
+    folder = project.find_work(wid, include_archive=False)
+    trees = worktrees(project)
+    if folder is None or not trees:
+        return []
+    patterns = _link_patterns(project.docs_rel(folder))
+    waits = []
+    for tree in trees[1:]:  # git lists the main folder first
+        other_id = work_of_branch(project, tree.branch)
+        other = project.find_work(other_id, include_archive=False) if other_id and other_id != wid else None
+        if other and any(pat.search(read(doc)) for doc in other.rglob("*.md") for pat in patterns):
+            waits.append(other_id)
+    return waits
+
+
+def archive(project: Project, work_id: str, now: bool = False) -> list[str]:
     """Mark a work done and move its folder to the archive, fixing links that pointed into it.
+
+    While a work running in another worktree links to it, the folder only gets marked done and
+    stays: it is archived with that work's /l-finish, or with `now` (rewriting that work's links here).
 
     Args:
         project: The project.
         work_id: A work in progress, e.g. "W-012".
+        now: Archive even while running works link to it.
 
     Returns:
-        The folder's new place.
+        Messages saying where the work went or why it waits.
 
     Raises:
         WorkError: The work is not in progress.
 
     Example:
-        >>> archive(project, "W-012").parent.name  # doctest: +SKIP
-        '보관'
+        >>> archive(project, "W-012")  # doctest: +SKIP
+        ['✔ 보관: docs/2. 작업/보관/W-012 로그인']
     """
     folder = project.find_work(work_id, include_archive=False)
     if folder is None:
@@ -1129,6 +1180,16 @@ def archive(project: Project, work_id: str) -> Path:
         p = project.doc_path(folder, role)
         if p.exists():
             write(p, frontmatter.set_fields(read(p), {"status": project.enums.value("work_status", "done")}))
+    waits = [] if now else archive_waits_for(project, work_id)
+    if waits:
+        return [
+            msg(
+                "⏸ {wid} stays until {works} finish, since their documents link to it — "
+                "the next /l-finish archives it, or now: lantern work archive {wid} --now",
+                wid=work_id.upper(),
+                works=" · ".join(waits),
+            )
+        ]
     dest_parent = project.folder("archive")
     dest_parent.mkdir(parents=True, exist_ok=True)
     dest = dest_parent / folder.name
@@ -1136,7 +1197,15 @@ def archive(project: Project, work_id: str) -> Path:
     new_rel = project.docs_rel(dest_parent) + "/" + nfc(folder.name)
     shutil.move(str(folder), str(dest))
     rewrite_links(project, old_rel, new_rel)
-    return dest
+    return [msg("✔ Archived: {rel}", rel=project.rel(dest))]
+
+
+def _link_patterns(old_rel: str) -> tuple[re.Pattern[str], re.Pattern[str]]:
+    """Wikilink and Markdown link patterns pointing into a folder."""
+    return (
+        re.compile(r"(\[\[)" + re.escape(old_rel) + r"(/)"),
+        re.compile(r"(\]\()" + re.escape(old_rel.replace(" ", "%20")) + r"(/)"),
+    )
 
 
 def rewrite_links(project: Project, old_rel: str, new_rel: str) -> list[Path]:
@@ -1155,8 +1224,7 @@ def rewrite_links(project: Project, old_rel: str, new_rel: str) -> list[Path]:
         [PosixPath('…/개발문서 MOC.md')]
     """
     changed = []
-    pat = re.compile(r"(\[\[)" + re.escape(old_rel) + r"(/)")
-    pat_md = re.compile(r"(\]\()" + re.escape(old_rel.replace(" ", "%20")) + r"(/)")
+    pat, pat_md = _link_patterns(old_rel)
     for p in project.docs.rglob("*.md"):
         text = read(p)
         new = pat.sub(lambda m: m.group(1) + new_rel + m.group(2), text)

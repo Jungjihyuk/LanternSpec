@@ -631,6 +631,46 @@ def test_list_points_out_a_finished_works_worktree_left_by_leftover_files(repo):
     assert "이미 끝난 작업" in line and f'git worktree remove "{first}"' in line and "/l-finish 대기" not in line
 
 
+def test_archive_waits_while_a_running_work_links_to_it(repo):
+    init_project(repo)
+    repo("scaffold", "work", "하나")
+    repo("scaffold", "work", "둘")
+    first_rel = docs(repo).name + "/" + "2. 작업/" + work_dir(repo, "W-001").name
+    plan = work_dir(repo, "W-002") / "기획.md"
+    plan.write_text(plan.read_text(encoding="utf-8") + f"\n[[2. 작업/{work_dir(repo, 'W-001').name}/기획|W-001]]\n", encoding="utf-8")
+    repo.git("add", "-A")
+    commit(repo, "docs: 기획 [lantern]")
+    repo("work", "start", "W-001", "W-002", "--no-install", "--skip-check")
+    _commit_in(repo.root.parent / "proj-W-001", "a.py", "feat: a [W-001-T01]")
+    repo("work", "finish", "W-001", "--no-test")
+    before = plan.read_text(encoding="utf-8")
+
+    _, out = repo("work", "archive", "W-001")
+    assert "⏸" in out and "W-002" in out and "--now" in out
+    assert (repo.root / first_rel).exists() and plan.read_text(encoding="utf-8") == before
+    assert "status: 완료" in (repo.root / first_rel / "기획.md").read_text(encoding="utf-8")
+    _, out = repo("work", "list")
+    assert "W-001  완료 · W-002가 끝나면 함께 보관" in out
+
+    _, out = repo("work", "archive", "W-001", "--now")
+    assert "✔ 보관" in out and not (repo.root / first_rel).exists()
+    assert "2. 작업/보관/" in plan.read_text(encoding="utf-8")
+
+
+def test_a_done_work_left_unarchived_is_listed_until_archived(repo):
+    first, _ = _two_worktrees(repo)
+    _commit_in(first, "a.py", "feat: a [W-001-T01]")
+    repo("work", "finish", "W-001", "--no-test")
+    plan = work_dir(repo, "W-001") / "기획.md"
+    plan.write_text(frontmatter.set_fields(plan.read_text(encoding="utf-8"), {"status": "완료"}), encoding="utf-8")
+    _, out = repo("work", "list")
+    assert "W-001  완료 · 보관 대기: lantern work archive W-001" in out
+    _, out = repo("work", "archive", "W-001")
+    assert "✔ 보관" in out
+    _, out = repo("work", "list")
+    assert "W-001" not in out and "W-002" in out
+
+
 def _codex_start_line(repo, wid):
     _, out = repo("work", "start", wid, "--no-install")
     return next(line for line in out.splitlines() if "codex " in line).split("&& ", 1)[1]

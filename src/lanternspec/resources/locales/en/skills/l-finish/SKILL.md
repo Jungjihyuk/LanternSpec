@@ -60,11 +60,14 @@ lantern work finish W-001     # bring in the base branch → test (no merge)
 ## 3. Archive · report
 If `lantern work list` shows a branch of these works as "merged", delete it with `git branch -d <branch>` (a branch stays behind when cleaning up the worktree stops halfway). If it can't be deleted, put the command in the final report.
 ```bash
-lantern work archive W-001    # for each merged work
+lantern work archive W-001    # for each merged work, and each work list shows as "done"
 lantern close l-finish
 lantern scan
 lantern report
 ```
+- `archive` postpones a work that a still-running work links to (`⏸`). It gets archived with the `/l-finish` of that work, so just give the reason in the final report.
+- If a postponed work must be cleaned up first (the running work takes long), ask the person and archive it with `--now`. Tell them it can conflict on merge if the running work edits the same paragraph.
+
 Commit the documents in one go (list every merged work ID in the commit message).
 
 ## 4. Final report

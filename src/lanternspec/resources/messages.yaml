@@ -1084,6 +1084,10 @@
 "ℹ This folder is a worktree for parallel work. Wrap up {wid} with /l-finish {wid} in the base folder": {ko: "ℹ 이 폴더는 동시 작업용 worktree예요. {wid}의 마무리는 기준 폴더에서 /l-finish {wid}로 해요"}
 "To ask: ": {ko: "물을 것: "}
 "✔ Archived: {rel}": {ko: "✔ 보관: {rel}"}
+"⏸ {wid} stays until {works} finish, since their documents link to it — the next /l-finish archives it, or now: lantern work archive {wid} --now": {ko: "⏸ {works}의 문서가 {wid}를 링크하고 있어, {works}가 끝날 때까지 보관하지 않고 둡니다 — 다음 /l-finish가 함께 보관합니다. 지금 보관하려면: lantern work archive {wid} --now"}
+"{wid}  done · archived once {works} finish — now: lantern work archive {wid} --now": {ko: "{wid}  완료 · {works}가 끝나면 함께 보관 — 지금 보관하려면: lantern work archive {wid} --now"}
+"{wid}  done · waiting to be archived: lantern work archive {wid}": {ko: "{wid}  완료 · 보관 대기: lantern work archive {wid}"}
+"archive: even while running works link to it": {ko: "archive: 진행 중인 작업이 링크하고 있어도 지금 보관"}
 "✔ {value} → {value2} ({count} documents)": {ko: "✔ {value} → {value2} ({count}개 문서)"}
 "lantern work stage W-012 <stage>": {ko: "lantern work stage W-012 <단계>"}
 

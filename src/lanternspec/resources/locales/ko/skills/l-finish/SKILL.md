@@ -60,11 +60,14 @@ lantern work finish W-001     # 기준 브랜치 받기 → 테스트 (머지는
 ## 3. 보관 · 보고
 `lantern work list`에 "합쳐짐"으로 남은 이번 작업의 브랜치가 있으면 `git branch -d <브랜치>`로 지운다 (worktree 정리가 중간에 멈추면 브랜치가 남는다). 지우지 못하면 마지막 보고에 명령을 적는다.
 ```bash
-lantern work archive W-001    # 합친 작업마다
+lantern work archive W-001    # 합친 작업마다, 그리고 work list에 "완료"로 남은 작업마다
 lantern close l-finish
 lantern scan
 lantern report
 ```
+- 아직 진행 중인 작업이 링크하는 작업은 `archive`가 보관을 미룬다(`⏸`). 그 작업이 끝나는 `/l-finish`에서 함께 보관되니, 마지막 보고에 미룬 이유만 적는다.
+- 미룬 작업을 먼저 정리해야 하면(진행 중인 작업이 오래 걸릴 때) 사람에게 묻고 `--now`로 보관한다. 진행 중인 작업이 같은 문단을 고치면 합칠 때 충돌할 수 있다고 함께 알린다.
+
 문서를 한 번에 커밋한다 (커밋 메시지에 합친 작업 ID를 모두 적는다).
 
 ## 4. 마지막 보고
