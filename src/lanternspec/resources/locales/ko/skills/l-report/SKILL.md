@@ -36,7 +36,7 @@ argument-hint: "[kanban,timeline,domain,trace,debt,sync]"
    ```
    (같은 날 다시 만들면 그날의 지난 보고를 덮어쓴다.)
 4. 사용자에게 3줄과 파일 위치를 보여 준다. 표 전체를 대화에 붙이지 않는다.
-5. `eval` 보기를 만들었다면 한 줄 더: 실행 기록에서 보이는 것 (예: "설계 승인 required일 때 오류 없이 끝낸 비율이 높다") + `lantern harness suggest`가 추천하는 작업 방식이 지금 설정과 다르면 알려 준다.
+5. `eval` 보기를 만들었다면 한 줄 더: 실행 기록에서 보이는 것 (예: "설계 승인 required일 때 오류 없이 끝낸 비율이 높다") + `lantern build-mode suggest`가 추천하는 구현 방식이 지금 설정과 다르면 알려 준다.
 
 ## 공통 마무리
 ```bash

@@ -618,8 +618,8 @@ def render(data: dict[str, Any]) -> str:
             s=s(d["build"]["merge_approval"]),
         ),
         msg(
-            "  loop: {s}                # off (only the small loop within a task) | on (rerun the "
-            "whole work until the acceptance tests pass) — lantern harness suggest",
+            "  loop: {s}                # off (check each task) | on (loop automatically until the "
+            "acceptance tests pass) — lantern build-mode suggest",
             s=s(d["build"]["loop"]),
         ),
         msg("  loop_limit: {s}           # max rounds of the big loop", s=s(d["build"]["loop_limit"])),

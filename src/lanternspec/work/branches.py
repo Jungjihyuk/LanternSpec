@@ -563,7 +563,7 @@ def conflicts(project: Project, work_ids: list[str]) -> list[str]:
         >>> conflicts(project, ["W-012", "W-013"])  # doctest: +SKIP
         ['⚠ W-012 · W-013가 같은 곳을 고칩니다: 테이블 users']
     """
-    ids = list(dict.fromkeys([w.upper() for w in work_ids] + _running_works(project)))
+    ids = list(dict.fromkeys([w.upper() for w in work_ids] + running_works(project)))
     points = {w: _touch_points(project, w) for w in ids}
     warnings = []
     for i, a in enumerate(ids):
@@ -576,8 +576,19 @@ def conflicts(project: Project, work_ids: list[str]) -> list[str]:
     return warnings
 
 
-def _running_works(project: Project) -> list[str]:
-    """Works already open in their own worktrees."""
+def running_works(project: Project) -> list[str]:
+    """List the works already open in their own worktrees.
+
+    Args:
+        project: The project.
+
+    Returns:
+        Their IDs, e.g. ["W-012"].
+
+    Example:
+        >>> running_works(project)  # doctest: +SKIP
+        ['W-012']
+    """
     return [wid for wt in worktrees(project) if (wid := work_of_branch(project, wt.branch))]
 
 
@@ -595,7 +606,7 @@ def needs_parallel_check(project: Project, work_ids: list[str]) -> bool:
         >>> needs_parallel_check(project, ["W-012", "W-013"])  # doctest: +SKIP
         True
     """
-    return len(dict.fromkeys([w.upper() for w in work_ids] + _running_works(project))) >= 2
+    return len(dict.fromkeys([w.upper() for w in work_ids] + running_works(project))) >= 2
 
 
 def _dependency_files() -> list[str]:
@@ -646,7 +657,7 @@ def overlap(project: Project, work_ids: list[str]) -> list[str]:
         ['⚠ W-012 · W-013가 같은 곳을 고칩니다: 테이블 users', 'W-012 결정 기록: ADR-003']
     """
     out = conflicts(project, work_ids) or [msg("No shared tables or files in the designs")]
-    ids = list(dict.fromkeys([w.upper() for w in work_ids] + _running_works(project)))
+    ids = list(dict.fromkeys([w.upper() for w in work_ids] + running_works(project)))
     for wid in ids:
         folder = project.find_work(wid, include_archive=False)
         design = project.doc_path(folder, "design") if folder else None
@@ -710,7 +721,7 @@ def start(
     if git(["rev-parse", "--verify", "HEAD"], project.root).returncode != 0:
         raise WorkError(msg("No commits yet, so a worktree can't be made — commit first"))
     if not skip_check and needs_parallel_check(project, work_ids):
-        ids = " ".join(dict.fromkeys([w.upper() for w in work_ids] + _running_works(project)))
+        ids = " ".join(dict.fromkeys([w.upper() for w in work_ids] + running_works(project)))
         raise WorkError(
             msg(
                 "Two or more works would run at once. In your AI tool, check the decisions they share first: "

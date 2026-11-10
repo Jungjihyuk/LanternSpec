@@ -58,6 +58,6 @@
 | Where things stand | `/l-report` |
 | Make · refine · migrate templates | `/l-template` |
 | Check formats · align docs and code · map · decisions | `/l-check` · `/l-sync` · `/l-map` · `/l-adr` |
-| Work mode (harness · loop · graph) · AI work evaluation | `lantern harness suggest` · `lantern eval` |
+| Build mode (loop scope · task delegation · parallel works) · AI work evaluation | `lantern build-mode suggest` · `lantern eval` |
 
 In Codex, call them with `$`, like `$l-init`. To see where things stand, `lantern status`; for every command, `lantern --help`.

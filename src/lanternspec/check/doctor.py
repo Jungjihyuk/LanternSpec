@@ -361,7 +361,7 @@ def _tool_rows(project: Project, names: list[str]) -> list[tuple[str, str]]:
 def _code_size_row(project: Project) -> tuple[str, str]:
     """Ask whether to raise the principles one level when the code grew past the recorded size (never lower it)."""
     from ..core import principles
-    from ..report.harness import code_lines
+    from ..report.build_mode import code_lines
 
     lines = code_lines(project, tests=False)
     now, recorded = principles.code_size(lines), str(project.profile.get("project.code_size") or principles.SIZES[0])

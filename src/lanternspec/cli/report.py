@@ -1,9 +1,10 @@
-"""Report and sync commands: report · status · scan · sync · map · eval · harness · obsidian."""
+"""Report and sync commands: report · status · scan · sync · map · eval · build-mode · obsidian."""
 
 from __future__ import annotations
 
 import argparse
 import json
+import unicodedata
 
 from ..core.messages import msg
 from .common import Add, CliError, _csv, _p, _print
@@ -81,18 +82,26 @@ def cmd_eval(a: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_harness(a: argparse.Namespace) -> int:
-    """`lantern harness suggest [--apply]` — suggest a work mode for the project size, and apply it when asked."""
+def cmd_build_mode(a: argparse.Namespace) -> int:
+    """`lantern build-mode suggest [--apply]` — suggest how to build, one axis at a time, and apply the loop scope when asked."""
     from ..core import profile as pm
     from ..core.project import read, write
-    from ..report import harness
+    from ..report import build_mode
 
     project = _p()
-    s = harness.suggest(project)
+    if a.command == "harness":
+        print(msg("ℹ `lantern harness` is now `lantern build-mode` — the old name goes away in a later version"))
+    s = build_mode.suggest(project)
     f = s.facts
-    print(msg("Suggested: {mode}", mode=s.mode))
-    for r in s.reasons:
-        print(f"  · {r}")
+
+    def cells(text: str) -> int:  # Korean and other wide letters take two columns in a terminal
+        return sum(2 if unicodedata.east_asian_width(c) in "WF" else 1 for c in text)
+
+    width = max(cells(ax.name) for ax in s.axes)
+    for ax in s.axes:
+        print(f"{ax.name}{' ' * (width - cells(ax.name))}  {ax.choice}")
+        for r in ax.reasons:
+            print(f"{' ' * width}    · {r}")
     print(
         msg(
             "  (based on: {code_files} code files · {loc} lines · works in progress {active_works} · "
@@ -105,8 +114,7 @@ def cmd_harness(a: argparse.Namespace) -> int:
             value=msg("yes") if f["has_test"] else msg("no"),
         )
     )
-    if s.settings:
-        print(msg("  Settings: ") + ", ".join(f"{k}={v}" for k, v in s.settings.items()))
+    print(msg("  --apply sets only the loop scope: ") + ", ".join(f"{k}={v}" for k, v in s.settings.items()))
     if a.apply and s.settings:
         path = project.root / pm.PROFILE_FILE
         text = read(path)
@@ -164,6 +172,7 @@ def register(add: Add) -> None:
     add("map", cmd_map, msg("Update the MOC"))
     p = add("eval", cmd_eval, msg("Evaluate AI work — which setups helped (run records)"))
     p.add_argument("--json", action="store_true")
-    p = add("harness", cmd_harness, msg("Suggest an AI work mode for the project's size (harness · loop · graph)"))
-    p.add_argument("action", choices=["suggest"])
-    p.add_argument("--apply", action="store_true")
+    for name in ("build-mode", "harness"):  # harness: the old name, kept for a while
+        p = add(name, cmd_build_mode, msg("Suggest how to build: loop scope · task delegation · parallel works"))
+        p.add_argument("action", choices=["suggest"])
+        p.add_argument("--apply", action="store_true")

@@ -29,7 +29,7 @@ lantern task next W-012          # the next task that can start, in order (block
 lantern task next W-012 --all    # every task that can start now — [P] marks tasks that can run at the same time
 lantern task start W-012-T03     # stamps [<<attr.start>>:: time] exactly
 ```
-**Parallel (graph):** if `--all` shows two or more `[P]` tasks and this tool supports subagents, you may hand the `[P]` tasks **one each** to subagents. Make each follow the same rules (start · evidence · one task = one commit), and never hand out tasks that change the same files together. Without subagent support, do them in turn.
+**Task delegation:** if `--all` shows two or more `[P]` tasks and this tool supports subagents, you may hand the `[P]` tasks **one each** to subagents. Make each follow the same rules (start · evidence · one task = one commit), and never hand out tasks that change the same files together. Without subagent support, do them in turn.
 
 **Domain knowledge:** when some is tied to the task, read **only those sections, right as it starts** — run the `lantern ref read …` lines that `lantern ref domain --work W-012 --task T03` shows.
 Read a 📌 verbatim section again right before turning its rule into code. Knowledge that becomes necessary mid-build: find and read it with `/l-domain`, then tie it with `lantern ref attach`.

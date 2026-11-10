@@ -57,6 +57,6 @@
 | 현황 | `/l-report` |
 | 양식 만들기 · 다듬기 · 옮기기 | `/l-template` |
 | 양식 검사 · 문서↔코드 맞추기 · 지도 · 결정 기록 | `/l-check` · `/l-sync` · `/l-map` · `/l-adr` |
-| 작업 방식 (하네스 · 루프 · 그래프) · AI 작업 평가 | `lantern harness suggest` · `lantern eval` |
+| 구현 방식 (반복 범위 · 할 일 나눠 맡기기 · 작업 동시 진행) · AI 작업 평가 | `lantern build-mode suggest` · `lantern eval` |
 
 Codex에서는 `$l-init`처럼 `$`로 부른다. 지금 상황이 궁금하면 `lantern status`, 전체 명령은 `lantern --help`.

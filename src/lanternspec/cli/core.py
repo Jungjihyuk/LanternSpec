@@ -160,7 +160,7 @@ def cmd_principles(a: argparse.Namespace) -> int:
     """`lantern principles show|detect` — show the chosen design principles · detect languages and tools already in use."""
     from ..core import principles
     from ..core import profile as pm
-    from ..report.harness import code_lines
+    from ..report.build_mode import code_lines
 
     project = _p()
     if a.action == "show":

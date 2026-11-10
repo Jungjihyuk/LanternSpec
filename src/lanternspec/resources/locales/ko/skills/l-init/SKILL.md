@@ -190,7 +190,7 @@ lantern scaffold init --plan        # 만들 폴더 · 문서 목록 (아직 아
 - 받지 못하면(인터넷 없음 등) 실패로 멈추지 말고, Obsidian의 커뮤니티 플러그인에서 두 플러그인을 직접 설치하면 된다고 알린다.
 
 ## 7. 작업 방식 추천 · 공통 마무리
-`lantern harness suggest`로 프로젝트 크기에 맞는 AI 작업 방식(하네스 · 루프 · 그래프)을 한 줄로 알려 주고, 사용자가 원하면 `--apply` 뒤 `lantern upgrade`.
+`lantern build-mode suggest`로 프로젝트 크기에 맞는 구현 방식(반복 범위 · 할 일 나눠 맡기기 · 작업 동시 진행)을 축마다 한 줄로 알려 주고, 사용자가 원하면 `--apply`(반복 범위만 바뀜) 뒤 `lantern upgrade`.
 ```bash
 lantern close l-init
 ```

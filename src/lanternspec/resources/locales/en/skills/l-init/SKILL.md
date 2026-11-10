@@ -189,7 +189,7 @@ Then ask: "Download the recommended plugins for viewing documents in Obsidian (D
 - If the download fails (no internet …), don't stop with an error; say they can install the two plugins from Obsidian's community plugins instead.
 
 ## 7. Work-mode suggestion · common wrap-up
-Tell the user in one line which AI work mode (harness · loop · graph) fits the project size, from `lantern harness suggest`; if they want it, `--apply`, then `lantern upgrade`.
+Tell the user, one line per axis, which build mode (loop scope · task delegation · parallel works) fits the project size, from `lantern build-mode suggest`; if they want it, `--apply` (changes only the loop scope), then `lantern upgrade`.
 ```bash
 lantern close l-init
 ```

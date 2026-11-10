@@ -10,7 +10,7 @@ Responsibilities:
     - find folders with their own manifest (candidates for parts with their own rules)
 
 Not here:
-    - counting lines of code → report/harness.py (code_lines)
+    - counting lines of code → report/build_mode.py (code_lines)
     - the text for AGENTS.md → tools/rules.py (principles_section)
     - writing the design-principles document → report/principles_doc.py
     - telling when a size boundary is crossed → check/doctor.py

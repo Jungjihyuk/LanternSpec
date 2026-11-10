@@ -208,10 +208,10 @@ def test_screen_import_and_compare(repo, tmp_path):
     assert code == 1 and "다른 곳" in out
 
 
-# --------------------------------------------------------------------------- eval · harness · [P] · estimate · loop
+# --------------------------------------------------------------------------- eval · build-mode · [P] · estimate · loop
 
 
-def test_eval_and_harness(repo):
+def test_eval_and_build_mode(repo):
     init_project(repo)
     _, out = repo("eval")
     assert "실행 기록이 아직 없습니다" in out
@@ -236,15 +236,18 @@ def test_eval_and_harness(repo):
     assert "| l-build | 1 | 30.0 | 10.0 |" in out and "구성별 결과" in out and "design.approval=auto" in out
     repo("report", "--views", "eval")
     assert "📊 AI 작업 평가" in (docs(repo) / "4. 운영 기록/보고/현황.md").read_text(encoding="utf-8")
-    _, out = repo("harness", "suggest")
-    assert "하네스 (작은 반복)" in out
-    repo("profile", "set", 'build.test="pytest"', "project.team=team", "project.members=[a, b]")
+    _, out = repo("build-mode", "suggest")
+    assert "반복 범위" in out and "할 일마다 확인" in out and "할 일 나눠 맡기기" in out and "작업 동시 진행" in out
+    assert "하나씩" in out
+    repo("profile", "set", "project.team=team", "project.members=[a, b]")
     for name in ("하나", "둘"):
         repo("scaffold", "work", name)
-    _, out = repo("harness", "suggest", "--apply")
-    assert "그래프 (병렬)" in out
+    _, out = repo("build-mode", "suggest", "--apply")
+    assert "점검해 볼 만함" in out and "/l-parallel W-001 W-002" in out
     prof = (repo.root / "lantern.yaml").read_text(encoding="utf-8")
-    assert "loop: 'on'" in prof and "report_cycle: criterion" in prof
+    assert "loop: 'off'" in prof and "report_cycle: criterion" in prof  # --apply touches only the loop scope
+    _, out = repo("harness", "suggest")  # the old name still works, with a notice
+    assert "`lantern build-mode`로 이름이 바뀌었습니다" in out
 
 
 def test_parallel_tasks_and_estimates(repo):

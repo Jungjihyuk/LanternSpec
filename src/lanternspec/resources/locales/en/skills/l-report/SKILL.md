@@ -36,7 +36,7 @@ Input: `$ARGUMENTS` — the views to show. If none, the profile default (<<repor
    ```
    (Running it again the same day overwrites that day's past report.)
 4. Show the user the 3 lines and where the file is. Don't paste the whole tables into the conversation.
-5. If you built the `eval` view, add one line: what the run log shows (e.g. "with design approval required, more runs finished without errors") + if the work mode `lantern harness suggest` recommends differs from the current setting, say so.
+5. If you built the `eval` view, add one line: what the run log shows (e.g. "with design approval required, more runs finished without errors") + if the build mode `lantern build-mode suggest` recommends differs from the current setting, say so.
 
 ## Common wrap-up
 ```bash

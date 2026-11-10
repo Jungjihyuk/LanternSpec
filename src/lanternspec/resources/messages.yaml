@@ -418,20 +418,30 @@
 "Setup": {ko: "구성"}
 "(no skill)": {ko: "(스킬 없음)"}
 
-# report/harness.py
-"{loc} lines of code · {active_works} works in progress — a small project": {ko: "코드 {loc}줄 · 진행 중 작업 {active_works}개 — 작은 프로젝트"}
+# report/build_mode.py
+"Loop scope": {ko: "반복 범위"}
+"Loop automatically": {ko: "자동 반복"}
+"Check each task": {ko: "할 일마다 확인"}
+"Task delegation": {ko: "할 일 나눠 맡기기"}
+"Worth it": {ko: "쓸 만함"}
+"Not needed now": {ko: "지금은 필요 없음"}
+"Parallel works": {ko: "작업 동시 진행"}
+"Worth checking": {ko: "점검해 볼 만함"}
+"One at a time": {ko: "하나씩"}
+"{parallel_ready} [P] tasks can run at once now — /l-build hands them to sub-agents": {ko: "지금 동시에 할 수 있는 [P] 할 일 {parallel_ready}개 — /l-build가 서브 에이전트에 맡깁니다"}
+"{parallel_ready} [P] tasks ready now": {ko: "지금 동시에 할 수 있는 [P] 할 일 {parallel_ready}개"}
+"{count} works waiting — check them first with /l-parallel {ids}": {ko: "진행 전인 작업 {count}개 — 먼저 /l-parallel {ids}로 점검하세요"}
+"{count} works waiting": {ko: "진행 전인 작업 {count}개"}
+"{loc} lines of code · {active_works} works in progress": {ko: "코드 {loc}줄 · 진행 중인 작업 {active_works}개"}
+"No automatic tests for the acceptance criteria yet (build.test) — loop automatically once they are in place": {ko: "수락 기준 자동 테스트(build.test)가 아직 없음 — 생기면 자동 반복을 권함"}
+"  --apply sets only the loop scope: ": {ko: "  --apply는 반복 범위만 바꿉니다: "}
+"Suggest how to build: loop scope · task delegation · parallel works": {ko: "구현 방식 추천: 반복 범위 · 할 일 나눠 맡기기 · 작업 동시 진행"}
+"ℹ `lantern harness` is now `lantern build-mode` — the old name goes away in a later version": {ko: "ℹ `lantern harness`는 `lantern build-mode`로 이름이 바뀌었습니다 — 옛 이름은 다음 버전 이후 없어집니다"}
+"  loop: {s}                # off (check each task) | on (loop automatically until the acceptance tests pass) — lantern build-mode suggest": {ko: "  loop: {s}                # off(할 일마다 확인) | on(수락 기준 테스트가 통과할 때까지 자동 반복) — lantern build-mode suggest"}
 "Within one task, build → test → fix up to 3 times; the person checks often": {ko: "할 일 하나 안에서 구현 → 테스트 → 고치기 최대 3번, 사람이 자주 본다"}
-"Harness (small loop)": {ko: "하네스 (작은 반복)"}
-"Run independent works at once in separate worktrees with `lantern work start W-… W-…` (design conflicts are warned about first)": {ko: "서로 독립인 작업은 `lantern work start W-… W-…`로 worktree를 나눠 동시에 (설계 충돌은 미리 경고)"}
-"Graph (parallel)": {ko: "그래프 (병렬)"}
 "There is an acceptance-test command (build.test)": {ko: "수락 기준 테스트 명령이 있다 (build.test)"}
 "After all tasks are done, rerun the whole work until the acceptance tests pass (up to build.loop_limit times)": {ko: "할 일을 다 끝낸 뒤 수락 기준 테스트가 통과할 때까지 작업 전체를 다시 돈다 (최대 build.loop_limit번)"}
-"Loop (big loop)": {ko: "루프 (큰 반복)"}
-"No automatic tests for the acceptance criteria yet (build.test) — the big loop comes once tests are in place": {ko: "수락 기준 → 자동 테스트가 아직 없다 (build.test) — 큰 루프는 테스트가 자리 잡은 뒤"}
 "{clean_rate}% of the last {skill_runs} wrap-ups finished without errors": {ko: "지난 마무리 {skill_runs}번 중 오류 없이 끝낸 비율 {clean_rate}%"}
-"{active_works} works in progress": {ko: "진행 중 작업 {active_works}개"}
-" · {parallel_ready} [P] tasks can run at once now": {ko: " · 지금 동시에 할 수 있는 [P] 할 일 {parallel_ready}개"}
-" · 2 or more people": {ko: " · 2인 이상"}
 
 # report/obsidian.py
 "---\n{head}\n---\n> ⚙️ Generated — from enums.yaml (`lantern upgrade` · `lantern enums rename`). Don't edit by hand.\n": {ko: "---\n{head}\n---\n> ⚙️ 자동 생성 — enums.yaml에서 (`lantern upgrade` · `lantern enums rename`). 손으로 고치지 마세요.\n"}
@@ -968,7 +978,6 @@
 "🟢 {title}  ({path} · {updated} · score {score})\n   {summary}": {ko: "🟢 {title}  ({path} · {updated} · 점수 {score})\n   {summary}"}
 
 # cli/report.py
-"Suggested: {mode}": {ko: "추천: {mode}"}
 "  (based on: {code_files} code files · {loc} lines · works in progress {active_works} · tasks {tasks} · [P] ready now {parallel_ready} · tests {value})": {ko: "  (근거: 코드 {code_files}개 파일 · {loc}줄 · 진행 중 작업 {active_works} · 할 일 {tasks} · [P] 지금 가능 {parallel_ready} · 테스트 {value})"}
 "yes": {ko: "있음"}
 "no": {ko: "없음"}
@@ -983,14 +992,12 @@
 "Record the result of aligning": {ko: "맞추기 결과 기록"}
 "Update the MOC": {ko: "MOC 갱신"}
 "Evaluate AI work — which setups helped (run records)": {ko: "AI 작업 평가 — 어떤 구성이 결과에 도움이 됐나 (실행 기록)"}
-"Suggest an AI work mode for the project's size (harness · loop · graph)": {ko: "프로젝트 크기에 맞는 AI 작업 방식 추천 (하네스 · 루프 · 그래프)"}
 "Next: 3-line summary → lantern report --summary \"…\" \"…\" \"…\"": {ko: "다음: 3줄 요약 → lantern report --summary \"…\" \"…\" \"…\""}
 "✔ Written to lantern.yaml → lantern upgrade (into the skills)": {ko: "✔ lantern.yaml에 적었습니다 → lantern upgrade (스킬에 반영)"}
 "3-line summary": {ko: "3줄 요약"}
 "git range (e.g. main..HEAD)": {ko: "git 범위 (예: main..HEAD)"}
 "Why it was changed without a work": {ko: "작업 없이 고친 이유"}
 "One of --work W-012 or --none \"reason\"": {ko: "--work W-012 또는 --none \"이유\" 중 하나"}
-"  Settings: ": {ko: "  설정: "}
 
 # cli/tools.py
 "open {label} — type `{launch}` in a terminal": {ko: "{label}를 엽니다 — 터미널에 `{launch}` 입력"}
@@ -1128,7 +1135,6 @@
 "  verify: {s}             # self (mark it yourself) | explain (try explaining it in one line)": {ko: "  verify: {s}             # self(스스로 표시) | explain(한 줄 설명해 보기)"}
 "  report_cycle: {s}        # work (each work) | criterion (each acceptance criterion) | task (each task) — problems are reported right away anytime": {ko: "  report_cycle: {s}        # work(작업마다) | criterion(수락 기준마다) | task(할 일마다) — 문제가 생기면 언제든 바로 보고"}
 "  merge_approval: {s}  # required (approve before merging) | auto (summary report after merging)": {ko: "  merge_approval: {s}  # required(반영 전 승인) | auto(반영 후 요약 보고)"}
-"  loop: {s}                # off (only the small loop within a task) | on (rerun the whole work until the acceptance tests pass) — lantern harness suggest": {ko: "  loop: {s}                # off(할 일 안의 작은 반복만) | on(수락 기준 테스트가 통과할 때까지 작업 전체를 다시) — lantern harness suggest"}
 "  loop_limit: {s}           # max rounds of the big loop": {ko: "  loop_limit: {s}           # 큰 반복 최대 횟수"}
 "  max_lines: {s}            # warn to split when longer (doesn't block)": {ko: "  max_lines: {s}            # 이보다 길면 나누자고 경고 (막지는 않음)"}
 "{profile_file} is malformed (must be key: value)": {ko: "{profile_file} 형식이 올바르지 않습니다 (키: 값 형태여야 함)"}
