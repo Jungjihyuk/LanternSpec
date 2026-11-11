@@ -86,16 +86,7 @@ Then call `/l-init` inside your AI tool (`$l-init` in Codex).
 
 What the concepts in this document mean and where they are used is gathered in [Concepts](https://github.com/Jungjihyuk/LanternSpec/blob/main/CONCEPTS.md). To change LanternSpec itself, start with the [design rationale](https://github.com/Jungjihyuk/LanternSpec/blob/main/RATIONALE.md), which records why the flow, folders and rules are the way they are.
 
-```mermaid
-flowchart LR
-  S["⚙️ /l-init"] --> I
-  subgraph W["🛠 Work flow"]
-    I["💡 /l-idea"] --> P["📋 /l-plan"] --> D["📐 /l-design"] --> T["✅ /l-task"] --> B["🔨 /l-build"]
-  end
-  P & D & B -.unfamiliar tech.-> L["🧭 /l-learn"]
-  B -->|merge when done| C["📘 3. Current state"]
-  W & L --> R["📊 /l-report"]
-```
+<img src="https://raw.githubusercontent.com/Jungjihyuk/LanternSpec/main/assets/Workflow.png" alt="LanternSpec workflow — /l-init once, then /l-idea → /l-plan → /l-design → /l-task → /l-build for each work, merged into the current state when done; when unfamiliar tech comes up /l-learn compares it with the knowledge base and records debt cards in the project; /l-report any time." width="100%">
 
 | Skill | What it does | What it leaves |
 |---|---|---|

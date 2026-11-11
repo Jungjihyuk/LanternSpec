@@ -84,16 +84,7 @@ lantern install                  # 이 프로젝트에 스킬 · 규칙 · hook 
 
 이 문서에 나오는 개념의 뜻과 쓰이는 곳은 [개념 사전](https://github.com/Jungjihyuk/LanternSpec/blob/main/CONCEPTS.ko.md)에 모아 두었다. LanternSpec 자체를 고치려면 흐름 · 폴더 · 기준을 왜 이렇게 정했는지 적은 [설계 근거](https://github.com/Jungjihyuk/LanternSpec/blob/main/RATIONALE.ko.md)를 먼저 본다.
 
-```mermaid
-flowchart LR
-  S["⚙️ /l-init"] --> I
-  subgraph W["🛠 작업 흐름"]
-    I["💡 /l-idea"] --> P["📋 /l-plan"] --> D["📐 /l-design"] --> T["✅ /l-task"] --> B["🔨 /l-build"]
-  end
-  P & D & B -.모르는 기술.-> L["🧭 /l-learn"]
-  B -->|끝나면 합친다| C["📘 3. 현재 상태"]
-  W & L --> R["📊 /l-report"]
-```
+<img src="https://raw.githubusercontent.com/Jungjihyuk/LanternSpec/main/assets/Workflow_ko.png" alt="LanternSpec 작업 흐름 — 처음 한 번 /l-init, 그 뒤 작업마다 /l-idea → /l-plan → /l-design → /l-task → /l-build, 끝나면 현재 상태에 합친다. 모르는 기술이 나오면 /l-learn이 지식 저장소와 비교하고 부채 카드를 프로젝트에 기록한다. 언제든 /l-report." width="100%">
 
 | 스킬 | 하는 일 | 남는 문서 |
 |---|---|---|
