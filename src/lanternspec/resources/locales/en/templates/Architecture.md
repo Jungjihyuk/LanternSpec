@@ -6,8 +6,8 @@ created: ${today}
 updated: ${today}
 links: []
 template: Architecture
-template_version: 1.0.1
-based_on: 1.0.1
+template_version: 1.0.2
+based_on: 1.0.2
 code: []
 checked_commit: ""
 ---
@@ -17,7 +17,8 @@ checked_commit: ""
 > {{The parts of the system and how they flow, in one sentence (required)}}
 
 ## Overview
-> [!guide] Draw the screen side (app, web …) and, if any, the server and outside services as boxes, joined by arrows in the direction they talk (Mermaid).
+> [!guide]- ✍️ How to write — parts and directions as a diagram
+> Draw the screen side (app, web …) and, if any, the server and outside services as boxes, joined by arrows in the direction they talk (Mermaid).
 
 ```mermaid
 flowchart LR
@@ -30,7 +31,8 @@ flowchart LR
 | {{Part}} | {{What it does}} | `{{Path}}` | {{Technology}} |
 
 ## Main flows
-> [!guide] Only flows that pass through several parts, such as sign-in or sync. Leave out what happens inside one part.
+> [!guide]- ✍️ How to write — only flows across several parts
+> Only flows that pass through several parts, such as sign-in or sync. Leave out what happens inside one part.
 
 {{Main flows}}
 
@@ -40,3 +42,4 @@ flowchart LR
 |---|---|---|
 | 1.0.0 | 2026-10-27 | Base template |
 | 1.0.1 | 2026-11-02 | Clearer writing guides (long ones split into lines, symbols and internal names in words) |
+| 1.0.2 | 2026-11-11 | Notes folded, under titles that say what they are |

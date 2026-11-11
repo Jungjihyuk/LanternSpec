@@ -206,6 +206,14 @@ body {
   --blockquote-background-color: var(--background-secondary);
 }
 
+/* GUIDE_NOTE */
+.callout[data-callout="guide"] {
+  background: transparent;
+  opacity: 0.7;
+  font-size: var(--font-smaller);
+  --callout-padding: 4px 10px;
+}
+
 /* QUOTE_NOTE */
 .markdown-rendered blockquote {
   margin-inline: 0;
@@ -443,7 +451,9 @@ def snippet_css(names: Names) -> str:
                 "callouts (> [!abstract] and every other kind) — pale background · colored title · "
                 "no border. Only variables Obsidian exposes"
             ),
-        ).replace("QUOTE_NOTE", msg("quotes (>) — flush left in reading mode too, the same width as callouts (no indent)")),
+        )
+        .replace("GUIDE_NOTE", msg("writing notes (> [!guide]-) — folded, small and faint, so the document's own content stands out"))
+        .replace("QUOTE_NOTE", msg("quotes (>) — flush left in reading mode too, the same width as callouts (no indent)")),
         task_fields_css(names),
         "",
         "/* " + msg("line width — how wide a note gets with readable line length on (Obsidian's default is 700px)") + " */",

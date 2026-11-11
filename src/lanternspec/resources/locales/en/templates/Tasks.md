@@ -6,15 +6,16 @@ created: ${today}
 updated: ${today}
 links: ${links}
 template: Tasks
-template_version: 1.2.0
-based_on: 1.2.0
+template_version: 1.2.1
+based_on: 1.2.1
 ---
 # ✅ ${work_id} ${name} — Tasks
 
 > [!abstract] At a glance
 > {{How many tasks there are and in what order they go, in one sentence (required)}}
 
-> [!guide] One task per line. For example:
+> [!guide]- ✍️ How to write — one task per line
+> One task per line. For example:
 > `- [ ] W-012-T02 What [size:: ${size.m}] [ac:: AC-1] [after:: T01]`<!-- lantern:if team --> `[owner:: name]`<!-- lantern:endif -->
 > - `[name:: value]` is a property of the task. `size` is ${size.xs} · ${size.s} · ${size.m} · ${size.l} (see `3. Current State/Rules/Task Breakdown Rules.md`), `ac` is the acceptance criterion this task meets, `after` is a task that must finish first
 > - Order them **the way they are best worked on**: what must finish first → data · foundations → features → screens → wrap-up
@@ -37,3 +38,4 @@ based_on: 1.2.0
 | 1.0.2 | 2026-11-02 | Clearer writing guides (long ones split into lines, symbols and internal names in words) |
 | 1.1.0 | 2026-11-11 | Sizes are 15m · 1h · 4h · 8h, defined in the Task Breakdown Rules document |
 | 1.2.0 | 2026-11-11 | `[by:: …]` for the people and AI models who actually did a task |
+| 1.2.1 | 2026-11-11 | Notes folded, under titles that say what they are |

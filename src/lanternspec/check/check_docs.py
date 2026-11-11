@@ -21,6 +21,7 @@ from ..core import frontmatter, templating
 from ..core.links import Resolver, iter_links
 from ..core.messages import msg
 from ..core.project import Project, git_out, nfc, read
+from ..core.sections import outside_guides
 from ..core.taskfile import parse_criteria, parse_tasks, size_role
 
 COMMON_FIELDS = ["id", "type", "status", "created", "updated", "links", "template", "template_version"]
@@ -520,7 +521,7 @@ def check_file(project: Project, path: Path, text: str, ctx: _Ctx) -> list[Findi
 
     # unknowns
     unknown = project.names.marker("unknown")
-    unknown_lines = [i for i, l in enumerate(text.split("\n"), start=1) if unknown in l and "`" + unknown not in l and "[!guide]" not in l]
+    unknown_lines = [i for i, l in outside_guides(text) if unknown in l and "`" + unknown not in l]
     if unknown_lines and not generated:
         out.append(
             Finding(

@@ -613,7 +613,8 @@ def skeleton_from(project: Project, name: str, source: Path) -> str:
             out += [
                 "",
                 f"{m.group(1)} {current}",
-                msg("> [!guide] One line on what goes in '{current}'", current=current),
+                msg("> [!guide]- ✍️ How to write — {current}", current=current),
+                msg("> One line on what goes in '{current}'", current=current),
                 "",
             ]
             filled, table_state = False, ""
@@ -789,10 +790,8 @@ def migrate_text(
     if leftovers or bin_existing:
         parts += [
             f"## {bin_title}",
-            msg(
-                "> [!guide] Content with no place in the new template, gathered here rather than deleted — "
-                "move it to the right section or tidy it up, then delete this section."
-            ),
+            msg("> [!guide]- ✍️ How to write — content the new template has no place for"),
+            msg("> Gathered here rather than deleted — move it to the right section or tidy it up, then delete this section."),
             "",
         ]
         for c in bin_existing:

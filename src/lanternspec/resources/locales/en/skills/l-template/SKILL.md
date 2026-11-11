@@ -14,8 +14,11 @@ Input: `$ARGUMENTS` — `new` · `refine <<doc.plan>>` · `migrate` · `migrate 
 ## Template rules
 - A blank to fill is `{{blank name}}`, a required one `{{blank name <<marker.required>>}}` — never use `|` (it breaks tables)
 - No blank named `date` · `time` · `title` (Obsidian's core templates replace them)
-- Writing guides are `> [!guide] …` (may be deleted once written). The key sentence on the first line, the rest as a `> - …` list
-- Mark only the exceptions: ⚙️ before the guide of a section lantern fills, 🔗 for a section that only holds links. Sections people write get no mark
+- Writing guides are folded: first line `> [!guide]- <prefix> — <what it is, briefly>`, then `> the key sentence`, the rest as a `> - …` list (may be deleted once written)
+- The prefix is one of three, by how the section gets filled — so the folded title alone says what it is:
+  - `✍️ How to write` — a section people or AI write (e.g. `✍️ How to write — what this work leaves out`)
+  - `⚙️ Generated section` — a section lantern fills
+  - `🔁 Updated section` — a section rewritten each time or added to below (e.g. `🔁 Updated section — added below: earlier 'Now'`)
 - Write guides for someone seeing them for the first time: words instead of symbols like ✕ ○, and say what a setting key or internal name is
 - Values the script fills are `${id}` · `${today}` · `${name}` · `${work_id}` · `${links}` … (never touch them)
 - The "<<marker.glance>>" box at the top is required: `> [!abstract] <<marker.glance>>` + `> {{… <<marker.required>>}}`
@@ -27,7 +30,7 @@ Input: `$ARGUMENTS` — `new` · `refine <<doc.plan>>` · `migrate` · `migrate 
    ```bash
    lantern template new "<template name>" --from "<sample file>"     # preview only (nothing saved yet)
    ```
-2. Remove the content and replace it with `{{blanks}}` and `> [!guide]` notes. ⚙️ for sections lantern fills, 🔗 for link-only sections.
+2. Remove the content and replace it with `{{blanks}}` and folded `> [!guide]-` notes (prefix as in the template rules above).
 3. Add the common frontmatter; `type` is one of `doc_type` in `enums.yaml` (suggest adding a new type if needed).
 4. **Preview → approval → save:** `lantern template new "<name>" --from "<sample>" --apply`, or save the refined content as `docs/<<folder.templates>>/<name>.md` → `lantern template lint "<name>"`
 5. To create a document from the new template: `lantern scaffold custom "<template>" "<path.md inside docs>"`

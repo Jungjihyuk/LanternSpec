@@ -6,8 +6,8 @@ created: ${today}
 updated: ${today}
 links: ${links}
 template: ADR
-template_version: 1.0.1
-based_on: 1.0.1
+template_version: 1.0.2
+based_on: 1.0.2
 superseded_by: ""
 ---
 # 📝 ${id} ${name}
@@ -16,12 +16,14 @@ superseded_by: ""
 > {{The decision in one line (required)}}
 
 ## Context
-> [!guide] What had to be decided, and why now. A decision worth recording is one where, six months later, someone might ask "why did we do this?"
+> [!guide]- ✍️ How to write — what to decide, and why now
+> What had to be decided, and why now. A decision worth recording is one where, six months later, someone might ask "why did we do this?"
 
 {{Context (required)}}
 
 ## Options considered
-> [!guide] The pros and cons of each option. Keep the options not chosen too.
+> [!guide]- ✍️ How to write — pros and cons of each option
+> The pros and cons of each option. Keep the options not chosen too.
 
 | Option | Pros | Cons |
 |---|---|---|
@@ -29,12 +31,14 @@ superseded_by: ""
 | {{Option B}} | {{Pros}} | {{Cons}} |
 
 ## Decision
-> [!guide] What was chosen, the biggest reason for it, and who decided when.
+> [!guide]- ✍️ How to write — what was chosen and why
+> What was chosen, the biggest reason for it, and who decided when.
 
 {{Decision (required)}}
 
 ## Consequences
-> [!guide] What this decision makes easier, what it makes harder, and which documents must change with it.
+> [!guide]- ✍️ How to write — what gets easier or harder
+> What this decision makes easier, what it makes harder, and which documents must change with it.
 
 {{Consequences}}
 
@@ -44,3 +48,4 @@ superseded_by: ""
 |---|---|---|
 | 1.0.0 | 2026-10-27 | Base template |
 | 1.0.1 | 2026-11-02 | Clearer writing guides (long ones split into lines, symbols and internal names in words) |
+| 1.0.2 | 2026-11-11 | Notes folded, under titles that say what they are |

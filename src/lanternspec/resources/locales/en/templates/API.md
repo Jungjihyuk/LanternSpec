@@ -6,8 +6,8 @@ created: ${today}
 updated: ${today}
 links: []
 template: API
-template_version: 1.0.1
-based_on: 1.0.1
+template_version: 1.0.2
+based_on: 1.0.2
 code: []
 checked_commit: ""
 ---
@@ -16,7 +16,8 @@ checked_commit: ""
 > [!abstract] At a glance
 > {{The API style and how it authenticates, in one sentence (required)}}
 
-> [!guide] The exact shape of requests and responses: **the code is the reference**.
+> [!guide]- ✍️ How to write — the code is the reference
+> The exact shape of requests and responses: **the code is the reference**.
 > - If documentation can be generated from the code (OpenAPI …), link the result
 > - Keep only the list of endpoints and the common rules here
 
@@ -35,3 +36,4 @@ checked_commit: ""
 |---|---|---|
 | 1.0.0 | 2026-10-27 | Base template |
 | 1.0.1 | 2026-11-02 | Clearer writing guides (long ones split into lines, symbols and internal names in words) |
+| 1.0.2 | 2026-11-11 | Notes folded, under titles that say what they are |

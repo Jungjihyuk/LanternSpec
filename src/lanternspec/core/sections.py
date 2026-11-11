@@ -110,6 +110,30 @@ def _split_guides(content: str) -> tuple[list[str], list[str]]:
     return guides, rest
 
 
+def outside_guides(text: str) -> list[tuple[int, str]]:
+    r"""Return a document's lines that aren't part of a `> [!guide]` callout, with their 1-based numbers.
+
+    A guide is a writing note from the template: what it says (an example `❓` line, say) isn't the document's own.
+
+    Args:
+        text: The whole document.
+
+    Returns:
+        (line number, line) for every line outside a guide.
+
+    Example:
+        >>> outside_guides("## 기획\n> [!guide]- 작성법\n> `- ❓ 확인 필요: 질문`\n- ❓ 확인 필요: 실제 질문")
+        [(1, '## 기획'), (4, '- ❓ 확인 필요: 실제 질문')]
+    """
+    out = []
+    in_guide = False
+    for number, line in enumerate(text.split("\n"), start=1):
+        in_guide = line.startswith("> [!guide]") or (in_guide and line.startswith(">"))
+        if not in_guide:
+            out.append((number, line))
+    return out
+
+
 def body(text: str, titles: Iterable[str]) -> str:
     r"""Return a section's content without its `> [!guide]` callouts (every `>` line of the callout).
 

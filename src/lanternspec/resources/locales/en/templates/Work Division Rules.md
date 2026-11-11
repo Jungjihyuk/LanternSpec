@@ -6,8 +6,8 @@ created: ${today}
 updated: ${today}
 links: []
 template: Work Division Rules
-template_version: 1.1.1
-based_on: 1.1.1
+template_version: 1.1.2
+based_on: 1.1.2
 ---
 # 📘 Work Division Rules
 
@@ -16,7 +16,8 @@ based_on: 1.1.1
 > Why people chose differently from the recommendation is gathered here.
 > The next recommendation reads this and follows how this team divides work.
 
-> [!guide] ⚙️ `lantern unit-log add` adds the table one line at a time. Don't edit it by hand.
+> [!guide]- ⚙️ Generated section — don't edit by hand
+> `lantern unit-log add` adds the table one line at a time. Don't edit it by hand.
 > Default rules:
 > - One work = one purpose. If the work's name can't say "what changes, and for what" in one line and needs an "and", it is two works
 > - Work that fits the purpose of an unfinished work goes into that work
@@ -34,3 +35,4 @@ based_on: 1.1.1
 | 1.0.1 | 2026-10-29 | Choices are new work · add to an existing work · divide and place; default rules follow the purpose |
 | 1.1.0 | 2026-10-29 | Renamed to "Work Division Rules" and moved to the Rules folder |
 | 1.1.1 | 2026-11-02 | Clearer writing guides (long ones split into lines, symbols and internal names in words) |
+| 1.1.2 | 2026-11-11 | Notes folded, under titles that say what they are |

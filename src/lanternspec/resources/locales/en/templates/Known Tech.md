@@ -6,15 +6,16 @@ created: ${today}
 updated: ${today}
 links: []
 template: Known Tech
-template_version: 1.0.1
-based_on: 1.0.1
+template_version: 1.0.2
+based_on: 1.0.2
 ---
 # 🧠 Known Tech
 
 > [!abstract] At a glance
 > Technologies to leave out of debt suggestions. `/l-learn` doesn't ask again about anything listed here.
 
-> [!guide] `lantern debt known add` adds one line at a time.
+> [!guide]- ⚙️ Generated section — added one line at a time
+> `lantern debt known add` adds one line at a time.
 > Format: `- Technology (alias, alias) — date`
 > Aliases are other names for the same technology (e.g. `PostgreSQL (Postgres, PG)`). Asking by an alias doesn't ask again either.
 
@@ -26,3 +27,4 @@ based_on: 1.0.1
 |---|---|---|
 | 1.0.0 | 2026-10-27 | Base template |
 | 1.0.1 | 2026-11-02 | Clearer writing guides (long ones split into lines, symbols and internal names in words) |
+| 1.0.2 | 2026-11-11 | Notes folded, under titles that say what they are |

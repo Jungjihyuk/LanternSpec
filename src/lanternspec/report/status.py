@@ -8,6 +8,7 @@ from __future__ import annotations
 from ..core import frontmatter
 from ..core.messages import msg
 from ..core.project import Project, read, work_id_of, work_name_of
+from ..core.sections import outside_guides
 from ..core.taskfile import parse_tasks
 from ..work.tasks import next_task
 
@@ -36,11 +37,8 @@ def open_unknowns(project: Project) -> list[tuple[str, int]]:
     if cur.exists():
         targets += sorted(cur.rglob("*.md"))
     for p in targets:
-        lines = [
-            l
-            for l in read(p).split("\n")
-            if unknown in l and "[!guide]" not in l and f"`{unknown}" not in l and not l.lstrip().startswith("> -")
-        ]
+        # writing notes from the template mention the marker as an example, which isn't an open question
+        lines = [l for _, l in outside_guides(read(p)) if unknown in l and f"`{unknown}" not in l and not l.lstrip().startswith("> -")]
         if lines:
             out.append((project.docs_rel(p), len(lines)))
     return out
