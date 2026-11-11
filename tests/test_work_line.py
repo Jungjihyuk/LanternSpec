@@ -346,16 +346,16 @@ def test_task_sizes_spikes_and_the_task_rules_document(repo):
     init_project(repo)
     assert (docs(repo) / "3. 현재 상태/규칙/할 일 나누기 기준.md").exists()  # every project gets the rules /l-task follows
     rules = (docs(repo) / "3. 현재 상태/규칙/할 일 나누기 기준.md").read_text(encoding="utf-8")
-    assert "`15m`" in rules and "`1d`" in rules and "${size" not in rules
+    assert "`15m`" in rules and "`8h`" in rules and "${size" not in rules
     repo("scaffold", "work", "작업")
     repo("scaffold", "doc", "W-001", "할 일")
     repo("task", "add", "W-001", "결제 환불 지원 확인", "--size", "1h", "--spike")
     repo("task", "add", "W-001", "환불 API", "--after", "T01")  # no size: the middle one
     code, out = repo("task", "add", "W-001", "너무 큰 일", "--size", "2d", ok=False)
-    assert code != 0 and "15m · 1h · 반나절 · 1d" in out
+    assert code != 0 and "15m · 1h · 4h · 8h" in out
     text = (work_dir(repo, "W-001") / "할 일.md").read_text(encoding="utf-8")
     assert "- [ ] W-001-T01 [조사] 결제 환불 지원 확인 [크기:: 1h]" in text
-    assert "- [ ] W-001-T02 환불 API [크기:: 반나절] [먼저:: T01]" in text
+    assert "- [ ] W-001-T02 환불 API [크기:: 4h] [먼저:: T01]" in text
 
 
 def test_upgrade_apply_writes_older_sizes_with_their_new_names(repo):
@@ -375,7 +375,7 @@ def test_upgrade_apply_writes_older_sizes_with_their_new_names(repo):
     repo("check", str(tasks))  # the older names are still read
     repo("upgrade", "--apply")
     text = tasks.read_text(encoding="utf-8")
-    assert "[크기:: 1h]" in text and "[크기:: 반나절]" in text and "[크기:: 1d]" in text
+    assert "[크기:: 1h]" in text and "[크기:: 4h]" in text and "[크기:: 8h]" in text
     assert "    S: 🟢" not in enums.read_text(encoding="utf-8")
 
 
@@ -384,7 +384,7 @@ def test_renaming_a_size_renames_it_on_task_lines(repo):
     repo("scaffold", "work", "작업")
     repo("scaffold", "doc", "W-001", "할 일")
     repo("task", "add", "W-001", "하나")
-    repo("enums", "rename", "size", "반나절", "4시간")
+    repo("enums", "rename", "size", "4h", "4시간")
     assert "[크기:: 4시간]" in (work_dir(repo, "W-001") / "할 일.md").read_text(encoding="utf-8")
 
 
@@ -401,3 +401,20 @@ def test_task_add_refuses_a_prerequisite_in_another_work(repo):
     # the full ID of a task in the same work still means that task
     repo("task", "add", "W-001", "둘", "--size", "S", "--after", "W-001-T01")
     assert "W-001-T02 둘 [크기:: 1h] [먼저:: T01]" in tasks.read_text(encoding="utf-8")
+
+
+def test_upgrade_apply_renames_sizes_as_an_earlier_version_named_them(repo):
+    init_project(repo)
+    enums = docs(repo) / "0. 템플릿/_meta/enums.yaml"  # a project made by 0.3.1, when the sizes were 반나절 · 1d
+    text = enums.read_text(encoding="utf-8").replace("4h: {icon: 🟡, role: m, was: [반나절]}", "반나절: {icon: 🟡, role: m}")
+    enums.write_text(text.replace("8h: {icon: 🔴, role: l, was: [1d]}", "1d: {icon: 🔴, role: l}"), encoding="utf-8")
+    repo("scaffold", "work", "작업")
+    repo("scaffold", "doc", "W-001", "할 일")
+    tasks = work_dir(repo, "W-001") / "할 일.md"
+    tasks.write_text("- [ ] W-001-T01 하나 [크기:: 반나절]\n- [ ] W-001-T02 둘 [크기:: 1d]\n", encoding="utf-8")
+    _, out = repo("upgrade")
+    assert "size의 '반나절'는 이제 '4h'입니다" in out and "[크기:: 반나절]" in tasks.read_text(encoding="utf-8")
+    repo("upgrade", "--apply")
+    text = tasks.read_text(encoding="utf-8")
+    assert "[크기:: 4h]" in text and "[크기:: 8h]" in text
+    assert "반나절" not in enums.read_text(encoding="utf-8")

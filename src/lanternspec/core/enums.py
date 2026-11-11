@@ -48,6 +48,7 @@ class Enum:
         values: Name → icon, in the order written in enums.yaml.
         applies: Document type → the frontmatter field that uses this list, e.g. {"debt": "status"}.
         roles: Role → name. The key code uses to find a value.
+        previous: Role → names lantern once shipped for it (`was:` in enums.yaml), which an upgrade may rename to today's.
 
     Example:
         >>> e = load()["debt_status"]
@@ -60,6 +61,7 @@ class Enum:
     values: dict[str, str]
     applies: dict[str, str]
     roles: dict[str, str] = field(default_factory=dict)
+    previous: dict[str, list[str]] = field(default_factory=dict)
 
     def icon(self, value: str) -> str:
         """Return the icon of a value.
@@ -167,6 +169,7 @@ class Enums:
                 values = {str(v): "" for v in values}
             icons: dict[str, str] = {}
             roles: dict[str, str] = {}
+            previous: dict[str, list[str]] = {}
             for k, v in values.items():
                 if isinstance(v, dict):
                     icons[str(k)] = str(v.get("icon") or "")
@@ -175,6 +178,8 @@ class Enums:
                         if role in roles:
                             self._duplicate_roles.append(f"{name}.{role}")
                         roles[role] = str(k)
+                        if v.get("was"):
+                            previous[role] = [str(x) for x in v["was"]]
                 else:
                     icons[str(k)] = str(v or "")
             self.enums[name] = Enum(
@@ -183,6 +188,7 @@ class Enums:
                 values=icons,
                 applies={str(k): str(v) for k, v in (spec.get("applies") or {}).items()},
                 roles=roles,
+                previous=previous,
             )
         if fallback is not None:
             for name, base in fallback.enums.items():

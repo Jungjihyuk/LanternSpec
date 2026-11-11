@@ -103,11 +103,11 @@ def task_durations(project: Project) -> dict[str, list[float]]:
         project: The project.
 
     Returns:
-        Size name (e.g. "half"; a task written with an older name counts under the new one, "?" without a size)
+        Size name (e.g. "4h"; a task written with an older name counts under the new one, "?" without a size)
         → hours of each finished task.
 
     Example:
-        >>> task_durations(project)["half"]  # doctest: +SKIP
+        >>> task_durations(project)["4h"]  # doctest: +SKIP
         [1.5, 2.0]
     """
     out: dict[str, list[float]] = defaultdict(list)

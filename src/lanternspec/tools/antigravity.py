@@ -39,6 +39,7 @@ class Antigravity(Tool):
     name = "antigravity"
     label = "Antigravity CLI"
     launch = "agy"
+    model_prefixes = ("gemini-",)
     skill_root = ".agents/skills"
     config_paths = (".agents/", "GEMINI.md")
     write_tools = frozenset(

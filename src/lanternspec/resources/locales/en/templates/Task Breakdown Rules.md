@@ -18,7 +18,8 @@ based_on: 1.0.0
 > Change any rule that doesn't fit this project. The AI follows the changed rules.
 
 ## Size
-Set by how long a person would take, working without interruption. It is not the time the AI actually takes.
+Set by the hours a person would put into it, added up. They needn't be in one stretch: time spread over days counts as its total. It is not the time the AI actually takes.
+A size picks the nearest step on a scale; it is not a promise to finish within that time.
 
 | Size | This kind of work | Example |
 |---|---|---|
@@ -27,7 +28,7 @@ Set by how long a person would take, working without interruption. It is not the
 | `${size.m}` | Change several files and write new tests, within one layer: data, API or screen | A sign-up API, a database connection with its first migration |
 | `${size.l}` | Span several layers (data, API, screen), or bring in a technology or outside service used for the first time | Sign-in with sessions and a lockout policy, a payment integration |
 
-- **Split anything that looks bigger than `${size.l}`.** Work longer than a day is hard to review, and when it gets stuck you find out late.
+- **Split anything that looks bigger than `${size.l}`.** Bigger work is hard to review, and when it gets stuck you find out late.
 - **When unsure, pick the larger size.** Finishing early disturbs a plan less than running over.
 
 ## Where an unknown goes

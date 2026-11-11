@@ -69,6 +69,7 @@ class Codex(ClaudeHooks, Tool):
     rules_chain_max_bytes = 32 * 1024  # project_doc_max_bytes: the AGENTS.md files from root to working folder together
     hook_context_max_tokens = 8000  # we set additionalContextLimit (its default 2500 would cut a folder's rules)
     restores_after_compaction = True  # SessionStart with source compact
+    model_prefixes = ("gpt-", "codex", "o3", "o4")
 
     def skill_extras(self, src: SkillSource, profile: Profile) -> dict[str, str]:
         r"""Implement Tool.skill_extras: keep manual-only skills out of implicit (model-chosen) invocation.

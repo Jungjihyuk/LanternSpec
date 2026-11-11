@@ -48,8 +48,9 @@ Read a 📌 verbatim section again right before turning its rule into code. Know
    - Overwrite `## <<section.now>>` (progress · next · blocked, 3–5 lines)
 4. Check it off and commit:
    ```bash
-   lantern task done W-012-T03      # [<<attr.finish>>:: time] + acceptance-criterion checkpoint notice
+   lantern task done W-012-T03 --by "<your exact model name>"   # [<<attr.finish>>:: time] · [<<attr.worked_by>>:: …] + acceptance checkpoint notice
    ```
+   For `--by`, write **your exact model name** (e.g. `claude-opus-5-5`, `gpt-5.1-codex`, `gemini-3-pro`). If a person worked on this task too, add their name: `--by "<model>, <name>"`. A task a person did alone gets only their name.
    Commit message format (if the user has commit rules, follow them, with the ID at the end):
 ```
 <<commit.template>>
@@ -74,7 +75,7 @@ Read a 📌 verbatim section again right before turning its rule into code. Know
    - Save the capture in `<<folder.screens>>/build/<screen>.png`. For **functional checks** — does it show, wrap, scroll, respond when pressed — judge from the capture, check off the acceptance criterion (`lantern task ac W-012 AC-n`), and keep the capture as evidence.
 <!-- lantern:endif -->
    - **If you can't check it yourself** (<!-- lantern:if verify.browser=none -->this project chose to have a person check<!-- lantern:endif --><!-- lantern:if !verify.browser=none -->no browser control, or it failed to run<!-- lantern:endif -->), leave the task done but don't check off the acceptance criterion. Add one line to `<<file.record>>` and carry on without stopping:
-     `- Waiting for a person: <screen> — run <command>, open <address>, look at <what> (AC-n)`
+     `- <<marker.person_check>>: <screen> — run <command>, open <address>, look at <what> (AC-n)`
 <!-- lantern:if plan.ui_reference=required -->
    - **Whether it matches the mockup** is for a person to decide. If the mockup is a PNG too, point out the differences first with the automatic comparison: `lantern screen compare "<<folder.screens>>/build/login.png" "<<folder.screens>>/login.png"` (a hint only). Then **show the capture and the mockup side by side and ask the user**: "Does it match the mockup?" → if it does, check off the AC; if not, for each difference `lantern task add W-012 "<match the difference>" --size <<size.s>> --ac AC-n --screen "<screen>"`. If there's no capture, leave this question as "Waiting for a person" too.
 <!-- lantern:endif -->

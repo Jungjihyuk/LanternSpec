@@ -165,6 +165,7 @@ class ClaudeCode(ClaudeHooks, Tool):
     rules_max_lines = 200  # its docs: keep each instruction file under 200 lines, longer ones are followed less
     reads_nested_rules = True  # a folder's AGENTS.md loads when it opens a file there (no CLAUDE.md in the project)
     restores_after_compaction = True  # SessionStart with source compact
+    model_prefixes = ("claude-",)
 
     def skill_meta(self, src: SkillSource, profile: Profile, prefix: str) -> dict[str, Any]:
         """Implement Tool.skill_meta with Claude Code's extra frontmatter keys.

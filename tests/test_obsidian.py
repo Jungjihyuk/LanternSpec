@@ -179,7 +179,7 @@ def test_a_timeline_built_in_minutes_gets_hours_on_its_axis(repo):
     text = (repo.root / "docs/4. 운영 기록/보고/현황.md").read_text(encoding="utf-8")
     assert "axisFormat %m-%d %H:%M" in text
 
-    tasks.write_text("".join(f"- [ ] W-001-T0{i} 표 [크기:: 1d]\n" for i in range(1, 7)), encoding="utf-8")
+    tasks.write_text("".join(f"- [ ] W-001-T0{i} 표 [크기:: 8h]\n" for i in range(1, 7)), encoding="utf-8")
     repo("report", "--views", "timeline")  # six days of estimates: days on the axis
     assert "axisFormat %m-%d\n" in (repo.root / "docs/4. 운영 기록/보고/현황.md").read_text(encoding="utf-8")
 

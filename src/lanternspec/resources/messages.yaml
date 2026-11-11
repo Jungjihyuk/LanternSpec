@@ -552,9 +552,6 @@
 "> ⚙️ Generated — `lantern report` · **as of {now_minute}** · views: {items}": {ko: "> ⚙️ 자동 생성 — `lantern report` · **기준: {now_minute}** · 보기: {items}"}
 "## 3-line summary": {ko: "## 3줄 요약"}
 "## Compared with the last report": {ko: "## 지난 보고와 비교"}
-"Drag a task that has not started to plan it. Checkboxes and planned dates show at once; the rest when `lantern report` runs again.": {ko: "시작 전인 할 일은 끌어서 일정을 잡는다. 체크와 예정일은 바로 반영되고, 나머지는 `lantern report`를 다시 실행할 때 바뀐다."}
-"Drawn when `lantern report` ran — after changing tasks, run it again.": {ko: "`lantern report`를 실행한 때의 상태다. 할 일을 바꾼 뒤에는 다시 실행한다."}
-"\n\n> {freshness} Without planned dates it is drawn from task order and size ({sizes}, {workday:g} hours a day); once actual times exist, from those.": {ko: "\n\n> {freshness} 예정일이 없으면 할 일 순서와 크기({sizes}, 하루 {workday:g}시간)로, 실제 시간이 생기면 그 시간으로 그린다."}
 "(no domain)": {ko: "(도메인 없음)"}
 "Unknown view: {items} (available: {items2})": {ko: "알 수 없는 보기: {items} (가능: {items2})"}
 "> The AI fills in 3 lines: `lantern report --summary \"…\" \"…\" \"…\"`": {ko: "> AI가 3줄로 채운다: `lantern report --summary \"…\" \"…\" \"…\"`"}
@@ -1074,6 +1071,8 @@
 "a spike: finds out what only trying can tell, within its size": {ko: "조사 할 일 — 직접 해 봐야 아는 것을 크기만큼의 시간 안에 알아낸다"}
 "{count} task sizes in their new names: {path}": {ko: "할 일 크기 {count}개를 새 이름으로: {path}"}
 "✔ enums.yaml size: dropped {items}": {ko: "✔ enums.yaml size: {items} 뺌"}
+"✔ enums.yaml {enum}: {old} → {new} ({count} documents)": {ko: "✔ enums.yaml {enum}: {old} → {new} (문서 {count}개)"}
+"ℹ {enum} '{old}' is now named '{new}' → lantern upgrade --apply renames it, documents included": {ko: "ℹ {enum}의 '{old}'는 이제 '{new}'입니다 → lantern upgrade --apply가 문서까지 함께 바꿉니다"}
 "ℹ {count} tasks still use the older sizes S · M · L → lantern upgrade --apply writes them as {sizes}": {ko: "ℹ 할 일 {count}개가 예전 크기 이름(S · M · L)을 씁니다 → lantern upgrade --apply가 {sizes}로 바꿉니다"}
 "from-sql: migration files · folders": {ko: "from-sql: 마이그레이션 파일 · 폴더"}
 "diff: migration files · folders": {ko: "diff: 마이그레이션 파일 · 폴더"}
@@ -1389,17 +1388,13 @@
 "  # parts = sub-projects with their own package file (pyproject.toml · package.json …) — lantern parts (each gets its own AGENTS.md; ci: false leaves one out of CI)": {ko: "  # 영역 = 패키지 설정 파일(pyproject.toml · package.json 등)이 따로 있는 하위 프로젝트 — lantern parts (영역마다 AGENTS.md가 생기고, ci: false면 CI에서 뺀다)"}
 "actual dates": {ko: "실제 일정"}
 "planned dates": {ko: "예정 일정"}
-"estimated from order and size": {ko: "순서와 크기로 추정"}
 "Doing": {ko: "진행 중"}
 "To do": {ko: "할 일"}
 "whole work": {ko: "작업 전체 기간"}
 "idea added": {ko: "아이디어 등록일"}
 "plan started": {ko: "기획 시작일"}
-"must finish first": {ko: "먼저 끝나야 하는 할 일"}
-"starts before the task it waits on": {ko: "먼저 할 일보다 일찍 시작"}
 "Dates not changed: the task has started, or its line is gone": {ko: "일정을 바꾸지 못했습니다. 이미 시작한 할 일이거나 그 줄이 없습니다"}
 "Not started · planned": {ko: "시작 전 · 예정일"}
-"Not started · estimated": {ko: "시작 전 · 추정"}
 "One column = {{size}}": {ko: "한 칸 = {{size}}"}
 "{{hour}}h": {ko: "{{hour}}시"}
 "{{n}} min": {ko: "{{n}}분"}
@@ -1407,7 +1402,18 @@
 "{{n}} d": {ko: "{{n}}일"}
 "time worked": {ko: "작업 시간"}
 "time taken": {ko: "걸린 시간"}
+"planned": {ko: "예정"}
+"done: who did it — people's names and exact AI model names, comma-separated": {ko: "done: 한 사람 — 사람 이름과 정확한 AI 모델명, 쉼표로 구분"}
+"next": {ko: "다음"}
+"Done": {ko: "완료"}
+
+"Drag a task that has not started to plan it. Checkboxes and planned dates show at once; the rest when `lantern report` runs again.": {ko: "시작 전인 할 일은 끌어서 일정을 잡는다. 체크와 예정일은 바로 반영되고, 나머지는 `lantern report`를 다시 실행할 때 바뀐다."}
+"Drawn when `lantern report` ran — after changing tasks, run it again.": {ko: "`lantern report`를 실행한 때의 상태다. 할 일을 바꾼 뒤에는 다시 실행한다."}
+"\n\n> {freshness} Without planned dates it is drawn from task order and size ({sizes}, {workday:g} hours a day); once actual times exist, from those.": {ko: "\n\n> {freshness} 예정일이 없으면 할 일 순서와 크기({sizes}, 하루 {workday:g}시간)로, 실제 시간이 생기면 그 시간으로 그린다."}
+"estimated from order and size": {ko: "순서와 크기로 추정"}
+"must finish first": {ko: "먼저 끝나야 하는 할 일"}
+"starts before the task it waits on": {ko: "먼저 할 일보다 일찍 시작"}
+"Not started · estimated": {ko: "시작 전 · 추정"}
 "In a finished work, point at a task to see what had to finish first": {ko: "끝난 작업은 할 일에 마우스를 올리면 먼저 끝나야 했던 할 일이 보여요"}
 "Must finish first: {{ids}}": {ko: "먼저 끝나야 하는 할 일: {{ids}}"}
 "Nothing must finish first": {ko: "먼저 끝나야 하는 할 일 없음"}
-"Done": {ko: "완료"}

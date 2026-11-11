@@ -215,6 +215,56 @@ def drop_legacy_sizes(project: Project) -> list[str]:
     return [msg("✔ enums.yaml size: dropped {items}", items=" · ".join(gone))]
 
 
+def previous_names(project: Project) -> list[tuple[str, str, str]]:
+    """Find values the project still names the way lantern once shipped them, where today's default is different.
+
+    enums.yaml lists them per value as `was:`. A name someone chose themselves is never listed, so it is never suggested.
+
+    Args:
+        project: The project.
+
+    Returns:
+        (list name, current name, today's name) for each one.
+
+    Example:
+        >>> previous_names(project)  # doctest: +SKIP
+        [('size', '반나절', '4h'), ('size', '1d', '8h')]
+    """
+    if not project.enums_file.exists():
+        return []
+    base = enums_mod.load(language=project.profile.language)
+    out = []
+    for name, shipped in base.enums.items():
+        mine = project.enums.get(name)
+        if mine is None:
+            continue
+        for role, olds in shipped.previous.items():
+            current, today_name = mine.roles.get(role, ""), shipped.roles.get(role, "")
+            if current in olds and today_name and today_name not in mine.values:
+                out.append((name, current, today_name))
+    return out
+
+
+def rename_previous_names(project: Project) -> list[str]:
+    """Rename the values named the way lantern once shipped them to today's names, documents included (`lantern upgrade --apply`).
+
+    Args:
+        project: The project.
+
+    Returns:
+        One message per value renamed.
+
+    Example:
+        >>> rename_previous_names(project)  # doctest: +SKIP
+        ['✔ enums.yaml size: 반나절 → 4h (문서 3개)']
+    """
+    out = []
+    for name, old, new in previous_names(project):
+        changed = rename_enum_value(project, name, old, new)
+        out.append(msg("✔ enums.yaml {enum}: {old} → {new} ({count} documents)", enum=name, old=old, new=new, count=len(changed)))
+    return out
+
+
 def rename_enum_value(project: Project, enum: str, old: str, new: str) -> list[Path]:
     """Rename an enum value in enums.yaml and in every document that stores it (`lantern enums rename`).
 

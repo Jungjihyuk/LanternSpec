@@ -6,8 +6,8 @@ created: ${today}
 updated: ${today}
 links: ${links}
 template: Tasks
-template_version: 1.1.0
-based_on: 1.1.0
+template_version: 1.2.0
+based_on: 1.2.0
 ---
 # ✅ ${work_id} ${name} — Tasks
 
@@ -20,6 +20,7 @@ based_on: 1.1.0
 > - Order them **the way they are best worked on**: what must finish first → data · foundations → features → screens → wrap-up
 > - Planned dates only when a person sets them: `[planned:: 2026-11-01] [due:: 2026-11-03]` (the AI never guesses them)
 > - `[started:: …]` · `[finished:: …]` are written by `lantern task start` · `lantern task done`. Don't write them by hand
+> - `[by:: …]` is who actually did the task: people and AI models (e.g. `claude-opus-5-5` · `Jihyeok, gpt-5.1-codex`). `lantern task done --by` writes it; a person who did a task may write their own name
 > - Screen tasks get `[screen:: screen name]`; if something is unknown, end the line with `❓ Needs answer`
 > - When a task falls outside the work's purpose, take it out and suggest placing it separately with `/l-plan`
 
@@ -34,4 +35,5 @@ based_on: 1.1.0
 | 1.0.0 | 2026-10-27 | Base template |
 | 1.0.1 | 2026-10-29 | Divide works by their purpose, not by the number of tasks |
 | 1.0.2 | 2026-11-02 | Clearer writing guides (long ones split into lines, symbols and internal names in words) |
-| 1.1.0 | 2026-11-11 | Sizes are 15m · 1h · half · 1d, defined in the Task Breakdown Rules document |
+| 1.1.0 | 2026-11-11 | Sizes are 15m · 1h · 4h · 8h, defined in the Task Breakdown Rules document |
+| 1.2.0 | 2026-11-11 | `[by:: …]` for the people and AI models who actually did a task |

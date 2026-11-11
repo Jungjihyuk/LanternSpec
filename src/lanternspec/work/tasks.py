@@ -226,12 +226,14 @@ class DoneResult:
     work_done: bool
 
 
-def done(project: Project, task_id: str) -> DoneResult:
+def done(project: Project, task_id: str, by: list[str] | None = None) -> DoneResult:
     """Check a task and stamp its finish time (and its start time if it was never started).
 
     Args:
         project: The project.
         task_id: The task, e.g. "W-012-T02".
+        by: Who did it — people's names and the exact names of AI models (e.g. ["claude-opus-5-5", "지혁"]);
+            added to the names already on the line.
 
     Returns:
         The task, the acceptance criteria now ready to check, and whether the work is done.
@@ -248,6 +250,9 @@ def done(project: Project, task_id: str) -> DoneResult:
         line = set_checked(line, True)
         if not t.started:
             line = set_attr(line, "start", now_minute(), project.names)
+        names = [*t.list_attr("worked_by"), *(n.strip() for n in by or [] if n.strip())]
+        if names:
+            line = set_attr(line, "worked_by", ", ".join(dict.fromkeys(names)), project.names)
         return set_attr(line, "finish", now_minute(), project.names)
 
     t, tf, tasks = _edit_task(project, task_id, edit)
@@ -369,7 +374,7 @@ def add(
         project: The project.
         work_id: The work, e.g. "W-012".
         what: What to do, in one line.
-        size: One of the size names in enums.yaml (Korean "15m", "1h", "반나절", "1d"); empty for the middle one.
+        size: One of the size names in enums.yaml ("15m", "1h", "4h", "8h"); empty for the middle one.
             An older S · M · L is written as its new name.
         ac: Acceptance criteria the task serves, e.g. ["AC-1"].
         after: Tasks of this work that must finish first, e.g. ["T01"].
@@ -496,7 +501,7 @@ def legacy_sizes(project: Project) -> dict[Path, list[int]]:
 
 
 def rename_legacy_sizes(project: Project) -> list[str]:
-    """Write tasks sized S · M · L with the current names (1h · 반나절 · 1d), and drop those names from enums.yaml.
+    """Write tasks sized S · M · L with the current names, and drop those from enums.yaml.
 
     Args:
         project: The project.
@@ -524,7 +529,7 @@ def rename_legacy_sizes(project: Project) -> list[str]:
 def estimate(project: Project, work_id: str, start: str | None = None, hours_per_day: float = 6.0, apply: bool = False) -> list[str]:
     """**Suggest** due dates from the actual median duration per size; writes only with apply.
 
-    Sizes with fewer than two finished tasks use what the size means (15m · 1h · 반나절 = 4h · 1d = 8h). Weekends are skipped.
+    Sizes with fewer than two finished tasks use what the size means (15m · 1h · 4h · 8h). Weekends are skipped.
 
     Args:
         project: The project.

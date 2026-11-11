@@ -1,7 +1,7 @@
 """Parse and edit the task lines of `할 일.md` and the acceptance criteria of `기획.md`.
 
 Task line:
-    - [ ] W-012-T02 무엇 [크기:: 반나절] [기준:: AC-1] [먼저:: T01] [담당:: 이름]
+    - [ ] W-012-T02 무엇 [크기:: 4h] [기준:: AC-1] [먼저:: T01] [담당:: 이름]
 
 Attribute names (`크기` …) and the "❓ 확인 필요" marker come from the project's names.yaml (core/names.py);
 parsed attributes are keyed by role ("size" · "criteria" · "after" …), so callers never spell a name.
@@ -29,10 +29,11 @@ TASK_LINE = re.compile(r"^(\s*)- \[( |x|X)\] (W-\d{3,}-T\d{2,})\b\s*(.*)$")
 ATTR = re.compile(r"\[([^\[\]:]+?)::\s*([^\[\]]*?)\s*\]")
 AC_LINE = re.compile(r"^(\s*)- \[( |x|X)\] (AC-\d+)\b\s*(.*)$")
 
-# What each size means: hours of focused work by a person (not the AI's time). The names (15m · 1h · 반나절 or half · 1d) are in enums.yaml.
+# What each size means: the hours a person would put into it, added up (not the AI's time). The names in enums.yaml
+# (15m · 1h · 4h · 8h) say the same thing, so a size has one meaning.
 SIZE_HOURS = {"xs": 0.25, "s": 1.0, "m": 4.0, "l": 8.0}
-WORKDAY_HOURS = SIZE_HOURS["l"]  # the largest size is one working day; more than that is split
-LEGACY_SIZES = {"S": "s", "M": "m", "L": "l"}  # the names before 15m · 1h · 반나절 · 1d, still read
+WORKDAY_HOURS = SIZE_HOURS["l"]  # how long the timeline draws a working day for tasks with no date
+LEGACY_SIZES = {"S": "s", "M": "m", "L": "l"}  # the names before the sizes were named by their hours, still read
 
 
 def size_role(enums: Enums, value: str) -> str:
@@ -47,7 +48,7 @@ def size_role(enums: Enums, value: str) -> str:
 
     Example:
         >>> from lanternspec.core.enums import load
-        >>> size_role(load(), "반나절"), size_role(load(), "M"), size_role(load(), "huge")
+        >>> size_role(load(), "4h"), size_role(load(), "M"), size_role(load(), "huge")
         ('m', 'm', '')
     """
     role = enums["size"].role_of(value) if enums.get("size") else ""
@@ -125,7 +126,7 @@ class Task:
 
     @property
     def size(self) -> str:
-        """The size attribute as written (e.g. "반나절"), or ""."""
+        """The size attribute as written (e.g. "4h"), or ""."""
         return self.attrs.get("size", "")
 
     @property

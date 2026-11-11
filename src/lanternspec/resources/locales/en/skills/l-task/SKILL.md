@@ -25,7 +25,7 @@ Then add tasks one by one **in the order they are best worked on** (the script n
 lantern task add W-012 "<what>" --size <<size.xs>>|<<size.s>>|<<size.m>>|<<size.l>> --ac AC-1 [--after T01] [--spike] [--screen "<screen name>"]<!-- lantern:if team --> --owner "<owner>"<!-- lantern:endif -->
 ```
 - **Order:** what must finish first → data · foundations → features → screens → wrap-up. In units that can be checked at once.
-- Decide the **size** by the size table in the rules document — the time a person would take, working without interruption. Split anything that looks bigger than `<<size.l>>`; when unsure, pick the larger size.
+- Decide the **size** by the size table in the rules document — the hours a person would put into it, added up (a step on a scale, not a promise). Split anything that looks bigger than `<<size.l>>`; when unsure, pick the larger size.
 - **Don't add planned dates.** Only when the person gives dates: `--start-plan 2026-11-01 --due-plan 2026-11-03`.
 - Don't write long descriptions; link the relevant part of `<<file.design>>`.
 - Tasks that **can run alongside** others (different files, nothing to wait for) get `--parallel` (marked `[P]` — parallel agents can take them together).

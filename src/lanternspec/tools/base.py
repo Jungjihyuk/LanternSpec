@@ -153,6 +153,8 @@ class Tool:
         hook_context_max_tokens: Tokens of text one hook call can add to the conversation (0 = no limit known).
         reads_nested_rules: Whether the tool reads a folder's AGENTS.md by itself when it works there.
         restores_after_compaction: Whether the tool has a hook right after it summarizes a long conversation.
+        model_prefixes: How the names of the models this tool runs begin (e.g. "claude-"); such a name on a task
+            line says an AI did it.
 
     Example:
         >>> from lanternspec.tools import get
@@ -177,6 +179,7 @@ class Tool:
     hook_context_max_tokens = 0  # tokens one hook call can add to the conversation
     reads_nested_rules = False  # reads a folder's AGENTS.md by itself (else hooks hand it over)
     restores_after_compaction = False  # has a hook right after compaction (else a short reminder goes with every call)
+    model_prefixes: tuple[str, ...] = ()  # how this tool's model names begin; such a name in [한 사람:: …] is an AI
 
     # ---- skills
     def skill_meta(self, src: SkillSource, profile: Profile, prefix: str) -> dict[str, Any]:
