@@ -89,6 +89,27 @@ def test_idea_capture_dedupe_and_status_flow(repo):
     assert "❌ 버림 — 카카오 심사가 오래 걸림" in text
 
 
+def test_an_idea_uses_the_template_of_its_kind_when_there_is_one(repo):
+    init_project(repo)
+    enums = docs(repo) / "0. 템플릿/_meta/enums.yaml"
+    enums.write_text(enums.read_text(encoding="utf-8").replace("    기술 검토: 🔍\n", "    기술 검토: 🔍\n    메모: 🗒\n"), encoding="utf-8")
+    own = {
+        "기능": "| 다루는 정보 |",
+        "개선": "| 바라는 모습 |",
+        "버그": "| 버그 유형 |",
+        "실험": "| 성공 기준 |",
+        "기술 검토": "| 비교 기준 |",
+    }
+    for number, (kind, cell) in enumerate(own.items(), start=1):
+        repo("scaffold", "idea", f"{kind} 하나", "--kind", kind)
+        card = next((docs(repo) / "1. 아이디어").glob(f"IDEA-{number:03d}*"))
+        assert meta(card)["template"] == f"아이디어 - {kind}" and cell in card.read_text(encoding="utf-8")
+    repo("scaffold", "idea", "나중에 볼 것", "--kind", "메모")  # a kind added later has no template of its own
+    plain = next((docs(repo) / "1. 아이디어").glob("IDEA-006*"))
+    assert meta(plain)["template"] == "아이디어" and "## 왜 좋은가" in plain.read_text(encoding="utf-8")
+    repo("check")  # a fresh card from any template is a valid idea, only waiting to be filled
+
+
 def test_auto_capture_is_marked(repo):
     init_project(repo)
     repo("scaffold", "idea", "다크 모드", "--auto")

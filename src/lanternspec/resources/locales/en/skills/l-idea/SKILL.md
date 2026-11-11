@@ -1,6 +1,6 @@
 ---
 name: l-idea
-description: Turn a thought from the conversation into an idea note — record what the user said, word for word, plus a tidy version (one-line summary · why it helps · related documents) in docs/<<folder.ideas>>/IDEA-NNN right away. Overlapping ideas are added to the existing card. Use to capture an idea, feature wish, bug, experiment or tech review the user mentions ("it would be nice if…").
+description: Keep a thought for later — an idea, a wish, an annoyance, something that looks like a bug, a technology to look into or an experiment to try that would be forgotten if not written down, recorded word for word plus a tidy version in docs/<<folder.ideas>>/IDEA-NNN. Offer it even when it doesn't fit a kind (feature · improvement · bug · experiment · tech review) exactly. Overlapping cards get it added. Use when the conversation shows a thought worth keeping for later — a wish, an annoyance, a possible bug, a technology to look into, an experiment to try ("it would be nice if…", "this is a bit of a hassle", "looks like a bug, let's look later").
 invocation: profile:idea.capture
 argument-hint: "<a thought in one line> | the ideas from the conversation just now"
 ---
@@ -10,6 +10,18 @@ argument-hint: "<a thought in one line> | the ideas from the conversation just n
 **Purpose:** record a thought right away, **word for word plus a tidy version**. Speed matters, so **write it without asking for approval** (an exception to "show before writing").
 
 Input: `$ARGUMENTS` — a thought in one line, or "the ideas from the conversation just now" (gather every idea from this conversation).
+
+## When to offer it
+When the conversation shows **a thought worth bringing back later**, ask in one line, after the person has finished, whether to keep it. For example: "Shall I keep this as an idea? (`/l-idea`)"
+- These are the signs:
+  - a wish ("it would be nice if…", "someday I'd like to…")
+  - an annoyance ("… is a hassle", "every time I have to…")
+  - odd behavior ("… shows up wrong", "sometimes … happens")
+  - a technology to look into ("what about …?", "I'd like to try …")
+  - an experiment ("would … make it faster?")
+- **Offer it even when it doesn't fit a kind exactly.** Pick the nearest kind when recording; if unsure, ask.
+- Don't offer it for work just decided to be done now — that belongs to `/l-plan` or the current work.
+- Don't offer the same thought twice in one conversation. If the person says not to keep it, don't ask again in that conversation.
 
 ## Steps
 1. **Pull out:** take the ideas out of what was said. Different thoughts become separate cards. Keep the original words unchanged.
@@ -25,7 +37,9 @@ Input: `$ARGUMENTS` — a thought in one line, or "the ideas from the conversati
    ```bash
    lantern scaffold idea "<short title>" --kind Feature --raw "<the user's words>"
    ```
-   Fill only the blanks of the created file: one-line summary<<marker.required>> · why it helps · related documents (links only — never copy content). If you don't know, `<<marker.unknown>>`. Delete optional sections with nothing to write.
+   If the kind has its own template (`docs/<<folder.templates>>/<<doc.idea>> - <kind>.md`, e.g. Feature → a feature summary table) the card is made from it, otherwise from the plain `<<doc.idea>>` template.
+   Fill only the blanks of the created file: one-line summary<<marker.required>> · that template's sections · related documents (links only — never copy content). Delete optional sections with nothing to write.
+   Fill table cells only as far as the conversation went; leave unknown cells empty rather than guessing. Don't touch the tables filled in afterwards (result · cause and fix · conclusion) — `/l-build` fills them when it wraps up. In a written section, if you don't know, `<<marker.unknown>>`.
 5. **Report in one line:** `💡 IDEA-014 Sign in with Google (Feature) recorded` (one line per card)
 
 ## The skills change the status

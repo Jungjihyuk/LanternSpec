@@ -607,6 +607,30 @@ def work_doc(project: Project, work_id: str, kind: str) -> Path:
     return dest
 
 
+def idea_template(project: Project, kind: str) -> str:
+    """Pick the template for an idea of this kind: `<idea> - <kind>` when there is one, else the plain idea template.
+
+    A kind with no template of its own (or one added to enums.yaml later) still gets a card.
+
+    Args:
+        project: The project.
+        kind: Idea kind, as written in enums.yaml.
+
+    Returns:
+        The template name.
+
+    Example:
+        >>> idea_template(project, "기능"), idea_template(project, "메모")  # doctest: +SKIP
+        ('아이디어 - 기능', '아이디어')
+    """
+    plain = project.names.doc("idea")
+    try:
+        template_text(project, f"{plain} - {kind}")
+    except FileNotFoundError:
+        return plain
+    return f"{plain} - {kind}"
+
+
 def new_idea(
     project: Project,
     name: str,
@@ -641,7 +665,7 @@ def new_idea(
     quoted = "\n".join(f"> {line}" if line.strip() else ">" for line in (raw or name).strip().split("\n"))
     create_from_template(
         project,
-        project.names.doc("idea"),
+        idea_template(project, kind),
         dest,
         {
             "id": idea_id,

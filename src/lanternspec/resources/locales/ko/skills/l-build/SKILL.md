@@ -148,6 +148,7 @@ lantern scaffold idea "<짧은 제목>" --kind <유형> --raw "W-012 구현 중 
    - **데이터 구조 · API 변경은 값과 상관없이 묻는다.**
 2. 반영한다: 한 사실은 한 곳에 — 출처 작업을 링크한다.
    - 데이터: 설계의 DBML 변경분을 `<<folder.current>>/<<folder.data>>/schema.dbml`에 합친다 → `lantern check-dbml` → `lantern dbml render`
+   - 이 작업이 나온 아이디어 카드(`<<file.plan>>`의 링크)에 끝난 뒤에 채우는 표가 있으면 채운다 — 기능 `결과` · 개선 `개선 결과` · 버그 `원인과 해결` · 실험 `결과` · 기술 검토 `결론`. `<<file.record>>`와 커밋에서 확인한 것만 한두 줄씩 쓰고, 작업 문서는 링크만 한다. 카드가 없거나 그 표가 없으면 건너뛴다.
    - 반영한 문서의 확인 시점: `lantern meta set "<문서>" checked_commit=$(git rev-parse --short HEAD)` (관련 코드 경로가 늘었으면 `code`도)
 <!-- lantern:if !git.pr=work -->
 3. 작업 브랜치를 기준 브랜치에 합치고 정리한다 (기준 브랜치 받기 → 테스트 → 머지 → 정리). 충돌하면 아래 **충돌이 나면**을 따른다:

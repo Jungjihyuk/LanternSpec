@@ -63,6 +63,14 @@ The content of a rule (its tables and numbers) is written once, in the rules doc
 - **Why:** names written separately in code, skills and templates have to be hunted down for every change. Code finds them by role, not by name, so a team can rename them and nothing breaks.
 - **Source:** "Single source" in [`AGENTS.md`](AGENTS.md)
 
+### One idea template per kind, with two tables (when recorded · afterwards)
+- **Decided:** Each idea kind (feature · improvement · bug · experiment · tech review) has its own template. Each has a table filled in when the idea is recorded and one filled in afterwards (result · improvement result · cause and fix · conclusion), and cells with a fixed choice list their options. `/l-build` fills the afterwards table when it applies the work to the current state. A kind with no template of its own uses the plain `Idea` template.
+- **Why:** Each kind needs different questions (a bug needs steps to reproduce, a tech review needs candidates compared). When cards of one kind share the same rows, reading them together shows what was added and what was tried and failed. Without the afterwards table a card keeps only the wish, and there is nothing to look at when the same bug or experiment comes back.
+- **Turned down:**
+  - **One template with every kind's cells:** most cells would go unused, which makes it hard to read.
+  - **Keeping the outcome only in the work documents:** works move to the archive and one work mixes several things, so a bug's cause or an experiment's result can't be read by kind. The card holds a line or two and links the work documents.
+  - **Putting bug type · verdict values in the frontmatter:** each value would add an `enums.yaml` list and a check. For now they are found by the fixed row names in the tables.
+
 ## 4. Decision rules
 
 The content of each rule is in its rules document template (`src/lanternspec/resources/locales/<language>/templates/`).

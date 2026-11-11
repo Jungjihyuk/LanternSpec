@@ -292,9 +292,12 @@ TECH_Q = [
     re.compile(r"(?i)^\s*how\s+(?:does|do)\s+(?:an?\s+|the\s+)?(?P<t>[\w.+#/\- ]{1,40}?)\s+work\s*\??\s*$"),
     re.compile(r"(?i)^\s*(?:please\s+)?explain\s+(?:an?\s+|the\s+)?(?P<t>[\w.+#/\- ]{1,40}?)\s*[.?!]?\s*$"),
 ]
+# Words that sound like a thought worth keeping: a wish, an annoyance, odd behavior, a technology to try, an experiment.
 IDEA_HINT = re.compile(
-    r"(?:(?:으)?면\s*좋겠|있으면\s*좋|하고\s*싶|나중에\s*\S+\s*(?:하자|해야|추가|넣)|아이디어가?\s*있"
-    r"|would be nice|it'd be nice|i'd like to|we could (?:also )?add|maybe (?:we|later)|later we)",
+    r"(?:(?:으)?면\s*좋겠|있으면\s*좋|하고\s*싶|나중에\s*\S+\s*(?:하자|해야|추가|넣|보자)|아이디어가?\s*있"
+    r"|번거롭|불편하|귀찮|매번\s*\S+|이상하게\s*(?:나|보|되)|버그\s*같|가끔\s*\S+\s*(?:안\s*되|이상)|써\s*보고\s*싶|해\s*보면\s*어떨"
+    r"|would be nice|it'd be nice|i'd like to|we could (?:also )?add|maybe (?:we|later)|later we"
+    r"|is a hassle|annoying|every time i|looks like a bug|seems broken|worth trying|what if we)",
     re.I,
 )
 

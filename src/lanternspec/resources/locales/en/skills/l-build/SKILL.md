@@ -148,6 +148,7 @@ Otherwise, when it says every task is done:
    - **Data structure and API changes are always asked about, whatever the setting.**
 2. Apply it: each fact in one place — link the work it came from.
    - Data: merge the design's DBML changes into `<<folder.current>>/<<folder.data>>/schema.dbml` → `lantern check-dbml` → `lantern dbml render`
+   - If the idea card this work came from (linked in `<<file.plan>>`) has a table filled in afterwards, fill it — Feature `Result` · Improvement `Improvement result` · Bug `Cause and fix` · Experiment `Result` · Tech Review `Conclusion`. Write only what `<<file.record>>` and the commits confirm, a line or two per cell, and only link the work documents. Skip it when there is no card or no such table.
    - When each applied document was checked: `lantern meta set "<document>" checked_commit=$(git rev-parse --short HEAD)` (and `code` if more code paths are involved)
 <!-- lantern:if !git.pr=work -->
 3. Merge the work branch into the base branch and clean up (bring in the base branch → test → merge → clean up). On a conflict, follow **On a conflict** below:
