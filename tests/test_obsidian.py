@@ -128,13 +128,11 @@ def test_the_timeline_plugin_comes_with_obsidian_plugins_and_reports_then_use_it
         "end": "2026-10-29 10:30",
         "state": "done",
         "basis": "actual",
+        "size": "S",
     }
-    assert (t2["basis"], t2["state"], t2["start"], t2["end"]) == ("planned", "todo", "2026-11-02 00:00", "2026-11-04 00:00")
-    assert (t3["basis"], t3["start"], t3["end"]) == (
-        "estimated",
-        "2026-11-04 00:00",
-        "2026-11-05 00:00",
-    )  # after the task before it, an L (the old name of 1d) = one working day
+    assert (t2["basis"], t2["state"], t2["start"], t2["end"]) == ("planned", "todo", "2026-11-02", "2026-11-04")  # as written
+    # no actual times and no planned dates: no place on the axis, only its size, until someone gives it a date
+    assert t3 == {"id": "T03", "title": "연결", "state": "todo", "size": "L", "basis": "unscheduled"}
 
 
 def test_the_timeline_shows_each_task_by_its_checkbox_and_its_actual_days(repo):
@@ -148,6 +146,7 @@ def test_the_timeline_shows_each_task_by_its_checkbox_and_its_actual_days(repo):
     )
     (plugin / "main.js").parent.mkdir(parents=True)
     (plugin / "main.js").write_text("", encoding="utf-8")
+    (repo.root / "docs/.obsidian/community-plugins.json").write_text('["lantern-timeline"]', encoding="utf-8")  # and turned on
     repo("report", "--views", "timeline")
     text = report.read_text(encoding="utf-8")
     t1, t2, t3 = json.loads(text.split("```lantern-timeline\n")[1].split("\n```")[0])["works"][0]["tasks"]
@@ -179,8 +178,8 @@ def test_a_timeline_built_in_minutes_gets_hours_on_its_axis(repo):
     text = (repo.root / "docs/4. 운영 기록/보고/현황.md").read_text(encoding="utf-8")
     assert "axisFormat %m-%d %H:%M" in text
 
-    tasks.write_text("".join(f"- [ ] W-001-T0{i} 표 [크기:: 8h]\n" for i in range(1, 7)), encoding="utf-8")
-    repo("report", "--views", "timeline")  # six days of estimates: days on the axis
+    tasks.write_text("- [ ] W-001-T01 표 [시작 예정:: 2026-11-02] [마감 예정:: 2026-11-09]\n", encoding="utf-8")
+    repo("report", "--views", "timeline")  # a week a person planned: days on the axis
     assert "axisFormat %m-%d\n" in (repo.root / "docs/4. 운영 기록/보고/현황.md").read_text(encoding="utf-8")
 
 
@@ -193,3 +192,56 @@ def test_the_timeline_plugin_ships_and_writes_only_through_one_atomic_edit():
     assert 'registerMarkdownCodeBlockProcessor("lantern-timeline"' in code
     assert code.count("vault.process(") == 1
     assert not any(call in code for call in (".modify(", ".create(", ".append(", ".delete(", ".rename("))
+
+
+def test_the_kanban_plugin_ships_and_never_writes():
+    from lanternspec import resources
+
+    files = dict(resources.iter_files("obsidian/lantern-kanban"))
+    assert set(files) == {"main.js", "manifest.json", "styles.css"}
+    code = files["main.js"].read_text(encoding="utf-8")
+    assert 'registerMarkdownCodeBlockProcessor("lantern-kanban"' in code
+    assert not any(call in code for call in ("vault.process(", ".modify(", ".create(", ".append(", ".delete(", ".rename("))
+
+
+def test_the_kanban_board_shows_every_work_and_a_plugin_turned_off_stays_off(repo):
+    plugin, report = _timeline_project(repo)
+    dataview = repo.root / "docs/.obsidian/plugins/dataview"
+    dataview.mkdir(parents=True)
+    (dataview / "main.js").write_text("", encoding="utf-8")
+    repo("upgrade")
+    kanban = repo.root / "docs/.obsidian/plugins/lantern-kanban"
+    assert (kanban / "main.js").exists()
+    repo("report", "--views", "kanban")
+    text = report.read_text(encoding="utf-8")
+    data = json.loads(text.split("```lantern-kanban\n")[1].split("\n```")[0])
+    work = data["works"][0]
+    assert (work["id"], work["stage"]) == ("W-001", "plan")
+    assert [t["state"] for t in work["tasks"]] == ["done", "todo", "todo"]
+    assert [s["role"] for s in data["stages"]] == ["plan", "design", "tasks", "build", "done", "on_hold"]
+
+    plugins = repo.root / "docs/.obsidian/community-plugins.json"  # a person turns both bundled plugins off in Obsidian
+    plugins.write_text(json.dumps(["dataview"]), encoding="utf-8")
+    repo("upgrade")
+    assert json.loads(plugins.read_text(encoding="utf-8")) == ["dataview", "metadata-menu"]  # and an upgrade leaves them off
+    repo("report", "--views", "kanban,timeline")
+    text = report.read_text(encoding="utf-8")
+    assert "```lantern-kanban" not in text and "```lantern-timeline" not in text and "```mermaid" in text
+    assert "| 📥 할 일 (2)" in text  # the table for vaults without the plugin
+
+
+def test_a_plan_with_a_time_keeps_it_and_the_plugin_can_take_a_plan_off():
+    from lanternspec import resources
+
+    code = dict(resources.iter_files("obsidian/lantern-timeline"))["main.js"].read_text(encoding="utf-8")
+    assert "withPlannedDates(text, task.fullId, plan, this.data.fields)" in code  # one write path, for setting and taking off
+    assert code.count("vault.process(") == 1
+
+
+def test_planned_times_reach_the_report_as_written(repo):
+    plugin, report = _timeline_project(repo)
+    tasks = repo.root / "docs/2. 작업/W-001 로그인/할 일.md"
+    tasks.write_text("- [ ] W-001-T01 버튼 [크기:: 1h] [시작 예정:: 2026-11-02 14:00] [마감 예정:: 2026-11-02 15:00]\n", encoding="utf-8")
+    repo("report", "--views", "timeline")
+    text = report.read_text(encoding="utf-8")
+    assert "버튼 :w001t01, 2026-11-02 14:00, 2026-11-02 15:00" in text  # Mermaid, as the plugin isn't there

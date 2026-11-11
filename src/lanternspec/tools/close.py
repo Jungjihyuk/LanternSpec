@@ -1,4 +1,4 @@
-"""`lantern close` — every skill's common close: check → map → debt status → run record → (asked) commit.
+"""`lantern close` — every skill's common close: check → map → debt status → status report → run record → (asked) commit.
 
 Works for every tool, with or without agent hooks.
 """
@@ -9,7 +9,7 @@ from pathlib import Path
 
 from ..core import frontmatter
 from ..core.messages import msg
-from ..core.project import Project, git, git_out, read
+from ..core.project import Project, git, git_out, read, today
 
 # what each skill's commit is called, by the document role it writes
 COMMIT_DOC = {"l-plan": "plan", "l-design": "design", "l-task": "tasks", "l-adr": "adr"}
@@ -25,7 +25,10 @@ def close(
     do_map: bool = True,
     commit: bool = False,
 ) -> list[str]:
-    """Close a skill run: check the changed documents, refresh the MOC and debt status, show glossary candidates, and log the run.
+    """Close a skill run: check changed documents, refresh the MOC, debt status and status report, show glossary candidates, log the run.
+
+    The status report is refreshed so its kanban and timeline follow every skill; its three summary lines are kept
+    (only /l-report writes new ones).
 
     Args:
         project: The project.
@@ -69,6 +72,11 @@ def close(
         from ..learn.debt import write_status
 
         write_status(project)
+    if do_map and project.docs.exists():
+        from ..report import views
+
+        views.run(project)
+        lines.append(msg("✔ report — status report updated"))
     from ..refs.terms import candidates
 
     waiting = candidates(project)
@@ -116,8 +124,18 @@ def work_doc_paths(project: Project, work: str) -> list[Path]:
             found = project.find_by_id(str(adr))
             if found:
                 paths.append(found)
-    paths += [project.moc, project.folder("debt") / project.names.file("debt_status")]
+    paths += _refreshed_pages(project)
     return [p for p in paths if p.exists()]
+
+
+def _refreshed_pages(project: Project) -> list[Path]:
+    """The pages close itself rewrites: the MOC, debt status, the status report and today's copy of it."""
+    return [
+        project.moc,
+        project.folder("debt") / project.names.file("debt_status"),
+        project.folder("reports") / project.names.file("report"),
+        project.folder("past_reports") / f"{today()}.md",
+    ]
 
 
 def _linked_ideas(project: Project, plan: Path) -> list[Path]:
@@ -161,8 +179,12 @@ def commit_work_docs(project: Project, skill: str, work: str | None) -> str:
         return msg("ℹ --commit needs --work, so nothing was committed")
     wid = work.upper()
     cwd = project.docs_git_cwd()
-    rels = [p.relative_to(cwd).as_posix() for p in work_doc_paths(project, wid)]
-    changed = git_out(["status", "--porcelain", "--untracked-files=all", "--", *rels], cwd) if rels else ""
+    paths = work_doc_paths(project, wid)
+    rels = [p.relative_to(cwd).as_posix() for p in paths]
+    # the pages close refreshes on every run go along with the work's own changes, never in a commit of their own
+    refreshed = {p.resolve() for p in _refreshed_pages(project)}
+    own = [p.relative_to(cwd).as_posix() for p in paths if p.resolve() not in refreshed]
+    changed = git_out(["status", "--porcelain", "--untracked-files=all", "--", *own], cwd) if own else ""
     if not changed:
         return msg("ℹ Nothing to commit for {work}", work=wid)
     if project.profile.get("docs.commit") == "manual":

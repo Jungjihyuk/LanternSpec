@@ -11,7 +11,7 @@ const MS_PER_DAY = 86400000;
 const MIN_PER_DAY = 1440;
 // Work done in bursts gets columns finer than a day, so tasks an AI finishes in minutes still read as a staircase:
 // the finest of these that lets the chart fit the note's width (else that lets each busy stretch fit),
-// as long as every task has run and the busy time adds up to no more than FINE_HOURS; else whole days.
+// as long as the busy time adds up to no more than FINE_HOURS; else whole days.
 const FINE_SLOTS = [5, 10, 30, 60];
 const FINE_HOURS = 120;
 // Time with no task at all is folded into a narrow strip that says how long it was:
@@ -20,10 +20,13 @@ const FOLD_MINUTES = 60;
 const FOLD_DAYS = 3;
 const FOLD_COLUMNS = 3;
 const MIN_BAR = 6;
+// Tasks with no date yet wait in a column on the right, off the time axis: a size says how much work, not when.
+const TRAY_WIDTH = 132;
+const TRAY_NARROW = 36; // when no open work has an undated task: a strip with the counts, widened by a click
 // The task line's format (core/taskfile.py) and the rule for its state (report/views.py), read here again to follow the file at once.
 const TASK_LINE = /^\s*- \[( |x|X)\] (W-\d{3,}-T\d{2,})\b/;
 const ATTR = /\[([^\[\]:]+?)::\s*([^\[\]]*?)\s*\]/g;
-const DATE = /^\d{4}-\d{2}-\d{2}/;
+const DATE = /^\d{4}-\d{2}-\d{2}( \d{2}:\d{2})?$/; // a planned date, with or without a time
 
 // Whole days only, counted in UTC so daylight saving never shifts a bar.
 const dayNumber = (text) => {
@@ -45,15 +48,35 @@ const nowMinute = () => {
   const now = new Date();
   return todayNumber() * MIN_PER_DAY + now.getHours() * 60 + now.getMinutes();
 };
-// [from, to) in minutes. Planned and dragged dates are whole days; actual and estimated times are kept as they are.
+// A planned date written with a time is that minute; one without a time is the whole day.
+const hasTime = (text) => / \d{2}:\d{2}/.test(text || "");
+const planStart = (text) => (hasTime(text) ? minuteOf(text) : dayNumber(text) * MIN_PER_DAY);
+const planEnd = (text) => (hasTime(text) ? minuteOf(text) : (dayNumber(text) + 1) * MIN_PER_DAY);
+const stamp = (minute) => {
+  const day = Math.floor(minute / MIN_PER_DAY);
+  const m = minute - day * MIN_PER_DAY;
+  return `${dateText(day)} ${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+};
+// the hours a size names ("15m", "1h", "4h"), in minutes; an hour for a size named otherwise
+const sizeMinutes = (size) => {
+  const m = /^(\d+(?:\.\d+)?)(m|h)$/.exec(size || "");
+  return m ? Number(m[1]) * (m[2] === "h" ? 60 : 1) : 60;
+};
+// [from, to) in minutes. Planned dates as written; actual and estimated times as they are.
 const span = (task) => {
-  if (task.dragged) return [task.dragged[0] * MIN_PER_DAY, (task.dragged[1] + 1) * MIN_PER_DAY];
-  if (task.basis === "planned") return [dayNumber(task.start) * MIN_PER_DAY, (dayNumber(task.end) + 1) * MIN_PER_DAY];
+  if (task.dragged) return task.dragged;
+  if (task.basis === "planned") {
+    const from = planStart(task.start);
+    return [from, Math.max(planEnd(task.end || task.start), from + 1)];
+  }
   const from = minuteOf(task.start);
   // a task in progress has no end yet: it runs until now (the report guesses an end from its size, days away)
   const end = task.state === "doing" && task.basis === "actual" ? Math.min(minuteOf(task.end), Math.max(nowMinute(), from + 1)) : minuteOf(task.end);
   return [from, Math.max(end, from + 1)];
 };
+// A task with neither actual times nor planned dates has no place on the axis.
+const dated = (task) => task.basis !== "unscheduled";
+const datedTasks = (works) => works.flatMap((work) => work.tasks.filter(dated));
 // The whole days a bar covers, which is what dragging moves.
 const barDays = (task) => {
   const [from, to] = span(task);
@@ -65,7 +88,7 @@ function readLine(line, fields) {
   for (const [, name, value] of line.matchAll(ATTR)) attrs[name] = value;
   const start = attrs[fields.start_plan];
   const due = attrs[fields.due_plan];
-  const planned = !attrs[fields.start] && DATE.test(start || "") && DATE.test(due || "") && dayNumber(start) <= dayNumber(due);
+  const planned = !attrs[fields.start] && DATE.test(start || "") && DATE.test(due || "") && planStart(start) < planEnd(due);
   return {
     state: !/^\s*- \[ \]/.test(line) ? "done" : attrs[fields.start] ? "doing" : "todo",
     planned: planned ? { start, due } : null,
@@ -83,6 +106,12 @@ function followFile(work, text, fields) {
     if (!line) continue;
     task.state = line.state;
     if (line.planned) Object.assign(task, { start: line.planned.start, end: line.planned.due, basis: "planned" });
+    else if (task.basis === "planned" && line.state === "todo") {
+      // its planned dates were taken off the line: it waits for a date again
+      task.basis = "unscheduled";
+      delete task.start;
+      delete task.end;
+    }
   }
 }
 
@@ -100,19 +129,25 @@ function setAttr(line, name, value, unknown) {
   return `${base} [${name}:: ${value}]`;
 }
 
-// The file with the task's planned dates, or null when the task has started or its line is gone.
-function withPlannedDates(text, id, start, due, fields) {
+// The file with the task's planned dates set (or, with no plan, taken off), or null when the task has started or its line is gone.
+function withPlannedDates(text, id, plan, fields) {
   const lines = text.split("\n");
   const at = lines.findIndex((line) => (line.match(TASK_LINE) || [])[2] === id);
   if (at < 0 || readLine(lines[at], fields).state !== "todo") return null;
-  lines[at] = setAttr(setAttr(lines[at], fields.start_plan, start, fields.unknown), fields.due_plan, due, fields.unknown);
+  lines[at] = plan
+    ? setAttr(setAttr(lines[at], fields.start_plan, plan.start, fields.unknown), fields.due_plan, plan.due, fields.unknown)
+    : lines[at]
+        .replace(ATTR, (whole, key) => (key === fields.start_plan || key === fields.due_plan ? "" : whole))
+        .replace(/ {2,}/g, " ")
+        .trimEnd();
   return lines.join("\n").replace(/^(---\n(?:(?!---\n)[\s\S])*?\nupdated:[ \t]*)[^\n]*/, (_, before) => before + dateText(todayNumber()));
 }
 
-function dragged(mode, from, to, days, first, last) {
-  if (mode === "start") return [Math.max(first, Math.min(from + days, to)), to];
-  if (mode === "end") return [from, Math.min(last, Math.max(to + days, from))];
-  const moved = Math.max(first - from, Math.min(days, last - to));
+// [from, to) in minutes after a drag by `by` minutes, kept within [first, last) and at least one step long.
+function dragged(mode, from, to, by, first, last, step) {
+  if (mode === "start") return [Math.max(first, Math.min(from + by, to - step)), to];
+  if (mode === "end") return [from, Math.min(last, Math.max(to + by, from + step))];
+  const moved = Math.max(first - from, Math.min(by, last - to));
   return [from + moved, to + moved];
 }
 
@@ -176,11 +211,9 @@ function piecesOf(ranges, slot) {
 
 // The chart's time axis: its column size, and the pieces of time it shows left to right.
 function scaleFor(data, today, room) {
-  const spans = data.works.flatMap((work) => work.tasks.map(span));
+  const spans = datedTasks(data.works).map(span);
   const busy = busyRanges(spans, FOLD_MINUTES);
-  // tasks still to come are planned in whole days, so a chart with any of them is drawn by days
-  const allRan = data.works.every((work) => work.tasks.every((task) => task.basis === "actual"));
-  if (spans.length && allRan && busy.reduce((sum, [from, to]) => sum + to - from, 0) <= FINE_HOURS * 60) {
+  if (spans.length && busy.reduce((sum, [from, to]) => sum + to - from, 0) <= FINE_HOURS * 60) {
     // two columns on the left for a pinned date, and two after each stretch for the text beside its last bars
     const fits = (slot) => {
       const pieces = piecesOf(busy.map(([from, to], i) => [i === 0 ? from - 2 * slot : from, to + 2 * slot]), slot);
@@ -197,7 +230,7 @@ function scaleFor(data, today, room) {
   for (const work of data.works) {
     if (work.idea) days.push(dayNumber(work.idea.date));
     if (work.created) days.push(dayNumber(work.created));
-    for (const task of work.tasks) days.push(...barDays(task));
+    for (const task of work.tasks.filter(dated)) days.push(...barDays(task));
   }
   // a little before the first day, and room after today and the last day to drag into
   const last = Math.max(today + 30, Math.max(...days) + 14);
@@ -249,7 +282,6 @@ function besideBar(track, className, text, drawn, scale) {
   label.style.left = `${xOf(scale, drawn[0]) + padOf(scale) + widthOf(drawn, scale) + 4}px`;
   return label;
 }
-const fitsIn = (text, width) => text.length * 7 + 10 <= width;
 
 function besideMark(track, text, title) {
   const label = make(track, "lt-mark-date", text);
@@ -279,6 +311,7 @@ function drawHeader(body, scale, today, labels) {
   const dayTrack = make(days, "lt-track");
   // the upper row names the date (the month on a day chart) over the columns that belong to it
   const group = (minute) => (isDays(scale) ? dateText(Math.floor(minute / MIN_PER_DAY)).slice(0, 7) : dateText(Math.floor(minute / MIN_PER_DAY)));
+  let named = ""; // a date already named before a fold isn't named again after it
   for (const piece of scale.pieces) {
     if (piece.fold) {
       make(monthTrack, "lt-month lt-month-fold").style.width = `${piece.width}px`;
@@ -301,7 +334,9 @@ function drawHeader(body, scale, today, labels) {
       }
       const next = minute + scale.slot;
       if (next >= piece.to || group(next) !== group(minute)) {
-        make(monthTrack, "lt-month", group(minute)).style.width = `${((next - groupStart) / scale.slot) * DAY_WIDTH}px`;
+        const name = group(minute) === named ? "" : group(minute);
+        named = group(minute);
+        make(monthTrack, "lt-month", name).style.width = `${((next - groupStart) / scale.slot) * DAY_WIDTH}px`;
         groupStart = next;
       }
     }
@@ -356,16 +391,16 @@ function drawArrows(svg, shown, scale) {
   for (const [, { task, y }] of rows) {
     for (const id of task.after || []) {
       const before = rows.get(id);
-      if (!before) continue;
+      if (!before || !dated(before.task) || !dated(task)) continue;
       const beforeSpan = drawnSpan(before.task, scale);
-      const beforeEnd = beforeSpan[1];
       const from = drawnSpan(task, scale)[0];
       // from the bar's right edge, which a very short task's least width may push past its end
       const x1 = xOf(scale, beforeSpan[0]) + padOf(scale) + widthOf(beforeSpan, scale);
       const x2 = xOf(scale, from) + 2;
       // what already happened can't be fixed, so only a task still to come is flagged
       // (on a day chart, starting on the day the task before ends is on time)
-      const late = task.state === "todo" && from < beforeEnd - (isDays(scale) ? MIN_PER_DAY : 0);
+      // a planned date has no time of day, so a task planned for the day its prerequisite ends is in order
+      const late = task.state === "todo" && barDays(task)[0] < barDays(before.task)[1];
       // what is finished is history: its lines stay out of the way until asked for
       const quiet = !late && task.state === "done" && before.task.state === "done";
       const room = x2 >= x1 + 12;
@@ -426,15 +461,23 @@ class Timeline extends MarkdownRenderChild {
     followFile(this.files.get(file.path), await this.app.vault.cachedRead(file), this.data.fields);
   }
 
-  async save(work, task, [from, to]) {
+  // A plan for a task, from [from, to) in minutes: whole days are written as dates, anything finer with its time.
+  plan([from, to]) {
+    const whole = from % MIN_PER_DAY === 0 && to % MIN_PER_DAY === 0;
+    return whole ? { start: dateText(from / MIN_PER_DAY), due: dateText(to / MIN_PER_DAY - 1) } : { start: stamp(from), due: stamp(to) };
+  }
+
+  // Write a task's planned dates, or take them off (plan null) so it waits for a date again.
+  async save(work, task, plan) {
     const before = { start: task.start, end: task.end, basis: task.basis };
-    Object.assign(task, { start: dateText(from), end: dateText(to), basis: "planned" });
+    if (plan) Object.assign(task, { start: plan.start, end: plan.due, basis: "planned" });
+    else Object.assign(task, { start: undefined, end: undefined, basis: "unscheduled" });
     this.draw();
     const file = this.app.vault.getAbstractFileByPath(work.file);
     let saved = false;
     if (file instanceof TFile) {
       await this.app.vault.process(file, (text) => {
-        const changed = withPlannedDates(text, task.fullId, task.start, task.end, this.data.fields);
+        const changed = withPlannedDates(text, task.fullId, plan, this.data.fields);
         saved = changed !== null;
         return saved ? changed : text;
       });
@@ -445,29 +488,45 @@ class Timeline extends MarkdownRenderChild {
     this.draw();
   }
 
+  // Is the pointer over the "no date yet" column, or over a day of the chart (and which minute)?
+  dropAt(e) {
+    const under = document.elementsFromPoint(e.clientX, e.clientY).filter((el) => this.el.contains(el));
+    if (under.some((el) => el.classList.contains("lt-tray"))) return { tray: true };
+    const track = under.find((el) => el.classList.contains("lt-track") && !el.closest(".lt-months, .lt-days"));
+    return track ? { minute: minuteAt(this.scale, e.clientX - track.getBoundingClientRect().left) } : null;
+  }
+
+  // Move or stretch a planned task; dropped on the "no date yet" column, it loses its dates.
+  // A plan without a time moves by days; one with a time moves by the chart's columns, keeping its time.
   startDrag(event, work, task, bar, mode) {
     event.preventDefault();
     event.stopPropagation();
     bar.setPointerCapture(event.pointerId);
-    const [from, to] = barDays(task);
     const scale = this.scale;
-    // dates move by whole days, however fine the columns are and wherever time is folded
+    const [from, to] = drawnSpan(task, scale);
+    const step = isDays(scale) || !hasTime(task.start) ? MIN_PER_DAY : scale.slot;
     const { pieces } = scale;
-    const first = Math.ceil(pieces[0].from / MIN_PER_DAY);
-    const last = Math.floor(pieces[pieces.length - 1].to / MIN_PER_DAY) - 1;
+    const first = Math.ceil(pieces[0].from / step) * step;
+    const last = Math.floor(pieces[pieces.length - 1].to / step) * step;
     const track = bar.parentElement;
-    const dayAt = (clientX) => Math.floor(minuteAt(scale, clientX - track.getBoundingClientRect().left) / MIN_PER_DAY);
-    const startDay = dayAt(event.clientX);
+    const at = (clientX) => minuteAt(scale, clientX - track.getBoundingClientRect().left);
+    const startMinute = at(event.clientX);
     const tip = make(track, "lt-tip");
     this.dragging = true;
-    const show = (days) => {
-      task.dragged = dragged(mode, from, to, days, first, last);
-      place(bar, drawnSpan(task, scale), scale);
-      tip.textContent = `${dateText(task.dragged[0])} → ${dateText(task.dragged[1])}`;
-      tip.style.left = `${xOf(scale, (task.dragged[1] + 1) * MIN_PER_DAY) + 4}px`;
+    let toTray = false;
+    const show = (by) => {
+      task.dragged = dragged(mode, from, to, Math.round(by / step) * step, first, last, step);
+      place(bar, task.dragged, scale);
+      if (bar.caption) bar.caption.textContent = this.caption(task);
+      const plan = this.plan(task.dragged);
+      tip.textContent = toTray ? this.data.labels.unscheduled || "" : `${plan.start} → ${plan.due}`;
+      tip.style.left = `${xOf(scale, task.dragged[1]) + 4}px`;
       this.arrows();
     };
-    const onMove = (e) => show(dayAt(e.clientX) - startDay);
+    const onMove = (e) => {
+      toTray = Boolean((this.dropAt(e) || {}).tray);
+      show(at(e.clientX) - startMinute);
+    };
     const stop = (e) => {
       bar.removeEventListener("pointermove", onMove);
       bar.removeEventListener("pointerup", stop);
@@ -476,8 +535,9 @@ class Timeline extends MarkdownRenderChild {
       this.dragging = false;
       const moved = task.dragged;
       delete task.dragged;
-      const changed = e.type === "pointerup" && moved && (moved[0] !== from || moved[1] !== to);
-      if (changed) this.save(work, task, moved).catch((error) => new Notice(`Lantern Timeline: ${error.message}`));
+      const fail = (error) => new Notice(`Lantern Timeline: ${error.message}`);
+      if (e.type === "pointerup" && toTray) this.save(work, task, null).catch(fail);
+      else if (e.type === "pointerup" && moved && (moved[0] !== from || moved[1] !== to)) this.save(work, task, this.plan(moved)).catch(fail);
       else this.draw();
     };
     bar.addEventListener("pointermove", onMove);
@@ -500,9 +560,10 @@ class Timeline extends MarkdownRenderChild {
       this.draw();
     });
     const track = make(row, "lt-track");
-
-    if (work.tasks.length) {
-      const spans = work.tasks.map((task) => drawnSpan(task, scale));
+    const placed = work.tasks.filter(dated);
+    this.trayCell(row, work.tasks.length - placed.length, work);
+    if (placed.length) {
+      const spans = placed.map((task) => drawnSpan(task, scale));
       const whole = [Math.min(...spans.map((s) => s[0])), Math.max(...spans.map((s) => s[1]))];
       const summary = make(track, "lt-bar lt-summary");
       place(summary, whole, scale);
@@ -539,19 +600,26 @@ class Timeline extends MarkdownRenderChild {
       line.addEventListener("mouseenter", () => this.focus(task, true));
       line.addEventListener("mouseleave", () => this.focus(task, false));
       const track = make(line, "lt-track");
-      // a finished task says how long it took, so even a bar a few pixels long reads at a glance
-      const [from, to] = span(task);
-      const text = task.state === "done" && task.basis === "actual" ? `${task.id} · ${duration(to - from, labels)}` : task.id;
-      const bar = make(track, `lt-bar lt-${task.state} lt-${task.basis}`, text);
-      const drawn = drawnSpan(task, scale);
-      place(bar, drawn, scale);
-      if (!fitsIn(text, widthOf(drawn, scale))) {
-        // a task shorter than its text: the bar keeps its true length and the text goes beside it
-        bar.textContent = "";
-        besideBar(track, "lt-bar-label", text, drawn, scale);
+      const tray = this.trayCell(line);
+      if (!dated(task)) {
+        // no date yet: its size waits in the column on the right, to be dragged onto a day
+        const chip = make(tray, "lt-chip", task.size ? `${task.id} · ${task.size}` : task.id);
+        chip.title = `${task.id} ${task.title}`;
+        if (this.data.fields) chip.addEventListener("pointerdown", (event) => this.startPlace(event, work, task, chip));
+        continue;
       }
-      const end = task.basis === "actual" ? task.end : dateText(barDays(task)[1]);
-      bar.title = `${task.id} ${task.title}\n${task.start} → ${end}\n${labels[task.state]} · ${labels[task.basis]}`;
+      // a plan with no time is a day to do it in, drawn as that day rather than as hours of work
+      const dayPlan = task.basis === "planned" && !hasTime(task.start) ? " lt-day-plan" : "";
+      const who = task.who ? ` lt-who-${task.who}` : "";
+      const bar = make(track, `lt-bar lt-task-bar lt-${task.state} lt-${task.basis}${dayPlan}${who}`);
+      const caption = make(bar, "lt-bar-text", this.caption(task));
+      place(bar, drawnSpan(task, scale), scale);
+      const end = task.basis === "estimated" ? dateText(barDays(task)[1]) : task.end;
+      const lines = [`${task.id} ${task.title}`, `${task.start} → ${end}`, `${labels[task.state]} · ${labels[task.basis]}`];
+      if (task.basis === "planned" && task.size) lines.push(`${labels.size_label || ""} ${task.size}`.trim());
+      if (task.by && task.by.length) lines.push(`${labels.by || ""}: ${task.by.join(", ")}`);
+      bar.title = lines.join("\n");
+      bar.caption = caption;
       if (labels.needs) {
         // a task of the same work goes by its short id, one of another work by its full id
         const ids = (task.after || []).map((id) => (id.startsWith(`${work.id}-`) ? id.slice(work.id.length + 1) : id));
@@ -567,11 +635,74 @@ class Timeline extends MarkdownRenderChild {
     return work.tasks;
   }
 
+  // A bar's text, from where it starts: a finished task with how long it took, a plan with a time with how long it is
+  // planned for (it follows a drag), a plan for a day with its size.
+  caption(task) {
+    const labels = this.data.labels;
+    const [from, to] = span(task);
+    if (task.state === "done" && task.basis === "actual") return `${task.id} · ${duration(to - from, labels)}`;
+    if (task.basis === "planned" && (task.dragged || hasTime(task.start))) return `${task.id} · ${duration(to - from, labels)}`;
+    if (task.basis === "planned" && task.size) return `${task.id} · ${task.size}`;
+    return task.id;
+  }
+
   // where the open works begin, for a finer chart to open at: today may be far from them
   openStart() {
-    const open = this.data.works.filter((work) => this.folds.get(work.id) && work.tasks.length);
-    const tasks = (open.length ? open : this.data.works).flatMap((work) => work.tasks);
-    return Math.min(...tasks.map((task) => span(task)[0]));
+    const open = this.data.works.filter((work) => this.folds.get(work.id) && work.tasks.some(dated));
+    const tasks = datedTasks(open.length ? open : this.data.works);
+    return tasks.length ? Math.min(...tasks.map((task) => span(task)[0])) : nowMinute();
+  }
+
+  // The cell of the "no date yet" column at the end of a row, when the chart has one; a work's row shows how many wait.
+  trayCell(row, waiting = 0, work = null) {
+    if (!this.trayWidth) return null;
+    const cell = make(row, "lt-tray");
+    if (waiting) {
+      const count = make(cell, "lt-tray-count", String(waiting));
+      // a work's count opens the work, so its undated tasks show as chips to drag
+      if (work) count.addEventListener("click", () => {
+        this.folds.set(work.id, true);
+        this.draw();
+      });
+    }
+    return cell;
+  }
+
+  // Drag a task with no date onto the chart. On a day chart it gets that day; on a finer chart it starts at the column
+  // it is dropped on and lasts as long as its size says (1h is an hour).
+  startPlace(event, work, task, chip) {
+    event.preventDefault();
+    chip.setPointerCapture(event.pointerId);
+    const scale = this.scale;
+    const ghost = make(document.body, "lt-chip lt-chip-ghost", chip.textContent);
+    let plan = null;
+    const planAt = (e) => {
+      const drop = this.dropAt(e);
+      if (!drop || drop.tray) return null;
+      if (isDays(scale)) {
+        const day = Math.floor(drop.minute / MIN_PER_DAY);
+        return { start: dateText(day), due: dateText(day) };
+      }
+      const from = Math.floor(drop.minute / scale.slot) * scale.slot;
+      return this.plan([from, from + sizeMinutes(task.size)]);
+    };
+    const onMove = (e) => {
+      plan = planAt(e);
+      ghost.style.left = `${e.clientX + 10}px`;
+      ghost.style.top = `${e.clientY + 10}px`;
+      ghost.textContent = plan ? `${chip.textContent} → ${plan.start === plan.due ? plan.start : `${plan.start} – ${plan.due.slice(-5)}`}` : chip.textContent;
+    };
+    const stop = (e) => {
+      chip.removeEventListener("pointermove", onMove);
+      chip.removeEventListener("pointerup", stop);
+      chip.removeEventListener("pointercancel", stop);
+      ghost.remove();
+      if (e.type === "pointerup" && plan) this.save(work, task, plan).catch((error) => new Notice(`Lantern Timeline: ${error.message}`));
+    };
+    chip.addEventListener("pointermove", onMove);
+    chip.addEventListener("pointerup", stop);
+    chip.addEventListener("pointercancel", stop);
+    onMove(event);
   }
 
   arrows() {
@@ -582,18 +713,24 @@ class Timeline extends MarkdownRenderChild {
   drawLegend(legend, scale, lines) {
     const { labels, works } = this.data;
     const tasks = works.flatMap((work) => work.tasks);
-    const has = new Set(tasks.map((t) => (t.state !== "todo" ? t.state : t.basis === "estimated" ? "estimated" : "todo")));
-    if (tasks.length) has.add("span");
+    const kind = (t) => (t.state !== "todo" ? t.state : t.basis === "estimated" || t.basis === "unscheduled" ? t.basis : "todo");
+    const has = new Set(tasks.map(kind));
+    for (const task of tasks) if (task.who) has.add(`who_${task.who}`);
+    if (tasks.some(dated)) has.add("span");
     if (works.some((work) => work.idea)) has.add("idea");
     if (works.some((work) => work.created)) has.add("plan");
     if (tasks.some((task) => (task.after || []).length)) has.add("after");
     if (lines.late) has.add("late");
     if (labels.column) make(legend, "lt-legend-item lt-legend-column", labels.column.replace("{size}", duration(scale.slot, labels)));
     for (const [cls, key, name] of [
-      ["lt-swatch lt-bar lt-done lt-actual", "done", "done"],
-      ["lt-swatch lt-bar lt-doing lt-actual", "doing", "doing"],
-      ["lt-swatch lt-bar lt-todo lt-planned", "todo", "legend_todo"],
-      ["lt-swatch lt-bar lt-todo lt-estimated", "estimated", "legend_estimated"],
+      ["lt-swatch lt-bar lt-task-bar lt-done lt-actual", "done", "done"],
+      ["lt-swatch lt-bar lt-task-bar lt-doing lt-actual", "doing", "doing"],
+      ["lt-swatch lt-bar lt-task-bar lt-who-human", "who_human", "who_human"],
+      ["lt-swatch lt-bar lt-task-bar lt-who-both", "who_both", "who_both"],
+      ["lt-swatch lt-bar lt-task-bar lt-who-ai", "who_ai", "who_ai"],
+      ["lt-swatch lt-bar lt-task-bar lt-todo lt-planned", "todo", "legend_todo"],
+      ["lt-swatch lt-bar lt-task-bar lt-todo lt-estimated", "estimated", "legend_estimated"], // in a report written by an older version
+      ["lt-chip lt-chip-swatch", "unscheduled", "unscheduled"],
       ["lt-swatch lt-bar lt-summary", "span", "span"],
       ["lt-mark lt-mark-idea", "idea", "idea"],
       ["lt-mark lt-mark-plan", "plan", "plan"],
@@ -613,7 +750,7 @@ class Timeline extends MarkdownRenderChild {
   // ◀ [date ▾] ▶ over a chart wider than the note: the days with tasks, one list however many there are.
   // Choosing a day puts its start at the chart's left edge. Returns what to call after scrolling.
   drawDateNav(root, scroller, scale) {
-    const days = [...new Set(this.data.works.flatMap((work) => work.tasks.map((task) => Math.floor(span(task)[0] / MIN_PER_DAY))))];
+    const days = [...new Set(datedTasks(this.data.works).map((task) => Math.floor(span(task)[0] / MIN_PER_DAY)))];
     days.sort((a, b) => a - b);
     if (days.length < 2) return () => {};
     const nav = document.createElement("div");
@@ -672,7 +809,13 @@ class Timeline extends MarkdownRenderChild {
     const today = todayNumber();
     const data = this.data;
     this.drawnWidth = this.el.clientWidth;
-    const room = Math.max((this.el.clientWidth || 700) - NAME_WIDTH - 16, 280);
+    const undated = (work) => work.tasks.some((task) => !dated(task));
+    const wide = this.trayWide || data.works.some((work) => this.folds.get(work.id) && undated(work));
+    // a planned task not started can be dragged back to it, so the column stays (narrow) while there is one
+    const movable = data.works.some((work) => work.tasks.some((task) => task.basis === "planned" && task.state === "todo"));
+    this.trayWidth = data.works.some(undated) ? (wide ? TRAY_WIDTH : TRAY_NARROW) : movable && this.data.fields ? TRAY_NARROW : 0;
+
+    const room = Math.max((this.el.clientWidth || 700) - NAME_WIDTH - this.trayWidth - 16, 280);
     const scale = (this.scale = scaleFor(data, today, room));
     const root = document.createElement("div");
     root.className = "lt-root";
@@ -681,7 +824,8 @@ class Timeline extends MarkdownRenderChild {
     const scroller = make(root, "lt-scroller");
     const body = make(scroller, "lt-body");
     const trackWidth = scale.width;
-    body.style.width = `${NAME_WIDTH + trackWidth}px`;
+    body.style.width = `${NAME_WIDTH + trackWidth + this.trayWidth}px`;
+    body.style.setProperty("--lt-tray-width", `${this.trayWidth}px`);
     body.style.setProperty("--lt-name-width", `${NAME_WIDTH}px`);
     body.style.setProperty("--lt-day-width", `${DAY_WIDTH}px`);
     body.style.setProperty("--lt-track-width", `${trackWidth}px`);
@@ -689,9 +833,24 @@ class Timeline extends MarkdownRenderChild {
       // the week tile starts with its shaded days, so it is shifted to start on a Saturday
       const saturday = (6 - dateOf(scale.pieces[0].from / MIN_PER_DAY).getUTCDay() + 7) % 7;
       body.style.setProperty("--lt-weekend-shift", `${saturday * DAY_WIDTH}px`);
-    } else body.classList.add("lt-fine"); // the grid only: a week tile can't follow columns or folds
+    } else {
+      body.classList.add("lt-fine"); // the grid only: a week tile can't follow columns or folds
+      root.classList.add("lt-fine"); // and the legend shows planned days the way the chart does
+    }
 
     drawHeader(body, scale, today, data.labels);
+    const [months, daysRow] = body.children;
+    this.trayCell(months);
+    const head = this.trayCell(daysRow);
+    if (head) {
+      head.textContent = this.trayWidth === TRAY_WIDTH ? data.labels.unscheduled || "" : "◂";
+      head.title = data.labels.unscheduled || "";
+      head.classList.add("lt-tray-head");
+      head.addEventListener("click", () => {
+        this.trayWide = this.trayWidth !== TRAY_WIDTH;
+        this.draw();
+      });
+    }
     this.shown = [];
     for (const work of data.works) {
       this.shown.push({}, ...this.drawWork(body, work, scale)); // the work's own row, then its open tasks

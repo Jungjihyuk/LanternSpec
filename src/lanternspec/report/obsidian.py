@@ -5,7 +5,8 @@ Responsibilities:
     - merge LanternSpec's share of docs/.obsidian settings (other user settings stay)
     - CSS snippet: folder colors per document stage · folder and file icons · callout · quote styles (any theme)
     - download the recommended plugins' official releases (Dataview · Metadata Menu) (install_plugins)
-    - copy the Lantern Timeline plugin bundled with the package, for projects that use Obsidian plugins
+    - copy the plugins bundled with the package (Lantern Timeline · Lantern Kanban), for projects that use Obsidian plugins;
+      a bundled plugin is turned on when it first arrives, and a person who turns it off later keeps it off
 
 Not here:
     - renaming choices → core/meta.py (rename_enum_value) — write_vault runs again afterwards
@@ -34,8 +35,11 @@ PLUGINS = {  # recommended plugin id → GitHub repo. [key:: value] display (tas
     "dataview": "blacksmithgu/obsidian-dataview",
     "metadata-menu": "mdelobelle/metadatamenu",
 }
-TIMELINE_PLUGIN = "lantern-timeline"  # bundled in resources/obsidian/, so it needs no download and follows this package's version
-TIMELINE_BLOCK = "lantern-timeline"  # the code block it draws (report/views.py writes it)
+# Bundled in resources/obsidian/<id>/, so they need no download and follow this package's version.
+# Each draws the code block of its own name, which report/views.py writes.
+TIMELINE_PLUGIN = "lantern-timeline"
+KANBAN_PLUGIN = "lantern-kanban"
+BUNDLED_PLUGINS = (TIMELINE_PLUGIN, KANBAN_PLUGIN)
 PLUGIN_FILES = ("main.js", "manifest.json", "styles.css")  # official release files of a community plugin (styles.css may be missing)
 RELEASE_URL = "https://github.com/{repo}/releases/latest/download/{file}"
 VAULT_GITIGNORE = """# {note}
@@ -59,7 +63,9 @@ PROPERTY_TYPES = {  # Obsidian Properties field types (types.json)
     "ui": "checkbox",
 }
 APP_DEFAULTS = {"alwaysUpdateLinks": True, "showInlineTitle": True}  # renaming a file updates its [[links]]
-SNIPPET = "lanternspec"  # .obsidian/snippets/lanternspec.css — folder colors · file icons · callout · quote styles
+SNIPPET = "lanternspec"  # .obsidian/snippets/lanternspec.css — folder colors · file icons · callout · quote styles · line width
+# The widest a note gets with "readable line length" on (Obsidian's own is 700px): wide enough for the kanban's five columns.
+LINE_WIDTH = "960px"
 FOLDER_COLORS = {  # top-level folder → (light color, dark color). A rainbow in the file list's order, pink last
     "debt": ("#d64545", "#f07171"),
     "domain": ("#d9730d", "#f59a4b"),
@@ -219,7 +225,7 @@ TASK_COLUMNS = {
     "criteria": (14.5, 0),
 }
 # Shown small after the task's name, when a task has them: rarer fields, and the start of a task still in progress.
-TASK_NOTES = ("screen", "owner")
+TASK_NOTES = ("screen", "owner", "worked_by")
 # Left out of the list: the timeline shows when tasks ran and were planned.
 TASK_HIDDEN = ("finish", "start_plan", "due_plan")
 FIELD_FONT = 0.85
@@ -385,7 +391,7 @@ def class_dir(names: Names) -> str:
 
 
 def snippet_css(names: Names) -> str:
-    """Build the LanternSpec CSS snippet — folder colors per document stage · folder and file icons · callouts · quotes (on any theme).
+    """Build the LanternSpec CSS snippet — folder colors by stage · file icons · callouts · quotes · line width (on any theme).
 
     Args:
         names: The project's names (folder names).
@@ -398,6 +404,8 @@ def snippet_css(names: Names) -> str:
         >>> css = snippet_css(load("ko"))
         >>> '.nav-folder-title[data-path="1. 아이디어"]' in css, ".nav-file-title-content::before" in css, "--callout-radius" in css
         (True, True, True)
+        >>> "--file-line-width: 960px" in css
+        True
     """
     lines = [
         msg("/* LanternSpec — folder colors · file icons · callouts · quote style. Generated (lantern upgrade) — don't edit by hand. */"),
@@ -437,6 +445,9 @@ def snippet_css(names: Names) -> str:
             ),
         ).replace("QUOTE_NOTE", msg("quotes (>) — flush left in reading mode too, the same width as callouts (no indent)")),
         task_fields_css(names),
+        "",
+        "/* " + msg("line width — how wide a note gets with readable line length on (Obsidian's default is 700px)") + " */",
+        f"body {{ --file-line-width: {LINE_WIDTH}; }}",
     ]
     return "\n".join(lines)
 
@@ -471,11 +482,14 @@ def write_vault(project: Project) -> list[Path]:
     snippets = look.get("enabledCssSnippets") or []
     save(obs / "appearance.json", _dump({**look, "enabledCssSnippets": snippets + [SNIPPET] * (SNIPPET not in snippets)}))
     plugins = _load(obs / "community-plugins.json", [])
-    wanted_plugins = [*PLUGINS, TIMELINE_PLUGIN] if _uses_plugins(obs) else list(PLUGINS)
-    save(obs / "community-plugins.json", _dump(plugins + [p for p in wanted_plugins if p not in plugins]))
-    if _uses_plugins(obs):  # a newer package redraws the timeline with its own copy
-        for name, source in resources.iter_files(f"obsidian/{TIMELINE_PLUGIN}"):
-            save(obs / "plugins" / TIMELINE_PLUGIN / name, source.read_text(encoding="utf-8"))
+    uses = _uses_plugins(obs)
+    # a bundled plugin is turned on only as it first arrives: one a person turned off stays off
+    arriving = [p for p in BUNDLED_PLUGINS if uses and not (obs / "plugins" / p / "main.js").exists()]
+    save(obs / "community-plugins.json", _dump(plugins + [p for p in [*PLUGINS, *arriving] if p not in plugins]))
+    if uses:  # a newer package redraws with its own copies
+        for plugin in BUNDLED_PLUGINS:
+            for name, source in resources.iter_files(f"obsidian/{plugin}"):
+                save(obs / "plugins" / plugin / name, source.read_text(encoding="utf-8"))
     save(
         obs / ".gitignore",
         VAULT_GITIGNORE.format(
@@ -503,24 +517,28 @@ def write_vault(project: Project) -> list[Path]:
 
 
 def _uses_plugins(obs: Path) -> bool:
-    """Tell whether plugins were installed in this vault: downloaded ones, or a timeline copied earlier."""
-    return any((obs / "plugins" / p / "main.js").exists() for p in [*PLUGINS, TIMELINE_PLUGIN])
+    """Tell whether plugins were installed in this vault: downloaded ones, or bundled ones copied earlier."""
+    return any((obs / "plugins" / p / "main.js").exists() for p in [*PLUGINS, *BUNDLED_PLUGINS])
 
 
-def timeline_installed(project: Project) -> bool:
-    """Tell whether reports can use the Lantern Timeline plugin.
+def plugin_on(project: Project, plugin: str) -> bool:
+    """Tell whether reports can draw for a bundled plugin: its code is in the vault and it is turned on.
+
+    A plugin turned off in Obsidian would leave its code block as raw text, so reports draw without it then.
 
     Args:
         project: The project.
+        plugin: A bundled plugin's id, e.g. "lantern-kanban".
 
     Returns:
-        True when the plugin's code is in the vault.
+        True when the plugin is there and turned on.
 
     Example:
-        >>> timeline_installed(project)  # doctest: +SKIP
+        >>> plugin_on(project, KANBAN_PLUGIN)  # doctest: +SKIP
         True
     """
-    return (project.docs / ".obsidian" / "plugins" / TIMELINE_PLUGIN / "main.js").exists()
+    obs = project.docs / ".obsidian"
+    return (obs / "plugins" / plugin / "main.js").exists() and plugin in _load(obs / "community-plugins.json", [])
 
 
 def install_plugins(project: Project, fetch: Callable[[str], bytes | None] | None = None) -> list[tuple[str, str]]:

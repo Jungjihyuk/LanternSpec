@@ -1,0 +1,9 @@
+{
+  "id": "lantern-kanban",
+  "name": "Lantern Kanban",
+  "version": "0.1.0",
+  "minAppVersion": "1.5.0",
+  "description": "Draws the kanban of a LanternSpec report: works by stage, and each work's tasks in a window. Read only.",
+  "author": "LanternSpec",
+  "isDesktopOnly": false
+}

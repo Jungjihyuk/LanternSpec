@@ -52,10 +52,16 @@
 .lt-bar-label, .lt-total { z-index: 2; position: absolute; top: 5px; line-height: 18px; font-size: 11px; white-space: nowrap; color: var(--text-muted); pointer-events: none; }
 .lt-total { font-weight: 600; pointer-events: auto; }
 .lt-legend-column { font-weight: 600; }
-.lt-done { background: #5b9a6f; }
-.lt-doing { background: var(--interactive-accent); color: var(--text-on-accent); }
-.lt-todo { background: #8a8fa3; }
-.lt-todo.lt-estimated { background: transparent; color: var(--text-muted); border: 1px dashed var(--text-faint); line-height: 16px; }
+/* a task's bar: a tint of its color with a solid left edge, and its text from where it starts, inside or past its end alike */
+.lt-task-bar { --c: #8a8fa3; overflow: visible; color: var(--text-normal); border-radius: 3px;
+  background: color-mix(in srgb, var(--c) 26%, var(--background-primary)); border-left: 3px solid var(--c); }
+.lt-task-bar.lt-done { --c: #5b9a6f; }
+.lt-task-bar.lt-doing { --c: var(--interactive-accent); }
+/* who did it: AI models alone · people with AI · people alone */
+.lt-task-bar.lt-who-ai { --c: #2a9d8f; }
+.lt-task-bar.lt-who-both { --c: #d4892a; }
+.lt-task-bar.lt-who-human { --c: #3b78d8; }
+.lt-task-bar.lt-estimated { background: transparent; border: 1px dashed var(--text-faint); border-left-width: 3px; line-height: 16px; }
 .lt-mark { position: absolute; top: 9px; width: 10px; height: 10px; transform: rotate(45deg); }
 .lt-mark-idea { background: #e0a93b; }
 .lt-mark-plan { background: var(--background-primary); border: 2px solid #e0a93b; box-sizing: border-box; }
@@ -92,3 +98,17 @@
   border-left: 1px dashed var(--background-modifier-border); border-right: 1px dashed var(--background-modifier-border); }
 .lt-fold-label { flex: none; text-align: center !important; padding: 0 !important; font-size: 10px; color: var(--text-faint); overflow: hidden; }
 .lt-error { color: var(--text-error); }
+/* the "no date yet" column: tasks with neither actual times nor planned dates, waiting to be dragged onto a day */
+.lt-tray { flex: 0 0 var(--lt-tray-width); position: sticky; right: 0; z-index: 3; box-sizing: border-box; display: flex; align-items: center; gap: 4px;
+  padding: 0 8px; overflow: hidden; background: var(--background-primary); border-left: 1px solid var(--background-modifier-border); font-size: 11px; color: var(--text-faint); }
+.lt-work .lt-tray { background: var(--background-secondary); }
+.lt-tray-count { margin-left: auto; font-variant-numeric: tabular-nums; cursor: pointer; }
+.lt-tray-count:hover, .lt-tray-head:hover { color: var(--text-normal); }
+.lt-tray-head { cursor: pointer; }
+/* a planned date has no time of day: on a chart finer than a day it is the day it falls on, not hours of work */
+.lt-fine .lt-task-bar.lt-day-plan { background: color-mix(in srgb, var(--c) 12%, transparent); color: var(--text-muted); }
+.lt-chip { font-size: 11px; line-height: 16px; padding: 1px 7px; border-radius: 4px; border: 1px dashed var(--text-faint); color: var(--text-muted);
+  background: var(--background-primary); white-space: nowrap; cursor: grab; touch-action: none; user-select: none; }
+.lt-chip:hover { border-color: var(--interactive-accent); color: var(--text-normal); }
+.lt-chip-ghost { position: fixed; z-index: 1000; pointer-events: none; box-shadow: 0 4px 12px rgba(0, 0, 0, .18); }
+.lt-legend .lt-chip-swatch { padding: 0 9px; height: 10px; cursor: default; }

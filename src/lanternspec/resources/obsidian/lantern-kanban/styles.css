@@ -1,0 +1,111 @@
+/* Lantern Kanban — the works by stage. Colors mix with the theme's own, so light and dark themes both fit. */
+/* the board and its task window (which Obsidian opens outside the board) share the palette */
+.lk-root, .lk-window {
+  /* a lantern's glow for "now" and "waiting", and one quiet hue per stage */
+  --lk-glow: #e8a33d; --lk-ask: #cf5b62;
+  --lk-plan: #7b8fd6; --lk-design: #a07cd6; --lk-tasks: #3f9d8a; --lk-build: #e8a33d; --lk-done: #5c9670; --lk-on_hold: #9a958a;
+}
+.lk-root {
+  margin: 8px 0 16px; font-size: 13px; color: var(--text-normal); overflow-x: auto;
+  /* room for the rail dots' glow and the cards' shadows, which the scroll box would otherwise cut */
+  padding: 6px 6px 8px;
+}
+.lk-stage-plan { --c: var(--lk-plan); } .lk-stage-design { --c: var(--lk-design); } .lk-stage-tasks { --c: var(--lk-tasks); }
+.lk-stage-build { --c: var(--lk-build); } .lk-stage-done { --c: var(--lk-done); } .lk-stage-on_hold { --c: var(--lk-on_hold); }
+.lk-grid { display: grid; grid-template-columns: repeat(3, minmax(130px, 1fr)) minmax(140px, 1.05fr) minmax(190px, 1.55fr); column-gap: 14px; min-width: 760px; }
+.lk-id { font: 11px var(--font-monospace); color: var(--text-faint); }
+
+.lk-top { display: flex; gap: 14px; font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
+.lk-top b { color: var(--text-normal); font-variant-numeric: tabular-nums; }
+.lk-top .lk-top-wait b { color: var(--lk-glow); }
+
+/* the flow rail */
+.lk-rail { position: relative; margin-bottom: 6px; }
+.lk-rail::before { content: ""; position: absolute; left: 6px; right: 6px; top: 6px; height: 2px; border-radius: 2px; opacity: .35;
+  background: linear-gradient(90deg, var(--lk-plan), var(--lk-design), var(--lk-tasks), var(--lk-build), var(--lk-done)); }
+.lk-rail-step { position: relative; display: flex; align-items: center; gap: 6px; height: 14px; }
+.lk-rail-step::before { content: ""; width: 10px; height: 10px; flex: none; border-radius: 50%; background: var(--c); box-sizing: border-box;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--c) 20%, transparent); }
+.lk-rail-step em { font-style: normal; font-size: 11px; letter-spacing: .06em; color: var(--text-muted); background: var(--background-primary); padding: 0 6px 0 2px; }
+
+.lk-board { align-items: start; }
+.lk-col { border-radius: 10px; padding: 12px 10px 10px; min-height: 220px; background: color-mix(in srgb, var(--c) 6%, var(--background-primary)); }
+.lk-col-head { display: flex; align-items: center; gap: 7px; padding: 0 4px 2px; }
+.lk-ico { font-size: 14px; }
+.lk-col-name { font-weight: 650; }
+.lk-n { margin-left: auto; font-weight: 650; font-variant-numeric: tabular-nums; color: var(--c); border-radius: 6px; padding: 2px 7px;
+  background: color-mix(in srgb, var(--c) 15%, transparent); }
+.lk-next { font: 11px var(--font-monospace); color: var(--text-faint); padding: 2px 4px 10px; }
+.lk-empty { font-size: 12px; color: var(--text-faint); text-align: center; padding: 16px 0; border: 1px dashed var(--background-modifier-border); border-radius: 8px; }
+
+.lk-card { padding: 10px 12px 11px; margin-bottom: 9px; border-radius: 8px; cursor: pointer; background: var(--background-primary);
+  border: 1px solid color-mix(in srgb, var(--c) 20%, var(--background-modifier-border));
+  box-shadow: 0 1px 0 rgba(60, 40, 0, .04), 0 2px 8px -4px rgba(60, 40, 0, .14); transition: transform .12s, box-shadow .12s; }
+.lk-card:hover { transform: translateY(-1px); box-shadow: 0 1px 0 rgba(60, 40, 0, .05), 0 8px 18px -8px rgba(60, 40, 0, .28); }
+.lk-card.lk-now { border-color: color-mix(in srgb, var(--lk-glow) 55%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--lk-glow) 15%, transparent), 0 6px 16px -8px color-mix(in srgb, var(--lk-glow) 60%, transparent); }
+.lk-title { font-weight: 650; line-height: 1.35; margin: 3px 0 8px; }
+.lk-segs { display: flex; gap: 3px; margin-bottom: 6px; }
+.lk-segs > div { flex: 1; height: 5px; border-radius: 3px; background: var(--background-modifier-border); }
+.lk-segs .lk-seg-done { background: var(--lk-done); }
+.lk-segs .lk-seg-doing { background: var(--lk-glow); }
+.lk-segs .lk-seg-blocked { background: color-mix(in srgb, var(--lk-ask) 45%, var(--background-modifier-border)); }
+/* who did it: AI models alone · people with AI · people alone (the same colors as the timeline) */
+.lk-root, .lk-window { --lk-ai: #2a9d8f; --lk-both: #d4892a; --lk-human: #3b78d8; }
+.lk-segs .lk-who-ai, .lk-time-bar.lk-who-ai, .lk-who-dot.lk-who-ai { background: var(--lk-ai); }
+.lk-segs .lk-who-both, .lk-time-bar.lk-who-both, .lk-who-dot.lk-who-both { background: var(--lk-both); }
+.lk-segs .lk-who-human, .lk-time-bar.lk-who-human, .lk-who-dot.lk-who-human { background: var(--lk-human); }
+.lk-who-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 0; }
+.lk-top-who { display: inline-flex; align-items: center; color: var(--text-muted); }
+.lk-window-body .lk-by { font-size: 12px; color: var(--text-muted); }
+.lk-meta { font-size: 12px; color: var(--text-muted); }
+.lk-flag { display: inline-flex; align-items: center; gap: 6px; margin: 8px 6px 0 0; padding: 2px 8px 2px 6px; border-radius: 6px; font-size: 12px;
+  color: color-mix(in srgb, var(--f) 75%, var(--text-normal)); background: color-mix(in srgb, var(--f) 12%, transparent); }
+.lk-flag::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--f); }
+.lk-flag-wait { --f: var(--lk-glow); } .lk-flag-ask { --f: var(--lk-ask); }
+
+/* finished works: a short rail of days, one line per work */
+.lk-done { position: relative; padding-left: 14px; }
+.lk-done::before { content: ""; position: absolute; left: 4px; top: 8px; bottom: 8px; width: 2px; border-radius: 2px; background: color-mix(in srgb, var(--lk-done) 25%, transparent); }
+.lk-day { position: relative; font-size: 11px; font-weight: 600; color: var(--text-muted); padding: 8px 0 3px; }
+.lk-day::before { content: ""; position: absolute; left: -14px; top: 12px; width: 10px; height: 10px; border-radius: 50%; background: var(--lk-done);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--lk-done) 6%, var(--background-primary)); }
+.lk-row { display: grid; grid-template-columns: 40px 1fr 38px; gap: 6px; align-items: center; padding: 5px 6px; margin-bottom: 2px; border-radius: 6px; cursor: pointer; }
+.lk-row:hover { background: color-mix(in srgb, var(--lk-done) 10%, transparent); }
+.lk-row-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lk-time { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.lk-time-bar { height: 3px; border-radius: 2px; background: color-mix(in srgb, var(--lk-done) 60%, transparent); }
+.lk-more, .lk-hold { font-size: 12px; color: var(--text-muted); padding: 8px 6px 2px; cursor: pointer; }
+.lk-more:hover, .lk-hold:hover { color: var(--text-normal); }
+.lk-hold { margin-top: 8px; border-top: 1px dashed var(--background-modifier-border); color: var(--text-faint); }
+.lk-error { color: var(--text-error); }
+
+/* the task window */
+.lk-window { width: min(800px, 92vw); padding: 0; overflow: hidden; }
+.lk-window .modal-content { padding: 0; }
+.lk-window-head { padding: 18px 24px 14px; border-bottom: 1px solid var(--background-modifier-border); background: color-mix(in srgb, var(--c) 8%, var(--background-primary)); }
+.lk-window-stage { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: var(--c); }
+.lk-window-stage::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
+.lk-window-title { font-size: 19px; font-weight: 650; margin: 4px 0 6px; }
+.lk-window-title .lk-id { font-size: 13px; margin-right: 8px; }
+.lk-window-facts { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; color: var(--text-muted); }
+.lk-window-facts b { color: var(--text-normal); font-weight: 600; }
+.lk-window-docs { display: flex; gap: 6px; margin-top: 12px; }
+.lk-window-docs a { font-size: 12px; color: var(--text-muted); text-decoration: none; padding: 3px 9px; border-radius: 6px;
+  border: 1px solid var(--background-modifier-border); background: var(--background-primary); }
+.lk-window-docs a:hover { color: var(--text-normal); border-color: var(--text-faint); }
+.lk-window-body { padding: 6px 24px 16px; }
+.lk-window-body table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.lk-window-body th { text-align: left; font-size: 11px; font-weight: 500; color: var(--text-faint); padding: 10px 8px 6px; border-bottom: 1px solid var(--background-modifier-border); }
+.lk-window-body td { padding: 9px 8px; vertical-align: top; border-bottom: 1px solid color-mix(in srgb, var(--background-modifier-border) 70%, transparent); }
+.lk-window-body .lk-t { width: 44%; }
+.lk-window-body .lk-nw { white-space: nowrap; }
+.lk-window-body .lk-mono { font: 12px var(--font-monospace); color: var(--text-muted); }
+.lk-state { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+.lk-state i { width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--text-faint); box-sizing: border-box; }
+.lk-state-blocked { color: color-mix(in srgb, var(--lk-ask) 80%, var(--text-normal)); } .lk-state-blocked i { border-color: var(--lk-ask); }
+.lk-state-doing i { border-color: var(--lk-glow); background: color-mix(in srgb, var(--lk-glow) 40%, transparent); }
+.lk-state-done i { border-color: var(--lk-done); background: var(--lk-done); }
+.lk-size { font-size: 12px; padding: 1px 7px; border-radius: 5px; background: var(--background-secondary); color: var(--text-muted); }
+.lk-window-empty { color: var(--text-faint); padding: 16px 0; }
+.lk-window-foot { font-size: 11px; color: var(--text-faint); padding-top: 12px; }

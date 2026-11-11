@@ -19,7 +19,7 @@ from pathlib import Path
 from ..core import frontmatter
 from ..core.messages import msg
 from ..core.project import Project, git_out, nfc, now_minute, read, today, wikilink, work_id_of, work_name_of, write
-from ..core.taskfile import SIZE_HOURS, WORKDAY_HOURS, Task, TaskGraph, parse_criteria, parse_tasks, size_role
+from ..core.taskfile import Task, TaskGraph, parse_criteria, parse_tasks
 from ..learn import debt as debt_mod
 from . import obsidian
 
@@ -54,18 +54,163 @@ def _cell(s: str) -> str:
 
 
 def kanban(project: Project) -> str:
-    """Draw the tasks of works in progress as a kanban table (to do · blocked · in progress · done).
+    """Draw the works as a board: for the Lantern Kanban plugin when it is on, else the tasks of works in progress as a table.
+
+    The board puts every work (archived ones too) in its stage's column, with its tasks a click away.
+    The table, for vaults without the plugin, has the tasks of works in progress by state (to do · blocked · in progress · done).
 
     Args:
         project: The project.
 
     Returns:
-        A Markdown table; an empty string when no work in progress has tasks.
+        The board's code block, or a Markdown table; an empty string when there is nothing to show.
 
     Example:
         >>> kanban(project).splitlines()[0]  # doctest: +SKIP
         '| 📥 할 일 (1) | ⛔ 막힘 (0) | ▶ 진행 중 (1) | ✅ 완료 (2) |'
     """
+    if obsidian.plugin_on(project, obsidian.KANBAN_PLUGIN):
+        return _kanban_board(project)
+    return _kanban_table(project)
+
+
+def _plugin_block(plugin: str, text: str) -> str:
+    """Wrap JSON as the code block a bundled plugin draws; a backtick inside could close the block early."""
+    return "```" + plugin + "\n" + text.replace("`", "\\u0060") + "\n```"
+
+
+def _task_state(task: Task, graph: TaskGraph) -> str:
+    if task.done:
+        return "done"
+    if task.started:
+        return "doing"
+    return "blocked" if graph.blocked_reason(task) else "todo"
+
+
+def _who(task: Task) -> dict:
+    """Who did a task, for the charts: the names on its line and whether they are people, AI models or both."""
+    from ..tools import who_did
+
+    names = task.list_attr("worked_by")
+    return {"by": names, "who": who_did(names)} if names else {}
+
+
+def _who_of_work(tasks: list[Task]) -> str:
+    """Who did a work's tasks, taken together: "ai", "human", "both", or "" when none says."""
+    from ..tools import who_did
+
+    return who_did(list(dict.fromkeys(n for t in tasks for n in t.list_attr("worked_by"))))
+
+
+def _worked_minutes(tasks: list[Task]) -> int:
+    """Add up the time finished tasks ran, from their start and finish times."""
+    total = 0.0
+    for t in tasks:
+        start, end = _parse_dt(t.started), _parse_dt(t.finished)
+        if t.done and start and end and end > start:
+            total += (end - start).total_seconds() / 60
+    return round(total)
+
+
+def _kanban_board(project: Project) -> str:
+    """Write every work as the code block the Lantern Kanban plugin draws."""
+    from .status import open_unknowns
+
+    enums, names = project.enums, project.names
+    open_marks = dict(open_unknowns(project))
+    person = f"- {names.marker('person_check')}:"
+    works = []
+    for w in project.work_dirs(include_archive=True):
+        plan_meta = _meta(project.doc_path(w, "plan"))
+        stage = enums["work_status"].role_of(frontmatter.as_str(plan_meta.get("status"))) or "plan"
+        tasks = _work_tasks(project, w)
+        graph = TaskGraph(tasks)
+        record = project.doc_path(w, "record")
+        finished = max((t.finished for t in tasks if t.done and t.finished), default="")
+        wid = work_id_of(w)
+        works.append(
+            {
+                "id": wid,
+                "name": work_name_of(w),
+                "stage": stage,
+                "approved": frontmatter.as_str(_meta(project.doc_path(w, "design")).get("approved"))[:10],
+                "unknown": sum(n for d, n in open_marks.items() if d.startswith(project.docs_rel(w) + "/")),
+                "person": sum(line.startswith(person) for line in read(record).split("\n")) if record.exists() else 0,
+                "finished": (finished or frontmatter.as_str(plan_meta.get("updated")))[:10],
+                "worked": _worked_minutes(tasks),
+                "who": _who_of_work(tasks),
+                "docs": {
+                    role: project.docs_rel(project.doc_path(w, role))
+                    for role in ("plan", "design", "tasks", "record")
+                    if project.doc_path(w, role).exists()
+                },
+                "tasks": [
+                    {
+                        "id": t.id.split("-")[-1],
+                        "title": _plain_title(t.title),
+                        "state": _task_state(t, graph),
+                        "size": t.size,
+                        "after": [d.removeprefix(wid + "-") for d in t.deps],
+                        "criteria": t.criteria,
+                        **_who(t),
+                    }
+                    for t in tasks
+                ],
+            }
+        )
+    if not works:
+        return ""
+    stages = [
+        {"role": role, "name": enums.value("work_status", role), "icon": enums.icon("work_status", role)}
+        for role in ("plan", "design", "tasks", "build", "done", "on_hold")
+    ]
+    labels = {
+        "before": msg("Not started"),
+        "doing": msg("In progress"),
+        "ended": msg("Finished"),
+        "waiting": msg("Waiting for a person"),
+        "recent": msg("Done in the last 2 weeks"),
+        "next_plan": "/l-design",
+        "next_design": msg("approval · /l-task"),
+        "next_tasks": "/l-build",
+        "next_build": msg("wrap-up · /l-finish"),
+        "done_hint": msg("last 2 weeks · time worked"),
+        "older": msg("{{n}} works from before ▸"),
+        "unknown": msg("{{n}} need an answer"),
+        "design_wait": msg("design awaiting approval"),
+        "person": msg("{{n}} waiting for a person"),
+        "progress": msg("tasks {{done}}/{{total}}"),
+        "blocked": msg("{{n}} blocked"),
+        "now": msg("now {{id}}"),
+        "approved": msg("design approved"),
+        "next": msg("next"),
+        "date": msg("{{m}}/{{d}}"),
+        "empty": msg("None"),
+        "task": msg("Task"),
+        "state": msg("State"),
+        "size": names.attr("size"),
+        "after": names.attr("after"),
+        "criteria": names.attr("criteria"),
+        "todo": msg("To do"),
+        "state_blocked": msg("Blocked"),
+        "state_doing": msg("Doing"),
+        "state_done": msg("Done"),
+        "read_only": msg("Read only — /l-build checks tasks off as it leaves tests and evidence"),
+        "who_ai": msg("AI"),
+        "who_human": msg("Person"),
+        "who_both": msg("Person with AI"),
+        "by": names.attr("worked_by"),
+        "minutes": msg("{{n}} min"),
+        "hours": msg("{{n}} h"),
+        "days": msg("{{n}} d"),
+        "docs": {role: names.doc(role) for role in ("plan", "design", "tasks", "record")},
+    }
+    data = {"labels": labels, "stages": stages, "today": today(), "recent_days": 14, "works": works}
+    return _plugin_block(obsidian.KANBAN_PLUGIN, json.dumps(data, ensure_ascii=False, separators=(",", ":")))
+
+
+def _kanban_table(project: Project) -> str:
+    """Draw the tasks of works in progress as a Markdown table, for vaults without the Lantern Kanban plugin."""
     cols: dict[str, list[str]] = {"todo": [], "blocked": [], "doing": [], "done": []}
     for w in project.work_dirs():
         tasks = _work_tasks(project, w)
@@ -120,31 +265,33 @@ def _plain_title(title: str) -> str:
     return re.sub(r"[\s—·,-]+$", "", re.sub(r"\[\[[^\]]*\]\]", "", title)).strip()
 
 
-def _work_bars(project: Project, w: Path, plan_meta: dict) -> list[dict]:
-    """Date each task of a work: actual times first, then planned dates, then its order and size after the task before it."""
+def _work_bars(project: Project, w: Path) -> list[dict]:
+    """Date each task of a work by its actual times, else the dates a person planned.
+
+    A task with neither has no date: it is left off the time axis ("unscheduled") with its size,
+    rather than given a guessed length, since a size is how much work it is, not when it happens.
+    """
     bars = []
-    cursor = _parse_dt(frontmatter.as_str(plan_meta.get("created")) or today()) or _dt.datetime.now()
     for t in _work_tasks(project, w):
-        # a working day of the largest size; an unknown size counts as the middle one
-        days = _dt.timedelta(days=SIZE_HOURS[size_role(project.enums, t.size) or "m"] / WORKDAY_HOURS)
         start, end = _parse_dt(t.started), _parse_dt(t.finished)
         planned_s, planned_e = _parse_dt(t.attrs.get("start_plan", "")), _parse_dt(t.attrs.get("due_plan", ""))
-        if start:
-            basis = "actual"
-            end = (end if end > start else start + _dt.timedelta(minutes=30)) if end else start + days
-        elif planned_s:
-            basis, start, end = "planned", planned_s, planned_e or planned_s + days
-        else:
-            basis, start, end = "estimated", cursor, cursor + days
-        cursor = end
-        bar = {
+        bar: dict = {
             "id": t.id.split("-")[-1],
             "title": _plain_title(t.title),
-            "start": f"{start:%Y-%m-%d %H:%M}",
-            "end": f"{end:%Y-%m-%d %H:%M}",
             "state": "done" if t.done else "doing" if t.started else "todo",
-            "basis": basis,
+            "size": t.size,
+            **_who(t),
         }
+        if start:
+            # a task in progress runs until now
+            end = (end if end > start else start + _dt.timedelta(minutes=30)) if end else max(_dt.datetime.now(), start)
+            bar |= {"basis": "actual", "start": f"{start:%Y-%m-%d %H:%M}", "end": f"{end:%Y-%m-%d %H:%M}"}
+        elif planned_s:
+            # as written: a date alone is a day to do it in, a date with a time is that time
+            raw_s, raw_e = t.attrs["start_plan"].strip(), t.attrs.get("due_plan", "").strip()
+            bar |= {"basis": "planned", "start": raw_s, "end": raw_e if planned_e else raw_s}
+        else:
+            bar["basis"] = "unscheduled"
         bars.append({**bar, "after": t.deps} if t.deps else bar)
     return bars
 
@@ -158,7 +305,7 @@ def _timeline_rows(project: Project) -> list[dict]:
             "id": work_id_of(w),
             "name": work_name_of(w),
             "file": project.docs_rel(project.doc_path(w, "tasks")),
-            "tasks": _work_bars(project, w, plan_meta),
+            "tasks": _work_bars(project, w),
         }
         for link in frontmatter.as_list(plan_meta.get("links")):
             m = re.search(r"(IDEA-\d{3,})", str(link))
@@ -166,7 +313,7 @@ def _timeline_rows(project: Project) -> list[dict]:
             created = frontmatter.as_str(_meta(idea).get("created")) if idea else ""
             if m and created:
                 row["idea"] = {"id": m.group(1), "date": created}
-        if not row["tasks"]:
+        if not any(t["basis"] != "unscheduled" for t in row["tasks"]):  # nothing dated yet: show when the plan started
             row["created"] = frontmatter.as_str(plan_meta.get("created")) or today()
         rows.append(row)
     return sorted(rows, key=lambda r: r["id"])
@@ -180,15 +327,14 @@ def _timeline_plugin_block(project: Project, rows: list[dict]) -> str:
         "todo": msg("To do"),
         "actual": msg("actual dates"),
         "planned": msg("planned dates"),
-        "estimated": msg("estimated from order and size"),
+        "unscheduled": msg("No date yet"),
         "span": msg("whole work"),
         "idea": msg("idea added"),
         "plan": msg("plan started"),
-        "after": msg("must finish first"),
-        "late": msg("starts before the task it waits on"),
+        "after": msg("Order (before → after)"),
+        "late": msg("Out of order — planned before the task it follows"),
         "not_saved": msg("Dates not changed: the task has started, or its line is gone"),
         "legend_todo": msg("Not started · planned"),
-        "legend_estimated": msg("Not started · estimated"),
         "column": msg("One column = {{size}}"),
         "hour": msg("{{hour}}h"),
         "minutes": msg("{{n}} min"),
@@ -196,19 +342,25 @@ def _timeline_plugin_block(project: Project, rows: list[dict]) -> str:
         "days": msg("{{n}} d"),
         "worked": msg("time worked"),
         "elapsed": msg("time taken"),
-        "after_hint": msg("In a finished work, point at a task to see what had to finish first"),
-        "needs": msg("Must finish first: {{ids}}"),
-        "needs_none": msg("Nothing must finish first"),
+        "after_hint": msg("In a finished work, point at a task to see its order"),
+        "needs": msg("Comes after: {{ids}}"),
+        "needs_none": msg("Comes after nothing"),
+        "who_ai": msg("AI"),
+        "who_human": msg("Person"),
+        "who_both": msg("Person with AI"),
+        "by": project.names.attr("worked_by"),
+        "size_label": project.names.attr("size"),
+        "planned_for": msg("planned"),
     }
     names = project.names
     fields = {role: names.attr(role) for role in ("start", "start_plan", "due_plan")} | {"unknown": names.marker("unknown")}
     text = json.dumps({"labels": labels, "fields": fields, "works": rows}, ensure_ascii=False, separators=(",", ":"))
-    return "```" + obsidian.TIMELINE_BLOCK + "\n" + text.replace("`", "\\u0060") + "\n```"
+    return _plugin_block(obsidian.TIMELINE_PLUGIN, text)
 
 
 def _timeline_mermaid(rows: list[dict]) -> str:
     """Write the rows as a Mermaid Gantt chart, with hours on the axis when every task fits in a few days."""
-    times = [_parse_dt(t[k]) for row in rows for t in row["tasks"] for k in ("start", "end")]
+    times = [_parse_dt(t.get(k, "")) for row in rows for t in row["tasks"] for k in ("start", "end")]
     known = [d for d in times if d]
     short = bool(known) and max(known) - min(known) <= SHORT_TIMELINE
     lines = [
@@ -224,9 +376,15 @@ def _timeline_mermaid(rows: list[dict]) -> str:
         if "idea" in row:
             lines.append(f"  💡 {row['idea']['id']} :milestone, {wid.lower().replace('-', '')}idea, {row['idea']['date']} 00:00, 0d")
         for t in row["tasks"]:
+            if t["basis"] == "unscheduled":  # no date, so no place on the axis
+                continue
             tid = f"{wid}{t['id']}".lower().replace("-", "")
             tag = {"done": "done, ", "doing": "active, "}.get(t["state"], "")
-            lines.append(f"  {_gantt_name(t['id'] + ' ' + t['title'])} :{tag}{tid}, {t['start']}, {t['end']}")
+            start, end = t["start"], t["end"]
+            if len(end) == 10:  # a planned date alone is the whole day
+                end = f"{_dt.date.fromisoformat(end) + _dt.timedelta(days=1)} 00:00"
+            start = start if len(start) > 10 else f"{start} 00:00"
+            lines.append(f"  {_gantt_name(t['id'] + ' ' + t['title'])} :{tag}{tid}, {start}, {end}")
         if "created" in row:
             lines.append(
                 msg(
@@ -243,8 +401,8 @@ def _timeline_mermaid(rows: list[dict]) -> str:
 def timeline(project: Project) -> str:
     """Draw every work (archived ones too) on a timeline: for the Lantern Timeline plugin when it is installed, else as Mermaid.
 
-    Tasks use their actual times when they have them, then planned dates, then their order and size
-    (15m · 1h · half · 1d, a day being WORKDAY_HOURS working hours). The idea a work came from shows as a milestone.
+    Tasks use their actual times when they have them, else planned dates; a task with neither has no place on the axis
+    and waits, with its size, to be given a date. The idea a work came from shows as a milestone.
 
     Args:
         project: The project.
@@ -259,25 +417,19 @@ def timeline(project: Project) -> str:
     rows = _timeline_rows(project)
     if not rows:
         return ""
-    if obsidian.timeline_installed(project):
+    if obsidian.plugin_on(project, obsidian.TIMELINE_PLUGIN):
         chart = _timeline_plugin_block(project, rows)
         freshness = msg(
-            "Drag a task that has not started to plan it. Checkboxes and planned dates show at once; "
-            "the rest when `lantern report` runs again."
+            "Tasks without a date wait in the column on the right; drag one onto a day to plan it. "
+            "Checkboxes and planned dates show at once; the rest when `lantern report` runs again."
         )
     else:
         chart = _timeline_mermaid(rows)
-        freshness = msg("Drawn when `lantern report` ran — after changing tasks, run it again.")
+        freshness = msg("Drawn when `lantern report` ran — after changing tasks, run it again. Tasks without a date aren't drawn.")
     note = "" if any(row["tasks"] for row in rows) else msg("\n_No tasks yet, so only the start of each work is shown._")
     return (
         chart
-        + msg(
-            "\n\n> {freshness} Without planned dates it is drawn from task order and size ({sizes}, {workday:g} hours a day); "
-            "once actual times exist, from those.",
-            freshness=freshness,
-            sizes=" · ".join(project.enums.values("size")),
-            workday=WORKDAY_HOURS,
-        )
+        + msg("\n\n> {freshness} Tasks are drawn by their actual times, else by the dates a person planned.", freshness=freshness)
         + note
     )
 

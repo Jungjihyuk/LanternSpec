@@ -418,3 +418,25 @@ def test_upgrade_apply_renames_sizes_as_an_earlier_version_named_them(repo):
     text = tasks.read_text(encoding="utf-8")
     assert "[크기:: 4h]" in text and "[크기:: 8h]" in text
     assert "반나절" not in enums.read_text(encoding="utf-8")
+
+
+def test_task_done_records_who_did_it_and_the_charts_tell_people_from_ai(repo):
+    init_project(repo)
+    repo("scaffold", "work", "작업")
+    repo("scaffold", "doc", "W-001", "할 일")
+    for name in ("하나", "둘", "셋"):
+        repo("task", "add", "W-001", name, "--size", "1h")
+    repo("task", "done", "W-001-T01", "--by", "claude-opus-5-5")
+    repo("task", "done", "W-001-T02", "--by", "지혁, gpt-5.1-codex")
+    repo("task", "done", "W-001-T03", "--by", "지혁")
+    text = (work_dir(repo, "W-001") / "할 일.md").read_text(encoding="utf-8")
+    assert "[한 사람:: claude-opus-5-5]" in text and "[한 사람:: 지혁, gpt-5.1-codex]" in text and "[한 사람:: 지혁]" in text
+    plugin = docs(repo) / ".obsidian/plugins/lantern-timeline"  # the timeline plugin, there and turned on
+    plugin.mkdir(parents=True)
+    (plugin / "main.js").write_text("", encoding="utf-8")
+    (docs(repo) / ".obsidian/community-plugins.json").write_text('["lantern-timeline"]', encoding="utf-8")
+    repo("report", "--views", "timeline")
+    report = (docs(repo) / "4. 운영 기록/보고/현황.md").read_text(encoding="utf-8")
+    tasks = json.loads(report.split("```lantern-timeline\n")[1].split("\n```")[0])["works"][0]["tasks"]
+    assert [t.get("who") for t in tasks] == ["ai", "both", "human"]
+    assert tasks[1]["by"] == ["지혁", "gpt-5.1-codex"]

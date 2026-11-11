@@ -32,7 +32,6 @@ AC_LINE = re.compile(r"^(\s*)- \[( |x|X)\] (AC-\d+)\b\s*(.*)$")
 # What each size means: the hours a person would put into it, added up (not the AI's time). The names in enums.yaml
 # (15m · 1h · 4h · 8h) say the same thing, so a size has one meaning.
 SIZE_HOURS = {"xs": 0.25, "s": 1.0, "m": 4.0, "l": 8.0}
-WORKDAY_HOURS = SIZE_HOURS["l"]  # how long the timeline draws a working day for tasks with no date
 LEGACY_SIZES = {"S": "s", "M": "m", "L": "l"}  # the names before the sizes were named by their hours, still read
 
 
