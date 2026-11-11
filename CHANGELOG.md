@@ -7,6 +7,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+Upgrade: `uv tool upgrade lanternspec` → `lantern upgrade` in each project (refreshes skills, templates and Obsidian settings). The new idea templates work without being copied; to edit them, `lantern scaffold init` puts them in `0. Templates/`
+
+### Added
+- **An idea template per kind** — feature, improvement, bug, experiment and tech review each have their own. `lantern scaffold idea --kind <kind>` makes the card from that kind's template (`Idea - <kind>`), and from the plain `Idea` template when the kind has none
+- **A table filled in when recording** — what to ask is fixed per kind. A bug gets what was seen and steps to reproduce, an experiment its expectation and success bar, a tech review a table with the current way and the candidates side by side. Cells with a fixed choice (how often · how bad · verdict …) list their options
+- **A table filled in afterwards** — Feature `Result` · Improvement `Improvement result` · Bug `Cause and fix` · Experiment `Result` · Tech Review `Conclusion`. `/l-build` fills it on the idea card the work came from when it applies the work to the current state, so cards read together show what was added and what was tried and didn't work
+
+### Changed
+- **`/l-idea` notices more** — beyond wishes, it offers to keep annoyances, odd behavior, a technology to look into and experiments to try, even when they don't fit a kind exactly
+- **Writing notes are folded** — the `> [!guide]` notes in every template come folded, with a heading that says how the section is filled (`✍️ How to write` · `⚙️ Generated section` · `🔁 Updated section`). In Obsidian they are small and faint, so the document's own content stands out
+
+### Fixed
+- **`❓ Needs answer` inside a note isn't counted** — a marker written as an example in a writing note, even one spanning several lines, no longer shows up in `lantern check` or the "open questions" count
+
 ## [0.3.2] - 2026-11-11
 
 Upgrade: `uv tool upgrade lanternspec` → `lantern upgrade` in each project (refreshes skills, templates, Obsidian settings and the bundled plugins). `lantern upgrade --apply` renames 0.3.1's sizes (`half` · `1d`) to `4h` · `8h`

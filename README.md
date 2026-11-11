@@ -100,7 +100,7 @@ flowchart LR
 | Skill | What it does | What it leaves |
 |---|---|---|
 | `/l-init` | sets up the document structure and design principles from the questions the earlier answers call for (new or existing · team size · project kind · server · knowledge base · design tool · technology choice and so on), and picks the branch flow | `lantern.yaml`, `docs/`, project definition, MOC, design principles |
-| `/l-idea` | records a thought from the conversation, as said and as summarised | `1. Ideas/IDEA-001 …` |
+| `/l-idea` | records a thought from the conversation, as said and as summarised — each kind (feature · improvement · bug · experiment · tech review) has its own template, with the outcome filled in afterwards | `1. Ideas/IDEA-001 …` |
 | `/l-plan` | what and why — a work folder and acceptance criteria | `2. Work/W-001 …/Plan.md` |
 | `/l-design` | how — only the structure, screens and data (DBML) that change, wireframes, behind an approval gate | `Design.md`, `Screens/`, ADR |
 | `/l-task` | an ordered task list (size 15m · 1h · 4h · 8h · acceptance criteria · dependencies · spike tasks) | `Tasks.md` |
