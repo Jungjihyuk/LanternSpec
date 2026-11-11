@@ -103,7 +103,7 @@ flowchart LR
 | `/l-idea` | records a thought from the conversation, as said and as summarised | `1. Ideas/IDEA-001 …` |
 | `/l-plan` | what and why — a work folder and acceptance criteria | `2. Work/W-001 …/Plan.md` |
 | `/l-design` | how — only the structure, screens and data (DBML) that change, wireframes, behind an approval gate | `Design.md`, `Screens/`, ADR |
-| `/l-task` | an ordered task list (size 15m · 1h · half · 1d · acceptance criteria · dependencies · spike tasks) | `Tasks.md` |
+| `/l-task` | an ordered task list (size 15m · 1h · 4h · 8h · acceptance criteria · dependencies · spike tasks) | `Tasks.md` |
 | `/l-build` | implement → test → one commit per task, report **with evidence**, open and check screens itself, merge into the current state when done (in a parallel worktree, only its own tasks) | code, `Log.md` |
 | `/l-learn` | compares unfamiliar tech with your knowledge base → 🟢 · 🟡 · 🔴, debt cards and draft study notes | `📒 Debt/Cards/D-001 …` |
 | `/l-report` | kanban · timeline · domain · traceability · debt · docs-vs-code status + a three-line report | `4. Operations/Reports/Status Report.md` |
@@ -156,7 +156,8 @@ Sections lantern reads and writes (protected sections, such as "Now" in a log) m
 
 ### Viewing the docs in Obsidian
 Open the `docs/` folder as a vault in Obsidian and it is already set up for reading (`docs/.obsidian/`).
-`lantern obsidian plugins` also adds Lantern Timeline, which shows the report's timeline as bars: stretches with work in fine columns (5 minutes to an hour), time with no task folded away, and how long each finished task took beside it. Drag a task that has not started to move it, or drag its ends to change its length; the dates are saved in its planned and due attributes.
+`lantern obsidian plugins` also adds Lantern Timeline, which shows the report's timeline as bars: stretches with work in fine columns (5 minutes to an hour), time with no task folded away, and how long each finished task took beside it. Tasks without a date wait with their size in a "no date yet" column on the right; drag one onto a day to plan it. Drag a planned task that has not started to move it, or drag its ends to change its length; the dates are saved in its planned and due attributes.
+Lantern Kanban comes along too: works as cards in stage columns (plan · design · tasks · build · done), each opening its tasks in a window when clicked (read only). Turn off a view you don't want in Obsidian's settings, and reports draw without it.
 The task list (`Tasks.md`) reads like a table: names on the left, size · after · criteria in columns on the right. The file keeps one line per task.
 
 - **Folder colors, folder and file icons, callouts and quotes** — each document stage has its own folder color, folders and files get icons, and callouts and quotes look clean. Works on top of any theme.

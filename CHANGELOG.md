@@ -7,6 +7,24 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+Upgrade: `uv tool upgrade lanternspec` → `lantern upgrade` in each project (refreshes skills, templates, Obsidian settings and the bundled plugins). `lantern upgrade --apply` renames 0.3.1's sizes (`half` · `1d`) to `4h` · `8h`
+
+### Added
+- **Lantern Kanban (Obsidian)** — works as cards in stage columns (plan · design · tasks · build · done); clicking a card opens that work's tasks in a window. It shows works waiting for a person, blocked tasks, and what finished in the last 2 weeks with the time worked. Read only
+- **Timeline: a "no date yet" column** — a task with neither actual times nor planned dates waits, with its size, in a column on the right instead of on the time axis; drag it onto a day to plan it. Drag a planned bar back to that column to take its dates off
+- **Planned times** — write `[planned:: 2026-11-12 14:00]` with a time and it is drawn at that time. On a 10-minute or hour chart a dropped chip starts at the column it lands on and lasts as long as its size, and moves by columns
+- **Who did it `[by:: …]`** — the people and the exact AI model names (`claude-opus-5-5` …) that actually did a task. `lantern task done --by` writes it and `/l-build` leaves its own model name. The timeline and kanban color tasks by people · people with AI · AI
+
+### Changed
+- **Task size names** — `15m · 1h · half · 1d` → `15m · 1h · 4h · 8h`. The name is the time: the hours a person would put into the task, added up. Split anything bigger than `8h`
+- **Only real times on the timeline** — it draws when work was actually done and dates a person planned. Undated tasks are no longer drawn with a length guessed from their size, so they no longer switch the chart to whole days
+- **Note width** — with readable line length on, notes widen to 960px (Obsidian's default is 700px)
+- **Plugins turned off stay off** — a bundled plugin is turned on only when it first arrives, and `lantern upgrade` no longer turns one back on. When it is off, reports draw without it
+- **The report follows every skill** — `lantern close` remakes the status report, so the kanban and timeline keep up with each skill. Only `/l-report` writes new summary lines
+- **Timeline bars and text** — bars are a tint with a solid left edge, and the text always starts where the bar does. A planned bar says how long it is planned for, and changes as it is dragged
+- **Order lines** — the arrow is named "Order (before → after)" and its warning "Out of order". Plans by date are compared by date, so the same day is in order
+- **Following edits** — change or delete planned dates in `Tasks.md` and the timeline follows without a new report
+
 ## [0.3.1] - 2026-11-11
 
 Upgrade: `uv tool upgrade lanternspec` → `lantern upgrade` in each project (refreshes skills, the tasks template and Obsidian settings). `lantern scaffold init` makes the new rules document, and `lantern upgrade --apply` writes older sizes (S · M · L) with the new names

@@ -67,17 +67,18 @@ The content of a rule (its tables and numbers) is written once, in the rules doc
 
 The content of each rule is in its rules document template (`src/lanternspec/resources/locales/<language>/templates/`).
 
-### Task size (`15m · 1h · half · 1d`) — [Task Breakdown Rules](src/lanternspec/resources/locales/en/templates/Task%20Breakdown%20Rules.md)
-- **Decided:** a size is **how long a person would take, working without interruption**. Anything bigger than `1d` is split.
+### Task size (`15m · 1h · 4h · 8h`) — [Task Breakdown Rules](src/lanternspec/resources/locales/en/templates/Task%20Breakdown%20Rules.md)
+- **Decided:** a size is **the hours a person would put into it, added up**, even when spread over days. Anything bigger than `8h` is split. It is a step on a scale, not a promise.
 - **Why:**
   - The time the AI actually took had almost nothing to do with size. In a test project a task that would take a person a day (a sign-in API) took one minute, and an hour-or-two task (setting up the screen's foundation) took twenty. What takes an AI long is waiting, not difficulty.
   - A size in human terms moves with **the effort a person needs to review and understand** the work. The bigger the task, the more there is to review.
-  - Work longer than a day is hard to review, and when it gets stuck you find out late.
-- **Labels:** `S · M · L` needed explaining, so they became time labels readable at a glance. The Korean list says `반나절` for half a day; the English one says `half`. Obsidian's Dataview reads `15m` · `1h` · `1d` as durations and shows them in the app's language.
+  - Work bigger than `8h` is hard to review, and when it gets stuck you find out late.
+- **Labels:** **the name is the time.** `S · M · L` needed explaining. The next try, `half` · `1d`, needed "how many hours is 1d" defined separately in the code (8 hours), and that hidden definition put the timeline out of step, drawing `1h` as three hours. `4h` · `8h` define themselves. Obsidian's Dataview shows all four as durations in the app's language.
 - **Turned down:**
   - **Sizing by the AI's actual time:** as above, it doesn't reflect the size of the work.
   - **Story points (1 · 2 · 3 · 5 · 8):** every team means something different by them, so their meaning doesn't carry for a solo developer or a new team.
-- **Source of the hours:** `SIZE_HOURS` in `core/taskfile.py`. Due date suggestions, the timeline and the actual-time statistics all use it.
+  - **Names in days such as `half` · `1d`:** they need the hidden conversion described under "Labels".
+- **Source of the hours:** `SIZE_HOURS` in `core/taskfile.py`, the names turned into numbers. The only place a size becomes dates is the due date suggestion (`lantern task estimate`), which divides by the working hours a day a person sets (`--hours`).
 
 ### Where an unknown goes — same document
 - **Decided:** unknowns fall into four kinds. A question unrelated to the work becomes an idea; a choice that can be settled by weighing it up is decided in design (ADR); what can only be learned by trying becomes a spike task; what only a person can answer gets `❓ Needs answer`.
@@ -100,9 +101,21 @@ The content of each rule is in its rules document template (`src/lanternspec/res
 - **Why:** if the screen check stopped the work, every parallel work would wait for a person. The checks left over are gathered and asked before merging.
 
 ### Drawing the timeline
-- **Decided:** only stretches with work get fine columns (5 minutes to an hour); an hour or more without any task is folded and labelled like "⋯ 5 h ⋯". A finished task shows how long it took as text.
-- **Why:** AI work comes in bursts with long gaps. Drawn by days, minute-long tasks pile into one column; drawn by hours, most of the chart is empty.
+- **Decided:** the time axis holds **only real times**: when work was actually done, and dates a person planned. Only stretches with work get fine columns (5 minutes to an hour); an hour or more without any task is folded and labelled like "⋯ 5 h ⋯". A finished task shows how long it took as text. Tasks not started and without a date wait in a "no date yet" column on the right with their size; dragging one onto a day plans it.
+- **Why:**
+  - AI work comes in bursts with long gaps. Drawn by days, minute-long tasks pile into one column; drawn by hours, most of the chart is empty.
+  - A size says how much work, not when. Putting undated tasks on the axis with a length guessed from their size needed a conversion like "hours in a day", and that guess even changed the column size.
+- **Turned down:** estimated bars chaining unstarted tasks by order and size. They ignored nights and weekends, looking like overnight work, and on a day chart `1h` filled a whole day. For a forecast, `lantern task estimate` suggests dates and skips weekends.
 - **Source:** `src/lanternspec/resources/obsidian/lantern-timeline/main.js`
+
+### Kanban
+- **Decided:** works appear as cards in stage columns (plan · design · tasks · build · done), and clicking a card opens that work's tasks in a window. It is read only.
+- **Why:**
+  - The timeline answers "what was done when", the kanban "where is each work held up now". They answer different questions, so both stay instead of making people pick one.
+  - Stage columns are more useful than three columns (not started · in progress · done). LanternSpec works pass stages by waiting for a person's check, so the column where cards pile up shows what is held back.
+  - Cards aren't dragged to change a stage. Skills move stages through checks like design approval, and `/l-build` checks tasks off as it leaves tests and evidence; changing them on screen would skip those checks.
+- **Turned down:** adding a kanban view to the Lantern Timeline plugin. The timeline and the kanban change for different reasons, so one plugin would mean touching one to change the other. As two plugins, a view nobody wants can be turned off in Obsidian's settings.
+- **Source:** `src/lanternspec/resources/obsidian/lantern-kanban/`; the data comes from `report/views.py`
 
 ## 5. Changing this document
 - A change to a rule or the flow updates that section's **decided · why · turned down** along with it.
