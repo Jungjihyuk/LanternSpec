@@ -358,6 +358,7 @@
 "Note not found: {path}": {ko: "노트를 찾지 못했습니다: {path}"}
 "Can't write outside the store": {ko: "저장소 밖에는 쓸 수 없습니다"}
 "A note with the same name already exists: {rel_path} (not overwritten)": {ko: "이미 같은 이름의 노트가 있습니다: {rel_path} (덮어쓰지 않음)"}
+"Closed by knowledge.allow · knowledge.deny: {path}": {ko: "knowledge.allow · knowledge.deny로 닫힌 곳입니다: {path}"}
 
 # report/doc_map.py
 "> ⚙️ Generated — `lantern map` · as of {now_minute}": {ko: "> ⚙️ 자동 생성 — `lantern map` · 기준: {now_minute}"}
@@ -806,6 +807,20 @@
 # tools/claude.py
 ".claude/settings.json — agent hooks": {ko: ".claude/settings.json — 에이전트 hook"}
 
+# tools/guard.py
+"lantern guard needs a knowledge store that is a folder (knowledge.type: obsidian | folder)": {ko: "lantern guard는 폴더로 된 지식 저장소가 있어야 합니다 (knowledge.type: obsidian | folder)"}
+"Nothing to guard — list the folders in knowledge.allow or knowledge.deny first ({profile_file})": {ko: "막을 곳이 없습니다 — 먼저 knowledge.allow나 knowledge.deny에 폴더를 적으세요 ({profile_file})"}
+"knowledge.{key}: '{folder}' is not in the knowledge store ({vault})": {ko: "knowledge.{key}: '{folder}'가 지식 저장소에 없습니다 ({vault})"}
+"everything else": {ko: "그 밖의 전부"}
+"🔒 {command} starts inside the OS sandbox — knowledge store {vault}": {ko: "🔒 {command}를 OS 샌드박스 안에서 시작합니다 — 지식 저장소 {vault}"}
+"   open: {items}": {ko: "   열림: {items}"}
+"   closed: {items}": {ko: "   닫힘: {items}"}
+"   {profile_file} can't be changed in this session": {ko: "   이 세션에서는 {profile_file}을 고칠 수 없습니다"}
+"   Turn the tool's own sandbox off: macOS can't put a sandbox inside another": {ko: "   도구 자체의 샌드박스는 꺼 두세요: macOS는 샌드박스 안에 샌드박스를 걸 수 없습니다"}
+"Say which tool to start: lantern guard -- claude": {ko: "시작할 도구를 적으세요: lantern guard -- claude"}
+"lantern guard works on macOS only for now (it uses sandbox-exec)": {ko: "lantern guard는 지금은 macOS에서만 됩니다 (sandbox-exec를 씁니다)"}
+"Command not found: {command}": {ko: "명령을 찾지 못했습니다: {command}"}
+
 # tools/close.py
 "✔ Run recorded — {skill}{value} (.lantern/runs.jsonl)": {ko: "✔ 실행 기록 — {skill}{value} (.lantern/runs.jsonl)"}
 "✔ Committed — {message}": {ko: "✔ 커밋 — {message}"}
@@ -1019,6 +1034,8 @@
 "Only write each tool's skill files to a folder (preview)": {ko: "도구별 스킬 파일을 폴더에 생성만 (미리보기)"}
 "Change document storage (shared ↔ local)": {ko: "문서 저장 방식 바꾸기 (shared ↔ local)"}
 "Common skill wrap-up: check → map → run record": {ko: "스킬 공통 마무리: check → map → 실행 기록"}
+"Start an AI tool inside an OS sandbox that keeps it out of the closed knowledge store folders (macOS): lantern guard -- claude": {ko: "AI 도구를 OS 샌드박스 안에서 시작해 지식 저장소의 닫힌 폴더를 열지 못하게 합니다 (macOS): lantern guard -- claude"}
+"The tool's command, after --": {ko: "-- 뒤에 도구의 명령"}
 "ℹ This computer also has {items}. To use them too: lantern install --tools {items2}": {ko: "ℹ 이 컴퓨터에 {items}도 있습니다. 함께 쓰려면: lantern install --tools {items2}"}
 "Next: carry on in the AI tool (where things stand: lantern status)": {ko: "다음 단계: AI 도구에서 하던 작업을 이어 갑니다 (지금 상황은 lantern status)"}
 "Open the AI tool — ": {ko: "AI 도구를 엽니다 — "}
@@ -1164,6 +1181,8 @@
 "knowledge:                  # the learning track. Delete this block if there is none": {ko: "knowledge:                  # 배우는 선로. 없으면 이 블록을 지운다"}
 "  type: {s}            # obsidian | folder (any Markdown folder)": {ko: "  type: {s}            # obsidian | folder(아무 Markdown 폴더)"}
 "  write: {s}            # direct (write right after approval) | propose_only (draft files only)": {ko: "  write: {s}            # direct(승인 후 바로 씀) | propose_only(초안 파일만)"}
+"  allow: {s}    # (optional) only these folders are open; without it, everything not in deny": {ko: "  allow: {s}    # (선택) 이 폴더만 엽니다. 없으면 deny를 뺀 전부"}
+"  deny: {s}    # (optional) folders never opened; wins over allow (lantern guard)": {ko: "  deny: {s}    # (선택) 열지 않는 폴더. allow보다 우선합니다 (lantern guard)"}
 "# knowledge: add this block once there is a knowledge store (type · path · write)": {ko: "# knowledge: 지식 저장소가 생기면 블록을 추가한다 (type · path · write)"}
 "  schema_paths: {s}  # where schema files are (schema log check)": {ko: "  schema_paths: {s}  # 스키마 파일 위치 (스키마 기록 검사)"}
 "  test: {s}   # test command (work finish · scan --tests)": {ko: "  test: {s}   # 테스트 명령 (work finish · scan --tests)"}
@@ -1174,6 +1193,9 @@
 "{key}: must be a list (e.g. [{allowed}])": {ko: "{key}: 목록이어야 합니다 (예: [{allowed}])"}
 "{key}: must be an integer": {ko: "{key}: 정수여야 합니다"}
 "knowledge.path: the knowledge store path is empty (delete the knowledge block if there is none)": {ko: "knowledge.path: 지식 저장소 경로가 비어 있습니다 (없으면 knowledge 블록을 지우세요)"}
+"knowledge.{key}: must be a list of folders in the knowledge store (e.g. [2. Study])": {ko: "knowledge.{key}: 지식 저장소 안의 폴더 목록이어야 합니다 (예: [2. Study])"}
+"knowledge.{key}: write folders relative to the knowledge store, without .. (e.g. [2. Study])": {ko: "knowledge.{key}: 지식 저장소를 기준으로 한 폴더로 적고 ..는 쓰지 않습니다 (예: [2. Study])"}
+"knowledge.{key}: works for obsidian · folder stores only (Notion: share only the open pages)": {ko: "knowledge.{key}: obsidian · folder 저장소에서만 됩니다 (Notion은 열어 둘 페이지만 연동에 공유하세요)"}
 "docs.sections: '{role}' is not a protected section (available: {items})": {ko: "docs.sections: '{role}'는 보호 칸이 아닙니다 (가능: {items})"}
 "docs.unused_sections: must be a list (e.g. [schema])": {ko: "docs.unused_sections: 목록이어야 합니다 (예: [schema])"}
 "  token_env: {s}   # environment variable holding the Notion token": {ko: "  token_env: {s}   # Notion 토큰을 담은 환경 변수"}

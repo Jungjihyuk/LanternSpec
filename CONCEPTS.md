@@ -199,6 +199,17 @@ Everything LanternSpec writes lives in the `docs/` folder.
 ### Knowledge store
 > Where you keep your study notes (Obsidian, a plain Markdown folder, Notion). Once connected, LanternSpec checks it for notes you've already written whenever it meets an unfamiliar technology.
 
+### Open and closed folders
+> The folders of the knowledge store the AI **may and may not open**. You list them in `lantern.yaml` under `knowledge.allow` (only these are open) or `knowledge.deny` (these are never opened). Notes in closed folders don't turn up in search, reading or writing.
+
+- Example: keep study notes (`2. Study`) open and work records (`4. Work`) closed
+
+### Guarded run
+> Starting the AI tool **inside the operating system's sandbox** (`lantern guard -- claude`). The operating system keeps the tool out of the closed folders whatever way it tries to open them. macOS only for now.
+
+- Stopped: every way the AI tool opens files itself (reading files, running commands, scripts)
+- Not stopped: an AI tool started without the guarded run, and going through other programs that are already running
+
 ### Domain knowledge
 > Reference material on **what must be followed in your field**, such as laws, company policies and business rules. Once a person adds it, the AI reads just the relevant part when needed.
 

@@ -1,4 +1,4 @@
-"""AI-tool commands: install · upgrade · build-adapters · docs-mode · hook · close."""
+"""AI-tool commands: install · upgrade · build-adapters · docs-mode · hook · close · guard."""
 
 from __future__ import annotations
 
@@ -166,6 +166,13 @@ def cmd_close(a: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_guard(a: argparse.Namespace) -> int:
+    """`lantern guard -- <tool>` — start an AI tool inside an OS sandbox that keeps it out of the closed knowledge store folders."""
+    from ..tools import guard
+
+    return guard.run(_p(), [arg for i, arg in enumerate(a.tool_command) if i or arg != "--"])
+
+
 def register(add: Add) -> None:
     """Register the AI-tool commands."""
     p = add("install", cmd_install, msg("Install skills · rules · agent hooks into the AI tool folders (before /l-init)"))
@@ -195,6 +202,14 @@ def register(add: Add) -> None:
     p.add_argument("name")
     p.add_argument("args", nargs="*")
     p.add_argument("--agent", default="claude", help="claude | codex | antigravity")
+    p = add(
+        "guard",
+        cmd_guard,
+        msg(
+            "Start an AI tool inside an OS sandbox that keeps it out of the closed knowledge store folders (macOS): lantern guard -- claude"
+        ),
+    )
+    p.add_argument("tool_command", nargs=argparse.REMAINDER, help=msg("The tool's command, after --"))
     p = add("close", cmd_close, msg("Common skill wrap-up: check → map → run record"))
     p.add_argument("skill")
     p.add_argument("--work")

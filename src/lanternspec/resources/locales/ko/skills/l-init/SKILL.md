@@ -28,7 +28,8 @@ argument-hint: "[바뀐 점 (다시 실행할 때)]"
   - 1회: 1 · 2 · 3번
   - 2회: 3번에 이어지는 질문("어디에서 쓰나요?"는 여러 개를 고를 수 있게) · 4번(묻는 경우만) · 5 · 6번
   - 3회: 7번과 앞 답에 따라 필요한 것만 — 프로젝트 이름 · 얼마나 오래 만드나 · 저장소 공개 · 문서 올리기 · 브랜치 방식 · (team이면) 팀원 이름 · (external이면) API 문서
-  - 4회: 5번에서 지식 저장소를 골랐을 때만 — 아래 "지식 저장소를 골랐으면"의 세 질문
+  - 4회: 5번에서 지식 저장소를 골랐을 때만 — 아래 "지식 저장소를 골랐으면"의 앞 세 질문
+  - 5회: 이어서 닫을 폴더 질문 — 답에 따라 다음 질문이 달라지므로 차례로 묻는다
   - 기술 선택은 앞 답에 따라 다음 질문이 달라지므로 묶지 않고 차례로 묻는다
 <!-- lantern:endif -->
 <!-- lantern:if !tool=claude -->
@@ -82,6 +83,13 @@ lantern template show "<<file.tech_criteria>>"
 - **어디에 있나요?** — 먼저 후보를 찾는다: Obsidian이면 `.obsidian` 폴더가 있는 곳(`find ~ -maxdepth 4 -name .obsidian -type d`), Markdown 폴더면 문서 폴더 근처. 찾은 경로가 2개 이상이면 선택지로 내고(최대 3개), 하나면 평범한 메시지로 "이 경로가 맞나요?"라고 묻고, 못 찾으면 평범한 메시지로 "노트 폴더의 경로를 알려 주세요"라고 묻는다.
 - **새 노트는 어떻게 만들까요?** — 승인하면 저장소에 바로 쓰기(direct, 추천) / 저장소는 건드리지 않고 초안 파일만 만들기(propose_only)
 - **(저장소에 주제별로 나눈 폴더가 보일 때만) 그 분류도 함께 쓸까요?** (선택) — 먼저 저장소 맨 위 폴더를 훑어, 하위 폴더가 주제처럼 나뉜 폴더(예: `2. Study`)가 없으면 **이 질문은 건너뛴다**. 있으면 질문 문장에 뜻을 먼저 적는다: "모르는 기술은 부채 카드로 남고, 카드마다 주제가 하나 붙어요 (지금은 backend · frontend · data · ai · infra · 기타). 저장소에 주제별로 나눠 둔 폴더가 있는 것 같은데, 그 이름도 주제로 함께 쓸까요? 프로젝트 구조와는 상관없어요." 선택지는 찾은 폴더들과 "기본 주제만 쓰기"(추천).
+- **이 저장소에 AI가 열면 안 되는 폴더가 있나요?** — 선택지는 아래 문구 그대로 낸다. 2 · 3을 고르면 저장소의 맨 위 폴더 목록(숨김 폴더는 빼고)을 보여 주고 여러 개를 고르게 한다. 폴더가 선택지에 다 들어가지 않으면 평범한 메시지로 목록을 보여 주고 이름을 적게 한다.
+  - 없다. 전부 열어 둔다
+  - 있다. 닫을 폴더를 고른다 (`knowledge.deny`)
+  - 몇 개만 연다. 열 폴더를 고른다 (`knowledge.allow`)
+- **(닫는 폴더가 있고 macOS일 때만) AI 도구가 그 폴더를 직접 여는 것도 막을까요?** — 선택지는 아래 문구 그대로 낸다. 1을 고르면 마지막 안내에 "앞으로 AI 도구는 `lantern guard -- <도구 명령>`으로 켜세요 (예: `lantern guard -- claude`)"를 넣는다. macOS가 아니면 묻지 않고 "AI 도구가 직접 여는 것을 막는 기능은 지금 macOS에서만 돼요"라고 한 줄로 알린다.
+  - 막는다. 앞으로 `claude` 대신 `lantern guard -- claude`로 켠다. Claude Code 자체 샌드박스는 꺼야 한다
+  - 막지 않는다. lantern의 찾기 · 읽기만 닫힌 폴더를 건너뛴다
 
 **브랜치 방식 고르기** — 추천과 낼 선택지는 **명령이 정한다** (1 · 2번 답을 넣는다):
 ```bash
@@ -117,6 +125,7 @@ lantern profile write --name "<이름>" --origin greenfield|brownfield --team so
   [--knowledge "<지식 저장소 경로>" --knowledge-type obsidian|folder --knowledge-write direct|propose_only [--areas-from "2. Study"]] \
   --design claude-design|figma|canva|none --remote shared|local --base main --pr none|deploy|work [--deploy main] [--branch "feature/{id}-{slug}"] \
   --kind script|cli|library|service|data --external yes|no [--languages python,typescript] --comment-language ko|en --lifespan short|long
+lantern profile set "knowledge.deny=[4. Work]"   # 닫을 폴더를 골랐을 때만 (열 폴더를 골랐으면 knowledge.allow=[…])
 lantern principles detect --write   # 코드 규모 · 언어 · 확인 명령(build.format · lint · typecheck)을 기록
 lantern principles show             # 고른 설계 원칙 · 코드 컨벤션
 lantern scaffold init --plan        # 만들 폴더 · 문서 목록 (아직 아무것도 안 만듦)

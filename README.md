@@ -248,6 +248,8 @@ Anything you don't understand yet is kept as a debt card, and every time you ask
 
 Every knowledge base supports the same four actions: search · read · propose · write. The CLI (`lantern knowledge …`) and the MCP server (`lantern mcp`) use the same functions.
 
+Folders of the knowledge base the AI must not open go in `knowledge.deny` in `lantern.yaml` (or list the only open ones in `knowledge.allow`). lantern neither searches nor reads closed folders. To also stop the AI tool from opening them directly, start it with `lantern guard -- claude`: the tool runs inside the operating system's sandbox (macOS; the tool's own sandbox has to be off).
+
 There are three kinds of debt.
 
 | Kind | Meaning |
@@ -288,7 +290,7 @@ Import mockups with `lantern screen import`; `lantern screen compare` finds wher
 ## CLI at a glance
 
 ```text
-setup      install [--language] [--tools] [--mcp] [--ci|--no-ci] [--pr-template] [--commit-template] · upgrade [--apply] · doctor · build-mode suggest
+setup      install [--language] [--tools] [--mcp] [--ci|--no-ci] [--pr-template] [--commit-template] · upgrade [--apply] · doctor · build-mode suggest · guard -- <tool>
 profile    profile show|docs|write|set · principles show|detect · parts [add|ignore] · enums list|rename · sections list|rename|off|on
 documents  scaffold init [--plan] | work | doc | idea | adr | meeting | custom · new-id · map · meta get|set
 checks     check [--changed] [--epic W-012] · check-pr · lint [--ci] · check-dbml · dbml render|from-sql|diff

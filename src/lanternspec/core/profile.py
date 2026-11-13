@@ -64,7 +64,8 @@ DEFAULTS: dict[str, Any] = {
     "references": {"rules": [], "terms": [], "domain": [], "exclude": [], "outside_rules": False, "terms_detect": "auto"},
 }
 
-KNOWLEDGE_DEFAULTS: dict[str, Any] = {"type": "obsidian", "path": "", "areas_from": None, "write": "direct"}
+# allow · deny: folders of the store that are open · closed (learn/knowledge/access.py); deny wins, empty lists leave everything open
+KNOWLEDGE_DEFAULTS: dict[str, Any] = {"type": "obsidian", "path": "", "areas_from": None, "write": "direct", "allow": [], "deny": []}
 
 CHOICES: dict[str, tuple[str, ...]] = {
     "project.origin": ("greenfield", "brownfield"),
@@ -356,6 +357,8 @@ def validate(data: dict[str, Any]) -> list[str]:
         k = data["knowledge"]
         if not isinstance(k, dict) or not k.get("path"):
             problems.append(msg("knowledge.path: the knowledge store path is empty (delete the knowledge block if there is none)"))
+        if isinstance(k, dict):
+            problems += _access_problems(k)
     problems += _section_problems(data)
     problems += _part_problems(data)
     problems += _reference_problems(data)
@@ -363,6 +366,20 @@ def validate(data: dict[str, Any]) -> list[str]:
         problems.append(msg("project.members: for a team (2 or more), list the owner candidates"))
     if get_path(data, "lantern") != PROFILE_VERSION:
         problems.append(msg("lantern: the file format version must be {profile_version}", profile_version=PROFILE_VERSION))
+    return problems
+
+
+def _access_problems(knowledge: dict[str, Any]) -> list[str]:
+    """Check knowledge.allow · knowledge.deny: lists of folders inside the store, for stores that are folders."""
+    problems = []
+    for key in ("allow", "deny"):
+        value = knowledge.get(key) or []
+        if not isinstance(value, list) or not all(isinstance(x, str) and x.strip() for x in value):
+            problems.append(msg("knowledge.{key}: must be a list of folders in the knowledge store (e.g. [2. Study])", key=key))
+        elif any(x.startswith(("/", "~")) or ".." in x.replace("\\", "/").split("/") for x in value):
+            problems.append(msg("knowledge.{key}: write folders relative to the knowledge store, without .. (e.g. [2. Study])", key=key))
+        elif value and knowledge.get("type") == "notion":
+            problems.append(msg("knowledge.{key}: works for obsidian · folder stores only (Notion: share only the open pages)", key=key))
     return problems
 
 
@@ -561,10 +578,16 @@ def render(data: dict[str, Any]) -> str:
             lines.append(
                 msg("  areas_from: {s}    # (optional) read this folder's categories to suggest debt-card topics", s=s(k["areas_from"]))
             )
-        lines += [
-            msg("  write: {s}            # direct (write right after approval) | propose_only (draft files only)", s=s(k["write"])),
-            "",
-        ]
+        lines.append(
+            msg("  write: {s}            # direct (write right after approval) | propose_only (draft files only)", s=s(k["write"]))
+        )
+        if k.get("allow"):
+            lines.append(
+                msg("  allow: {s}    # (optional) only these folders are open; without it, everything not in deny", s=s(k["allow"]))
+            )
+        if k.get("deny"):
+            lines.append(msg("  deny: {s}    # (optional) folders never opened; wins over allow (lantern guard)", s=s(k["deny"])))
+        lines.append("")
     else:
         lines += [msg("# knowledge: add this block once there is a knowledge store (type · path · write)"), ""]
     lines += [

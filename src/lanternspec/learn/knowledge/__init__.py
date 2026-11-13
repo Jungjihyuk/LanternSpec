@@ -12,6 +12,7 @@ We never change the other store's structure: counts and status live in our ledge
 
 Not here:
     - drafts waiting for approval (propose · write) → learn/knowledge/drafts.py
+    - which folders of a store are open → learn/knowledge/access.py
 """
 
 from __future__ import annotations
@@ -179,9 +180,10 @@ def adapter_for(project: Project) -> Adapter:
         raise KnowledgeError(msg("No knowledge store is set up (the knowledge block in lantern.yaml)"))
     kind = k["type"]
     if kind in ("obsidian", "folder"):  # folder = any Markdown folder (other stores)
+        from .access import Access
         from .obsidian import ObsidianAdapter
 
-        return ObsidianAdapter(Path(str(k["path"])).expanduser())
+        return ObsidianAdapter(Path(str(k["path"])).expanduser(), Access.from_config(k))
     if kind == "notion":
         from .notion import from_config
 

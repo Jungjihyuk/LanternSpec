@@ -28,7 +28,8 @@ First check the CLI is there with `lantern --version`. If it isn't, only tell th
   - Round 1: questions 1 · 2 · 3
   - Round 2: the follow-up to 3 ("Where will people use it?" allows several answers) · 4 (only when it is asked) · 5 · 6
   - Round 3: question 7, and only what the earlier answers call for — project name · how long it runs · making the repository public · publishing docs · branch flow · (team) member names · (external) API document
-  - Round 4: only if a knowledge store was chosen in 5 — the three questions under "If a knowledge store was chosen"
+  - Round 4: only if a knowledge store was chosen in 5 — the first three questions under "If a knowledge store was chosen"
+  - Round 5: then the closed-folder questions — each answer changes the next question, so ask in order
   - Choosing the technologies: each answer changes the next question, so ask in order instead of in a batch
 <!-- lantern:endif -->
 <!-- lantern:if !tool=claude -->
@@ -81,6 +82,13 @@ lantern template show "<<file.tech_criteria>>"
 - **Where is it?** — look for candidates first: for Obsidian, folders that contain `.obsidian` (`find ~ -maxdepth 4 -name .obsidian -type d`); for a Markdown folder, near the documents folder. With 2 or more paths found, offer them as choices (up to 3); with one, ask in a plain message "Is this the right path?"; if none are found, ask in a plain message: "What is the path of your notes folder?"
 - **How should new notes be made?** — write to the store right away once approved (direct, recommended) / never touch the store, only make draft files (propose_only)
 - **(only when the store has folders split by topic) Use those folders as topics too?** (optional) — first skim the store's top-level folders; if there is no folder whose subfolders look like topics (e.g. `2. Study`), **skip this question**. If there is, say what it means first: "Unfamiliar technologies are kept as debt cards, and each card gets one topic (now: backend · frontend · data · ai · infra · other). Your store seems to have folders split by topic — use those names as topics too? This has nothing to do with the project's structure." Offer the folders found and "only the default topics" (recommended).
+- **Are there folders in this store the AI must not open?** — offer the choices in these words. For 2 · 3, show the store's top-level folders (leave out hidden ones) and let the person pick several. If the folders don't all fit in the choices, list them in a plain message and have the person type the names.
+  - No. Leave everything open
+  - Yes. Pick the folders to close (`knowledge.deny`)
+  - Open only a few. Pick the folders to open (`knowledge.allow`)
+- **(only when a folder is closed and this is macOS) Also stop the AI tool from opening those folders directly?** — offer the choices in these words. For 1, add to the closing message: "From now on, start the AI tool with `lantern guard -- <tool command>` (e.g. `lantern guard -- claude`)". Off macOS, don't ask; say in one line: "Stopping the AI tool from opening them directly works on macOS only for now."
+  - Stop it. From now on start with `lantern guard -- claude` instead of `claude`. Claude Code's own sandbox has to be off
+  - Don't stop it. Only lantern's search · read skip the closed folders
 
 **Choosing the branch flow** — **a command decides** the recommendation and the choices to offer (pass the answers to 1 · 2):
 ```bash
@@ -116,6 +124,7 @@ lantern profile write --language en --name "<name>" --origin greenfield|brownfie
   [--knowledge "<knowledge store path>" --knowledge-type obsidian|folder --knowledge-write direct|propose_only [--areas-from "2. Study"]] \
   --design claude-design|figma|canva|none --remote shared|local --base main --pr none|deploy|work [--deploy main] [--branch "feature/{id}-{slug}"] \
   --kind script|cli|library|service|data --external yes|no [--languages python,typescript] --lifespan short|long
+lantern profile set "knowledge.deny=[4. Work]"   # only when folders to close were picked (for folders to open: knowledge.allow=[…])
 lantern principles detect --write   # record code size · languages · check commands (build.format · lint · typecheck)
 lantern principles show             # the chosen design principles · code conventions
 lantern scaffold init --plan        # the folders · documents it would create (creates nothing yet)
