@@ -817,9 +817,11 @@
 "   closed: {items}": {ko: "   닫힘: {items}"}
 "   {profile_file} can't be changed in this session": {ko: "   이 세션에서는 {profile_file}을 고칠 수 없습니다"}
 "   Turn the tool's own sandbox off: macOS can't put a sandbox inside another": {ko: "   도구 자체의 샌드박스는 꺼 두세요: macOS는 샌드박스 안에 샌드박스를 걸 수 없습니다"}
-"   Options added to {command}: {options} (the OS sandbox guards instead of the tool's own sandbox and shared server)": {ko: "   {command}에 더한 옵션: {options} (도구 자체의 샌드박스 · 공유 서버 대신 OS 샌드박스가 막습니다)"}
+"   Options added to {command}: {options} (to run inside the OS sandbox)": {ko: "   {command}에 더한 옵션: {options} (OS 샌드박스 안에서 돌게)"}
 "Say which tool to start: lantern guard -- claude": {ko: "시작할 도구를 적으세요: lantern guard -- claude"}
-"lantern guard works on macOS only for now (it uses sandbox-exec)": {ko: "lantern guard는 지금은 macOS에서만 됩니다 (sandbox-exec를 씁니다)"}
+"lantern guard works on macOS and Linux only": {ko: "lantern guard는 macOS와 Linux에서만 됩니다"}
+"lantern guard needs {program}, which is not installed (Linux: the bubblewrap package)": {ko: "lantern guard에는 {program}이 필요한데 설치되어 있지 않습니다 (Linux: bubblewrap 패키지)"}
+"The OS sandbox did not start, so {command} was not started: {error}": {ko: "OS 샌드박스가 켜지지 않아 {command}를 시작하지 않았습니다: {error}"}
 "Command not found: {command}": {ko: "명령을 찾지 못했습니다: {command}"}
 
 # tools/close.py
@@ -1035,7 +1037,7 @@
 "Only write each tool's skill files to a folder (preview)": {ko: "도구별 스킬 파일을 폴더에 생성만 (미리보기)"}
 "Change document storage (shared ↔ local)": {ko: "문서 저장 방식 바꾸기 (shared ↔ local)"}
 "Common skill wrap-up: check → map → run record": {ko: "스킬 공통 마무리: check → map → 실행 기록"}
-"Start an AI tool inside an OS sandbox that keeps it out of the closed knowledge store folders (macOS): lantern guard -- claude": {ko: "AI 도구를 OS 샌드박스 안에서 시작해 지식 저장소의 닫힌 폴더를 열지 못하게 합니다 (macOS): lantern guard -- claude"}
+"Start an AI tool inside an OS sandbox that keeps it out of the closed knowledge store folders (macOS · Linux): lantern guard -- claude": {ko: "AI 도구를 OS 샌드박스 안에서 시작해 지식 저장소의 닫힌 폴더를 열지 못하게 합니다 (macOS · Linux): lantern guard -- claude"}
 "The tool's command, after --": {ko: "-- 뒤에 도구의 명령"}
 "ℹ This computer also has {items}. To use them too: lantern install --tools {items2}": {ko: "ℹ 이 컴퓨터에 {items}도 있습니다. 함께 쓰려면: lantern install --tools {items2}"}
 "Next: carry on in the AI tool (where things stand: lantern status)": {ko: "다음 단계: AI 도구에서 하던 작업을 이어 갑니다 (지금 상황은 lantern status)"}

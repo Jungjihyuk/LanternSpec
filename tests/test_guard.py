@@ -79,13 +79,15 @@ def test_guard_refuses_to_start_when_it_would_close_nothing(repo, store):
 
 
 def _sandbox_works() -> bool:
-    """False off macOS, and inside another sandbox (macOS can't nest them)."""
-    if sys.platform != "darwin" or not shutil.which("sandbox-exec"):
+    """False without the OS sandbox, inside another sandbox on macOS, and where Linux turns user namespaces off."""
+    try:
+        sandbox = guard.launcher(guard.Guard(guard.Path("/")))
+    except guard.GuardError:
         return False
-    return subprocess.run(["sandbox-exec", "-p", "(version 1)(allow default)", "/usr/bin/true"], capture_output=True).returncode == 0
+    return bool(shutil.which(sandbox[0])) and subprocess.run([*sandbox, "true"], capture_output=True).returncode == 0
 
 
-needs_sandbox = pytest.mark.skipif(not _sandbox_works(), reason="needs macOS sandbox-exec, outside any sandbox")
+needs_sandbox = pytest.mark.skipif(not _sandbox_works(), reason="needs macOS sandbox-exec or Linux bubblewrap that can start")
 
 
 def _guarded(repo, script: str) -> subprocess.CompletedProcess:
@@ -122,12 +124,24 @@ def test_guarded_tool_opens_only_allowed_folders_and_lantern_still_searches(repo
 
 
 def test_codex_starts_without_its_shared_server_and_own_sandbox():
-    assert guard.adapted(["codex", "resume"]) == ["codex", "--no-daemon", "--sandbox", "danger-full-access", "resume"]
-    assert guard.adapted(["/opt/homebrew/bin/codex", "--sandbox=read-only", "--no-daemon"]) == [
+    macos = guard.nests("darwin")
+    assert guard.adapted(["codex", "resume"], macos) == ["codex", "--no-daemon", "--sandbox", "danger-full-access", "resume"]
+    assert guard.adapted(["/opt/homebrew/bin/codex", "--sandbox=read-only", "--no-daemon"], macos) == [
         "/opt/homebrew/bin/codex",
         "--sandbox=read-only",
         "--no-daemon",
     ]  # options already typed are kept, never doubled
-    assert guard.adapted(["claude"]) == ["claude"] and guard.adapted(["agy", "-c"]) == ["agy", "-c"]
-    lines = "\n".join(guard.describe(guard.Guard(guard.Path("/v")), ["codex"], guard.adapted(["codex"])))
+    assert guard.adapted(["codex"], guard.nests("linux")) == ["codex", "--no-daemon"]  # Linux sandboxes nest
+    assert guard.adapted(["claude"], macos) == ["claude"] and guard.adapted(["agy", "-c"], macos) == ["agy", "-c"]
+    lines = "\n".join(guard.describe(guard.Guard(guard.Path("/v")), ["codex"], guard.adapted(["codex"], macos)))
     assert "--no-daemon --sandbox danger-full-access" in lines and "꺼 두세요" not in lines
+    assert "꺼 두세요" in "\n".join(guard.describe(guard.Guard(guard.Path("/v")), ["claude"]))
+    assert "꺼 두세요" not in "\n".join(guard.describe(guard.Guard(guard.Path("/v")), ["claude"], nested=True))
+
+
+def test_linux_covers_closed_folders_and_files(tmp_path):
+    (tmp_path / "4. Work").mkdir()
+    (tmp_path / ".DS_Store").write_text("")
+    args = guard.bwrap_args(guard.Guard(tmp_path, closed=(tmp_path / "4. Work", tmp_path / ".DS_Store")))
+    assert ["--tmpfs", str(tmp_path / "4. Work"), "--chmod", "0000", str(tmp_path / "4. Work")] == args[3:8]
+    assert ["--ro-bind", "/dev/null", str(tmp_path / ".DS_Store")] == args[-3:]

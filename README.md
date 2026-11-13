@@ -248,7 +248,7 @@ Anything you don't understand yet is kept as a debt card, and every time you ask
 
 Every knowledge base supports the same four actions: search · read · propose · write. The CLI (`lantern knowledge …`) and the MCP server (`lantern mcp`) use the same functions.
 
-Folders of the knowledge base the AI must not open go in `knowledge.deny` in `lantern.yaml` (or list the only open ones in `knowledge.allow`). lantern neither searches nor reads closed folders. To also stop the AI tool from opening them directly, start it with `lantern guard -- claude`: the tool runs inside the operating system's sandbox (macOS; works with `claude` · `codex` · `agy`; the tool's own sandbox has to be off, and lantern turns Codex's off itself).
+Folders of the knowledge base the AI must not open go in `knowledge.deny` in `lantern.yaml` (or list the only open ones in `knowledge.allow`). lantern neither searches nor reads closed folders. To also stop the AI tool from opening them directly, start it with `lantern guard -- claude`: the tool runs inside the operating system's sandbox (macOS, and Linux with bubblewrap; works with `claude` · `codex` · `agy`; on macOS the tool's own sandbox has to be off, and lantern turns Codex's off itself).
 
 There are three kinds of debt.
 

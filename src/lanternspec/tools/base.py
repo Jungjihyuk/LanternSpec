@@ -300,22 +300,23 @@ class Tool:
         """
         return shlex.join([self.launch, f"{self.command_prefix}l-build {work_id}"])
 
-    def guarded_command(self, command: list[str]) -> list[str]:
+    def guarded_command(self, command: list[str], nested: bool) -> list[str]:
         """Adjust the tool's command line for a run inside `lantern guard`'s OS sandbox.
 
-        The guard's sandbox already holds the whole process, so a tool whose own sandbox is on by
-        default (macOS can't nest them) or that hands work to a server started outside it adds the
-        options that turn those off. Nothing changes by default.
+        The guard's sandbox already holds the whole process, so a tool that hands work to a server
+        started outside it, or whose own sandbox is on by default where sandboxes can't nest, adds
+        the options that turn those off. Nothing changes by default.
 
         Args:
             command: The command line as typed, starting with this tool's launch command.
+            nested: Whether the tool's own sandbox can run inside the guard's (Linux yes, macOS no).
 
         Returns:
             The command line to start.
 
         Example:
             >>> from lanternspec.tools import get
-            >>> get("claude").guarded_command(["claude", "--resume"])
+            >>> get("claude").guarded_command(["claude", "--resume"], nested=False)
             ['claude', '--resume']
         """
         return command

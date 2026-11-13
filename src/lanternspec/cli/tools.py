@@ -206,7 +206,8 @@ def register(add: Add) -> None:
         "guard",
         cmd_guard,
         msg(
-            "Start an AI tool inside an OS sandbox that keeps it out of the closed knowledge store folders (macOS): lantern guard -- claude"
+            "Start an AI tool inside an OS sandbox that keeps it out of the closed knowledge store folders "
+            "(macOS · Linux): lantern guard -- claude"
         ),
     )
     p.add_argument("tool_command", nargs=argparse.REMAINDER, help=msg("The tool's command, after --"))

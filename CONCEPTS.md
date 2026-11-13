@@ -205,7 +205,7 @@ Everything LanternSpec writes lives in the `docs/` folder.
 - Example: keep study notes (`2. Study`) open and work records (`4. Work`) closed
 
 ### Guarded run
-> Starting the AI tool **inside the operating system's sandbox** (`lantern guard -- claude`). The operating system keeps the tool out of the closed folders whatever way it tries to open them. macOS only for now.
+> Starting the AI tool **inside the operating system's sandbox** (`lantern guard -- claude`). The operating system keeps the tool out of the closed folders whatever way it tries to open them. Works on macOS and Linux (Linux needs bubblewrap).
 
 - Stopped: every way the AI tool opens files itself (reading files, running commands, scripts)
 - Not stopped: an AI tool started without the guarded run, and going through other programs that are already running

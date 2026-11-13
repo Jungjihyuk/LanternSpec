@@ -15,6 +15,12 @@ jobs:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v10.3.2
 
+      # lantern guard의 Linux 샌드박스(bubblewrap)를 실제로 시험하려면 — Ubuntu가 막아 둔 사용자 네임스페이스를 연다
+      - name: bubblewrap 설치
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y bubblewrap
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+
       - name: 확인 — 포맷 · 린트 · 타입 검사 · 테스트
         run: |
           uv run ruff format --check src tests

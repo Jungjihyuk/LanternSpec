@@ -234,28 +234,31 @@ class Codex(ClaudeHooks, Tool):
             ]
         )
 
-    def guarded_command(self, command: list[str]) -> list[str]:
-        """Implement Tool.guarded_command: run without the shared background server and without Codex's own sandbox.
+    def guarded_command(self, command: list[str], nested: bool) -> list[str]:
+        """Implement Tool.guarded_command: run without the shared background server, and on macOS without Codex's own sandbox.
 
         A running Codex connects to a shared server that was started outside the guard, and its
-        commands would run there unguarded. Codex's own sandbox is macOS's too, which can't start
-        inside another, so every shell command would fail. Options already typed are kept.
+        commands would run there unguarded. On macOS Codex's own sandbox is the system's too, which
+        can't start inside another, so every shell command would fail. Options already typed are kept.
 
         Args:
             command: The command line as typed.
+            nested: Whether Codex's own sandbox can run inside the guard's.
 
         Returns:
             The command line with the missing options right after `codex`.
 
         Example:
-            >>> Codex().guarded_command(["codex", "exec", "hi"])
+            >>> Codex().guarded_command(["codex", "exec", "hi"], nested=False)
             ['codex', '--no-daemon', '--sandbox', 'danger-full-access', 'exec', 'hi']
-            >>> Codex().guarded_command(["codex", "-s", "read-only"])
+            >>> Codex().guarded_command(["codex", "-s", "read-only"], nested=False)
             ['codex', '--no-daemon', '-s', 'read-only']
+            >>> Codex().guarded_command(["codex"], nested=True)
+            ['codex', '--no-daemon']
         """
         typed = {arg.split("=", 1)[0] for arg in command[1:]}
         added = [] if "--no-daemon" in typed else ["--no-daemon"]
-        if not typed & {"-s", "--sandbox", "--dangerously-bypass-approvals-and-sandbox"}:
+        if not nested and not typed & {"-s", "--sandbox", "--dangerously-bypass-approvals-and-sandbox"}:
             added += ["--sandbox", "danger-full-access"]
         return [command[0], *added, *command[1:]]
 

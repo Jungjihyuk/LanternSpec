@@ -133,11 +133,12 @@ The content of each rule is in its rules document template (`src/lanternspec/res
   - What a closed folder holds also sits in copies: the history in `.git`, index files. Unless hidden folders are closed too, closed notes can still be read.
   - `lantern.yaml` is a file the AI tool can edit. Unless it is locked, the tool could take a folder off the list and open it on the next run.
   - A listed folder that is not in the store stops the run. A misspelled name would otherwise leave that folder open without anyone noticing.
-  - The options a tool needs are decided by that tool's adapter file (`guarded_command`). Codex attaches to a shared server already running elsewhere and runs its commands there, so it is started without that server, and its own sandbox, on by default, is turned off. Claude Code · Antigravity start as typed.
+  - Each operating system's own sandbox is used. On macOS `sandbox-exec` refuses to open the closed parts; on Linux bubblewrap (`bwrap`) lays an empty folder nobody can open over each closed folder and a read-only copy over `lantern.yaml`. The sandbox is tried once before the start, and when it can't start the tool isn't started either and the reason is shown.
+  - The options a tool needs are decided by that tool's adapter file (`guarded_command`). Codex attaches to a shared server already running elsewhere and runs its commands there, so it is started without that server, and on macOS its own sandbox, on by default, is turned off. Claude Code · Antigravity start as typed.
 - **Limits:** an AI tool started without the guarded run, and going through other programs that are already running (a session in another terminal, a local service), are not stopped. Material that must never leave belongs somewhere the AI tool's account can't read.
 - **Turned down:**
   - **Leaving it to the AI tool's permission settings and its own sandbox.** Claude Code's sandbox holds only the commands it runs; its file tools are stopped by separate permission rules. Every tool has its own format, and some can only be set on a settings screen.
-  - **Using it together with the AI tool's own sandbox.** macOS can't put a sandbox inside another, so the tool's own sandbox has to be off during a guarded run. For a tool whose sandbox is on by default, like Codex, lantern turns it off when starting it.
+  - **Using it together with the AI tool's own sandbox.** macOS can't put a sandbox inside another, so on macOS the tool's own sandbox has to be off during a guarded run (Linux can nest them). For a tool whose sandbox is on by default, like Codex, lantern turns it off when starting it.
   - **Letting lantern's MCP server change the AI tool's settings.** If a tool the AI calls can change security settings, that is the hole.
 - **Source:** `src/lanternspec/learn/knowledge/access.py` (which folders are open), `src/lanternspec/tools/guard.py` (the guarded run)
 
