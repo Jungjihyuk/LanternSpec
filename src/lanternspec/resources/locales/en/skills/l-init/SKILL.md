@@ -86,9 +86,10 @@ lantern template show "<<file.tech_criteria>>"
   - No. Leave everything open
   - Yes. Pick the folders to close (`knowledge.deny`)
   - Open only a few. Pick the folders to open (`knowledge.allow`)
-- **(only when a folder is closed and this is macOS) Also stop the AI tool from opening those folders directly?** — offer the choices in these words. For 1, add to the closing message: "From now on, start the AI tool with `lantern guard -- <tool command>` (e.g. `lantern guard -- claude`)". Off macOS, don't ask; say in one line: "Stopping the AI tool from opening them directly works on macOS only for now."
-  - Stop it. From now on start with `lantern guard -- claude` instead of `claude`. Claude Code's own sandbox has to be off
-  - Don't stop it. Only lantern's search · read skip the closed folders
+- **(only when a folder is closed and this is macOS) Also stop the AI from reading the closed folders (<folder names>) by opening the files itself?** — say how things stand first, in the question: "With the settings so far, LanternSpec only skips those folders when it looks through your notes. The AI can still read them by opening the files itself." Offer the choices in these words, with the command of the AI tool in use in place of `claude`. Off macOS, don't ask; say in one line: "Stopping the AI from opening the files itself works on macOS only for now."
+  - Stop it — start the AI tool by typing `lantern guard -- claude` instead of `claude`. The closed folders are blocked only while it runs that way. Started with `claude`, it runs as usual but nothing is blocked.
+  - Don't stop it — LanternSpec only skips the closed folders when it looks through your notes. The AI can read them by opening the files itself.
+  - For "Stop it", add to the closing message: "From now on, start with `lantern guard -- claude`. If Claude Code's sandbox setting is on, turn it off. The two can't be used together."
 
 **Choosing the branch flow** — **a command decides** the recommendation and the choices to offer (pass the answers to 1 · 2):
 ```bash
