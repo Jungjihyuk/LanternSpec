@@ -817,6 +817,7 @@
 "   closed: {items}": {ko: "   닫힘: {items}"}
 "   {profile_file} can't be changed in this session": {ko: "   이 세션에서는 {profile_file}을 고칠 수 없습니다"}
 "   Turn the tool's own sandbox off: macOS can't put a sandbox inside another": {ko: "   도구 자체의 샌드박스는 꺼 두세요: macOS는 샌드박스 안에 샌드박스를 걸 수 없습니다"}
+"   Options added to {command}: {options} (the OS sandbox guards instead of the tool's own sandbox and shared server)": {ko: "   {command}에 더한 옵션: {options} (도구 자체의 샌드박스 · 공유 서버 대신 OS 샌드박스가 막습니다)"}
 "Say which tool to start: lantern guard -- claude": {ko: "시작할 도구를 적으세요: lantern guard -- claude"}
 "lantern guard works on macOS only for now (it uses sandbox-exec)": {ko: "lantern guard는 지금은 macOS에서만 됩니다 (sandbox-exec를 씁니다)"}
 "Command not found: {command}": {ko: "명령을 찾지 못했습니다: {command}"}

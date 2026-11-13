@@ -10,12 +10,13 @@ Responsibilities:
 
 Not here:
     - which folders are open (knowledge.allow · knowledge.deny) → learn/knowledge/access.py
-    - what each AI tool's own settings look like → tools/<tool>.py
+    - the options a tool needs to run inside the sandbox → tools/<tool>.py (guarded_command)
 """
 
 from __future__ import annotations
 
 import os
+import shlex
 import shutil
 import sys
 from dataclasses import dataclass, field
@@ -146,12 +147,13 @@ def plan(project: Project) -> Guard:
     )
 
 
-def describe(guard: Guard, command: list[str]) -> list[str]:
+def describe(guard: Guard, command: list[str], started: list[str] | None = None) -> list[str]:
     """Say what a guarded run opens and closes, for the person starting it.
 
     Args:
         guard: What the run closes.
-        command: The tool's command line.
+        command: The tool's command line as typed.
+        started: The command line actually started, when the tool's adapter added options to it.
 
     Returns:
         Lines to print before the tool starts.
@@ -159,6 +161,8 @@ def describe(guard: Guard, command: list[str]) -> list[str]:
     Example:
         >>> describe(Guard(Path("/v"), closed=(Path("/v/4. Work"),)), ["claude"])[2]
         '   닫힘: 4. Work'
+        >>> describe(Guard(Path("/v")), ["codex"], ["codex", "--no-daemon"])[-1]
+        '   codex에 더한 옵션: --no-daemon (도구 자체의 샌드박스 · 공유 서버 대신 OS 샌드박스가 막습니다)'
     """
 
     def names(paths: tuple[Path, ...]) -> str:
@@ -166,13 +170,42 @@ def describe(guard: Guard, command: list[str]) -> list[str]:
 
     rest = msg("everything else")
     closed = " · ".join(x for x in (names(guard.closed), rest if guard.allow else "") if x)
+    added = [arg for arg in (started or command)[1:] if arg not in command[1:]]
     return [
         msg("🔒 {command} starts inside the OS sandbox — knowledge store {vault}", command=command[0], vault=guard.vault),
         msg("   open: {items}", items=names(guard.allow) if guard.allow else rest),
         msg("   closed: {items}", items=closed),
         msg("   {profile_file} can't be changed in this session", profile_file=PROFILE_FILE),
-        msg("   Turn the tool's own sandbox off: macOS can't put a sandbox inside another"),
+        msg(
+            "   Options added to {command}: {options} (the OS sandbox guards instead of the tool's own sandbox and shared server)",
+            command=command[0],
+            options=shlex.join(added),
+        )
+        if added
+        else msg("   Turn the tool's own sandbox off: macOS can't put a sandbox inside another"),
     ]
+
+
+def adapted(command: list[str]) -> list[str]:
+    """Let the AI tool the command starts adjust it for the sandbox; other commands run as typed.
+
+    Args:
+        command: The tool's command line, e.g. ["codex"].
+
+    Returns:
+        The command line to start.
+
+    Example:
+        >>> adapted(["codex"])
+        ['codex', '--no-daemon', '--sandbox', 'danger-full-access']
+        >>> adapted(["/bin/sh", "-c", "true"])
+        ['/bin/sh', '-c', 'true']
+    """
+    from . import REGISTRY
+
+    name = Path(command[0]).name
+    tool = next((t for t in REGISTRY.values() if t.launch == name), None)
+    return tool.guarded_command(command) if tool else command
 
 
 def run(project: Project, command: list[str]) -> int:
@@ -198,6 +231,7 @@ def run(project: Project, command: list[str]) -> int:
     if not shutil.which(command[0]):
         raise GuardError(msg("Command not found: {command}", command=command[0]))
     guard = plan(project)
-    print("\n".join(describe(guard, command)), file=sys.stderr)
+    started = adapted(command)
+    print("\n".join(describe(guard, command, started)), file=sys.stderr)
     sys.stderr.flush()
-    os.execvp(SANDBOX, [SANDBOX, "-p", sandbox_profile(guard), *command])
+    os.execvp(SANDBOX, [SANDBOX, "-p", sandbox_profile(guard), *started])

@@ -133,7 +133,7 @@ class Tool:
 
     Shared code knows only this class; each tool overrides what its format needs.
     Methods with a default (skill_meta, skill_extras, install_config, check_config, hooks, written_paths,
-    read_transcript, worktree_command) are overridden only by tools that need them.
+    read_transcript, worktree_command, guarded_command) are overridden only by tools that need them.
 
     Attributes:
         name: Key used on the command line and in installed.json, e.g. "claude".
@@ -299,6 +299,26 @@ class Tool:
             "claude '/l-build W-012'"
         """
         return shlex.join([self.launch, f"{self.command_prefix}l-build {work_id}"])
+
+    def guarded_command(self, command: list[str]) -> list[str]:
+        """Adjust the tool's command line for a run inside `lantern guard`'s OS sandbox.
+
+        The guard's sandbox already holds the whole process, so a tool whose own sandbox is on by
+        default (macOS can't nest them) or that hands work to a server started outside it adds the
+        options that turn those off. Nothing changes by default.
+
+        Args:
+            command: The command line as typed, starting with this tool's launch command.
+
+        Returns:
+            The command line to start.
+
+        Example:
+            >>> from lanternspec.tools import get
+            >>> get("claude").guarded_command(["claude", "--resume"])
+            ['claude', '--resume']
+        """
+        return command
 
     def check_config(self, project: Project) -> list[tuple[str, str]]:
         """Check that the tool will actually read our rules in this project (for `lantern doctor`).

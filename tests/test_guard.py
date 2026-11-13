@@ -119,3 +119,15 @@ def test_guarded_tool_opens_only_allowed_folders_and_lantern_still_searches(repo
     assert _guarded(repo, f"ls '{store}'").returncode != 0  # the store root itself is closed
     r = _guarded(repo, "lantern knowledge search JWT --json")  # lantern, started by the tool, walks from the open folders
     assert r.returncode == 0 and "2. Study/Backend/JWT.md" in r.stdout and "RAG" not in r.stdout and "앱" not in r.stdout
+
+
+def test_codex_starts_without_its_shared_server_and_own_sandbox():
+    assert guard.adapted(["codex", "resume"]) == ["codex", "--no-daemon", "--sandbox", "danger-full-access", "resume"]
+    assert guard.adapted(["/opt/homebrew/bin/codex", "--sandbox=read-only", "--no-daemon"]) == [
+        "/opt/homebrew/bin/codex",
+        "--sandbox=read-only",
+        "--no-daemon",
+    ]  # options already typed are kept, never doubled
+    assert guard.adapted(["claude"]) == ["claude"] and guard.adapted(["agy", "-c"]) == ["agy", "-c"]
+    lines = "\n".join(guard.describe(guard.Guard(guard.Path("/v")), ["codex"], guard.adapted(["codex"])))
+    assert "--no-daemon --sandbox danger-full-access" in lines and "꺼 두세요" not in lines

@@ -246,7 +246,7 @@ AI가 쓴 기술 중 모르는 것은 내 지식 저장소의 노트와 비교�
 
 어느 저장소든 찾기 · 읽기 · 제안 · 쓰기 네 가지로 다룬다. CLI(`lantern knowledge …`)와 MCP 서버(`lantern mcp`)가 같은 기능을 쓴다.
 
-저장소에서 AI가 열면 안 되는 폴더는 `lantern.yaml`의 `knowledge.deny`에 적는다 (반대로 `knowledge.allow`에 적으면 그 폴더만 열린다). lantern은 닫힌 폴더를 찾지도 읽지도 않는다. AI 도구가 직접 여는 것까지 막으려면 `lantern guard -- claude`로 켠다 — 운영체제 샌드박스 안에서 도구를 시작한다 (macOS, 도구 자체의 샌드박스는 꺼야 한다).
+저장소에서 AI가 열면 안 되는 폴더는 `lantern.yaml`의 `knowledge.deny`에 적는다 (반대로 `knowledge.allow`에 적으면 그 폴더만 열린다). lantern은 닫힌 폴더를 찾지도 읽지도 않는다. AI 도구가 직접 여는 것까지 막으려면 `lantern guard -- claude`로 켠다 — 운영체제 샌드박스 안에서 도구를 시작한다 (macOS, `claude` · `codex` · `agy` 모두 된다. 도구 자체의 샌드박스는 꺼야 하고, Codex의 것은 lantern이 끄고 켠다).
 
 부채는 세 종류다.
 
