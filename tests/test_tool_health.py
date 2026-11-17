@@ -109,7 +109,7 @@ def test_bookkeeping_errors_never_break_the_hook(repo, monkeypatch):
 
 def test_doctor_shows_version_hook_runs_and_odd_payloads(repo, monkeypatch):
     project = Project.load(repo.root)
-    monkeypatch.setattr(health, "installed_version", lambda tool: {"claude": "2.1.400", "codex": None}[tool.name])
+    monkeypatch.setattr(health, "installed_version", lambda tool, timeout=10: {"claude": "2.1.400", "codex": None}[tool.name])
     for _ in range(3):
         _hook(project, "claude", "session-start", {"session_id": "s1"})
     _hook(project, "claude", "post-tool", {"session_id": "s1"})

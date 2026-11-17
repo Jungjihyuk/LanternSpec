@@ -1,8 +1,10 @@
 """Run log `.lantern/runs.jsonl` — the raw material for the AI work evaluation (`lantern eval`).
 
-Two writers, one format:
-* agent hooks: per turn — start · end · model · skill · tool counts
-* `lantern close <skill>`: tools without agent hooks still leave one line per skill run
+Writers, one format, one line per `kind`:
+* agent hooks, `session`: once per conversation — the tool and its version, LanternSpec's version, the settings repository's commit
+* agent hooks, `turn`: per turn — start · end · model · skill · tool counts · tokens
+* `lantern close <skill>`, `skill`: tools without agent hooks still leave one line per skill run
+* the build loop, `attempt`: one line per try at one acceptance criterion
 
 Per-session state between hook calls lives in `.lantern/runs-state/`.
 
@@ -60,23 +62,29 @@ def _save(project: Project, session: str, data: dict[str, Any]) -> None:
     p.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
 
 
-def session_start(project: Project, session: str, model: str | None, source: str = "") -> None:
-    """Remember the model and how the session started.
+def session_start(project: Project, session: str, model: str | None, source: str = "", harness: dict[str, str] | None = None) -> None:
+    """Remember the model and how the session started, and log the setup the session runs with.
 
     Args:
         project: The project.
         session: The conversation.
         model: The model, when the tool sent it.
         source: "startup", "resume" or "compact".
+        harness: The setup (tool, versions, settings commit) to log as a `session` line; None logs nothing,
+            e.g. after compaction, when it is the same session.
 
     Example:
-        >>> session_start(project, "s1", "claude-opus-5-5", "startup")  # doctest: +SKIP
+        >>> session_start(project, "s1", "claude-opus-5-5", "startup", {"harness": "claude"})  # doctest: +SKIP
     """
     data = _load(project, session)
     if model:
         data["model"] = model
     data["source"] = source
     _save(project, session, data)
+    if harness is not None:
+        append(
+            project, {"kind": "session", "source": "hook", "session": session, "start": now_iso(), "model": data.get("model"), **harness}
+        )
 
 
 def prompt(project: Project, session: str, text: str) -> None:
@@ -124,13 +132,14 @@ def tool(project: Project, session: str, tool_name: str, tool_input: dict | None
     _save(project, session, data)
 
 
-def stop(project: Project, session: str, model: str | None = None) -> dict[str, Any] | None:
+def stop(project: Project, session: str, model: str | None = None, tokens: dict[str, int] | None = None) -> dict[str, Any] | None:
     """Write the turn's record and start the next turn fresh (the model is kept).
 
     Args:
         project: The project.
         session: The conversation.
         model: The model, when the tool sent it now.
+        tokens: What the turn spent (`Tool.turn_tokens`); left out of the record when the tool doesn't say.
 
     Returns:
         The record; None when nothing happened in the turn.
@@ -155,9 +164,59 @@ def stop(project: Project, session: str, model: str | None = None) -> dict[str, 
         "tools": data.get("tools") or {},
         "tool_calls": sum((data.get("tools") or {}).values()),
     }
+    if tokens:
+        record["tokens"] = tokens
     append(project, record)
     # next turn starts fresh; the model is kept for the session
     _save(project, session, {"session": session, "start": None, "model": data.get("model"), "skill": None, "tools": {}})
+    return record
+
+
+def loop_attempt(
+    project: Project,
+    run: str,
+    task: str,
+    ac: str,
+    attempt: int,
+    result: str,
+    failed_check: str = "",
+    understood: bool | None = None,
+    work: str = "",
+) -> dict[str, Any]:
+    """Write one attempt line: one try at one acceptance criterion in a build loop.
+
+    Args:
+        project: The project.
+        run: The loop run it belongs to.
+        task: The task being built.
+        ac: The acceptance criterion tried.
+        attempt: Which try this is, from 1.
+        result: How it ended.
+        failed_check: What failed, when it did not pass.
+        understood: Whether the person said they understood the plan; None when it was not asked.
+        work: The work the task belongs to.
+
+    Returns:
+        The record.
+
+    Example:
+        >>> loop_attempt(project, "r1", "T-3", "AC-2", 1, "통과")["kind"]  # doctest: +SKIP
+        'attempt'
+    """
+    record = {
+        "kind": "attempt",
+        "source": "build",
+        "at": now_iso(),
+        "run": run,
+        "work": work,
+        "task": task,
+        "ac": ac,
+        "attempt": attempt,
+        "result": result,
+        "failed_check": failed_check,
+        "understood": understood,
+    }
+    append(project, record)
     return record
 
 

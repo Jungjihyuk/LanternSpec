@@ -21,6 +21,15 @@ def _korean_messages():
 
 
 @pytest.fixture(autouse=True)
+def _no_tool_version_lookup(monkeypatch):
+    """Session-start hooks log the tool's version; tests neither run the developer's `claude --version` nor read their settings folder."""
+    from lanternspec.tools import health
+
+    monkeypatch.setattr(health, "installed_version", lambda tool, timeout=10: None)
+    monkeypatch.delenv("LANTERN_HARNESS_CONFIG", raising=False)
+
+
+@pytest.fixture(autouse=True)
 def _isolated_git(monkeypatch, tmp_path_factory):
     """Tests never read the developer's git config (hooksPath, signing …)."""
     home = tmp_path_factory.mktemp("home")

@@ -78,11 +78,12 @@ def version_verdict(tool: Tool, version: str) -> str:
     return "ok"
 
 
-def installed_version(tool: Tool) -> str | None:
+def installed_version(tool: Tool, timeout: float = 10) -> str | None:
     """Ask the installed tool for its version (`<launch> --version`).
 
     Args:
         tool: The tool adapter.
+        timeout: Seconds to wait for the answer (a hook asks with a shorter time than its own limit).
 
     Returns:
         The version text, "" when the command runs but prints no version, None when the command is missing.
@@ -94,7 +95,7 @@ def installed_version(tool: Tool) -> str | None:
     if not shutil.which(tool.launch):
         return None
     try:
-        r = subprocess.run([tool.launch, "--version"], capture_output=True, text=True, timeout=10)
+        r = subprocess.run([tool.launch, "--version"], capture_output=True, text=True, timeout=timeout)
     except (OSError, subprocess.TimeoutExpired):
         return ""
     found = parse_version(r.stdout + r.stderr)

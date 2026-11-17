@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any
 
 from ..core.messages import msg
 from ..core.project import Project, git_out, read, write
-from .base import MCP_NAME, HookInput, HookReply, Tool, Turn, jsonl_records, merge_json_file, replace_hook_entries
+from .base import MCP_NAME, HookInput, HookReply, Tool, Turn, as_count, jsonl_records, merge_json_file, replace_hook_entries
 from .claude import ClaudeHooks, hook_specific_output
 
 if TYPE_CHECKING:
@@ -151,6 +151,46 @@ class Codex(ClaudeHooks, Tool):
                 if not turns or turns[-1].role != "assistant" or not turns[-1].text:
                     turns.append(Turn("assistant", item["last_agent_message"].strip(), at=at))
         return turns
+
+    def turn_tokens(self, path: Path) -> dict[str, int] | None:
+        """Implement Tool.turn_tokens: how far the rollout's running total grew since the latest turn started.
+
+        Codex writes `token_count` events that carry the total of the whole session (the same total may repeat),
+        so the turn's tokens are the total now minus the total when `task_started` last fired. Its `input_tokens`
+        include the cached ones, which are taken out of input.
+
+        Args:
+            path: The transcript file.
+
+        Returns:
+            Fresh input, cached input and output tokens; None when no total grew since the turn started.
+
+        Example:
+            >>> Codex().turn_tokens(Path("…/rollout-….jsonl"))  # doctest: +SKIP
+            {'input': 2000, 'cached': 3000, 'output': 210}
+        """
+        base: dict[str, Any] | None = None
+        total: dict[str, Any] | None = None
+        for d in jsonl_records(path):
+            item = d.get("payload")
+            item = item if isinstance(item, dict) else {}
+            if d.get("type") != "event_msg":
+                continue
+            if item.get("type") == "task_started":
+                base = total
+            elif item.get("type") == "token_count" and isinstance(item.get("info"), dict):
+                running = item["info"].get("total_token_usage")
+                total = running if isinstance(running, dict) else total
+        if total is None or total == base:  # the same total again is no new tokens
+            return None
+
+        now, before = total, base or {}
+
+        def grew(key: str) -> int:
+            return as_count(now.get(key)) - as_count(before.get(key))
+
+        cached = grew("cached_input_tokens")
+        return {"input": grew("input_tokens") - cached, "cached": cached, "output": grew("output_tokens")}
 
     def session_context_reply(self, text: str) -> HookReply:
         """Answer session-start in hookSpecificOutput form (Codex does not take plain stdout as context).

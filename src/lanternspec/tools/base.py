@@ -133,7 +133,7 @@ class Tool:
 
     Shared code knows only this class; each tool overrides what its format needs.
     Methods with a default (skill_meta, skill_extras, install_config, check_config, hooks, written_paths,
-    read_transcript, worktree_command, guarded_command) are overridden only by tools that need them.
+    read_transcript, turn_tokens, worktree_command, guarded_command) are overridden only by tools that need them.
 
     Attributes:
         name: Key used on the command line and in installed.json, e.g. "claude".
@@ -425,6 +425,22 @@ class Tool:
         """
         return None
 
+    def turn_tokens(self, path: Path) -> dict[str, int] | None:
+        """Count the tokens the latest turn of a transcript spent.
+
+        Args:
+            path: The transcript file the tool named in its hook calls.
+
+        Returns:
+            `input` (not read from the cache), `cached` (read from the cache) and `output` tokens;
+            None when this tool's transcript doesn't say, or the turn has no answer yet.
+
+        Example:
+            >>> get("claude").turn_tokens(Path("…/s1.jsonl"))  # doctest: +SKIP
+            {'input': 330, 'cached': 4500, 'output': 150}
+        """
+        return None
+
     def respond(self, project: Project, event: str, result: HookResult) -> HookReply:
         """Write a hook result back in the form the tool accepts. Must work for any result, even an empty one.
 
@@ -533,6 +549,22 @@ def hook_state_dir(project: Project) -> Path:
     p = project.state / "hook-state"
     p.mkdir(parents=True, exist_ok=True)
     return p
+
+
+def as_count(value: Any) -> int:
+    """Read a number a transcript holds (it is not checked input), 0 when it is not one.
+
+    Args:
+        value: A token count as the transcript wrote it.
+
+    Returns:
+        The whole number.
+
+    Example:
+        >>> as_count(12), as_count(None), as_count("many")
+        (12, 0, 0)
+    """
+    return int(value) if isinstance(value, int | float) and not isinstance(value, bool) else 0
 
 
 def jsonl_records(path: Path) -> list[dict[str, Any]]:

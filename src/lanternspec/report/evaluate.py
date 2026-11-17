@@ -2,7 +2,7 @@
 
 Reads `.lantern/runs.jsonl` (turn records from agent hooks, skill records from `lantern close`)
 and the work folders, then compares configurations (model · skill · profile settings) by
-cost (duration, tool calls) and outcome (check errors left at close, tasks done, size estimates).
+cost (duration, tool calls, tokens) and outcome (check errors left at close, tasks done, size estimates).
 
 Not here:
     - writing the run log → tools/runlog.py
@@ -130,7 +130,7 @@ def summary(project: Project) -> dict[str, Any]:
         project: The project.
 
     Returns:
-        turns, skill_runs, by_skill and by_model (count, median minutes, average tool calls),
+        turns, skill_runs, by_skill and by_model (count, median minutes, average tool calls, average tokens: fresh input plus output),
         close_quality and by_config (count, percent closed without errors, average warnings),
         and task_hours (size → count and median hours).
 
@@ -158,10 +158,15 @@ def summary(project: Project) -> dict[str, Any]:
     def agg(items: list[dict[str, Any]]) -> dict[str, Any]:
         mins = [m for m in (_minutes(r) for r in items) if m is not None]
         calls = [int(r.get("tool_calls") or 0) for r in items]
+        # turns written before tokens were logged have none: they stay out of the average instead of counting as zero
+        spent = [
+            int(r["tokens"].get("input") or 0) + int(r["tokens"].get("output") or 0) for r in items if isinstance(r.get("tokens"), dict)
+        ]
         return {
             "n": len(items),
             "median_min": round(median(mins), 1) if mins else None,
             "avg_tools": round(float(mean(calls)), 1) if calls else None,
+            "avg_tokens": round(mean(spent)) if spent else None,
         }
 
     def quality(items: list[dict[str, Any]]) -> dict[str, Any]:
@@ -213,13 +218,13 @@ def markdown(project: Project) -> str:
 
     table(
         msg("Cost by skill"),
-        (msg("Skill"), msg("Turns"), msg("Median time (min)"), msg("Avg tool calls")),
-        [(k, v["n"], v["median_min"], v["avg_tools"]) for k, v in s["by_skill"].items()],
+        (msg("Skill"), msg("Turns"), msg("Median time (min)"), msg("Avg tool calls"), msg("Avg tokens")),
+        [(k, v["n"], v["median_min"], v["avg_tools"], v["avg_tokens"]) for k, v in s["by_skill"].items()],
     )
     table(
         msg("Cost by model"),
-        (msg("Model"), msg("Turns"), msg("Median time (min)"), msg("Avg tool calls")),
-        [(k, v["n"], v["median_min"], v["avg_tools"]) for k, v in s["by_model"].items()],
+        (msg("Model"), msg("Turns"), msg("Median time (min)"), msg("Avg tool calls"), msg("Avg tokens")),
+        [(k, v["n"], v["median_min"], v["avg_tools"], v["avg_tokens"]) for k, v in s["by_model"].items()],
     )
     table(
         msg("Wrap-up quality (format check at close)"),

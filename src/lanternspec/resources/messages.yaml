@@ -408,6 +408,7 @@
 "Turns": {ko: "턴"}
 "Median time (min)": {ko: "중간 시간(분)"}
 "Avg tool calls": {ko: "평균 도구 호출"}
+"Avg tokens": {ko: "평균 토큰"}
 "Model": {ko: "모델"}
 "Runs": {ko: "실행"}
 "Finished without errors (%)": {ko: "오류 없이 끝낸 비율(%)"}

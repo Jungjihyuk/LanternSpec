@@ -3,13 +3,14 @@
 What each hook does, for every tool alike (a tool adapter only reads its payload and writes the answer):
 
 session-start  put the three-line status into the conversation (right after compaction, also the saved progress)
+               log the setup the session runs with (run log)
 prompt         which skill started the turn (run log) · tech-question detection · idea detection
 pre-tool       (Codex) before the first edit in a part, hand over that part's AGENTS.md
 post-tool      check the format as soon as a docs/ document is written → fix it on the spot if broken
                (tools without pre-tool) hand over a part's AGENTS.md after its first edit
                count tool calls (run log)
 feedback       (Antigravity) deliver the document-check result that post-tool could not say right away
-stop           one run-log line per finished answer
+stop           one run-log line per finished answer (with the tokens it spent, when the tool's transcript says)
                suggest /l-sync when code changed but the work documents did not (once per work item, never forced)
 pre-compact    save progress into "지금 상황" of `기록.md` (or the session document) before compaction; session-start puts it back
 
@@ -21,15 +22,19 @@ and in the conversation record (tools/sessions.py), so `lantern resume` can carr
 from __future__ import annotations
 
 import json
+import os
 import re
 from collections.abc import Callable
 from pathlib import Path
 
+from .. import __version__
 from ..core.messages import msg
-from ..core.project import Project, read
+from ..core.project import Project, git_out, read
 from . import health, runlog, sessions
 from .base import HookInput, HookReply, HookResult, Tool, hook_state_dir
 
+HARNESS_CONFIG_ENV = "LANTERN_HARNESS_CONFIG"  # the folder of the person's own AI tool settings, when it is a git repository
+VERSION_TIMEOUT = 3  # seconds a hook waits for the tool's version, well within the hook's own limit
 STRUCTURE_CODES = {"frontmatter", "common-fields", "enum", "broken-link", "dup-id", "task-dup", "task-cycle", "template-structure"}
 
 
@@ -86,7 +91,8 @@ def session_start(project: Project, tool: Tool, inp: HookInput) -> HookResult:
         >>> session_start(project, tool, HookInput(source="startup")).context.splitlines()[0]  # doctest: +SKIP
         '[LanternSpec 지금 상황]'
     """
-    runlog.session_start(project, inp.session, inp.model or None, inp.source)
+    harness = None if inp.source == "compact" else harness_fields(tool)  # after compaction it is the same session
+    runlog.session_start(project, inp.session, inp.model or None, inp.source, harness)
     if not project.profile.exists:
         return HookResult(context=msg("[LanternSpec] The project isn't set up yet — start with /l-init."))
     from ..report.status import lines
@@ -103,6 +109,41 @@ def session_start(project: Project, tool: Tool, inp: HookInput) -> HookResult:
         out += _domain_read(project)
     out += _outside_must_rules(project)
     return HookResult(context="\n".join(out))
+
+
+def harness_fields(tool: Tool) -> dict[str, str]:
+    """Collect the setup a session runs with, for the run log.
+
+    The settings commit comes from the folder named by the `LANTERN_HARNESS_CONFIG` environment variable: the
+    person's own AI tool settings differ from person to person, so no project file holds the folder.
+
+    Args:
+        tool: The tool that called.
+
+    Returns:
+        The tool's name, its installed version, LanternSpec's version and the settings repository's commit;
+        a part that can't be found is "".
+
+    Example:
+        >>> harness_fields(get("claude"))["harness"]  # doctest: +SKIP
+        'claude'
+    """
+    raw = os.environ.get(HARNESS_CONFIG_ENV, "").strip()
+    folder = Path(raw).expanduser() if raw else None
+    return {
+        "harness": tool.name,
+        "harness_version": health.installed_version(tool, timeout=VERSION_TIMEOUT) or "",
+        "lanternspec_version": __version__,
+        "harness_config": _commit_of(folder),
+    }
+
+
+def _commit_of(folder: Path | None) -> str:
+    """The commit a folder is at; "" when there is no folder, it is not a repository, or git can't run (the status line must still come)."""
+    try:
+        return git_out(["rev-parse", "HEAD"], folder) if folder and folder.is_dir() else ""
+    except OSError:
+        return ""
 
 
 def _outside_must_rules(project: Project) -> list[str]:
@@ -511,7 +552,11 @@ def stop(project: Project, tool: Tool, inp: HookInput) -> HookResult:
         >>> stop(project, tool, HookInput(session="s1")).notice  # doctest: +SKIP
         ''
     """
-    runlog.stop(project, inp.session, model=inp.model or None)
+    try:
+        tokens = tool.turn_tokens(Path(inp.transcript)) if inp.transcript else None
+    except OSError:  # an unreadable transcript only leaves the tokens out
+        tokens = None
+    runlog.stop(project, inp.session, model=inp.model or None, tokens=tokens)
     return HookResult(notice=sync_nudge(project, inp.session) if inp.finished else "")
 
 

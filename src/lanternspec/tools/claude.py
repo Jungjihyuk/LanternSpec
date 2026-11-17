@@ -24,6 +24,7 @@ from .base import (
     HookResult,
     Tool,
     Turn,
+    as_count,
     jsonl_records,
     merge_json_file,
     replace_hook_entries,
@@ -307,6 +308,37 @@ class ClaudeCode(ClaudeHooks, Tool):
             )
         return turns
 
+    def turn_tokens(self, path: Path) -> dict[str, int] | None:
+        """Implement Tool.turn_tokens: add up `usage` of the answers written since the user's last message.
+
+        Claude Code writes one response as several lines that share a message id and a `usage`, so each
+        id counts once. Sub-agent lines are left out; their tokens are recorded on their own.
+
+        Args:
+            path: The transcript file.
+
+        Returns:
+            Fresh input (input plus cache writes), cached input and output tokens; None when no answer follows the last message.
+
+        Example:
+            >>> ClaudeCode().turn_tokens(Path("…/s1.jsonl"))  # doctest: +SKIP
+            {'input': 330, 'cached': 4500, 'output': 150}
+        """
+        records = jsonl_records(path)
+        start = max((i for i, d in enumerate(records) if _is_prompt(d)), default=-1)
+        usages: dict[str, dict[str, Any]] = {}
+        for i, d in enumerate(records[start + 1 :]):
+            message, usage = d.get("message"), _dict(_dict(d.get("message")).get("usage"))
+            if d.get("type") == "assistant" and not d.get("isSidechain") and isinstance(message, dict) and usage:
+                usages[str(message.get("id") or f"line-{i}")] = usage
+        if not usages:
+            return None
+        return {
+            "input": sum(as_count(u.get("input_tokens")) + as_count(u.get("cache_creation_input_tokens")) for u in usages.values()),
+            "cached": sum(as_count(u.get("cache_read_input_tokens")) for u in usages.values()),
+            "output": sum(as_count(u.get("output_tokens")) for u in usages.values()),
+        }
+
     def check_config(self, project: Project) -> list[tuple[str, str]]:
         """Implement Tool.check_config: does Claude Code read the root and the nested AGENTS.md?
 
@@ -444,6 +476,17 @@ def model_from_transcript(path: str) -> str:
         if entry.get("type") == "assistant" and isinstance(msg, dict) and msg.get("model"):
             return str(msg["model"])
     return ""
+
+
+def _is_prompt(record: dict[str, Any]) -> bool:
+    """Whether a transcript line is something the user wrote (not a tool result, a skill's text or a compaction summary)."""
+    message = record.get("message")
+    if record.get("type") != "user" or record.get("isSidechain") or record.get("isMeta") or record.get("isCompactSummary"):
+        return False
+    content = message.get("content") if isinstance(message, dict) else None
+    if isinstance(content, str):
+        return bool(content.strip())
+    return isinstance(content, list) and any(isinstance(b, dict) and b.get("type") == "text" for b in content)
 
 
 def _dict(value: Any) -> dict[str, Any]:
