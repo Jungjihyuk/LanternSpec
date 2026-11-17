@@ -28,6 +28,14 @@ The content of a rule (its tables and numbers) is written once, in the rules doc
 - **Why:** as features grow, the flow easily gets tied to one tool or add-on. Deciding the layer first gives a test for whether a new feature would block the flow.
 - **Source:** "Core flow and add-ons" in [`AGENTS.md`](AGENTS.md)
 
+### What we build and what we leave to other tools
+- **Decided:** LanternSpec builds only the features whose source is LanternSpec's own documents, and connects to other tools for the rest. For example, the document-code drift check is built in, while isolated execution, handing work out to several agents, and a screen for watching agents are left to other tools.
+- **Why:** LanternSpec's value is that the documents are the reference. Adding an execution engine or a monitoring screen does not make that value grow, and those areas are changing fast in the hands of large teams, so a one-person project following them only adds upkeep. On the other hand only LanternSpec knows the specs, so checks that come from the specs cannot be left to another tool.
+- **Turned down:**
+  - **Putting every needed feature inside:** fewer tools to install, but the bigger the feature set, the more the overall structure shakes. Lantern Harness, built earlier, went this way, its structure shook, and it ended up unused.
+  - **Making only the documents and leaving every check to other tools:** other tools do not know LanternSpec's specs, so the drift check and acceptance criteria checks cannot be handed over.
+- **Source:** "Core flow and add-ons" in [`AGENTS.md`](AGENTS.md)
+
 ### Design approval
 - **Decided:** a person approves the design before building.
 - **Why:** AI writes a lot of code quickly in the wrong direction too. Stopping at the design is far cheaper than turning around after the code is written.
