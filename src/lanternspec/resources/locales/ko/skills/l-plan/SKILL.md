@@ -91,6 +91,10 @@ lantern check --epic W-012
 <!-- lantern:endif -->
 
 ## 공통 마무리
+기획을 마치며 사람에게 한 번 묻는다: `이 기획을 이해하고 따라왔나요? → [이해하고 진행] / [맡기고 진행]`. 맡기고 진행해도 멈추지 않는다 — 표시만 남기고, 설계 승인을 묻는 경우에는 그때 다시 묻는다. 고른 대로 기록한다 (닫기 전에):
+```bash
+lantern plan understand W-012 --understood     # 또는 --delegated
+```
 ```bash
 lantern close l-plan --work W-012 --commit
 ```

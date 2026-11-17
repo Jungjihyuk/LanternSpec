@@ -91,6 +91,10 @@ When the plan mentions technical terms, pick candidates: with `lantern debt find
 <!-- lantern:endif -->
 
 ## Common wrap-up
+When planning ends, ask the person once: `Did you follow this plan? → [Go ahead, I follow it] / [Go ahead, handing it over]`. Handing it over doesn't stop anything — it only leaves a mark, and the design approval asks again whenever it asks at all. Record the choice (before closing):
+```bash
+lantern plan understand W-012 --understood     # or --delegated
+```
 ```bash
 lantern close l-plan --work W-012 --commit
 ```

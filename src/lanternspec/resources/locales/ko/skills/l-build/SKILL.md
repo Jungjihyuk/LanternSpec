@@ -166,6 +166,7 @@ lantern scaffold idea "<짧은 제목>" --kind <유형> --raw "W-012 구현 중 
    ```
    문서를 커밋한 뒤 사람에게 `/l-pr`을 실행하라고 안내한다.
 <!-- lantern:endif -->
+   `archive`가 🧠 이해 부채 카드를 만들었다고 알리면 마지막 보고에 한 줄로 적는다 (이해하지 않은 채 자율 구현한 작업이다).
    **충돌이 나면:** 자동 생성 문서만 충돌하면 `finish`가 알아서 처리한다. 다른 파일이 함께 충돌해 멈추면 안내대로 작업 브랜치에서 `git merge <기준 브랜치>`를 실행하고 파일마다 처리한다:
    - **자동 생성 문서**(`<<file.moc>>` · `<<file.report>>` · `<<folder.past_reports>>` · `<<file.debt_status>>`): `git checkout --theirs -- <파일>`로 기준 브랜치 쪽을 받는다. 아래 4번에서 다시 만든다.
    - **`<<folder.current>>`의 글 문서:** 양쪽 사실을 **모두** 남긴다. 다른 작업이 적은 줄을 지우거나 한쪽 파일을 통째로 받지 않는다. frontmatter는 `updated`를 늦은 날로, `code`를 합친 목록으로 하고, `checked_commit`은 합친 커밋 뒤에 다시 적는다. 같은 사실이 서로 다르면 합쳐진 코드에서 맞는 쪽을 확인하고, 코드로 알 수 없으면 `git merge --abort` 후 사람에게 묻는다.

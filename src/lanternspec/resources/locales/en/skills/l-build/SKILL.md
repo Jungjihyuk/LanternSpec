@@ -166,6 +166,7 @@ Otherwise, when it says every task is done:
    ```
    After committing the documents, tell the person to run `/l-pr`.
 <!-- lantern:endif -->
+   If `archive` says it made a 🧠 understanding-debt card, mention it in one line in the final report (the work was built by an automatic loop without being understood).
    **On a conflict:** when only generated documents conflict, `finish` handles it. When it stops because other files conflict too, run `git merge <base branch>` on the work branch as it says, and handle each file:
    - **Generated documents** (`<<file.moc>>` · `<<file.report>>` · `<<folder.past_reports>>` · `<<file.debt_status>>`): take the base branch's side with `git checkout --theirs -- <file>`. Step 4 below rebuilds them.
    - **Written documents in `<<folder.current>>`:** keep the facts from **both** sides. Don't delete a line another work wrote or take one side's whole file. In the frontmatter, make `updated` the later date and `code` the combined list, and set `checked_commit` again after the merge commit. If the same fact differs between sides, check which is right in the merged code; if the code can't tell, `git merge --abort` and ask the person.

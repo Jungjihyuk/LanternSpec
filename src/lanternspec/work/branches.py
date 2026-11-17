@@ -1168,6 +1168,8 @@ def archive(project: Project, work_id: str, now: bool = False) -> list[str]:
 
     While a work running in another worktree links to it, the folder only gets marked done and
     stays: it is archived with that work's /l-finish, or with `now` (rewriting that work's links here).
+    A work the person handed over without following it, and an automatic loop built, leaves an
+    understanding-debt card here, before its links move.
 
     Args:
         project: The project.
@@ -1175,7 +1177,7 @@ def archive(project: Project, work_id: str, now: bool = False) -> list[str]:
         now: Archive even while running works link to it.
 
     Returns:
-        Messages saying where the work went or why it waits.
+        Messages saying where the work went or why it waits, and the debt card made.
 
     Raises:
         WorkError: The work is not in progress.
@@ -1191,9 +1193,29 @@ def archive(project: Project, work_id: str, now: bool = False) -> list[str]:
         p = project.doc_path(folder, role)
         if p.exists():
             write(p, frontmatter.set_fields(read(p), {"status": project.enums.value("work_status", "done")}))
+    from ..learn.debt import understanding_debt
+
+    try:
+        card = understanding_debt(project, work_id)
+        problem = ""
+    except (OSError, ValueError, LookupError) as e:  # the debt ledger is optional: a broken card never stops the archive
+        card, problem = None, str(e)
+    notes = (
+        [
+            msg(
+                "{icon} Understanding-debt card {rel} — pay it back at /l-finish",
+                icon=project.enums.icon("debt_kind", "understanding"),
+                rel=project.rel(card),
+            )
+        ]
+        if card
+        else []
+    )
+    if problem:
+        notes.append(msg("⚠ Couldn't make the understanding-debt card: {problem}", problem=problem))
     waits = [] if now else archive_waits_for(project, work_id)
     if waits:
-        return [
+        return notes + [
             msg(
                 "⏸ {wid} stays until {works} finish, since their documents link to it — "
                 "the next /l-finish archives it, or now: lantern work archive {wid} --now",
@@ -1208,7 +1230,7 @@ def archive(project: Project, work_id: str, now: bool = False) -> list[str]:
     new_rel = project.docs_rel(dest_parent) + "/" + nfc(folder.name)
     shutil.move(str(folder), str(dest))
     rewrite_links(project, old_rel, new_rel)
-    return [msg("✔ Archived: {rel}", rel=project.rel(dest))]
+    return notes + [msg("✔ Archived: {rel}", rel=project.rel(dest))]
 
 
 def _link_patterns(old_rel: str) -> tuple[re.Pattern[str], re.Pattern[str]]:

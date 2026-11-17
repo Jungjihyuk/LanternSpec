@@ -361,6 +361,36 @@ def new_card(
     return dest
 
 
+def understanding_debt(project: Project, work_id: str) -> Path | None:
+    """Make the understanding-debt card of a work the person handed over and an automatic loop built.
+
+    Only a work marked as not understood, built while `build.loop` is on, in a project that keeps a debt
+    ledger, gets one; a work never gets a second card.
+
+    Args:
+        project: The project.
+        work_id: The work, e.g. "W-012".
+
+    Returns:
+        The new card; None when the work needs none (or already has it).
+
+    Example:
+        >>> understanding_debt(project, "W-012")  # doctest: +SKIP
+        PosixPath('…/📒 부채/카드/D-007 W-012 카카오 로그인.md')
+    """
+    from ..work import stages
+
+    folder = project.find_work(work_id)
+    if folder is None or not project.folder("debt").exists() or project.profile.get("build.loop") != "on":
+        return None
+    if stages.understood(project, work_id) is not False:
+        return None
+    try:
+        return new_card(project, folder.name, work=work_id, context=msg("Built automatically without being understood"))
+    except FileExistsError:
+        return None
+
+
 def _work_link(project: Project, work_id: str) -> str:
     folder = project.find_work(work_id)
     if folder is None:

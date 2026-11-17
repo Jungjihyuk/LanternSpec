@@ -1,4 +1,4 @@
-"""Work-line steps the skills record: work stage · design approval · unit-size log (`작업 단위 기록`).
+"""Work-line steps the skills record: work stage · design approval · understanding mark · unit-size log (`작업 단위 기록`).
 
 Not here:
     - task-level progress (start · done) → work/tasks.py
@@ -89,13 +89,19 @@ def work_stage(project: Project, work_id: str, stage: str) -> list[Path]:
     return changed
 
 
-def design_approve(project: Project, work_id: str, by: str) -> Path:
-    """Record that a work's design was approved (`approved: <date> <who>` in `설계.md`).
+UNDERSTOOD = "understood"  # frontmatter key of the understanding mark; its values are yes · no
+YES, NO = "yes", "no"
+
+
+def design_approve(project: Project, work_id: str, by: str, understood: bool | None = None) -> Path:
+    """Record that a work's design was approved (`approved: <date> <who>` in `설계.md`), and whether the person followed it.
 
     Args:
         project: The project.
         work_id: The work, e.g. "W-012".
         by: Who approved; may be empty.
+        understood: True for "approved and understood", False for "approved, handed over"; None when it was not asked
+            (a small design that passed on its own).
 
     Returns:
         The design document.
@@ -112,5 +118,62 @@ def design_approve(project: Project, work_id: str, by: str) -> Path:
     if p is None or not p.exists():
         raise ValueError(msg("{work_id} has no {file}", work_id=work_id, file=project.names.file("design")))
     value = f"{today()} {by}".strip()
-    write(p, frontmatter.set_fields(read(p), {"approved": value}))
+    updates = {"approved": value} if understood is None else {"approved": value, UNDERSTOOD: YES if understood else NO}
+    write(p, frontmatter.set_fields(read(p), updates))
     return p
+
+
+def plan_understand(project: Project, work_id: str, understood: bool) -> Path:
+    """Record in `기획.md` whether the person followed the plan (asked when planning ends).
+
+    Args:
+        project: The project.
+        work_id: The work, e.g. "W-012".
+        understood: True when the person followed the plan, False when they handed it over.
+
+    Returns:
+        The plan document.
+
+    Raises:
+        ValueError: The work is not in progress or has no `기획.md`.
+
+    Example:
+        >>> plan_understand(project, "W-012", True).name  # doctest: +SKIP
+        '기획.md'
+    """
+    folder = project.find_work(work_id, include_archive=False)
+    p = project.doc_path(folder, "plan") if folder else None
+    if p is None or not p.exists():
+        raise ValueError(msg("{work_id} has no {file}", work_id=work_id, file=project.names.file("plan")))
+    write(p, frontmatter.set_fields(read(p), {UNDERSTOOD: YES if understood else NO}))
+    return p
+
+
+def understood(project: Project, work_id: str) -> bool | None:
+    """Tell whether the person followed a work: the design's mark, else the plan's.
+
+    A small design that passes without asking carries no mark, so it follows the plan's; a design
+    asked about later has the last word.
+
+    Args:
+        project: The project.
+        work_id: The work, e.g. "W-012".
+
+    Returns:
+        True when followed, False when handed over, None when it was never asked (or the work is not found).
+
+    Example:
+        >>> understood(project, "W-012")  # doctest: +SKIP
+        False
+    """
+    folder = project.find_work(work_id)
+    if folder is None:
+        return None
+    for role in ("design", "plan"):
+        p = project.doc_path(folder, role)
+        value = frontmatter.parse(read(p)).meta.get(UNDERSTOOD) if p.exists() else None
+        if value in (True, YES):  # a hand-written bare yes is read as true by YAML
+            return True
+        if value in (False, NO):
+            return False
+    return None

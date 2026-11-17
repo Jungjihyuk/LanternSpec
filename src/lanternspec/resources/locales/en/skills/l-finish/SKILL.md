@@ -71,6 +71,7 @@ lantern scan
 lantern report
 ```
 - `archive` postpones a work that a still-running work links to (`⏸`). It gets archived with the `/l-finish` of that work, so just give the reason in the final report.
+- If `archive` says it made a 🧠 understanding-debt card (the work was built by an automatic loop without being understood), gather this batch's cards before the final report, show them and **let the person pick which to pay back.** For a picked card, walk the person through that work's `<<file.design>>` and `<<file.record>>`, and once they say they follow it, mark it resolved with `lantern debt resolve D-007`; the rest stay in the ledger. This never stops the wrap-up.
 - If a postponed work must be cleaned up first (the running work takes long), ask the person and archive it with `--now`. Tell them it can conflict on merge if the running work edits the same paragraph.
 
 Commit the documents in one go (list every merged work ID in the commit message).

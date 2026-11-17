@@ -40,6 +40,15 @@ The content of a rule (its tables and numbers) is written once, in the rules doc
 - **Decided:** a person approves the design before building.
 - **Why:** AI writes a lot of code quickly in the wrong direction too. Stopping at the design is far cheaper than turning around after the code is written.
 
+### Understanding mark
+- **Decided:** approval and understanding are different questions, so they are asked together but not as a new step: at the places that already ask (the end of planning, the design approval). The answer is kept in one document as `understood: yes · no`, and a work handed over without being followed leaves one understanding-debt card when an automatic loop finishes building it.
+- **Why:** a person may approve without following in order to move fast. Blocking that kills the speed; not recording it loses, later, the fact that this code was left wholly to the AI. A tag plus a debt lets speed and understanding be managed together.
+  - A small design that skips the approval isn't asked, so it follows the plan's mark.
+  - A technology known only in part inside a document stays with the debt cards, as before.
+- **Rejected alternatives:**
+  - Blocking the automatic loop without the mark. It stops a person who can't keep up from pushing ahead, which is against the purpose.
+  - Marking understanding per acceptance criterion. It is the most precise, but far too much to mark while planning.
+
 ## 2. Where documents live
 
 ### Why `2. Work` and `3. Current State` are separate

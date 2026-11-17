@@ -1110,6 +1110,15 @@
 
 # cli/work.py
 "✔ Recorded approval in {rel}": {ko: "✔ {rel} 승인 기록"}
+"✔ Recorded in {rel}": {ko: "✔ {rel}에 기록"}
+"Record whether the plan was followed": {ko: "기획을 이해하고 따라왔는지 기록"}
+"I followed it": {ko: "이해하고 따라왔다"}
+"I handed it over without following it": {ko: "이해 없이 맡겼다"}
+"Approved, and I followed the design": {ko: "이해하고 승인"}
+"Approved, handed over without following it": {ko: "이해 없이 맡기고 승인"}
+"{icon} Understanding-debt card {rel} — pay it back at /l-finish": {ko: "{icon} 이해 부채 카드 {rel} — /l-finish에서 갚으세요"}
+"⚠ Couldn't make the understanding-debt card: {problem}": {ko: "⚠ 이해 부채 카드를 만들지 못했습니다: {problem}"}
+"Built automatically without being understood": {ko: "이해하지 않은 채 자율 구현됨"}
 "{value} {score}% like the mockup (threshold {threshold:g}%)": {ko: "{value} 시안과 {score}% 비슷함 (기준 {threshold:g}%)"}
 "→ The automatic comparison is for reference — show them side by side and ask the person \"Does it match the mockup?\"": {ko: "→ 자동 비교는 참고용 — 나란히 보여 주고 사람에게 \"시안과 같나요?\"를 묻는다"}
 "Make folders · documents from templates": {ko: "템플릿으로 폴더 · 문서 만들기"}

@@ -71,16 +71,20 @@ List in `adr` **the existing decisions this design follows** as well (e.g. a pro
 The approval screen is a **3-line summary** + choices:
 ```
 🏗 Structure: …   🎨 Screens: …   🗄 Data: …   (⚠ hard to reverse: …)
-→ [Go ahead] / [Change something]
+→ [Go ahead, I follow it] / [Go ahead, handing it over] / [Change something]
 ```
 - `required`: always ask.
 - `auto`: for small designs **without** data changes or ADRs, don't ask; report in one line.
 - `off`: don't ask.
 - **With a data structure change or an ADR, always ask, whatever the setting.**
 
-Once approved (or passed by auto), record it:
+**Approval and understanding are different.** "I follow it" means the person followed the design; "handing it over" means they didn't, but go on and leave it to the AI. Handing it over doesn't stop anything — it only leaves a mark, and once an automatic loop has built the work, one understanding-debt card is made.
+
+Once approved, record the choice:
 ```bash
-lantern design approve W-012 --by "<who approved>"     # --by auto when passed by auto
+lantern design approve W-012 --by "<who approved>" --understood     # go ahead, I follow it
+lantern design approve W-012 --by "<who approved>" --delegated      # go ahead, handing it over
+lantern design approve W-012 --by auto                              # passed without asking — the plan's mark applies
 ```
 If told what to change, change it and show the summary again.
 

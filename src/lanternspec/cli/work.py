@@ -1,4 +1,4 @@
-"""Work-line commands: scaffold · idea · design · unit-log · task · work · pack · screen · dbml."""
+"""Work-line commands: scaffold · idea · plan · design · unit-log · task · work · pack · screen · dbml."""
 
 from __future__ import annotations
 
@@ -227,11 +227,21 @@ def cmd_task_add(a: argparse.Namespace) -> int:
 
 
 def cmd_design(a: argparse.Namespace) -> int:
-    """`lantern design approve` — record that a work's design was approved."""
+    """`lantern design approve` — record that a work's design was approved, and whether the person followed it."""
     from ..work import stages
 
     project = _p()
-    print(msg("✔ Recorded approval in {rel}", rel=project.rel(stages.design_approve(project, a.work, a.by))))
+    understood = True if a.understood else False if a.delegated else None
+    print(msg("✔ Recorded approval in {rel}", rel=project.rel(stages.design_approve(project, a.work, a.by, understood))))
+    return 0
+
+
+def cmd_plan(a: argparse.Namespace) -> int:
+    """`lantern plan understand` — record whether the person followed a work's plan."""
+    from ..work import stages
+
+    project = _p()
+    print(msg("✔ Recorded in {rel}", rel=project.rel(stages.plan_understand(project, a.work, a.understood))))
     return 0
 
 
@@ -461,10 +471,19 @@ def register(add: Add) -> None:
     p.add_argument("--reason")
     p.add_argument("--note")
     p.add_argument("--revisit", help=msg("status: for a blocked idea, what would reopen it"))
+    p = add("plan", cmd_plan, msg("Record whether the plan was followed"))
+    p.add_argument("action", choices=["understand"])
+    p.add_argument("work")
+    followed = p.add_mutually_exclusive_group(required=True)
+    followed.add_argument("--understood", action="store_true", help=msg("I followed it"))
+    followed.add_argument("--delegated", dest="understood", action="store_false", help=msg("I handed it over without following it"))
     p = add("design", cmd_design, msg("Record design approval"))
     p.add_argument("action", choices=["approve"])
     p.add_argument("work")
     p.add_argument("--by", required=True)
+    followed = p.add_mutually_exclusive_group()
+    followed.add_argument("--understood", action="store_true", help=msg("Approved, and I followed the design"))
+    followed.add_argument("--delegated", action="store_true", help=msg("Approved, handed over without following it"))
     p = add("unit-log", cmd_unit_log, msg("Record why the person changed the suggested work unit"))
     p.add_argument("action", choices=["add"])
     p.add_argument("--what", required=True)

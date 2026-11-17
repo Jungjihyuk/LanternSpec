@@ -28,7 +28,7 @@ LanternSpec이 이름을 쓰는 여러 곳(lantern.yaml 키 · enums.yaml 목록
 |---|---|---|
 | `pr` | PR — 합치기 전에 변경을 확인하는 요청 | lantern.yaml(`git.pr`) · 스킬(`/l-pr`) |
 | `idea` · `ideas` | 아이디어 — 아직 작업이 아닌 생각 | lantern.yaml(`idea.capture`) · 문서 · 폴더 · CLI · 스킬 |
-| `plan` | 기획 — 작업의 무엇 · 왜 · 수락 기준 | lantern.yaml(`plan.*`) · 문서 · 스킬 |
+| `plan` | 기획 — 작업의 무엇 · 왜 · 수락 기준 | lantern.yaml(`plan.*`) · 문서 · CLI(이해 표시 기록) · 스킬 |
 | `design` | 설계 — 기획을 어떻게 만들지, 승인 | lantern.yaml(`design.*`) · 문서 · CLI(승인 기록) · 스킬 |
 | `task` · `tasks` | 할 일 — 작업 안의 한 줄 단위 일 | 문서 · CLI · 스킬 |
 | `build` | 구현 단계. lantern.yaml `build.*`는 구현 때 쓰는 설정 (확인 명령 · 보고 주기 · 루프) | lantern.yaml · 스킬 |

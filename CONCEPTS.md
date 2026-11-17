@@ -142,6 +142,9 @@ Everything LanternSpec writes lives in the `docs/` folder.
 ### Design approval
 > **The gate where a person checks the design** before building starts. It stops a lot of code from being written in the wrong direction. It can be set to let small designs through without asking.
 
+### Understanding mark
+> A note saved with an approval: **"did I follow it?"** When planning ends and when a design is approved, the person picks "go ahead, I follow it" or "go ahead, handing it over", and the answer is kept in the document's `understood` property (`yes` · `no`). Handing it over never blocks anything. But when a work marked that way is finished by an automatic loop (`build.loop: on`), one understanding-debt card is made, and `/l-finish` lets the person pick which to pay back.
+
 ### Current-state approval
 > When a work finishes, before the "current state" documents change, a **summary of what will change is shown for confirmation**. Big changes such as data structures or APIs are always asked about, whatever the setting.
 
