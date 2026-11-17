@@ -16,6 +16,7 @@ Upgrade: `uv tool upgrade lanternspec` → `lantern upgrade` in each project (in
 - **`docs.keep` in `lantern.yaml`** — lists files · folders `lantern legacy adopt` leaves where they are (e.g. `[updates/]`)
 
 ### Changed
+- **Obsidian's mode button shows the mode the note is in** — a book while reading, a pen in the accent color on a pale background while editing. Obsidian's default shows the mode a click switches to, so a pencil appeared while reading. `lantern upgrade` rewrites the CSS snippet with it
 - **A finished work is not asked for task sizes or criterion links** — `lantern check` no longer reports "has no size" · "No task is linked" · "consider splitting the work" for a `Tasks.md` in the done stage or for tasks already finished
 - **`lantern legacy adopt` shows a preview by default** — it only shows move · keep and the reason for each item, and moves with `--apply`. The move needs the documents to have no uncommitted changes, uses `git mv` and leaves one commit (one `git revert` undoes it)
 - **It finds what must stay** — items whose path a script · setting · code file outside the documents folder uses (e.g. `docs/updates/` read by a release script) and GitHub Pages files (`index.html` · `CNAME` · `_config.yml`) are not moved. When prose outside the documents (the README …) points at a path that moves, the places are listed

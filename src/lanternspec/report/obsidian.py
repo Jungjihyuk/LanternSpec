@@ -3,7 +3,7 @@
 Responsibilities:
     - a Metadata Menu fileClass file per document type — status · kind · topic choices come from enums.yaml
     - merge LanternSpec's share of docs/.obsidian settings (other user settings stay)
-    - CSS snippet: folder colors per document stage · folder and file icons · callout · quote styles (any theme)
+    - CSS snippet: folder colors per document stage · folder and file icons · the mode button · callout · quote styles (any theme)
     - download the recommended plugins' official releases (Dataview · Metadata Menu) (install_plugins)
     - copy the plugins bundled with the package (Lantern Timeline · Lantern Kanban), for projects that use Obsidian plugins;
       a bundled plugin is turned on when it first arrives, and a person who turns it off later keeps it off
@@ -167,6 +167,15 @@ ICONS = {
         "<path d='M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z'/><path d='M14 2v4a2 2 0 0 0 2 2h4'/>"
         "<path d='M16 13H8'/><path d='M16 17H8'/><path d='M10 9H8'/>"
     ),
+    "book-open": _icon(
+        "<path d='M12 7v14'/><path d='M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13"
+        "a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z'/>"
+    ),
+    "square-pen": _icon(
+        "<path d='M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7'/>"
+        "<path d='M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873"
+        "a2 2 0 0 1 .506-.852z'/>"
+    ),
 }
 
 FILE_ICONS = """
@@ -192,6 +201,30 @@ FILE_ICONS = """
 .nav-file-title-content::before { --ls-icon: ICON_FILE; }
 .nav-folder-title-content::before { --ls-icon: ICON_FOLDER; }
 .nav-folder:not(.is-collapsed) > .nav-folder-title .nav-folder-title-content::before { --ls-icon: ICON_FOLDER_OPEN; }
+"""
+
+# Obsidian's mode button shows what a click does (a pencil while reading). These rules make it show the mode the note
+# is in instead — a book while reading, a pen in the accent color while editing — by the icon the button carries.
+VIEW_MODE = """
+/* VIEW_NOTE */
+.workspace-leaf-content[data-type="markdown"] .view-action
+  :is(svg.lucide-edit-3, svg.lucide-pencil, svg.lucide-book-open) > * {
+  display: none;
+}
+.workspace-leaf-content[data-type="markdown"] .view-action
+  :is(svg.lucide-edit-3, svg.lucide-pencil, svg.lucide-book-open) {
+  background-color: currentColor;
+  -webkit-mask: var(--ls-view-icon) no-repeat center / contain;
+  mask: var(--ls-view-icon) no-repeat center / contain;
+}
+.workspace-leaf-content[data-type="markdown"] .view-action :is(svg.lucide-edit-3, svg.lucide-pencil) {
+  --ls-view-icon: ICON_READING;
+}
+.workspace-leaf-content[data-type="markdown"] .view-action svg.lucide-book-open { --ls-view-icon: ICON_EDITING; }
+.workspace-leaf-content[data-type="markdown"] .view-action:has(svg.lucide-book-open) {
+  color: var(--interactive-accent);
+  background-color: color-mix(in srgb, var(--interactive-accent) 15%, transparent);
+}
 """
 
 CALLOUT_AND_QUOTE = """
@@ -399,7 +432,7 @@ def class_dir(names: Names) -> str:
 
 
 def snippet_css(names: Names) -> str:
-    """Build the LanternSpec CSS snippet — folder colors by stage · file icons · callouts · quotes · line width (on any theme).
+    """Build the LanternSpec CSS snippet — folder colors · file icons · mode button · callouts · quotes · line width (on any theme).
 
     Args:
         names: The project's names (folder names).
@@ -413,6 +446,8 @@ def snippet_css(names: Names) -> str:
         >>> '.nav-folder-title[data-path="1. 아이디어"]' in css, ".nav-file-title-content::before" in css, "--callout-radius" in css
         (True, True, True)
         >>> "--file-line-width: 960px" in css
+        True
+        >>> ".view-action:has(svg.lucide-book-open)" in css  # editing: the button is lit
         True
     """
     lines = [
@@ -445,6 +480,12 @@ def snippet_css(names: Names) -> str:
         .replace("ICON_FOLDER_OPEN", ICONS["folder-open"])
         .replace("ICON_FOLDER", ICONS["folder"])
         .replace("ICON_FILE", ICONS["file"]),
+        VIEW_MODE.replace(
+            "VIEW_NOTE",
+            msg("the mode button shows the mode the note is in — a book while reading, a pen in the accent color while editing"),
+        )
+        .replace("ICON_READING", ICONS["book-open"])
+        .replace("ICON_EDITING", ICONS["square-pen"]),
         CALLOUT_AND_QUOTE.replace(
             "CALLOUT_NOTE",
             msg(
