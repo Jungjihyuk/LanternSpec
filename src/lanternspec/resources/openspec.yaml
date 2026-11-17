@@ -1,0 +1,26 @@
+# ============================================================================
+# openspec.yaml — OpenSpec 문서의 칸이 LanternSpec 양식의 어느 칸으로 가는지 (lantern migrate openspec)
+# ============================================================================
+#
+#   sections: OpenSpec 파일마다 "OpenSpec 칸 제목: 우리 칸" — 여기 없는 칸은 문서 맨 아래 "옮기지 못한 내용"으로 간다
+#             (지우지 않는다). 한 칸으로 여러 칸이 모이면 원래 제목을 굵게 붙여 차례로 놓는다.
+#   headings: 우리 칸의 제목 (언어마다). 양식의 `## ` 제목과 같아야 한다 — tests/test_openspec.py가 확인한다.
+# ============================================================================
+
+sections:
+  proposal:                 # proposal.md → 기획
+    Why: why
+    What Changes: what
+    Non-goals: out_of_scope
+  design:                   # design.md → 설계
+    Context: structure
+    Decisions: structure
+
+headings:
+  what: {ko: "무엇을", en: "What"}
+  why: {ko: "왜", en: "Why"}
+  criteria: {ko: "수락 기준", en: "Acceptance criteria"}
+  out_of_scope: {ko: "범위 밖", en: "Out of scope"}
+  structure: {ko: "🏗 구조", en: "🏗 Structure"}
+  tasks: {ko: "할 일", en: "Tasks"}
+  features: {ko: "기능", en: "Features"}

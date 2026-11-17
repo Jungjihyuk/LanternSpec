@@ -7,6 +7,22 @@
 
 ## [Unreleased]
 
+업그레이드: `uv tool upgrade lanternspec` → 프로젝트마다 `lantern upgrade` (새 스킬 `/l-migrate`를 설치한다). `lantern legacy adopt`를 부르던 스크립트가 있으면 `--apply`를 붙인다
+
+### 추가
+- **`lantern migrate openspec` 명령과 `/l-migrate` 스킬** — OpenSpec의 변경을 LanternSpec의 작업과 아이디어로 옮긴다. 보관된 변경은 `2. 작업/보관/`의 끝난 작업, 진행 중인 변경은 `2. 작업/`의 작업(할 일이 전부 끝났으면 보관), 메모만 있는 것은 `1. 아이디어/`가 된다. `proposal.md` · `design.md` · `tasks.md`의 칸을 `기획` · `설계` · `할 일`의 칸에 맞춰 넣고, 시나리오는 수락 기준이 되며, 맞는 칸이 없는 내용은 "옮기지 못한 내용"에 모인다. `specs/`의 기능은 `기능 목록`에 한 줄씩 더해지고, 원본은 `5. 기존 문서/openspec/`에 보관된다. 미리보기가 기본이고 `--apply`가 커밋 하나로 남긴다. 진행 중인 변경을 어디로 보낼지는 `--archive` · `--work` · `--idea`로 바꾼다
+- **`저장소 파일 규칙`의 AI Context Files 절** — AI 도구가 스스로 읽는 파일(`AGENTS.md` · `CLAUDE.md` · `SKILL.md` · `DESIGN.md` 등)을 파일 · 누가 정했나 · 무엇을 적나 표로 정리한다. 표준과 LanternSpec의 방식이 미리 채워져 있고, 기존 프로젝트(brownfield)에는 도입 전 · 도입 후 표가 더해져 `/l-init`이 이미 있던 파일을 분석해 채운다. 파일을 바꾸기 전에 바꿀 내용을 보여 주고 승인받는다. 이미 만든 문서에는 `lantern template migrate "저장소 파일 규칙"`으로 반영한다
+- **`lantern.yaml`의 `docs.keep`** — `lantern legacy adopt`가 옮기지 않고 남길 파일 · 폴더를 적는다 (예: `[updates/]`)
+
+### 바뀜
+- **끝난 작업에는 할 일의 크기와 수락 기준 연결을 묻지 않는다** — `lantern check`가 `완료` 단계인 `할 일.md`와 이미 끝난 할 일에는 "크기가 없습니다" · "연결된 할 일이 없습니다" · "작업을 나누는 것을 검토하세요"를 내지 않는다
+- **`lantern legacy adopt`는 미리보기가 기본이다** — 항목마다 옮김 · 남김과 이유만 보여 주고, `--apply`를 붙여야 옮긴다. 옮길 때는 문서에 커밋하지 않은 변경이 없어야 하고, `git mv`로 옮겨 커밋 하나로 남긴다 (`git revert` 한 번으로 되돌린다)
+- **남길 것을 찾는다** — 문서 폴더 밖의 스크립트 · 설정 · 코드가 경로를 쓰는 항목(예: 릴리즈 스크립트가 읽는 `docs/updates/`)과 GitHub Pages 파일(`index.html` · `CNAME` · `_config.yml`)은 옮기지 않는다. 문서 밖의 글(README 등)이 옮겨질 경로를 가리키면 목록으로 알려 준다
+- **`/l-init`의 brownfield 단계** — 미리보기를 보여 주고 사람이 확인한 뒤에 옮긴다
+
+### 고침
+- **이름만 같은 폴더 · MOC를 남기지 않는다** — LanternSpec을 들이기 전부터 있던 `0. 템플릿/`이나 `개발문서 MOC.md`는 이름이 같아도 기존 문서로 옮긴다. LanternSpec이 만든 것인지는 `_meta/enums.yaml`과 MOC의 frontmatter로 알아본다
+
 ## [0.3.3] - 2026-11-14
 
 업그레이드: `uv tool upgrade lanternspec` → 프로젝트마다 `lantern upgrade` (스킬 · 양식 · Obsidian 설정 갱신). 새 아이디어 양식은 복사하지 않아도 쓰이고, 고쳐 쓰려면 `lantern scaffold init`이 `0. 템플릿/`에 넣어 준다

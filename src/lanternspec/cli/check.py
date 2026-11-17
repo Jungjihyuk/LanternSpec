@@ -1,4 +1,4 @@
-"""Check and template commands: check · lint (code) · template · legacy · hooks (git) · doctor."""
+"""Check and template commands: check · lint (code) · template · legacy · migrate · hooks (git) · doctor."""
 
 from __future__ import annotations
 
@@ -104,19 +104,40 @@ def cmd_template(a: argparse.Namespace) -> int:
 
 
 def cmd_legacy(a: argparse.Namespace) -> int:
-    """`lantern legacy adopt|todos` — keep existing documents in `5. 기존 문서/`, or list their TODOs."""
+    """`lantern legacy adopt [--apply]|todos` — show what would move into `5. 기존 문서/` (and move it), or list the TODOs."""
     from ..check import legacy
 
     project = _p()
     if a.action == "adopt":
-        moved = legacy.adopt(project, Path(a.source) if a.source else None)
-        _print([f"✔ {m}" for m in moved] or [msg("No legacy documents to move")])
+        plan = legacy.adopt_plan(project, Path(a.source) if a.source else None)
+        _print(legacy.describe(project, plan))
+        if not plan.moves:
+            print(msg("No legacy documents to move"))
+        elif not a.apply:
+            print(msg("→ To move them, run lantern legacy adopt --apply (nothing was changed)"))
+        else:
+            _print(legacy.adopt(project, plan))
     else:
         rows = legacy.todos(project)
         if not rows:
             print(msg("No TODOs · later items in the legacy documents"))
         for r in rows:
             print(f"- {r['text'].lstrip('-*+ ').strip()}  ({r['file']}:{r['line']})")
+    return 0
+
+
+def cmd_migrate(a: argparse.Namespace) -> int:
+    """`lantern migrate openspec [--apply]` — show what the OpenSpec changes would become (works · ideas), and create them."""
+    from ..check import openspec
+
+    project = _p()
+    choices = {name: where for where in openspec.WHERE for name in getattr(a, where) or []}
+    plan = openspec.plan(project, choices)
+    _print(openspec.describe(project, plan))
+    if not a.apply:
+        print(msg("→ To create them, run lantern migrate openspec --apply (nothing was changed)"))
+    else:
+        _print(openspec.apply(project, plan))
     return 0
 
 
@@ -221,6 +242,13 @@ def register(add: Add) -> None:
     p = add("legacy", cmd_legacy, msg("Brownfield legacy documents: adopt · todos"))
     p.add_argument("action", choices=["adopt", "todos"])
     p.add_argument("--from", dest="source")
+    p.add_argument("--apply", action="store_true", help=msg("adopt: move what the preview shows, in one commit"))
+    p = add("migrate", cmd_migrate, msg("Bring another tool's documents over as works and ideas: openspec"))
+    p.add_argument("source", choices=["openspec"])
+    p.add_argument("--apply", action="store_true", help=msg("create what the preview shows, in one commit"))
+    p.add_argument("--archive", action="append", metavar="NAME", help=msg("an open change that goes to the archive as a finished work"))
+    p.add_argument("--work", action="append", metavar="NAME", help=msg("an open change that becomes a work in progress"))
+    p.add_argument("--idea", action="append", metavar="NAME", help=msg("an open change that becomes an idea"))
     p = add("hooks", cmd_hooks, msg("Install · remove · show git hooks"))
     p.add_argument("action", choices=["install", "uninstall", "status"])
     add("doctor", cmd_doctor, msg("Check that the layout matches lantern.yaml"))

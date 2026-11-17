@@ -234,13 +234,15 @@ def base_values(project: Project) -> dict[str, Any]:
         project: The project.
 
     Returns:
-        Value name → value: enum names by role, today, project name, owner, the profile table, and
+        Value name → value: enum names by role, today, project name, owner, the profile table, the number of skills, and
         `path.<doc>` — where a single document lives, for links (`[[${path.unit_log}]]`).
 
     Example:
         >>> base_values(project)["path.unit_log"]  # doctest: +SKIP
         '3. 현재 상태/규칙/작업 나누기 기준'
     """
+    from ..tools.skills import SKILL_NAMES
+
     p = project.profile
     members = p.get("project.members") or []
     return {
@@ -252,6 +254,7 @@ def base_values(project: Project) -> dict[str, Any]:
         "variant": data_variant(p.server),
         "base": p.get("git.base"),
         "profile_table": _profile_table(project),
+        "skill_count": len(SKILL_NAMES),
         "members_table": _members_table(project),
         "legacy_rows": msg(
             "| {{{{Document}}}} | {{{{What it says}}}} | {{{{Still true?}}}} | {{{{Absorb · Archive · Move}}}} | {{{{New place}}}} |"

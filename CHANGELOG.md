@@ -7,6 +7,22 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+Upgrade: `uv tool upgrade lanternspec` → `lantern upgrade` in each project (installs the new `/l-migrate` skill). If a script of yours calls `lantern legacy adopt`, add `--apply`
+
+### Added
+- **The `lantern migrate openspec` command and the `/l-migrate` skill** — bring OpenSpec changes over as LanternSpec works and ideas. An archived change becomes a finished work in `2. Work/Archive/`, an open change a work in `2. Work/` (archived when all its tasks are done), and one that is only a note an idea in `1. Ideas/`. The sections of `proposal.md` · `design.md` · `tasks.md` go into the matching sections of `Plan` · `Design` · `Tasks`, scenarios become acceptance criteria, and content with no matching section is gathered under "Not moved". The capabilities under `specs/` each add a row to the `Feature List`, and the originals are kept in `5. Legacy Docs/openspec/`. It previews by default and `--apply` leaves one commit. `--archive` · `--work` · `--idea` change where an open change goes
+- **The AI Context Files section of `Repository File Rules`** — lists the files an AI tool reads by itself (`AGENTS.md` · `CLAUDE.md` · `SKILL.md` · `DESIGN.md` …) in a table of file · who defined it · what goes in it. The standard and the LanternSpec way come filled in; an existing project (brownfield) also gets before · after tables, which `/l-init` fills in by reading the files that were already there. It shows what would change and gets approval before changing a file. For a document you already have: `lantern template migrate "Repository File Rules"`
+- **`docs.keep` in `lantern.yaml`** — lists files · folders `lantern legacy adopt` leaves where they are (e.g. `[updates/]`)
+
+### Changed
+- **A finished work is not asked for task sizes or criterion links** — `lantern check` no longer reports "has no size" · "No task is linked" · "consider splitting the work" for a `Tasks.md` in the done stage or for tasks already finished
+- **`lantern legacy adopt` shows a preview by default** — it only shows move · keep and the reason for each item, and moves with `--apply`. The move needs the documents to have no uncommitted changes, uses `git mv` and leaves one commit (one `git revert` undoes it)
+- **It finds what must stay** — items whose path a script · setting · code file outside the documents folder uses (e.g. `docs/updates/` read by a release script) and GitHub Pages files (`index.html` · `CNAME` · `_config.yml`) are not moved. When prose outside the documents (the README …) points at a path that moves, the places are listed
+- **The brownfield step of `/l-init`** — shows the preview and moves only after the person confirms
+
+### Fixed
+- **A folder or MOC that only shares the name no longer stays** — a `0. Templates/` folder or `Docs MOC.md` that was there before LanternSpec is moved to the legacy documents even though the name matches. Whether LanternSpec made it is told by `_meta/enums.yaml` and the MOC's frontmatter
+
 ## [0.3.3] - 2026-11-14
 
 Upgrade: `uv tool upgrade lanternspec` → `lantern upgrade` in each project (refreshes skills, templates and Obsidian settings). The new idea templates work without being copied; to edit them, `lantern scaffold init` puts them in `0. Templates/`

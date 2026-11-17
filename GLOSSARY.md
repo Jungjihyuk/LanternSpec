@@ -48,6 +48,7 @@ LanternSpec이 이름을 쓰는 여러 곳(lantern.yaml 키 · enums.yaml 목록
 | `sync` | 문서와 코드 맞추기 | CLI · 스킬 |
 | `template` · `templates` | 양식 | 폴더 · CLI · 스킬 |
 | `legacy` | 브라운필드의 기존 문서 | 폴더 · CLI |
+| `migrate` | 옮기기 — 내용을 잃지 않고 우리 양식으로 옮긴다. `lantern template migrate`는 문서 하나를 양식 하나로, `lantern migrate openspec` · `/l-migrate`는 다른 도구(OpenSpec)의 문서 묶음을 작업 · 아이디어로 옮긴다. 맞는 칸이 없는 내용은 보호 표시 `migrate_bin`("옮기지 못한 내용")에 모인다. DB 마이그레이션 파일과는 다른 것 | CLI · 스킬 · 표시 |
 | `principle` · `principles` | 개발 원칙 (설계 원칙 · 코드 컨벤션) | 문서(자동 생성) · CLI |
 | `section` · `sections` | 보호 칸 — lantern이 제목으로 찾아 읽고 쓰는 `##` 칸 | lantern.yaml(`docs.sections`) · CLI |
 | `glossary` | 용어집 — 이 프로젝트의 용어 · 뜻 · 쓰지 말 표현 표 (`3. 현재 상태/규칙/용어집.md`). 사내 용어집은 `references.terms`로 들인다. 이 저장소의 `GLOSSARY.md`(개발용 이름 표)와는 다른 것 | 문서 · 보호 칸 · CLI(`lantern ref terms`) |

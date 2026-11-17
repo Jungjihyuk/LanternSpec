@@ -107,6 +107,7 @@ What the concepts in this document mean and where they are used is gathered in [
 | `/l-ref` | brings in company rules, glossaries and domain knowledge, indexes them by section and gets each section's use approved | the index, company rules in `AGENTS.md`, `Glossary.md` |
 | `/l-domain` | when domain rules matter, finds the matching section in the index and reads just that section word for word | (the plan's "Domain Knowledge Used") |
 | `/l-pr` | writes the title and body for the direction that fits the branch flow, and opens the PR once confirmed (never merges) | — |
+| `/l-migrate` | brings another tool's (OpenSpec's) changes over: finished ones as archived works, ones in progress as works, notes as ideas (originals kept, approved after a preview) | `2. Work/` · `1. Ideas/` |
 | `/l-parallel` | before starting several works at once, checks what they must decide together and their order, records the decisions as ADRs, then opens a worktree per work | ADR |
 | `/l-finish` | when parallel works are done, gathers person checks in the base folder, merges them one at a time, then updates the current state, archives and reports once | current state, `Archive/` |
 
@@ -298,7 +299,7 @@ work       task next [--all]|start|done|ac|list|estimate · task add [--parallel
            work branch|start|list|overlap|finish|archive|stage|flow · design approve · unit-log add · idea find|status
 learning   knowledge search|read|propose|write|areas · debt find|new|ask|resolve|promote|practice|known|status|list · mcp
 reports    report [--views] [--summary] · status · resume [--session] [--more] · scan [--tests] [--ci] · sync adopt · eval · obsidian plugins
-templates  template list|show|lint|level|bump|outdated|diff|usage|new|migrate · legacy adopt|todos
+templates  template list|show|lint|level|bump|outdated|diff|usage|new|migrate · legacy adopt [--apply]|todos · migrate openspec [--apply]
 references ref list|check|index|read · tag|exclude|rules · terms|term|glossary|candidate · domain|describe|attach · convert [--apply]|preview
 git        hooks install|uninstall|status · docs-mode local|shared
 wrap-up    close <skill>

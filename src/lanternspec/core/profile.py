@@ -47,7 +47,8 @@ DEFAULTS: dict[str, Any] = {
         "code_size": None,
         "lifespan": "short",
     },
-    "docs": {"root": "docs/", "remote": "shared", "commit": "auto", "extra": [], "sections": {}, "unused_sections": []},
+    # keep: items of the documents root that `lantern legacy adopt` leaves where they are (other files rely on their paths)
+    "docs": {"root": "docs/", "remote": "shared", "commit": "auto", "extra": [], "keep": [], "sections": {}, "unused_sections": []},
     "knowledge": None,
     "design": {"tool": "none", "approval": "required"},
     "verify": {"browser": "auto"},
@@ -448,6 +449,9 @@ def _section_problems(data: dict[str, Any]) -> list[str]:
             isinstance(titles, list) and titles and all(isinstance(x, str) and x.strip() for x in titles)
         ):
             problems.append(msg("docs.sections.{role}: must be a new name (text) or a list of names", role=role))
+    keep = get_path(data, "docs.keep") or []
+    if not isinstance(keep, list) or not all(isinstance(x, str) and x.strip() for x in keep):
+        problems.append(msg("docs.keep: must be a list of files · folders in the documents root (e.g. [updates/])"))
     unused = get_path(data, "docs.unused_sections") or []
     if not isinstance(unused, list):
         return problems + [msg("docs.unused_sections: must be a list (e.g. [schema])")]
@@ -554,6 +558,10 @@ def render(data: dict[str, Any]) -> str:
     ]
     if docs.get("extra"):
         lines.append(msg("  extra: {s}           # optional documents turned on (api)", s=s(docs["extra"])))
+    if docs.get("keep"):
+        lines.append(
+            msg("  keep: {s}            # stays in the documents root when lantern legacy adopt moves the rest", s=s(docs["keep"]))
+        )
     if docs.get("sections"):
         lines.append(
             msg(

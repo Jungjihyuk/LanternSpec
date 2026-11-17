@@ -105,6 +105,7 @@ lantern install                  # 이 프로젝트에 스킬 · 규칙 · hook 
 | `/l-ref` | 사내 규칙 · 용어집 · 도메인 지식을 들여와 절 단위로 색인하고, 절마다 쓰임을 승인받는다 | 색인, `AGENTS.md`의 사내 규칙, `용어집.md` |
 | `/l-domain` | 도메인 규칙이 필요할 때 색인에서 맞는 절만 찾아 원문으로 읽는다 | (기획의 "참고한 도메인 지식") |
 | `/l-pr` | 브랜치 방식에 맞는 방향으로 제목 · 본문을 쓰고, 확인받은 뒤 PR을 만든다 (합치지는 않는다) | — |
+| `/l-migrate` | 다른 도구(OpenSpec)의 변경을 끝난 것은 보관된 작업, 진행 중인 것은 작업, 메모는 아이디어로 옮긴다 (원본은 보관, 미리보기 뒤 승인) | `2. 작업/` · `1. 아이디어/` |
 | `/l-parallel` | 여러 작업을 동시에 시작하기 전에 함께 정할 것 · 순서를 점검하고, 정한 것을 ADR로 남긴 뒤 작업마다 worktree를 연다 | ADR |
 | `/l-finish` | 동시 작업이 끝나면 기준 폴더에서 사람 확인을 모으고, 하나씩 합친 뒤 현재 상태 · 보관 · 보고를 한 번에 한다 | 현재 상태, `보관/` |
 
@@ -296,7 +297,7 @@ Claude Design은 Claude Code에서 AI가 Design 캔버스에 와이어프레임�
          work branch|start|list|overlap|finish|archive|stage|flow · design approve · unit-log add · idea find|status
 배움     knowledge search|read|propose|write|areas · debt find|new|ask|resolve|promote|practice|known|status|list · mcp
 보고     report [--views] [--summary] · status · resume [--session] [--more] · scan [--tests] [--ci] · sync adopt · eval · obsidian plugins
-양식     template list|show|lint|level|bump|outdated|diff|usage|new|migrate · legacy adopt|todos
+양식     template list|show|lint|level|bump|outdated|diff|usage|new|migrate · legacy adopt [--apply]|todos · migrate openspec [--apply]
 참고     ref list|check|index|read · tag|exclude|rules · terms|term|glossary|candidate · domain|describe|attach · convert [--apply]|preview
 git      hooks install|uninstall|status · docs-mode local|shared
 마무리   close <스킬>

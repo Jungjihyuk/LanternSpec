@@ -151,7 +151,11 @@ lantern scaffold init --plan        # 만들 폴더 · 문서 목록 (아직 아
 ## 3. 구조 만들기
 - `local`을 골랐으면 **먼저** `lantern docs-mode local` (빈 문서 브랜치 · `.gitignore` · `.ignore` · push 막는 hook을 한 번에)
   실행 전에 한 줄로 알린다: "문서를 원격에 안 올리는 설정으로 바꾸면서, main에 설정 파일 3개(`.gitignore` · `.ignore` · `lantern.yaml`)를 커밋해요."
-- 🏠 brownfield이고 `docs/`가 이미 있으면 **먼저** `lantern legacy adopt` (기존 문서를 `docs/<<folder.legacy>>/`로 `git mv` — 기록이 이어진다)
+- 🏠 brownfield이고 `docs/`가 이미 있으면 **먼저** 기존 문서를 `docs/<<folder.legacy>>/`로 옮긴다. 미리보기 → 사람 확인 → 옮기기 순서를 지킨다:
+  1. `lantern legacy adopt` — 항목마다 옮김 · 남김과 이유만 보여 준다. 아무것도 바꾸지 않는다.
+  2. 목록을 사람에게 그대로 보여 주고 확인받는다. "옮김"으로 나왔지만 그 자리에 있어야 하는 것(배포 · 스크립트가 경로를 쓰는 폴더 등)은 `lantern profile set 'docs.keep=[updates/]'`처럼 적고 다시 미리본다.
+  3. `lantern legacy adopt --apply` — `git mv`로 옮기고(기록이 이어진다) 커밋 하나로 남긴다. 문서에 커밋하지 않은 변경이 있어 멈추면, 먼저 커밋할지 사람에게 묻는다.
+  4. "문서 밖 N곳이 옮겨질 경로를 가리킵니다" 목록이 나오면 사람에게 보여 주고, 고칠지 묻는다.
 - B를 고르고 `dev`를 만들기로 했으면 `git branch dev` (커밋이 아직 없으면 첫 커밋 뒤에). GitHub에 올리는 것은 사람에게 다시 묻는다. 그 밖의 브랜치는 만들거나 바꾸지 않는다.
 - 그다음 `lantern scaffold init`
 - 끝으로 `lantern upgrade` — 스킬은 답을 받기 전에 설치됐으므로, 고른 설정(브랜치 방식 등)이 스킬에 들어가도록 다시 만든다.
@@ -177,10 +181,18 @@ lantern scaffold init --plan        # 만들 폴더 · 문서 목록 (아직 아
    - 🧽 흡수 — 지금도 맞는 내용 → 핵심만 `<<folder.current>>`에 + 출처 링크
    - 🗄 보관 — 지난 기록(회의록 · 옛 기획 · 끝난 작업) → 링크만
    - 🚚 옮기기 — 계속 쓸 문서 → 원할 때 `/l-template migrate "<<folder.legacy>>/….md"`
-4. **빈칸 묻기:** 필수 칸만 · 짐작되면 "이게 맞나요?"로 · 한 문서의 질문은 묶어서 · "모름"은 `<<marker.unknown>>`.
-5. **덤:** `lantern legacy todos`로 기존 문서의 TODO · 나중에 할 것을 모아 아이디어 후보로 보여 준다. 사용자가 고른 것만 `/l-idea`로 기록한다.
+4. **AI Context Files:** 저장소에 이미 있는 AI Context Files를 읽고 `<<folder.rules>>/<<file.repo_files>>`의 "AI Context Files" 절을 채운다.
+   - **도입 전:** `AGENTS.md` · `CLAUDE.md` · `GEMINI.md` · `.github/copilot-instructions.md` · `.cursor/rules/` · `DESIGN.md` · `.mcp.json`, 그리고 `.claude/` · `.codex/` · `.agents/` · `openspec/` · `.specify/` · `.kiro/` 폴더를 찾아 파일마다 한 줄씩 적는다 (누가 만들었나 · 무엇이 적혀 있나). git에 올리지 않는 것도 쓰고 있으면 적는다.
+   - **바꿀 내용을 보여 주고 승인받는다.** 같은 절의 "LanternSpec" 표가 기준이다:
+     - `CLAUDE.md`가 `AGENTS.md`와 내용이 같으면 지우자고 제안한다 (Claude Code가 `AGENTS.md`를 직접 읽는다). 다르면 그대로 두고 맨 위의 `@AGENTS.md`만 확인한다.
+     - 기존 규칙과 LanternSpec 구역의 규칙이 부딪히면(예: 커밋 메시지 형식) 부딪히는 곳을 보여 주고, 기존 프로젝트의 규칙을 따르도록 맞춘다.
+     - 다른 작업 도구(OpenSpec · Spec Kit · Kiro)의 안내와 명령은 지우지 않는다. 남아 있는 곳을 알려 주고 사람이 정한다.
+   - **도입 후:** 승인된 것만 바꾸고, 파일마다 어떻게 바뀌었는지 적는다. 그대로 둔 파일은 "그대로 둠"과 이유를 적는다.
+5. **빈칸 묻기:** 필수 칸만 · 짐작되면 "이게 맞나요?"로 · 한 문서의 질문은 묶어서 · "모름"은 `<<marker.unknown>>`.
+6. **덤:** `lantern legacy todos`로 기존 문서의 TODO · 나중에 할 것을 모아 아이디어 후보로 보여 준다. 사용자가 고른 것만 `/l-idea`로 기록한다.
+   저장소에 `openspec/` 폴더가 있으면 한 번 알린다: "OpenSpec의 변경을 작업과 아이디어로 옮길 수 있어요. 원하시면 `/l-init`이 끝난 뒤 `/l-migrate`를 실행해 주세요." 하지 않아도 다음 단계는 그대로 진행한다.
 <!-- lantern:if tool=claude -->
-6. **디자인 시스템** (디자인 도구로 Claude Design을 고르고, 화면이 있는 프로젝트일 때): 코드에 버튼 · 입력창 · 색 같은 공통 UI 부품이 있으면 한 번 안내한다.
+7. **디자인 시스템** (디자인 도구로 Claude Design을 고르고, 화면이 있는 프로젝트일 때): 코드에 버튼 · 입력창 · 색 같은 공통 UI 부품이 있으면 한 번 안내한다.
    "기존 버튼 · 색 · 글꼴을 Claude의 디자인 시스템으로 옮겨 두면, 새 화면 시안이 지금 앱과 같은 모양으로 나와요. 원하시면 `/design-sync`를 실행해 주세요."
    실행은 사람이 한다. 하지 않아도 다음 단계는 그대로 진행한다.
 <!-- lantern:endif -->

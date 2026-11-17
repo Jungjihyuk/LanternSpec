@@ -42,6 +42,30 @@ The content of a rule (its tables and numbers) is written once, in the rules doc
 - **Why:** so only works in progress stand out, while the record of finished ones is kept, not deleted.
 - **With parallel works:** a work another running work links to is archived later, so its paths don't change while another worktree reads its documents.
 
+### Moving existing documents shows a preview first (`lantern legacy adopt`)
+- **Decided:** `lantern legacy adopt` only shows move · keep and the reason for each item; it moves with `--apply`. The move uses `git mv` and leaves one commit. Four things stay — what LanternSpec made, what `docs.keep` in `lantern.yaml` lists, what a script · setting · code file outside the documents folder uses by path, and GitHub Pages files.
+- **Why:** a documents folder holds more than documents. Moving a file a script reads by a fixed path, such as an update feed, breaks the release. A person should see the list before the move, and one `git revert` should undo a wrong one.
+- **"Ours" by a mark, not by name:** a folder counts as made by LanternSpec only when `0. Templates/_meta/enums.yaml` exists, the MOC only when its frontmatter has `template`. Leaving an older template folder or MOC that merely shares the name mixes it with the new templates, and `lantern map` would rewrite someone else's file.
+- **Turned down:** moving right away and letting the person check `git status`. With hundreds of staged changes, the one wrong move is hard to find.
+- **Source:** `src/lanternspec/check/legacy.py`
+
+
+### Another tool's documents become works and ideas (`lantern migrate openspec`)
+- **Decided:** OpenSpec's archived changes become finished works in `2. Work/Archive/`, its open changes works in `2. Work/`, and those that are only a note ideas in `1. Ideas/`. The sections of `proposal.md` · `design.md` · `tasks.md` go into the matching sections of `Plan` · `Design` · `Tasks` (`resources/openspec.yaml`); content with no matching section is gathered under "Not moved". The originals are kept in `5. Legacy Docs/openspec/`. It previews by default, and `--apply` leaves one commit.
+- **Why:** when an existing project's past and ongoing work stay in another folder and format, the board, the reports and the next task cannot see them. OpenSpec has a proposal · design · tasks per change, the same shape as our works, so they are moved as works rather than reduced to a summary.
+- **The command does the conversion:** an AI rewriting the documents could change what they say. The command only moves sections; the skill (`/l-migrate`) only has the person confirm where the open changes go.
+- **A finished work is not asked planning questions:** `lantern check` does not ask the tasks of a finished work for a size or a link to an acceptance criterion. Past work brought over has neither, and finished work is not planned any more. Works in progress are still asked.
+- **Documents without a consistent format:** not moved automatically; they stay in `5. Legacy Docs/`. Only what a person reads and picks is moved, one at a time, with `/l-template migrate`.
+- **Turned down:** writing the past as one summary document by period. The shape of the original documents (what · why · how · tasks) is lost, and work in progress cannot be continued.
+- **Source:** `src/lanternspec/check/openspec.py`, `src/lanternspec/resources/openspec.yaml`
+
+### AI Context Files are a section of the Repository File Rules
+- **Decided:** the reference for the files an AI tool reads by itself lives in the "AI Context Files" section of `Repository File Rules`. Every table has the same three columns — file · who defined it · what goes in it — in the order standard · LanternSpec · (existing projects only) before · after.
+- **Why:** an existing project already has an `AGENTS.md` · `CLAUDE.md` or the files of another workflow tool. With the standard and what LanternSpec uses written down first, how to fit the files that were there and where another tool's documents go are decided by the same reference. Keeping before · after tells someone who joins later what changed and why.
+- **What the standard table lists:** only what a large organization defined and many places use. `llms.txt` (for websites) and old formats (`.cursorrules`) are left out.
+- **Turned down:** a separate rules document. Like the README and `.gitignore`, this is "the format of files kept in the repository", so one document is easier to find.
+- **Source:** `src/lanternspec/resources/locales/<language>/templates/Repository File Rules.md`
+
 ### The rules folder (`3. Current State/Rules/`)
 - **Decided:** the rules a project follows (development principles · tech selection criteria · repository file rules · task breakdown rules …) live as documents in the rules folder, and skills read and follow them.
 - **Why:** a rule kept only inside a skill's text is hard for people to find and impossible for a team to change. As a document, a rule the team changed is followed by the AI too.

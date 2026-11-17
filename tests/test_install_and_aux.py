@@ -7,7 +7,7 @@ import sys
 
 import pytest
 
-from conftest import docs, fill, init_project, sh
+from conftest import docs, fill, init_project
 from lanternspec import tools
 from lanternspec.core import frontmatter
 from lanternspec.core.profile import DEFAULTS, Profile, _deep_merge
@@ -50,7 +50,7 @@ def test_generated_skills_have_no_leftover_marks_for_every_tool_and_profile():
                 if names == ["codex"]:
                     assert not re.search(r"(?<![\w/$.-])/l-[a-z]+\b", text), f"codex file keeps /l- call: {rel}"
         # Codex and Antigravity share .agents/skills: one set of 13, not two
-        assert len([k for k in gen(prof, tools.NAMES) if k.endswith("SKILL.md")]) == 19 * 2
+        assert len([k for k in gen(prof, tools.NAMES) if k.endswith("SKILL.md")]) == 20 * 2
 
 
 def test_adapter_shapes():
@@ -370,9 +370,9 @@ def test_brownfield_legacy_adopt(repo):
         "--design",
         "none",
     )
-    _, out = repo("legacy", "adopt")
-    assert "5. 기존 문서/old" in out
-    assert "R  " in sh(repo.root, "git", "status", "--short").stdout or "R " in sh(repo.root, "git", "status", "--short").stdout
+    _, out = repo("legacy", "adopt", "--apply")
+    assert "5. 기존 문서" in out
+    assert (docs(repo) / "5. 기존 문서/old/기획서.md").exists() and not (docs(repo) / "old").exists()
     repo("scaffold", "init")
     legacy_map = (docs(repo) / "5. 기존 문서/기존 문서 지도.md").read_text(encoding="utf-8")
     assert "[[5. 기존 문서/old/기획서\\|기획서]]" in legacy_map and "[[5. 기존 문서/README\\|README]]" in legacy_map
@@ -398,7 +398,7 @@ def test_doctor_reports(repo):
     assert "lantern upgrade" in out  # skills were rendered before the profile existed
     repo("upgrade")
     code, out = repo("doctor")
-    assert "문서 저장 방식 shared — 구조가 맞음" in out and "스킬 19개 최신" in out
+    assert "문서 저장 방식 shared — 구조가 맞음" in out and "스킬 20개 최신" in out
 
 
 def test_h7_sync_nudge_once_per_work_and_h8_compact_roundtrip(repo):

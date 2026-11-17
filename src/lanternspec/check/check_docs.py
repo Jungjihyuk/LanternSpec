@@ -673,6 +673,8 @@ def _check_tasks(project: Project, path: Path, text: str, rel: str) -> list[Find
     plan = project.doc_path(path.parent, "plan")
     acs = {c.id for c in parse_criteria(read(plan))} if plan.exists() else set()
     team = project.profile.team
+    # a finished work is not planned any more: sizes and the task behind each criterion are asked only while it runs
+    finished = frontmatter.parse(text).meta.get("status") == project.enums.value("work_status", "done")
     for t in tasks:
         line = t.line_no + 1
         if ids[t.id] > 1:
@@ -684,7 +686,7 @@ def _check_tasks(project: Project, path: Path, text: str, rel: str) -> list[Find
                     "warn", rel, "task-size", msg("{id} size is one of {sizes} (now '{size}')", id=t.id, sizes=sizes, size=t.size), line
                 )
             )
-        if not t.size:
+        if not t.size and not t.done and not finished:
             out.append(
                 Finding(
                     "warn",
@@ -717,7 +719,7 @@ def _check_tasks(project: Project, path: Path, text: str, rel: str) -> list[Find
             out.append(Finding("info", rel, "task-owner", msg("{id} has no {owner} [{owner}:: name]", id=t.id, owner=owner), line))
     covered = {ac for t in tasks for ac in t.criteria}
     real_tasks = [t for t in tasks if "{{" not in t.title]
-    if real_tasks:
+    if real_tasks and not finished:
         for ac in sorted(acs - covered, key=lambda x: int(x.split("-")[1])):
             out.append(
                 Finding(
@@ -729,7 +731,7 @@ def _check_tasks(project: Project, path: Path, text: str, rel: str) -> list[Find
                     f"lantern task add … --ac {ac}",
                 )
             )
-    if len(tasks) > 10:
+    if len(tasks) > 10 and not finished:
         out.append(Finding("info", rel, "task-many", msg("{count} tasks — consider splitting the work", count=len(tasks))))
     # cycles
     graph: dict[str, list[str]] = {}

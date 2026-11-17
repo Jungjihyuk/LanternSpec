@@ -39,7 +39,7 @@ LanternSpec's features sit in three layers. The split keeps the main line steady
 ### Add-on
 > A feature that is handy but **that the core flow doesn't need**.
 
-- Examples: progress reports, the ledger of unfamiliar technologies, AI work evaluation, the build mode suggestion
+- Examples: progress reports, the ledger of unfamiliar technologies, AI work evaluation, the build mode suggestion, bringing another tool's documents over
 
 ## 2. The five steps
 
@@ -107,6 +107,14 @@ Everything LanternSpec writes lives in the `docs/` folder.
 > Where finished work folders are moved, so they don't mix with works in progress.
 
 - Where to look: `docs/2. Work/Archive/`
+
+### Bringing another tool's documents over
+> **Moving the documents another tool left in a consistent format into LanternSpec's folders and templates.** For now this moves OpenSpec.
+
+- A finished change becomes an archived work, a change in progress a work, and one not yet decided an idea.
+- Content with no matching section is not deleted; it is gathered under "Not moved" at the bottom of the document. The originals are kept in `5. Legacy Docs/`.
+- Documents without a consistent format are not moved. Read them and move only what is needed, one at a time.
+- Where to look: `/l-migrate` · `lantern migrate openspec`
 
 ### Rule documents
 > Documents about **what the project has agreed to follow now**: development principles, the criteria for choosing technologies, how to write files like `.gitignore`, the project glossary and so on.

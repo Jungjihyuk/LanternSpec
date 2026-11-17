@@ -150,7 +150,11 @@ If the knowledge store has `--areas-from`, read its folders with `lantern knowle
 ## 3. Build the structure
 - If `local` was chosen, **first** `lantern docs-mode local` (an empty docs branch · `.gitignore` · `.ignore` · a hook that blocks pushing, all at once)
   Before running it, tell the user in one line: "Switching to keeping documents off the remote, this commits 3 settings files to main (`.gitignore` · `.ignore` · `lantern.yaml`)."
-- 🏠 brownfield with an existing `docs/`: **first** `lantern legacy adopt` (moves the existing documents to `docs/<<folder.legacy>>/` with `git mv` — their history continues)
+- 🏠 brownfield with an existing `docs/`: **first** move the existing documents to `docs/<<folder.legacy>>/`. Keep the order preview → the person confirms → move:
+  1. `lantern legacy adopt` — shows only move · keep and the reason for each item. It changes nothing.
+  2. Show the list to the person as it is and get a yes. For something listed as "move" that must stay where it is (a folder whose path deployment or a script uses …), write it down like `lantern profile set 'docs.keep=[updates/]'` and preview again.
+  3. `lantern legacy adopt --apply` — moves with `git mv` (history continues) and leaves one commit. If it stops because the documents have uncommitted changes, ask the person whether to commit them first.
+  4. If a list of "places outside the documents point at paths that move" comes out, show it to the person and ask whether to fix them.
 - If B was chosen and `dev` is to be created, `git branch dev` (after the first commit if there is none yet). Ask the person again before pushing it. Don't create or change any other branch.
 - Then `lantern scaffold init`
 - Finally `lantern upgrade` — the skills were installed before these answers, so remake them to carry the chosen settings (the branch flow and so on).
@@ -176,10 +180,18 @@ Ask the three `<<marker.required>>` blanks of `docs/<<folder.current>>/<<file.pr
    - 🧽 Absorb — still true → only the essentials into `<<folder.current>>`, with a source link
    - 🗄 Archive — past records (meeting notes · old plans · finished work) → link only
    - 🚚 Move — documents that stay in use → when wanted, `/l-template migrate "<<folder.legacy>>/….md"`
-4. **Ask about blanks:** required blanks only · if you can guess, ask "is this right?" · group the questions for one document · "don't know" becomes `<<marker.unknown>>`.
-5. **Bonus:** gather TODOs · "later" items from the existing documents with `lantern legacy todos` and show them as idea candidates. Record only the ones the user picks, with `/l-idea`.
+4. **AI Context Files:** read the AI Context Files the repository already has and fill in the "AI Context Files" section of `<<folder.rules>>/<<file.repo_files>>`.
+   - **Before LanternSpec:** look for `AGENTS.md` · `CLAUDE.md` · `GEMINI.md` · `.github/copilot-instructions.md` · `.cursor/rules/` · `DESIGN.md` · `.mcp.json`, and the folders `.claude/` · `.codex/` · `.agents/` · `openspec/` · `.specify/` · `.kiro/`, and write one row per file (who made it · what it holds). Include what is not committed if it is in use.
+   - **Show what would change and get approval.** The "LanternSpec" table in the same section is the reference:
+     - If `CLAUDE.md` has the same content as `AGENTS.md`, propose deleting it (Claude Code reads `AGENTS.md` itself). If it differs, leave it and only check the `@AGENTS.md` at its top.
+     - Where an existing rule and a rule in the LanternSpec block conflict (e.g. the commit message format), show the place and make it follow the existing project's rule.
+     - Don't delete the instructions and commands of another workflow tool (OpenSpec · Spec Kit · Kiro). Say where they remain and let the person decide.
+   - **After LanternSpec:** change only what was approved, and write how each file changed. For a file left as it was, write "left as is" and why.
+5. **Ask about blanks:** required blanks only · if you can guess, ask "is this right?" · group the questions for one document · "don't know" becomes `<<marker.unknown>>`.
+6. **Bonus:** gather TODOs · "later" items from the existing documents with `lantern legacy todos` and show them as idea candidates. Record only the ones the user picks, with `/l-idea`.
+   If the repository has an `openspec/` folder, mention it once: "The OpenSpec changes can be brought over as works and ideas. If you'd like that, run `/l-migrate` once `/l-init` is done." Without it, carry on with the next steps as usual.
 <!-- lantern:if tool=claude -->
-6. **Design system** (when Claude Design was chosen as the design tool and the project has screens): if the code has shared UI parts such as buttons, inputs and colors, mention it once.
+7. **Design system** (when Claude Design was chosen as the design tool and the project has screens): if the code has shared UI parts such as buttons, inputs and colors, mention it once.
    "If you move the existing buttons, colors and fonts into a Claude design system, new screen mockups come out looking like the current app. If you'd like that, run `/design-sync`."
    The person runs it. If they don't, carry on with the next steps as usual.
 <!-- lantern:endif -->

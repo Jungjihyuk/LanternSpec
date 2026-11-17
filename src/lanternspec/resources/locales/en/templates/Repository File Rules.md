@@ -6,13 +6,13 @@ created: ${today}
 updated: ${today}
 links: []
 template: Repository File Rules
-template_version: 1.0.0
-based_on: 1.0.0
+template_version: 1.1.0
+based_on: 1.1.0
 ---
 # 📘 Repository File Rules
 
 > [!abstract] At a glance
-> The format to follow when **first creating** `.gitignore` · `docker-compose.yml` · README · CHANGELOG · LICENSE · the folder structure.
+> The format to follow when **first creating** `.gitignore` · `docker-compose.yml` · README · CHANGELOG · LICENSE · the folder structure · the AI Context Files.
 > The first format sets the pattern for later changes, so make it easy to read from the start.
 > For a file that already exists, keep its format and put new entries in the matching group.
 
@@ -190,8 +190,65 @@ Decide it only when the repository is made public. This table is a summary to he
 - **Run for a long time (`long`):** show the person 2–3 candidates that fit the chosen technologies and decide together (e.g. separate `backend/` · `frontend/`, folders by feature, a single app). Record the chosen structure in an ADR and the architecture document.
 - When adding a new top-level folder, note why in one line in the architecture document.
 
+## AI Context Files
+Files an AI tool reads by itself when it starts working. Rules are written in one place (`AGENTS.md`); a tool's own file only imports it.
+
+### Standard
+| File | Who defined it | What goes in it |
+|---|---|---|
+| `AGENTS.md` | Open format (started by OpenAI, kept by the Linux Foundation) | Project rules. Any folder can have one, and the nearest file wins |
+| `CLAUDE.md` · `.claude/rules/` | Anthropic (Claude Code) | Rules for Claude only. Imports other files with `@path` |
+| `GEMINI.md` | Google (Gemini CLI · Antigravity) | Rules for Gemini only |
+| `.github/copilot-instructions.md` · `.github/instructions/*.instructions.md` | GitHub (Copilot) | Rules for Copilot only. The second picks the files it applies to with `applyTo` |
+| `.cursor/rules/*.mdc` | Cursor | Rules for Cursor only. The header says which files and when |
+| `SKILL.md` | Open format Agent Skills (started by Anthropic) | One way of doing a task, loaded only when needed. One folder holds `SKILL.md` and the files that go with it |
+| `MEMORY.md` | Anthropic (Claude Code auto memory) | The index of what the AI notes down by itself while working. Kept on the user's computer, not in the repository |
+| `PLANS.md` | OpenAI (Codex) | How to write the execution plan of a long task. `AGENTS.md` says when to use it |
+| `spec.md` · `plan.md` · `tasks.md` · `constitution.md` | GitHub (Spec Kit) | Spec · plan · tasks per feature. `constitution.md` holds the principles of the whole project |
+| `requirements.md` · `design.md` · `tasks.md` | AWS (Kiro) | Requirements · design · tasks per feature |
+| `proposal.md` · `design.md` · `tasks.md` | OpenSpec | Proposal · design · tasks per change |
+| `DESIGN.md` | Google Labs (draft) | The design system (color · type · spacing values and their explanation) |
+| `.mcp.json` | De facto standard (tools that use MCP) | The outside tools (MCP servers) an AI tool connects to |
+
+### LanternSpec
+| File | Who defined it | What goes in it |
+|---|---|---|
+| `AGENTS.md` | The project + LanternSpec | Project rules. LanternSpec writes only between `lanternspec:start` and `end` |
+| `<part>/AGENTS.md` | The project + LanternSpec | The rules of that part (backend · frontend …) |
+| `CLAUDE.md` | Not created | Claude Code reads `AGENTS.md` itself. An existing one only gets `@AGENTS.md` at its top |
+| `GEMINI.md` | Not created | The tool reads `AGENTS.md` itself |
+| `SKILL.md` | Open format Agent Skills (started by Anthropic) | One way of doing a task, loaded only when needed. The ${skill_count} LanternSpec skills (`/l-init` · `/l-idea` · `/l-plan` · `/l-design` · `/l-task` · `/l-build` …) are installed by `lantern install` and are not edited by hand |
+| `Plan.md` | LanternSpec | Per work: what is built, why, and the acceptance criteria |
+| `Design.md` | LanternSpec | Per work: how it is built (structure · screens · data). Not the standard `DESIGN.md` (the design system) |
+| `Tasks.md` | LanternSpec | Per work: the ordered task list |
+| `Log.md` | LanternSpec | Per work: where things stand and the evidence |
+| `DESIGN.md` | Not handled | If there is one it stays, and the screens document links to it |
+| `MEMORY.md` | Not handled | It is memory on one person's computer, so repository rules leave it out |
+| `.mcp.json` | `lantern install --mcp` | The connection to the knowledge store |
+<!-- lantern:if origin=brownfield -->
+
+### Before LanternSpec
+> [!guide]- ✍️ How to write — what was here before LanternSpec
+> List the AI Context Files this repository had before LanternSpec, one per row. `/l-init` reads the repository and fills this in.
+> Include files that are not committed (`.claude/` …) if they were in use.
+
+| File | Who defined it | What goes in it |
+|---|---|---|
+| {{File}} | {{Who defined it}} | {{What goes in it}} |
+
+### After LanternSpec
+> [!guide]- ✍️ How to write — what changed to fit LanternSpec
+> For each file under "Before LanternSpec", say how it changed to fit the LanternSpec way. For a file left as it was, write "left as is" and why.
+> Show the person what will change and get approval before changing a file.
+
+| File | Who defined it | What goes in it |
+|---|---|---|
+| {{File}} | {{Who defined it}} | {{What goes in it}} |
+<!-- lantern:endif -->
+
 <!-- lantern:template-only -->
 ## Change log
 | Version | Date | What changed |
 |---|---|---|
 | 1.0.0 | 2026-11-09 | Base template |
+| 1.1.0 | 2026-11-17 | Added the AI Context Files section (standard · LanternSpec · before and after for an existing project) |
