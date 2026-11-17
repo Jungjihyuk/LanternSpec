@@ -174,6 +174,7 @@ Ask the three `<<marker.required>>` blanks of `docs/<<folder.current>>/<<file.pr
 ## 5. 🏠 Brownfield — fill in → link → ask about blanks
 1. **Fill in:** read the code (what exists: facts) + `<<folder.legacy>>/` (why: background) and fill drafts of `<<folder.current>>` — architecture · feature list · data · (if any) API.
    - Data: if there are SQL migrations, `lantern dbml from-sql <migrations folder> --out "docs/<<folder.current>>/<<folder.data>>/schema.dbml"` → `lantern dbml render`. **The migrations and the real database are the reference.**
+   - Design system (when there are screens): read the color · type · spacing definitions in the code (theme files · color assets · CSS variables) and fill in `<<folder.rules>>/<<file.design_system>>`. If the repository has a `DESIGN.md`, don't copy its values; only link it.
    - In each current-state document's frontmatter, record the related code and when it was checked: `lantern meta set "<document>" 'code=[src/auth, src/api]' checked_commit=$(git rev-parse --short HEAD)`
 2. **Link:** add a `Source: [[<<folder.legacy>>/…]]` link to everything you filled in.
 3. **Legacy map:** in the `<<folder.legacy>>/<<file.legacy_map>>` table, fill in for each document what it covers · whether it is still true · route · new place. You recommend the route; the user only confirms:

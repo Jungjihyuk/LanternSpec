@@ -11,6 +11,7 @@
 
 ### 추가
 - **`lantern migrate openspec` 명령과 `/l-migrate` 스킬** — OpenSpec의 변경을 LanternSpec의 작업과 아이디어로 옮긴다. 보관된 변경은 `2. 작업/보관/`의 끝난 작업, 진행 중인 변경은 `2. 작업/`의 작업(할 일이 전부 끝났으면 보관), 메모만 있는 것은 `1. 아이디어/`가 된다. `proposal.md` · `design.md` · `tasks.md`의 칸을 `기획` · `설계` · `할 일`의 칸에 맞춰 넣고, 시나리오는 수락 기준이 되며, 맞는 칸이 없는 내용은 "옮기지 못한 내용"에 모인다. `specs/`의 기능은 `기능 목록`에 한 줄씩 더해지고, 원본은 `5. 기존 문서/openspec/`에 보관된다. 미리보기가 기본이고 `--apply`가 커밋 하나로 남긴다. 진행 중인 변경을 어디로 보낼지는 `--archive` · `--work` · `--idea`로 바꾼다
+- **디자인 시스템 문서 (`3. 현재 상태/규칙/디자인 시스템.md`)** — 모든 화면에 걸쳐 지킬 색 · 글꼴 · 간격 · 모서리 · 공통 부품을 적는다. 화면이 있는 프로젝트에 생기고, `/l-design`이 화면 시안을 만들기 전에 읽는다. 칸의 순서는 표준 `DESIGN.md`와 같고, 저장소에 `DESIGN.md`가 이미 있으면 그 파일이 기준이다. 기존 프로젝트에는 `lantern scaffold init`으로 더한다
 - **`저장소 파일 규칙`의 AI Context Files 절** — AI 도구가 스스로 읽는 파일(`AGENTS.md` · `CLAUDE.md` · `SKILL.md` · `DESIGN.md` 등)을 파일 · 누가 정했나 · 무엇을 적나 표로 정리한다. 표준과 LanternSpec의 방식이 미리 채워져 있고, 기존 프로젝트(brownfield)에는 도입 전 · 도입 후 표가 더해져 `/l-init`이 이미 있던 파일을 분석해 채운다. 파일을 바꾸기 전에 바꿀 내용을 보여 주고 승인받는다. 이미 만든 문서에는 `lantern template migrate "저장소 파일 규칙"`으로 반영한다
 - **`lantern.yaml`의 `docs.keep`** — `lantern legacy adopt`가 옮기지 않고 남길 파일 · 폴더를 적는다 (예: `[updates/]`)
 

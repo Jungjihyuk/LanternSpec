@@ -71,6 +71,13 @@ The content of a rule (its tables and numbers) is written once, in the rules doc
 - **Why:** a rule kept only inside a skill's text is hard for people to find and impossible for a team to change. As a document, a rule the team changed is followed by the AI too.
 - **Turned down:** writing the rules into skills. Skills are regenerated on `lantern upgrade`, and the team's edits would be lost.
 
+### The design system is a document in the rules folder (`Rules/Design System.md`)
+- **Decided:** the colors · type · spacing · corners · shared parts every screen follows are written in `3. Current State/Rules/Design System.md`. Only projects with screens get it, and `/l-design` reads it before making screen mockups. Its sections come in the order of the standard `DESIGN.md` (Google Labs) — overview · colors · typography · layout · elevation · shapes · components · do's and don'ts.
+- **Why:** when each work only draws its own mockups, colors and type drift from screen to screen. This is "what we follow now", so it belongs in the rules folder next to the development principles and the technology criteria, where people find it and skills read it the same way.
+- **When a `DESIGN.md` already exists:** that file is the reference and this document only links it. The same value is not written in two places.
+- **Turned down:** ① the domain knowledge folder — that is for reference material brought in from outside and read only when needed, unlike a standard to follow every time. ② creating a `DESIGN.md` at the repository root — the format is still a draft and may change, and outside the documents folder people don't see it. With the sections in the same order, moving to it later is easy.
+- **Source:** `src/lanternspec/resources/locales/<language>/templates/Design System.md`
+
 ## 3. Formats
 
 ### One task per line (`- [ ] W-001-T01 What [size:: 1h] [ac:: AC-1]`)

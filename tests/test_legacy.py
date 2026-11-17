@@ -115,3 +115,24 @@ def test_brownfield_repo_file_rules_ask_for_before_and_after(repo):
     assert "### 도입 전" in text and "### 도입 후" in text
     assert text.count("| {{파일}} | {{누가 정했나}} | {{무엇을 적나}} |") == 2
     repo("check")
+
+
+def test_a_project_with_screens_gets_a_design_system_document(repo):
+    init_project(repo)
+    text = (docs(repo) / "3. 현재 상태/규칙/디자인 시스템.md").read_text(encoding="utf-8")
+    assert [line for line in text.splitlines() if line.startswith("## ")] == [
+        "## 전체 느낌",
+        "## 색",
+        "## 글꼴",
+        "## 배치 · 간격",
+        "## 깊이",
+        "## 모양",
+        "## 공통 부품",
+        "## 지킬 것 · 피할 것",
+    ]  # the order of the standard DESIGN.md
+    assert "[[3. 현재 상태/규칙/디자인 시스템]]" in (docs(repo) / "3. 현재 상태/화면/화면.md").read_text(encoding="utf-8")
+
+
+def test_a_project_without_screens_has_no_design_system_document(repo):
+    init_project(repo, "--clients", "none")
+    assert not (docs(repo) / "3. 현재 상태/규칙/디자인 시스템.md").exists()

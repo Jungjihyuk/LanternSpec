@@ -222,7 +222,7 @@ Files an AI tool reads by itself when it starts working. Rules are written in on
 | `Design.md` | LanternSpec | Per work: how it is built (structure · screens · data). Not the standard `DESIGN.md` (the design system) |
 | `Tasks.md` | LanternSpec | Per work: the ordered task list |
 | `Log.md` | LanternSpec | Per work: where things stand and the evidence |
-| `DESIGN.md` | Not handled | If there is one it stays, and the screens document links to it |
+| `DESIGN.md` | Not created | If there is one, it is the reference for the design system. If not, `Rules/Design System.md` holds it, with sections in the same order |
 | `MEMORY.md` | Not handled | It is memory on one person's computer, so repository rules leave it out |
 | `.mcp.json` | `lantern install --mcp` | The connection to the knowledge store |
 <!-- lantern:if origin=brownfield -->

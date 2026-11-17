@@ -881,6 +881,7 @@ DOC_FOLDERS: dict[str, tuple[str, ...]] = {
     "glossary": ("rules",),
     "tech-criteria": ("rules",),
     "repo-files": ("rules",),
+    "design-system": ("rules",),
     "collab": ("rules",),
     "principles": ("rules",),
     "known-tech": ("debt",),
@@ -967,6 +968,7 @@ def enabled_docs(profile: Profile) -> list[DocSpec]:
         labels = ", ".join(client_label(c) for c in clients if c in CLIENT_LABEL)
         out += [
             doc("screens", msg("clients: {labels}", labels=labels)),
+            doc("design-system", msg("clients: {labels}", labels=labels)),
             doc("platform", msg("clients: {labels}", labels=labels), sections=list(clients)),
             doc("deploy", msg("clients: {labels}", labels=labels), sections=list(clients)),
         ]
@@ -990,7 +992,7 @@ def enabled_docs(profile: Profile) -> list[DocSpec]:
 
 
 # Doc keys that may become "사용 안 함" (inactive) when answers change. Folders are never removed.
-OPTIONAL_DOC_KEYS = {"screens", "platform", "deploy", "api", "server-ops", "collab", "known-tech", "legacy-map"}
+OPTIONAL_DOC_KEYS = {"screens", "design-system", "platform", "deploy", "api", "server-ops", "collab", "known-tech", "legacy-map"}
 
 # Which /l-init follow-up questions a newly enabled doc needs (English; msg() translates them).
 FOLLOW_UP_QUESTIONS = {

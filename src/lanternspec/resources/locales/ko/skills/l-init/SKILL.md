@@ -175,6 +175,7 @@ lantern scaffold init --plan        # 만들 폴더 · 문서 목록 (아직 아
 ## 5. 🏠 브라운필드 — 채우기 → 연결하기 → 빈칸 묻기
 1. **채우기:** 코드(무엇이 있나: 사실) + `<<folder.legacy>>/`(왜: 배경)를 읽고 `<<folder.current>>`의 초안을 채운다 — 시스템 구조 · 기능 목록 · 데이터 · (있으면) API.
    - 데이터: SQL 마이그레이션이 있으면 `lantern dbml from-sql <마이그레이션 폴더> --out "docs/<<folder.current>>/<<folder.data>>/schema.dbml"` → `lantern dbml render`. **마이그레이션 · 실제 DB가 기준**이다.
+   - 디자인 시스템 (화면이 있을 때): 코드의 색 · 글꼴 · 간격 정의(테마 파일 · 색 에셋 · CSS 변수)를 읽어 `<<folder.rules>>/<<file.design_system>>`을 채운다. 저장소에 `DESIGN.md`가 있으면 값을 옮겨 적지 않고 링크만 둔다.
    - 각 현재 상태 문서 frontmatter에 관련 코드와 확인 시점을 적는다: `lantern meta set "<문서>" 'code=[src/auth, src/api]' checked_commit=$(git rev-parse --short HEAD)`
 2. **연결하기:** 채운 내용마다 `출처: [[<<folder.legacy>>/…]]` 링크를 단다.
 3. **기존 문서 지도:** `<<folder.legacy>>/<<file.legacy_map>>` 표에 문서마다 무슨 내용 · 아직 맞나 · 갈래 · 새 위치를 채운다. 갈래는 네가 추천하고 사용자는 확인만 한다:

@@ -27,6 +27,8 @@ Of the three sections, keep **only the ones this work needs** (e.g. screens only
 Draw the parts and flows that change in Mermaid. The text explains the diagram. Write code locations in backticks like `` `src/…` `` (they are used to warn about clashes between parallel works).
 
 ## 3. 🎨 Screens
+Before making screens, read `docs/<<folder.rules>>/<<file.design_system>>` and follow its colors · type · spacing · shared parts. If the repository has a `DESIGN.md`, that file is the reference.
+When this work sets a value for the first time (a new color · a new shared part), confirm it with the person and add it to that document. If the document is missing or empty, carry on as usual.
 <!-- lantern:if design.tool=claude-design -->
 **If Claude's Design tool is available** (the artifact tool has a Design type), make the wireframes yourself.
 1. Take the list of screens from the user scenarios and acceptance criteria in `<<file.plan>>`.

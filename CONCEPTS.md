@@ -117,7 +117,9 @@ Everything LanternSpec writes lives in the `docs/` folder.
 - Where to look: `/l-migrate` · `lantern migrate openspec`
 
 ### Rule documents
-> Documents about **what the project has agreed to follow now**: development principles, the criteria for choosing technologies, how to write files like `.gitignore`, the project glossary and so on.
+> Documents about **what the project has agreed to follow now**: development principles, the criteria for choosing technologies, how to write files like `.gitignore`, the project glossary, the design system and so on.
+
+- The design system: the colors · type · spacing · shared parts every screen follows. Only projects with screens get it, and `/l-design` reads it before making screen mockups. What differs per screen is drawn in the work's `Design.md`.
 
 - Where to look: `docs/3. Current State/Rules/`
 

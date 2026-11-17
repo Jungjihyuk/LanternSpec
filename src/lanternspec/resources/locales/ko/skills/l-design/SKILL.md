@@ -27,6 +27,8 @@ lantern scaffold doc W-012 "<<doc.design>>"
 바뀌는 부품과 흐름을 Mermaid로 그린다. 글은 그림을 설명한다. 코드 위치는 `` `src/…` `` 처럼 백틱으로 적는다 (동시 작업 충돌 경고에 쓰인다).
 
 ## 3. 🎨 화면
+화면을 만들기 전에 `docs/<<folder.rules>>/<<file.design_system>>`을 읽고 색 · 글꼴 · 간격 · 공통 부품을 따른다. 저장소에 `DESIGN.md`가 있으면 그 파일이 기준이다.
+이번 작업에서 처음 정하는 값(새 색 · 새 공통 부품)이 있으면 사람에게 확인받고 그 문서에 더한다. 문서가 없거나 비어 있으면 그대로 진행한다.
 <!-- lantern:if design.tool=claude-design -->
 **Claude의 Design 도구를 쓸 수 있으면** (artifact 도구에 Design 타입이 있으면) 와이어프레임을 직접 만든다.
 1. `<<file.plan>>`의 사용자 시나리오와 수락 기준에서 화면 목록을 뽑는다.

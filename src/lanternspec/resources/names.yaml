@@ -50,6 +50,7 @@ docs:                       # 문서 이름 (확장자 없이) — 템플릿 이
   glossary: {ko: "용어집", en: "Glossary"}
   tech_criteria: {ko: "기술 선택 기준", en: "Tech Selection Criteria"}
   repo_files: {ko: "저장소 파일 규칙", en: "Repository File Rules"}
+  design_system: {ko: "디자인 시스템", en: "Design System"}  # 모든 화면에 걸쳐 지킬 색 · 글꼴 · 간격 · 공통 부품 (화면이 있는 프로젝트)
   task_rules: {ko: "할 일 나누기 기준", en: "Task Breakdown Rules"}
   legacy_map: {ko: "기존 문서 지도", en: "Legacy Map"}
   project_definition: {ko: "프로젝트 정의서", en: "Project Definition"}
