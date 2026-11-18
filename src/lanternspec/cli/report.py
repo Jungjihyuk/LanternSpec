@@ -91,7 +91,7 @@ def cmd_build_mode(a: argparse.Namespace) -> int:
     project = _p()
     if a.command == "harness":
         print(msg("ℹ `lantern harness` is now `lantern build-mode` — the old name goes away in a later version"))
-    s = build_mode.suggest(project)
+    s = build_mode.suggest(project, a.work)
     f = s.facts
 
     def cells(text: str) -> int:  # Korean and other wide letters take two columns in a terminal
@@ -114,7 +114,8 @@ def cmd_build_mode(a: argparse.Namespace) -> int:
             value=msg("yes") if f["has_test"] else msg("no"),
         )
     )
-    print(msg("  --apply sets only the loop scope: ") + ", ".join(f"{k}={v}" for k, v in s.settings.items()))
+    if s.settings:
+        print(msg("  --apply sets only the loop scope: ") + ", ".join(f"{k}={v}" for k, v in s.settings.items()))
     if a.apply and s.settings:
         path = project.root / pm.PROFILE_FILE
         text = read(path)
@@ -177,3 +178,4 @@ def register(add: Add) -> None:
         p = add(name, cmd_build_mode, msg("Suggest how to build: loop scope · task delegation · parallel works"))
         p.add_argument("action", choices=["suggest"])
         p.add_argument("--apply", action="store_true")
+        p.add_argument("--work", help=msg("Look at one work: it may loop only when every criterion has a committed test"))

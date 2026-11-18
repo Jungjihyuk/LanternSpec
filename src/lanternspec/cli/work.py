@@ -245,6 +245,107 @@ def cmd_plan(a: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_loop(a: argparse.Namespace) -> int:
+    """`lantern loop start|attempt|finish|status` — the build loop's facts, measured by lantern (inside /l-build)."""
+    from ..work import loop
+
+    project = _p()
+    if a.action == "attempt":
+        if not a.ac:
+            raise CliError("lantern loop attempt W-012 AC-2")
+        tried = loop.attempt(project, a.work, a.ac, a.task or "")
+        if tried.result == loop.PASS:
+            print(msg("✔ {ac} passed (try {n})", ac=tried.ac.upper(), n=tried.attempt))
+            return 0
+        if tried.result == loop.LIMIT:
+            print(
+                msg(
+                    "⛔ {ac} failed {limit} times in a row — stop the loop and hand it to the person",
+                    ac=tried.ac.upper(),
+                    limit=tried.limit,
+                )
+            )
+            return 1
+        if not tried.streak:
+            print(
+                msg(
+                    "✖ The whole suite did not pass (try {n} for {ac}) — nothing is judged per criterion without build.test_one",
+                    n=tried.attempt,
+                    ac=tried.ac.upper(),
+                )
+            )
+            print(tried.tail)
+            return 1
+        print(
+            msg(
+                "✖ {ac} failed (try {n}, {streak} of {limit} in a row)",
+                ac=tried.ac.upper(),
+                n=tried.attempt,
+                streak=tried.streak,
+                limit=tried.limit,
+            )
+        )
+        print(tried.tail)
+        return 1
+    if a.action == "finish":
+        done = loop.finish(project, a.work)
+        if done.result == loop.PASSED:
+            print(msg("✔ Round {round}: passed", round=done.round))
+        elif done.result == loop.FAILED:
+            print(msg("✖ Round {round}: not passed", round=done.round))
+        else:
+            print(msg("⛔ Round {round}: invalid", round=done.round))
+        if done.unpassed:
+            print(msg("Criteria without a passing try: {ids}", ids=", ".join(done.unpassed)))
+        for v in done.violations:
+            print("  " + loop.describe(v))
+        if done.result == loop.FAILED and done.tail:
+            print(done.tail)
+        if done.tests_before is None or done.tests_after is None:
+            print(msg("ℹ The number of tests could not be read from the output, so that check was skipped"))
+        if done.result == loop.INVALID:
+            print(msg("The pass does not count — stop the loop and hand it to the person"))
+        elif done.stop:
+            print(msg("The round limit is reached — stop the loop and hand it to the person"))
+        return 0 if done.result == loop.PASSED else 1
+    if a.action == "start":
+        res = loop.start(project, a.work, a.again)
+        if res.mode == loop.MODE_LOOP:
+            count = msg("{n} tests ran before", n=res.tests_before) if res.tests_before is not None else msg("test count unknown")
+            print(msg("✔ Loop started for {work} (run {run}) — {count}", work=a.work, run=res.run, count=count))
+            return 0
+        print(msg("ℹ {work} goes on with a check after each task — no loop:", work=a.work))
+        for reason in res.reasons:
+            print(f"  · {reason}")
+        return 0
+    elig = loop.eligibility(project, a.work)
+    now = loop.standing(project, a.work)
+    print(msg("✔ {work} may loop", work=a.work) if elig.ok else msg("ℹ {work} may not loop yet:", work=a.work))
+    for reason in elig.reasons:
+        print(f"  · {reason}")
+    if now:
+        words = {
+            "loop": msg("loop"),
+            "each": msg("check each task"),
+            "passed": msg("passed"),
+            "failed": msg("not passed"),
+            "invalid": msg("invalid"),
+            "": "-",
+        }
+        print(
+            msg(
+                "Latest run {run}: {mode}, {n} tries, last round: {result}",
+                run=now.run,
+                mode=words.get(now.mode, now.mode),
+                n=now.attempts,
+                result=words.get(now.last_result, now.last_result),
+            )
+        )
+        for v in now.violations:
+            print("  ⚠ " + loop.describe(v))
+    return 0
+
+
 def cmd_unit_log(a: argparse.Namespace) -> int:
     """`lantern unit-log add` — record the work unit the AI recommended and the one the person chose."""
     from ..work import stages
@@ -484,6 +585,14 @@ def register(add: Add) -> None:
     followed = p.add_mutually_exclusive_group()
     followed.add_argument("--understood", action="store_true", help=msg("Approved, and I followed the design"))
     followed.add_argument("--delegated", action="store_true", help=msg("Approved, handed over without following it"))
+    p = add("loop", cmd_loop, msg("The build loop: start · attempt · finish · status (inside /l-build)"))
+    p.add_argument("action", choices=["start", "attempt", "finish", "status"])
+    p.add_argument("work")
+    p.add_argument("ac", nargs="?")
+    p.add_argument("--task", help=msg("The task being built (attempt)"))
+    p.add_argument(
+        "--again", action="store_true", help=msg("Start another loop for a work that already had one (only when the person says so)")
+    )
     p = add("unit-log", cmd_unit_log, msg("Record why the person changed the suggested work unit"))
     p.add_argument("action", choices=["add"])
     p.add_argument("--what", required=True)

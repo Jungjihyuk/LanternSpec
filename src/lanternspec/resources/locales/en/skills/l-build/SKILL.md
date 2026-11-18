@@ -22,6 +22,11 @@ Current settings: report cycle `<<build.report_cycle>>` · applying to the curre
    ```
 4. If `<<file.record>>` doesn't exist, `lantern scaffold doc W-012 "<<doc.record>>"`
 5. Read and follow the decision records listed under `adr` in the design. For a choice other works share (authentication · shared tables · API format and so on) that neither the design nor a decision record settles, don't decide it yourself: stop and ask. Once decided, record it with `/l-adr`, and add to the report "Please tell the other parallel sessions to read ADR-NNN too."
+<!-- lantern:if build.loop=on -->
+6. **Start the loop:** before the first task, run `lantern loop start W-012`. The facts of the loop (start · tries · results) are measured by these commands and written to the run log. **You never say it passed — the command's output is the verdict.**
+   - On `✔`, build in the loop of step 3½. Don't change the test files linked to the acceptance criteria (`[<<attr.test>>:: …]`) or the settings files listed in `build.test_config` — changing them voids the pass. Writing new tests in new files is fine (adding to a linked file voids the pass). Running `lantern loop start W-012 --again` for a work whose loop already started is done **only when the person says so** — a restart forgets the earlier failures and limits, and shows as a ⚠ at archive.
+   - On `ℹ … goes on with a check after each task`, don't loop; the try command (`attempt`) is refused for this work. Show the person the reasons it gives (an AC without a <<attr.test>> field · a test that isn't committed …) and ask whether to write the tests first, commit them, add `[<<attr.test>>:: tests/test_login.py::test_wrong_password]` to the AC lines and start again. If not, go on task by task with a check after each (steps 1–2).
+<!-- lantern:endif -->
 
 ## 1. One task at a time (the small loop)
 ```bash
@@ -62,7 +67,7 @@ Read a 📌 verbatim section again right before turning its rule into code. Know
    Code commit `git commit -m "feat: <what> [W-012-T03]"` → then a docs commit pointing to it: `git -C docs add -- "<<folder.works>>/W-012 …" && git -C docs commit -m "docs: W-012-T03 log (code $(git rev-parse --short HEAD))" -- "<<folder.works>>/W-012 …"` (this work's folder only, so documents of other works running in parallel stay out). Never put `docs/` in a code commit.
 <!-- lantern:endif -->
    Don't mix several tasks in one commit. A big task may have several commits with the same ID. Don't put any mark that AI did the work (`Co-Authored-By` · `Generated with …` and so on) in the commit message.
-5. **Acceptance-criterion checkpoint:** when `task done` announces a checkpoint for `AC-1`, check that AC on its own (related tests · trying the behavior). If it passes, `lantern task ac W-012 AC-1`.
+5. **Acceptance-criterion checkpoint:** when `task done` announces a checkpoint for `AC-1`, check that AC on its own (related tests · trying the behavior). If it passes, `lantern task ac W-012 AC-1`.<!-- lantern:if build.loop=on --> In a loop, first run that AC's test with `lantern loop attempt W-012 AC-1`.<!-- lantern:endif -->
 
 6. **Screen check:** when a `[<<attr.screen>>:: …]` task is done, run it and check the screen (`verify.browser` in `lantern.yaml`: `<<verify.browser>>`).
 <!-- lantern:if verify.browser=auto -->
@@ -122,10 +127,12 @@ When a new technology comes in while building, collect it as a candidate (leave 
 
 <!-- lantern:if build.loop=on -->
 ## 3½. The big loop (build.loop: on · at most <<build.loop_limit>> times)
-When every task is done, run all the acceptance tests together<!-- lantern:if build.test --> (`<<build.test>>`)<!-- lantern:endif -->.
-- All pass → step 4.
-- Any acceptance criterion fails → add a task to fix each failure (`lantern task add W-012 "<make AC-n pass>" --size <<size.s>> --ac AC-n`) and go round again from step 1. Write in `<<file.record>>`: "big loop round n: failing ACs · the cause in one line".
-- If they still fail after <<build.loop_limit>> rounds, stop and report (what was done · remaining failures · what needs choosing).
+Only a work for which `lantern loop start W-012` printed `✔` loops (step 6 of 0). Every verdict is a command's output, and the limits (the same AC failing <<build.same_ac_limit>> times in a row · <<build.loop_limit>> big rounds) are counted by the commands too. Once a limit is hit or `⛔` shows, every try and round command for the work is refused.<!-- lantern:if !build.test_one --> `build.test_one` is empty, so nothing is judged per criterion: `attempt` runs the whole suite and only records the try (failures aren't counted), and `finish` judges pass or fail by the whole suite.<!-- lantern:endif -->
+1. After each acceptance criterion is built, run its test with `lantern loop attempt W-012 AC-1`. On `✖`, fix it and run the same command again. On `⛔` (one AC failing again and again), stop and report to the person.
+2. When every task is done, run `lantern loop finish W-012`. It prints `✔` only when the latest try of every AC passed, the whole suite (<!-- lantern:if build.test -->`<<build.test>>`<!-- lantern:endif -->) passed, the linked tests and settings files are unchanged and no fewer tests ran than before.
+   - `✔` → step 4.
+   - `✖` → add a task to fix each AC that did not pass (`lantern task add W-012 "<make AC-n pass>" --size <<size.s>> --ac AC-n`), go back to building, and run this section again. Write in `<<file.record>>`: "big loop round n: failing ACs · the cause in one line".
+   - On `⛔` (invalid) or "the round limit", stop and report (what was done · remaining failures · what needs choosing). Invalid means a test changed or fewer tests ran: say what was printed, as it was.
 <!-- lantern:endif -->
 
 ## 4. When everything is done — apply to the current state

@@ -42,7 +42,7 @@ def check_criteria(project: Project, plan: Path) -> list[Finding]:
     text = read(plan)
     meta = frontmatter.parse(text).meta
     fmt = project.profile.get("plan.ac_format") or "gwt"
-    acs = parse_criteria(text)
+    acs = parse_criteria(text, project.names)
     n = project.names
     situation, action, result_word = n.acceptance("situation"), n.acceptance("action"), n.acceptance("result")
     out: list[Finding] = []
@@ -60,6 +60,19 @@ def check_criteria(project: Project, plan: Path) -> list[Finding]:
         seen.add(ac.id)
         if int(ac.id.split("-")[1]) != i:
             out.append(Finding("info", rel, "ac-order", msg("{id}: numbers are out of order (expected AC-{i})", id=ac.id, i=i), line))
+        for field_name in ac.unknown_fields:
+            out.append(
+                Finding(
+                    "warn",
+                    rel,
+                    "ac-field",
+                    msg("{id}: '{field}' is not a field of an acceptance criterion", id=ac.id, field=field_name),
+                    line,
+                    msg("The test that checks it goes in [{attr}:: tests/test_login.py::test_wrong_password]", attr=n.attr("test")),
+                )
+            )
+        if "test" in ac.attrs and not ac.test_file:
+            out.append(Finding("warn", rel, "ac-test", msg("{id}: the test field is empty", id=ac.id), line))
         body = ac.text
         if "{{" in body:
             out.append(Finding("warn", rel, "ac-blank", msg("{id}: blanks remain", id=ac.id), line))

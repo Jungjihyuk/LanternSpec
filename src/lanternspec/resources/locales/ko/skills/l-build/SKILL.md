@@ -22,6 +22,11 @@ argument-hint: "W-NNN | W-NNN-T03 [--report-cycle work|criterion|task]"
    ```
 4. `<<file.record>>`가 없으면 `lantern scaffold doc W-012 "<<doc.record>>"`
 5. 설계의 `adr`에 적힌 결정 기록을 읽고 따른다. 다른 작업과 함께 쓰는 선택(인증 · 공통 테이블 · API 형식 등)인데 설계와 결정 기록에 없으면 스스로 정하지 말고 멈추고 묻는다. 정해지면 `/l-adr`로 남기고, 보고에 "다른 동시 작업 세션에도 ADR-NNN을 읽으라고 알려 주세요"를 적는다.
+<!-- lantern:if build.loop=on -->
+6. **반복 시작:** 첫 할 일을 시작하기 전에 `lantern loop start W-012`를 실행한다. 반복에 관한 사실(시작 · 시도 · 결과)은 이 명령들이 직접 재서 실행 기록에 쓴다. **통과했다는 말을 네가 하지 않는다 — 명령의 출력이 판정이다.**
+   - `✔`이면 3½단계의 반복으로 구현한다. 이때 수락 기준에 연결된 테스트 파일(`[<<attr.test>>:: …]`)과 `build.test_config`에 적힌 설정 파일은 고치지 않는다 — 고치면 통과가 무효가 된다. 새 파일에 새 테스트를 쓰는 것은 괜찮다 (연결된 파일 안에 더하면 무효가 된다). 이미 반복을 시작한 작업에 `lantern loop start W-012 --again`을 치는 것은 **사람이 말했을 때만** 한다 — 다시 시작하면 앞의 실패와 한도가 잊히고, 보관 때 ⚠로 남는다.
+   - `ℹ … 할 일마다 확인`이면 반복하지 않는다. 이 작업에서 시도 명령(`attempt`)은 거절된다. 알려 준 이유(<<attr.test>> 칸이 없는 AC · 커밋되지 않은 테스트 등)를 사람에게 보여 주고, 테스트를 먼저 써서 커밋하고 AC 줄에 `[<<attr.test>>:: tests/test_login.py::test_wrong_password]`를 달아 다시 시작할지 묻는다. 원하지 않으면 1~2절대로 할 일마다 확인하며 진행한다.
+<!-- lantern:endif -->
 
 ## 1. 할 일 하나씩 (작은 반복)
 ```bash
@@ -62,7 +67,7 @@ lantern task start W-012-T03     # [<<attr.start>>:: 시각]을 정확히 찍는
    코드 커밋 `git commit -m "feat: <무엇> [W-012-T03]"` → 그 번호로 문서 커밋 `git -C docs add -- "<<folder.works>>/W-012 …" && git -C docs commit -m "docs: W-012-T03 기록 (code $(git rev-parse --short HEAD))" -- "<<folder.works>>/W-012 …"` (이 작업 폴더만 — 동시 작업 중인 다른 작업의 문서를 섞지 않는다). 코드 커밋에 `docs/`를 넣지 않는다.
 <!-- lantern:endif -->
    여러 할 일을 한 커밋에 섞지 않는다. 할 일이 크면 같은 ID로 여러 커밋도 된다. 커밋 메시지에 AI가 작업했다는 표시(`Co-Authored-By` · `Generated with …` 등)를 넣지 않는다.
-5. **수락 기준 체크포인트:** `task done`이 `AC 체크포인트: AC-1`을 알리면 그 AC만 따로 확인한다(관련 테스트 · 동작 확인). 통과하면 `lantern task ac W-012 AC-1`.
+5. **수락 기준 체크포인트:** `task done`이 `AC 체크포인트: AC-1`을 알리면 그 AC만 따로 확인한다(관련 테스트 · 동작 확인). 통과하면 `lantern task ac W-012 AC-1`.<!-- lantern:if build.loop=on --> 반복 중이면 먼저 `lantern loop attempt W-012 AC-1`로 그 AC의 테스트를 돌린다.<!-- lantern:endif -->
 
 6. **화면 확인:** `[<<attr.screen>>:: …]` 할 일이 끝나면 실행해서 화면을 확인한다 (`lantern.yaml`의 `verify.browser`: `<<verify.browser>>`).
 <!-- lantern:if verify.browser=auto -->
@@ -122,10 +127,12 @@ lantern scaffold idea "<짧은 제목>" --kind <유형> --raw "W-012 구현 중 
 
 <!-- lantern:if build.loop=on -->
 ## 3½. 큰 반복 (build.loop: on · 최대 <<build.loop_limit>>번)
-모든 할 일이 끝나면 수락 기준 테스트를 한꺼번에 돌린다<!-- lantern:if build.test --> (`<<build.test>>`)<!-- lantern:endif -->.
-- 모두 통과 → 4단계로.
-- 실패한 수락 기준이 있으면 → 실패마다 고칠 할 일을 추가하고(`lantern task add W-012 "<AC-n 맞추기>" --size <<size.s>> --ac AC-n`) 1단계부터 다시 돈다. `<<file.record>>`에 "큰 반복 n번째: 실패한 AC · 원인 한 줄"을 남긴다.
-- <<build.loop_limit>>번을 돌아도 통과하지 못하면 멈추고 보고한다 (한 일 · 남은 실패 · 골라야 할 것).
+`lantern loop start W-012`가 `✔`를 낸 작업만 돈다 (0단계 6번). 판정은 모두 명령의 출력이고, 한도(같은 AC 연속 <<build.same_ac_limit>>번 · 큰 반복 <<build.loop_limit>>번)도 명령이 센다. 한도에 닿거나 `⛔`이 나오면 이 작업의 시도 · 회차 명령은 모두 거절된다.<!-- lantern:if !build.test_one --> `build.test_one`이 비어 있어 AC별 판정은 하지 않는다: `attempt`는 전체 테스트를 돌려 시도만 기록하고(실패해도 세지 않는다), 통과 여부는 `finish`가 전체 테스트로 본다.<!-- lantern:endif -->
+1. 수락 기준 하나의 구현이 끝날 때마다 `lantern loop attempt W-012 AC-1`로 그 AC의 테스트를 돌린다. `✖`이면 고치고 같은 명령을 다시 돈다. `⛔`(한 AC가 연달아 실패)이 나오면 멈추고 사람에게 보고한다.
+2. 모든 할 일이 끝나면 `lantern loop finish W-012`를 실행한다. 모든 AC의 마지막 시도가 통과이고 전체 테스트(<!-- lantern:if build.test -->`<<build.test>>`<!-- lantern:endif -->)가 통과하고, 연결된 테스트 · 설정 파일이 그대로이고 실행된 테스트 수가 줄지 않았을 때만 `✔`이다.
+   - `✔` → 4단계로.
+   - `✖` → 통과하지 못한 AC마다 고칠 할 일을 추가하고(`lantern task add W-012 "<AC-n 맞추기>" --size <<size.s>> --ac AC-n`) 1단계의 구현으로 돌아가 이 절을 다시 돈다. `<<file.record>>`에 "큰 반복 n회차: 실패한 AC · 원인 한 줄"을 남긴다.
+   - `⛔`(무효) 또는 "회차 한도"가 나오면 멈추고 보고한다 (한 일 · 남은 실패 · 골라야 할 것). 무효는 테스트가 바뀌었거나 실행된 테스트 수가 줄었다는 뜻이니, 출력된 내용을 그대로 적는다.
 <!-- lantern:endif -->
 
 ## 4. 모두 끝나면 — 현재 상태에 반영

@@ -6,8 +6,8 @@ created: ${today}
 updated: ${today}
 links: ${links}
 template: Plan
-template_version: 1.1.2
-based_on: 1.1.2
+template_version: 1.1.3
+based_on: 1.1.3
 domain: "{{Domain}}"
 ui: false
 owner: ${owner}
@@ -41,6 +41,7 @@ owner: ${owner}
 > The criteria for deciding this work is done. One per line:
 > `- [ ] AC-1 Given: … · When: … · Then: …` (Given only when needed)
 > - Make the result checkable: "within 2 seconds", not "fast"
+> - If a test checks the criterion, tie it on at the end of the line: `[test:: tests/test_login.py::test_wrong_password]`. The automatic loop of `build.loop: on` needs every criterion tied to a test
 > - `lantern check --epic` checks the format
 
 - [ ] AC-1 Given: {{Given}} · When: {{When (required)}} · Then: {{Then (required)}}
@@ -49,6 +50,7 @@ owner: ${owner}
 > [!guide]- ✍️ How to write — one criterion per line
 > One per line: `- [ ] AC-1 When …, then …`
 > - Make the result checkable: "within 2 seconds", not "fast"
+> - If a test checks the criterion, tie it on at the end of the line: `[test:: tests/test_login.py::test_wrong_password]`. The automatic loop of `build.loop: on` needs every criterion tied to a test
 > - `lantern check --epic` checks the format
 
 - [ ] AC-1 {{Acceptance criterion (required)}}
@@ -80,3 +82,4 @@ owner: ${owner}
 | 1.1.0 | 2026-11-01 | Added the "Domain Knowledge Used" section |
 | 1.1.1 | 2026-11-02 | Clearer writing guides (long ones split into lines, symbols and internal names in words) |
 | 1.1.2 | 2026-11-11 | Notes folded, under titles that say what they are |
+| 1.1.3 | 2026-11-18 | Explains the `[test:: …]` field that ties a test to an acceptance criterion |

@@ -4,7 +4,9 @@ Writers, one format, one line per `kind`:
 * agent hooks, `session`: once per conversation — the tool and its version, LanternSpec's version, the settings repository's commit
 * agent hooks, `turn`: per turn — start · end · model · skill · tool counts · tokens
 * `lantern close <skill>`, `skill`: tools without agent hooks still leave one line per skill run
-* the build loop, `attempt`: one line per try at one acceptance criterion
+* the build loop, `loop`: where a loop starts (`event: start`, the settings and the base commit it runs with) and where
+  each round ends (`event: end`); `attempt`: one line per try at one acceptance criterion. `lantern loop` writes them
+  from what it measured — the agent never states a result itself
 
 Per-session state between hook calls lives in `.lantern/runs-state/`.
 
@@ -182,6 +184,7 @@ def loop_attempt(
     failed_check: str = "",
     understood: bool | None = None,
     work: str = "",
+    scope: str = "one",
 ) -> dict[str, Any]:
     """Write one attempt line: one try at one acceptance criterion in a build loop.
 
@@ -195,12 +198,13 @@ def loop_attempt(
         failed_check: What failed, when it did not pass.
         understood: Whether the person said they understood the plan; None when it was not asked.
         work: The work the task belongs to.
+        scope: "one" when only that criterion's test ran, "all" when the whole suite stood in for it.
 
     Returns:
         The record.
 
     Example:
-        >>> loop_attempt(project, "r1", "T-3", "AC-2", 1, "통과")["kind"]  # doctest: +SKIP
+        >>> loop_attempt(project, "r1", "T-3", "AC-2", 1, "pass")["kind"]  # doctest: +SKIP
         'attempt'
     """
     record = {
@@ -215,7 +219,30 @@ def loop_attempt(
         "result": result,
         "failed_check": failed_check,
         "understood": understood,
+        "scope": scope,
     }
+    append(project, record)
+    return record
+
+
+def loop_event(project: Project, event: str, run: str, work: str, **fields: Any) -> dict[str, Any]:
+    """Write one loop line: a loop starting or a round ending.
+
+    Args:
+        project: The project.
+        event: "start" or "end".
+        run: The loop run it belongs to.
+        work: The work being built.
+        **fields: What was measured (start: mode · settings · base · tests; end: round · result · counts).
+
+    Returns:
+        The record.
+
+    Example:
+        >>> loop_event(project, "start", "r1", "W-012", mode="loop")["event"]  # doctest: +SKIP
+        'start'
+    """
+    record = {"kind": "loop", "source": "build", "event": event, "at": now_iso(), "run": run, "work": work, **fields}
     append(project, record)
     return record
 

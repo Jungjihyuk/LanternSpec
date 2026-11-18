@@ -41,13 +41,27 @@ The content of a rule (its tables and numbers) is written once, in the rules doc
 - **Why:** AI writes a lot of code quickly in the wrong direction too. Stopping at the design is far cheaper than turning around after the code is written.
 
 ### Understanding mark
-- **Decided:** approval and understanding are different questions, so they are asked together but not as a new step: at the places that already ask (the end of planning, the design approval). The answer is kept in one document as `understood: yes · no`, and a work handed over without being followed leaves one understanding-debt card when an automatic loop finishes building it.
+- **Decided:** approval and understanding are different questions, so they are asked together but not as a new step: at the places that already ask (the end of planning, the design approval). The answer is kept in one document as `understood: yes · no`, and a work handed over without being followed leaves one understanding-debt card when an automatic loop built it (the run log shows the loop ran).
 - **Why:** a person may approve without following in order to move fast. Blocking that kills the speed; not recording it loses, later, the fact that this code was left wholly to the AI. A tag plus a debt lets speed and understanding be managed together.
   - A small design that skips the approval isn't asked, so it follows the plan's mark.
   - A technology known only in part inside a document stays with the debt cards, as before.
 - **Rejected alternatives:**
   - Blocking the automatic loop without the mark. It stops a person who can't keep up from pushing ahead, which is against the purpose.
   - Marking understanding per acceptance criterion. It is the most precise, but far too much to mark while planning.
+
+### The facts of an automatic loop are measured by code (`lantern loop`) · loop eligibility · invalid pass
+- **Decided:**
+  - An acceptance-criterion line can carry a field that ties a test (`[test:: …]`). Only a work whose every criterion has a committed test may run the automatic loop (loop eligibility); any other goes on with a check after each task.
+  - The facts of the loop (start · tries · round results) aren't the AI's report: `lantern loop` runs the test command itself and writes the result **by exit code** to the run log. The settings and the base commit at the start are fixed in that line, and the steps after it (the understanding-debt card · the warning at archive) read this record, not the setting in `lantern.yaml`. The setting is the intent, the record is the fact, and when they differ a `⚠` says so.
+  - When a loop starts, the content of the linked test files and of the files `build.test_config` points at (paths or patterns) is fingerprinted into the start line; when a round ends and at archive, the same function compares them. A changed, new, moved or deleted file, or fewer tests in a round whose suite passed, makes the pass invalid and sends the work to the person. It compares content, not git, so a git failure or a settings file in `.gitignore` lets nothing through. What remains: a new settings file not listed in `build.test_config` (a new `conftest.py`, say) can't be told from a new test, so list it as a pattern.
+  - When one criterion fails `build.same_ac_limit` times in a row, or a round hits its limit or is invalid, every try and round command for that work is refused. Starting another loop for the same work needs the person's say (`--again`), and the restart shows as a ⚠ at archive. The AI isn't expected to stop on its own.
+  - With `build.test_one` empty nothing is judged per criterion: a failing whole suite may come from other criteria not built yet, so it isn't counted as this criterion's failure and no limit applies.
+- **Why:** an automatic loop is weakest the moment it trusts the AI saying "it passed". Weakening a test to make it pass is easy for an AI to do without any bad intent, and guessing "did it loop?" from a setting turns every later judgment wrong when the setting and the reality differ. Putting the making of facts in one place of code, and letting the rest read only that record, gets safety and speed together (a git comparison and reading the record take milliseconds; only the tests that had to run anyway run).
+- **Rejected alternatives:**
+  - Blocking edits to test files from the start (hook · sandbox). It doesn't fit the contract that an agent hook never stops the agent, and it blocks writing new tests too. Catching what changed blocks less legitimate work. `lantern guard` protects the closed folders of the knowledge store, so it isn't widened.
+  - Reading each test tool's output to find per-criterion passes. Trusting one exit code keeps working when a tool changes. Only the number of tests is read from the summary line of a few tools; when it can't be read, just that check is skipped.
+  - Letting the AI write the try records. Whoever writes becomes whoever judges.
+  - Signing the run log to tell lines the AI edited by hand. The gain is small for the cost; it stops at warning when the record is missing or differs from the setting.
 
 ## 2. Where documents live
 

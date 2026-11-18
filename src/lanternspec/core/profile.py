@@ -56,7 +56,7 @@ DEFAULTS: dict[str, Any] = {
     "idea": {"capture": "manual"},
     "plan": {"max_questions": 3, "ac_format": "gwt", "ui_reference": "off"},
     "learn": {"detect": "manual", "max_candidates": 3, "verify": "self"},
-    "build": {"report_cycle": "work", "merge_approval": "required", "loop": "off", "loop_limit": 3},
+    "build": {"report_cycle": "work", "merge_approval": "required", "loop": "off", "loop_limit": 3, "same_ac_limit": 3},
     "check": {"max_lines": 300},
     "report": {"views": ["kanban", "timeline", "debt"]},
     "code": {"parts": [], "ignored_parts": []},  # parts with their own toolchain and rules (lantern parts)
@@ -101,7 +101,13 @@ LIST_CHOICES: dict[str, tuple[str, ...]] = {
     "report.views": ("kanban", "timeline", "domain", "trace", "debt", "sync", "eval"),
     "docs.extra": ("api",),
 }
-MIN_INTS: dict[str, int] = {"plan.max_questions": 1, "learn.max_candidates": 1, "check.max_lines": 20, "build.loop_limit": 1}
+MIN_INTS: dict[str, int] = {
+    "plan.max_questions": 1,
+    "learn.max_candidates": 1,
+    "check.max_lines": 20,
+    "build.loop_limit": 1,
+    "build.same_ac_limit": 1,
+}
 
 # Code paths whose change means "the schema changed" (the schema-record check). Overridable via git.schema_paths.
 DEFAULT_SCHEMA_PATHS = [
@@ -363,10 +369,25 @@ def validate(data: dict[str, Any]) -> list[str]:
     problems += _section_problems(data)
     problems += _part_problems(data)
     problems += _reference_problems(data)
+    problems += _test_problems(data)
     if get_path(data, "project.team") == "team" and not get_path(data, "project.members"):
         problems.append(msg("project.members: for a team (2 or more), list the owner candidates"))
     if get_path(data, "lantern") != PROFILE_VERSION:
         problems.append(msg("lantern: the file format version must be {profile_version}", profile_version=PROFILE_VERSION))
+    return problems
+
+
+def _test_problems(data: dict[str, Any]) -> list[str]:
+    """Check build.test_one (a command with a `{test}` place) and build.test_config (files, relative to the project)."""
+    problems = []
+    one = get_path(data, "build.test_one")
+    if one and "{test}" not in str(one):
+        problems.append(msg("build.test_one: the command needs a {{test}} place for the test to run (e.g. uv run pytest {{test}})"))
+    files = get_path(data, "build.test_config") or []
+    if not isinstance(files, list) or not all(isinstance(x, str) and x.strip() for x in files):
+        problems.append(msg("build.test_config: must be a list of files or patterns (e.g. [pytest.ini, 'tests/**/conftest.py'])"))
+    elif any(x.startswith(("/", "~")) or ".." in x.replace("\\", "/").split("/") for x in files):
+        problems.append(msg("build.test_config: write paths relative to the project, without .. (e.g. [pytest.ini])"))
     return problems
 
 
@@ -661,9 +682,21 @@ def render(data: dict[str, Any]) -> str:
             s=s(d["build"]["loop"]),
         ),
         msg("  loop_limit: {s}           # max rounds of the big loop", s=s(d["build"]["loop_limit"])),
+        msg(
+            "  same_ac_limit: {s}        # stop the loop when one acceptance criterion fails this many times in a row",
+            s=s(d["build"]["same_ac_limit"]),
+        ),
     ]
     if d["build"].get("test"):
         lines.append(msg("  test: {s}   # test command (work finish · scan --tests)", s=s(d["build"]["test"])))
+    if d["build"].get("test_one"):
+        lines.append(
+            msg("  test_one: {s}   # runs one acceptance criterion's test; {{test}} is where the test goes", s=s(d["build"]["test_one"]))
+        )
+    if d["build"].get("test_config"):
+        lines.append(
+            msg("  test_config: {s}   # test settings files (or patterns) the loop must not change", s=s(d["build"]["test_config"]))
+        )
     for role in principles.COMMAND_ROLES:
         if d["build"].get(role):
             where = msg("run after editing") if role == "format" else "lantern lint · /l-build · CI"
@@ -765,6 +798,8 @@ def update(root: Path, updates: dict[str, Any]) -> None:
     data = load(root).data
     for k, v in updates.items():
         set_path(data, k, v)
+    _unbool(data)
+    updates = {k: get_path(data, k) for k in updates}  # a bare `on` the person typed was read as true: write the word
     problems = validate(data)
     if problems:
         raise ValueError("\n".join(problems))

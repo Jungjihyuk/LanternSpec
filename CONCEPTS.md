@@ -138,12 +138,13 @@ Everything LanternSpec writes lives in the `docs/` folder.
 
 - Good: "With a wrong password, 'Email or password doesn't match' shows"
 - Avoid: "Sign-in works well" (you can't check what "well" means)
+- **Tying a test:** if a test checks the criterion, tie it on at the end of the line: `[test:: tests/test_login.py::test_wrong_password]`. The tied test is what the automatic loop is judged by.
 
 ### Design approval
 > **The gate where a person checks the design** before building starts. It stops a lot of code from being written in the wrong direction. It can be set to let small designs through without asking.
 
 ### Understanding mark
-> A note saved with an approval: **"did I follow it?"** When planning ends and when a design is approved, the person picks "go ahead, I follow it" or "go ahead, handing it over", and the answer is kept in the document's `understood` property (`yes` · `no`). Handing it over never blocks anything. But when a work marked that way is finished by an automatic loop (`build.loop: on`), one understanding-debt card is made, and `/l-finish` lets the person pick which to pay back.
+> A note saved with an approval: **"did I follow it?"** When planning ends and when a design is approved, the person picks "go ahead, I follow it" or "go ahead, handing it over", and the answer is kept in the document's `understood` property (`yes` · `no`). Handing it over never blocks anything. But when a work marked that way was built by an automatic loop (judged by the run log, not by the setting), one understanding-debt card is made, and `/l-finish` lets the person pick which to pay back.
 
 ### Current-state approval
 > When a work finishes, before the "current state" documents change, a **summary of what will change is shown for confirmation**. Big changes such as data structures or APIs are always asked about, whatever the setting.
@@ -174,6 +175,15 @@ Everything LanternSpec writes lives in the `docs/` folder.
 - **Check each task:** test and report as each task finishes. Suits first-time use and small projects.
 - **Loop automatically:** after all tasks, the AI keeps fixing things on its own until every acceptance test passes. Suits projects with automated tests in place.
 - Setting: `build.loop` in `lantern.yaml` · get a suggestion: `lantern build-mode suggest`
+
+### Loop eligibility
+> The condition that decides **whether a work may run in the automatic loop**. Every acceptance criterion of the work needs a committed test tied to it, and a test command (`build.test`) must exist. Without eligibility the work goes on with a check after each task even when `build.loop: on`, and the criteria missing a test are named.
+
+### Loop record
+> **What happened in an automatic loop isn't said by the AI; `lantern loop` measures it and writes it to the run log.** `loop start` fixes the settings, the base commit and the number of tests before the loop; `loop attempt` runs one criterion's test and judges by its exit code; `loop finish` runs the whole suite and the "invalid pass" check below to end a round. When one criterion fails `build.same_ac_limit` times in a row, or the rounds reach `build.loop_limit`, the loop stops and every later try or round command is refused. Starting another loop for the same work needs the person's say (`--again`), and the restart is shown as a ⚠ at archive. Later steps such as the understanding-debt card read this record, not the setting in `lantern.yaml`.
+
+### Invalid pass
+> The device that **catches a pass reached by changing the tests**. If, after a loop starts, a linked test file or a test settings file listed in `build.test_config` changes, or fewer tests run in the whole-suite run, the pass doesn't count and the work goes to the person. Writing new tests in new files is fine (adding to a linked file voids the pass). Edits aren't blocked: a fingerprint of the files is kept when the loop starts, and what changed is caught. The number of tests is compared only in a round whose suite passed.
 
 ### Task delegation
 > Within one work, the AI hands **tasks that don't depend on each other** to several helper AIs (sub-agents) — like a person splitting a job among teammates. Tasks that can run at the same time are marked `[P]`.

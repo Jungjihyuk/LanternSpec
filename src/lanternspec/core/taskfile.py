@@ -153,16 +153,30 @@ class Criterion:
         text: The text after the ID.
         done: Whether the box is checked.
         line_no: The 0-based line in the file.
+        attrs: Field role → value, from the `[name:: value]` parts; filled only when parsed with the project's names.
+        unknown_fields: Field names written on the line that no role goes by (a typo of `테스트`, say); same condition.
 
     Example:
         >>> parse_criteria("- [x] AC-1 누르면 열린다")[0]
-        Criterion(id='AC-1', text='누르면 열린다', done=True, line_no=0)
+        Criterion(id='AC-1', text='누르면 열린다', done=True, line_no=0, attrs={}, unknown_fields=[])
     """
 
     id: str
     text: str
     done: bool
     line_no: int
+    attrs: dict[str, str] = field(default_factory=dict)
+    unknown_fields: list[str] = field(default_factory=list)
+
+    @property
+    def test(self) -> str:
+        """The test that checks the criterion (`[테스트:: tests/test_login.py::test_wrong_password]`), or ""."""
+        return self.attrs.get("test", "")
+
+    @property
+    def test_file(self) -> str:
+        """The file part of the linked test (the text before `::`), or ""."""
+        return self.test.split("::", 1)[0].strip()
 
 
 def parse_tasks(text: str, names: Names) -> list[Task]:
@@ -212,11 +226,13 @@ def parse_tasks(text: str, names: Names) -> list[Task]:
     return tasks
 
 
-def parse_criteria(text: str) -> list[Criterion]:
+def parse_criteria(text: str, names: Names | None = None) -> list[Criterion]:
     r"""Read every acceptance-criterion line of a document (outside code fences).
 
     Args:
         text: The whole document.
+        names: The project's names. With them, `[name:: value]` parts are read into the criterion's fields
+            and taken out of its text; without them the text is left as written.
 
     Returns:
         The criteria, in file order.
@@ -224,6 +240,10 @@ def parse_criteria(text: str) -> list[Criterion]:
     Example:
         >>> [c.id for c in parse_criteria("- [ ] AC-1 하나\n- [ ] AC-2 둘")]
         ['AC-1', 'AC-2']
+        >>> from lanternspec.core.names import load
+        >>> c = parse_criteria("- [ ] AC-1 로그인된다 [테스트:: tests/test_a.py::test_ok]", load("ko"))[0]
+        >>> c.text, c.test, c.test_file
+        ('로그인된다', 'tests/test_a.py::test_ok', 'tests/test_a.py')
     """
     out: list[Criterion] = []
     in_fence = False
@@ -234,8 +254,18 @@ def parse_criteria(text: str) -> list[Criterion]:
         if in_fence:
             continue
         m = AC_LINE.match(line)
-        if m:
-            out.append(Criterion(id=m.group(3).upper(), text=m.group(4).strip(), done=m.group(2).lower() == "x", line_no=i))
+        if not m:
+            continue
+        body, attrs, unknown = m.group(4), {}, []
+        if names is not None:
+            known = set(names.table["task_attrs"].values())
+            for key, value in ATTR.findall(body):
+                if key.strip() in known:
+                    attrs[names.attr_role(key.strip())] = value.strip()
+                else:
+                    unknown.append(key.strip())
+            body = ATTR.sub("", body)
+        out.append(Criterion(m.group(3).upper(), body.strip(), m.group(2).lower() == "x", i, attrs, unknown))
     return out
 
 

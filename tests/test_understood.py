@@ -1,10 +1,9 @@
 """The understanding mark: asked where approval is already asked, kept on the document, paid back as debt.
 
 Approval (may it go on?) and understanding (did I follow it?) are different questions; a work approved
-without understanding and built in an automatic loop leaves one understanding-debt card.
+without understanding and built in an automatic loop leaves one understanding-debt card. Whether a loop built
+it is read from the run log, not from the `build.loop` setting.
 """
-
-import re
 
 import pytest
 
@@ -12,6 +11,7 @@ from conftest import docs, fill, init_project, work_dir
 from lanternspec.core import frontmatter
 from lanternspec.core.project import Project
 from lanternspec.learn import debt
+from lanternspec.tools import runlog
 from lanternspec.work import stages
 
 
@@ -22,13 +22,18 @@ def _meta(path):
 def _work(repo, loop="off", vault=None):
     """A work with a plan and a design, in a project whose build loop is `loop`."""
     init_project(repo, vault=vault)  # a debt ledger exists once the project has a knowledge store
-    # `profile set build.loop=on` can't be used: YAML reads a bare on · off as a boolean and the check refuses it
-    config = repo.root / "lantern.yaml"
-    config.write_text(re.sub(r"(?m)^(\s+loop:)\s*\S+", rf"\1 {loop}", config.read_text(encoding="utf-8")), encoding="utf-8")
+    repo("profile", "set", f"build.loop={loop}")
     repo("scaffold", "work", "카카오 로그인")
     repo("scaffold", "doc", "W-001", "설계")
     folder = work_dir(repo, "W-001")
     return folder / "기획.md", folder / "설계.md"
+
+
+def _looped(repo):
+    """What the run log holds once a build loop started for W-001 and tried a criterion."""
+    project = Project.load(repo.root)
+    runlog.loop_event(project, "start", "r1", "W-001", mode="loop")
+    runlog.loop_attempt(project, "r1", "W-001-T01", "AC-1", 1, "pass", work="W-001")
 
 
 def _cards(repo):
@@ -106,6 +111,7 @@ def test_a_hand_written_yes_or_no_reads_too(repo):
 
 def test_a_work_built_by_the_loop_without_understanding_leaves_one_card(repo, vault):
     _work(repo, loop="on", vault=vault)
+    _looped(repo)
     repo("plan", "understand", "W-001", "--delegated")
     _, out = repo("work", "archive", "W-001")
     (card,) = _cards(repo)
@@ -116,6 +122,7 @@ def test_a_work_built_by_the_loop_without_understanding_leaves_one_card(repo, va
 
 def test_the_card_is_made_once_per_work(repo, vault):
     _work(repo, loop="on", vault=vault)
+    _looped(repo)
     repo("plan", "understand", "W-001", "--delegated")
     project = Project.load(repo.root)
     first = debt.understanding_debt(project, "W-001")
@@ -124,12 +131,14 @@ def test_the_card_is_made_once_per_work(repo, vault):
 
 
 @pytest.mark.parametrize(
-    ("loop", "mark"),
-    [("off", "--delegated"), ("on", "--understood"), ("on", None)],
+    ("looped", "mark"),
+    [(False, "--delegated"), (True, "--understood"), (True, None)],
     ids=["not built by the loop", "understood", "never asked"],
 )
-def test_no_card_when_it_does_not_apply(repo, vault, loop, mark):
-    _work(repo, loop=loop, vault=vault)
+def test_no_card_when_it_does_not_apply(repo, vault, looped, mark):
+    _work(repo, loop="on", vault=vault)  # the setting is on in every case: only the run log says who looped
+    if looped:
+        _looped(repo)
     if mark:
         repo("plan", "understand", "W-001", mark)
     repo("work", "archive", "W-001")
@@ -138,6 +147,7 @@ def test_no_card_when_it_does_not_apply(repo, vault, loop, mark):
 
 def test_a_project_without_a_debt_ledger_just_skips_the_card(repo):
     _work(repo, loop="on")
+    _looped(repo)
     repo("plan", "understand", "W-001", "--delegated")
     assert not (docs(repo) / "📒 부채").exists()
     _, out = repo("work", "archive", "W-001")
@@ -148,6 +158,7 @@ def test_an_archive_that_waits_and_runs_again_still_leaves_one_card(repo, vault,
     from lanternspec.work import branches
 
     _work(repo, loop="on", vault=vault)
+    _looped(repo)
     repo("plan", "understand", "W-001", "--delegated")
     waiting = iter([["W-002"]])  # a running work links to it the first time only
     monkeypatch.setattr(branches, "archive_waits_for", lambda project, work_id: next(waiting, []))
@@ -159,6 +170,7 @@ def test_an_archive_that_waits_and_runs_again_still_leaves_one_card(repo, vault,
 
 def test_a_broken_debt_ledger_does_not_stop_the_archive(repo, vault, monkeypatch):
     _work(repo, loop="on", vault=vault)
+    _looped(repo)
     repo("plan", "understand", "W-001", "--delegated")
 
     def broken(project, work_id):

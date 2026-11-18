@@ -160,7 +160,7 @@ def facts(project: Project) -> dict[str, Any]:
     }
 
 
-def suggest(project: Project) -> Suggestion:
+def suggest(project: Project, work_id: str | None = None) -> Suggestion:
     """Suggest each axis from the project's facts.
 
     Loop scope: loop automatically when acceptance tests exist and wrap-ups are mostly clean (or the
@@ -168,8 +168,13 @@ def suggest(project: Project) -> Suggestion:
     [P] tasks ready. Parallel works: worth checking with two or more works waiting and a team or a
     large codebase.
 
+    With a work, the loop is suggested only when that work may loop (every acceptance criterion has a
+    committed test); otherwise the person checks each task, the missing tests are named, and no setting is
+    offered to change — the setting is the project's, the missing tests are the work's.
+
     Args:
         project: The project.
+        work_id: A work to look at, e.g. "W-012"; the project as a whole when None.
 
     Returns:
         The suggestion.
@@ -179,7 +184,18 @@ def suggest(project: Project) -> Suggestion:
         ['할 일마다 확인', '지금은 필요 없음', '하나씩']
     """
     f = facts(project)
-    if f["has_test"] and (f["skill_runs"] >= 5 and (f["clean_rate"] or 0) >= 70 or f["loc"] > 3000):
+    wants_loop = f["has_test"] and (f["skill_runs"] >= 5 and (f["clean_rate"] or 0) >= 70 or f["loc"] > 3000)
+    blocked = None
+    if wants_loop and work_id:
+        from ..work.loop import eligibility
+
+        blocked = eligibility(project, work_id)
+    if wants_loop and blocked is not None and not blocked.ok:
+        why = [msg("{work_id} may not loop yet", work_id=work_id), *blocked.reasons]
+        why.append(msg("Within one task, build → test → fix up to 3 times; the person checks often"))
+        loop = Axis(msg("Loop scope"), msg("Check each task"), why)
+        settings: dict[str, Any] = {}
+    elif wants_loop:
         why = [msg("There is an acceptance-test command (build.test)")]
         if f["skill_runs"]:
             why.append(
@@ -191,7 +207,7 @@ def suggest(project: Project) -> Suggestion:
             )
         why.append(msg("After all tasks are done, rerun the whole work until the acceptance tests pass (up to build.loop_limit times)"))
         loop = Axis(msg("Loop scope"), msg("Loop automatically"), why)
-        settings: dict[str, Any] = {"build.loop": "on", "build.loop_limit": 3, "build.report_cycle": "work"}
+        settings = {"build.loop": "on", "build.loop_limit": 3, "build.report_cycle": "work"}
     else:
         why = [msg("{loc} lines of code · {active_works} works in progress", loc=f["loc"], active_works=f["active_works"])]
         if not f["has_test"]:

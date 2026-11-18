@@ -215,8 +215,27 @@ def test_an_attempt_line_keeps_what_the_loop_needs_to_look_back(repo):
         "result": "통과",
         "failed_check": "",
         "understood": False,
+        "scope": "one",
         "at": rec["at"],
     }
+
+
+def test_a_loop_line_names_its_run_and_work(repo):
+    init_project(repo)
+    project = Project.load(repo.root)
+    runlog.loop_event(project, "start", "r1", "W-001", mode="loop", base="abc1234")
+    (rec,) = _lines(project)
+    assert rec == {
+        "kind": "loop",
+        "source": "build",
+        "event": "start",
+        "run": "r1",
+        "work": "W-001",
+        "mode": "loop",
+        "base": "abc1234",
+        "at": rec["at"],
+    }
+    assert evaluate.summary(project)["skill_runs"] == 0  # the evaluation ignores lines it doesn't know
 
 
 # --------------------------------------------------------------------------- reading old and new lines
