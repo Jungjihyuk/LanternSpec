@@ -206,8 +206,9 @@ def suggest(project: Project, work_id: str | None = None) -> Suggestion:
                 )
             )
         why.append(msg("After all tasks are done, rerun the whole work until the acceptance tests pass (up to build.loop_limit times)"))
+        why.append(msg("Once it passes, a reviewer in a fresh context checks it against the plan and the rules (build.review)"))
         loop = Axis(msg("Loop scope"), msg("Loop automatically"), why)
-        settings = {"build.loop": "on", "build.loop_limit": 3, "build.report_cycle": "work"}
+        settings = {"build.loop": "on", "build.loop_limit": 3, "build.report_cycle": "work", "build.review": "on"}
     else:
         why = [msg("{loc} lines of code · {active_works} works in progress", loc=f["loc"], active_works=f["active_works"])]
         if not f["has_test"]:

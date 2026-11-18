@@ -77,7 +77,7 @@ def test_every_name_has_every_language():
 @pytest.mark.parametrize("language", LANGUAGES)
 def test_every_name_token_in_skills_and_rules_resolves(language):
     ctx = names_mod.load(language).context()
-    sources = [f"skills/{n}/SKILL.md" for n in SKILL_NAMES] + ["agents/AGENTS.md"]
+    sources = [f"skills/{n}/SKILL.md" for n in SKILL_NAMES] + ["agents/AGENTS.md", "agents/lantern-reviewer.md"]
     for rel in sources:
         text = resources.read_text(f"locales/{language}/{rel}")
         for key in re.findall(r"<<((?:folder|doc|file|attr|marker|section)\.[a-z_]+)>>", text):

@@ -138,6 +138,28 @@ Only a work for which `lantern loop start W-012` printed `✔` loops (step 6 of 
    - Confirmation (`[<<retro.confirmed>>:: ✅]`) is a person's, once a week with `lantern retro review`. You don't confirm.
 <!-- lantern:endif -->
 
+<!-- lantern:if build.review=on -->
+## 3¾. Review after the build (build.review: on · after the first review, at most <<build.review_limit>> rounds of fixing and reviewing again)
+When the acceptance-criteria tests all pass (for the automatic loop, when the loop ends), get a review **before applying to the current state**. The reviewer does not see the conversation that built this; it sees only the pack (plan · design · development principles · file rules · the changes since the work started · the test result). The verdict is read by code from the reviewer's own lines and written to the run log — **you don't retell or change the verdict.** The rounds left are counted by the command too.
+1. Make the pack.
+<!-- lantern:if tool=claude -->
+   `lantern review pack W-012` — call the `lantern-reviewer` sub-agent as the output says ("Review W-012, the pack is <path>"). **Don't add the build conversation or your own explanation.** When the sub-agent finishes, a hook writes its answer as the verdict.
+<!-- lantern:endif -->
+<!-- lantern:if tool=codex -->
+   `lantern review pack W-012 --tool codex` — run the printed command to start the reviewer in a fresh context. When the file with its answer exists, record it with the `lantern review record W-012 --file <answer file>` the output tells you.
+<!-- lantern:endif -->
+<!-- lantern:if tool=antigravity -->
+   `lantern review pack W-012 --tool antigravity` — run the printed command to start the reviewer in a fresh context. When the file with its answer exists, record it with the `lantern review record W-012 --file <answer file>` the output tells you.
+<!-- lantern:endif -->
+   If the command refuses (the review is off · no change · already done · no round left), pass its words to the person as they are. If this tool can't start a fresh context, don't review it yourself: hand it to the person.
+2. Check the verdict with `lantern review status W-012` (a fact the command read).
+   - Nothing left → step 4.
+   - If it says the pack was made and it is waiting for the answer, the reviewer's answer did not fit the form or could not be recorded. Call the reviewer **once more** with the same pack and have it answer every item in the form. If it still isn't recorded, stop and hand it to the person. **You don't record the verdict yourself (`lantern review record W-012 --file <answer file>` is only for tools that hand you the reviewer's answer in a file)** (in Claude Code a hook records it; a round recorded by hand shows as a ⚠ at archive).
+   - Issues left → fix each (following its ground `file:line`). Don't weaken a test. After fixing, run the tests again (for the automatic loop, `lantern loop finish W-012`) and go back to 1 for another review.
+   - If it says no round is left, stop and report the remaining issues to the person as they are (what was done · the issues left · what needs choosing).
+3. When there were issues, a `[<<retro.check>>:: <<retro_check.review>>]` row is added to the AI retro by itself. Fill its judgment fields with `lantern retro add W-012`, as for the loop (when the review itself was wrong, record the weakness `<<retro_weakness.verification>>`).
+<!-- lantern:endif -->
+
 ## 4. When everything is done — apply to the current state
 If `lantern task next W-012` says **"This folder is a worktree for parallel work"**, stop here. `/l-finish` brings the documents several works share up to date from the base folder in one go:
 - Commit all of this work's documents: `<<file.tasks>>`, `<<file.record>>`, and `<<folder.sessions>>/<date>-W-012.md` saved automatically when the conversation was compacted. Don't touch the current-state documents, the archive or the report.

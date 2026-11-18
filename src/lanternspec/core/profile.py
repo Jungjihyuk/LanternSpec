@@ -56,7 +56,15 @@ DEFAULTS: dict[str, Any] = {
     "idea": {"capture": "manual"},
     "plan": {"max_questions": 3, "ac_format": "gwt", "ui_reference": "off"},
     "learn": {"detect": "manual", "max_candidates": 3, "verify": "self"},
-    "build": {"report_cycle": "work", "merge_approval": "required", "loop": "off", "loop_limit": 3, "same_ac_limit": 3},
+    "build": {
+        "report_cycle": "work",
+        "merge_approval": "required",
+        "loop": "off",
+        "loop_limit": 3,
+        "same_ac_limit": 3,
+        "review": "off",
+        "review_limit": 1,
+    },
     "check": {"max_lines": 300},
     "report": {"views": ["kanban", "timeline", "debt"]},
     "code": {"parts": [], "ignored_parts": []},  # parts with their own toolchain and rules (lantern parts)
@@ -93,6 +101,7 @@ CHOICES: dict[str, tuple[str, ...]] = {
     "build.report_cycle": ("work", "criterion", "task"),
     "build.merge_approval": ("required", "auto"),
     "build.loop": ("off", "on"),
+    "build.review": ("off", "on"),
     "build.ci_lint": ("warn", "block"),
 }
 LIST_CHOICES: dict[str, tuple[str, ...]] = {
@@ -107,6 +116,7 @@ MIN_INTS: dict[str, int] = {
     "check.max_lines": 20,
     "build.loop_limit": 1,
     "build.same_ac_limit": 1,
+    "build.review_limit": 1,
 }
 
 # Code paths whose change means "the schema changed" (the schema-record check). Overridable via git.schema_paths.
@@ -689,6 +699,21 @@ def render(data: dict[str, Any]) -> str:
     ]
     if d["build"].get("test"):
         lines.append(msg("  test: {s}   # test command (work finish · scan --tests)", s=s(d["build"]["test"])))
+    lines.append(
+        msg(
+            "  review: {s}              # off | on (after the build, a reviewer in a fresh context checks it against the plan "
+            "and the rules)",
+            s=s(d["build"]["review"]),
+        )
+    )
+    lines.append(
+        msg(
+            "  review_limit: {s}        # how many times the build is fixed and reviewed again after the first review",
+            s=s(d["build"]["review_limit"]),
+        )
+    )
+    if d["build"].get("review_model"):
+        lines.append(msg("  review_model: {s}   # the model of the reviewer (empty: the tool's own)", s=s(d["build"]["review_model"])))
     if d["build"].get("test_one"):
         lines.append(
             msg("  test_one: {s}   # runs one acceptance criterion's test; {{test}} is where the test goes", s=s(d["build"]["test_one"]))

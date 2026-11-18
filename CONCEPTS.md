@@ -193,6 +193,15 @@ Everything LanternSpec writes lives in the `docs/` folder.
 - **Confirmation** is a person's: once a week, `lantern retro review` shows the unconfirmed lines and `lantern retro confirm` marks the ones that are right. The summary at the top is rewritten by lantern each time a line is added or confirmed.
 - A loop judged by the whole suite only (`build.test_one` empty) makes no line per criterion.
 
+### Review after the build
+> A step where **a reviewer in a fresh context looks once more** at a build that passed its tests. Tests check only what was written down, so a weak test, a build that strays from the design or a breach of the development principles survives a pass. With `build.review: on`, one review is made after the acceptance-criteria tests all pass and before applying to the current state (not after each task).
+
+- **The review pack (rubric):** `lantern review pack` gathers it from the documents — for each acceptance criterion "does the build satisfy it", the fixed item "does the test really check the criterion", the design · development principles · repository file rules (an item whose document is missing is left out), the code changes since the work started, and the test result.
+- **The reviewer's independence:** it gets neither the build conversation, nor the builder's explanation, nor the tries — only the pack. Even the same model in a separate context removes a good part of the bias.
+- **The verdict:** `Pass` or `Issue` (ground `file:line`) for each item. Code reads the reviewer's own lines into the run log; the builder doesn't retell it. When there are issues the build is fixed and reviewed again up to `build.review_limit` times, the rounds are counted by the command, and what is left goes to the person. When there were issues, a `[check:: Review]` row is added to the AI retro.
+- **Who runs it, on which model:** the harness does. Claude Code gets a `lantern-reviewer` sub-agent definition and uses `build.review_model` as its model (empty: the tool's own). For Codex and Antigravity, `lantern review pack --tool …` prints the command that starts a fresh context.
+- Settings: `build.review` (off · on) · `build.review_limit` (default 1) · `build.review_model`.
+
 ### Task delegation
 > Within one work, the AI hands **tasks that don't depend on each other** to several helper AIs (sub-agents) — like a person splitting a job among teammates. Tasks that can run at the same time are marked `[P]`.
 

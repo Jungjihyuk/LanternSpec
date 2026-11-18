@@ -3,6 +3,8 @@
 Writers, one format, one line per `kind`:
 * agent hooks, `session`: once per conversation — the tool and its version, LanternSpec's version, the settings repository's commit
 * agent hooks, `turn`: per turn — start · end · model · skill · tool counts · tokens
+* agent hooks, `subagent`: per sub-agent call — name · start · end · model · tokens
+* `lantern review` and the reviewer's stop hook, `review`: one line per review round — model · items · issues
 * `lantern close <skill>`, `skill`: tools without agent hooks still leave one line per skill run
 * the build loop, `loop`: where a loop starts (`event: start`, the settings and the base commit it runs with) and where
   each round ends (`event: end`); `attempt`: one line per try at one acceptance criterion. `lantern loop` writes them
@@ -64,7 +66,7 @@ def _save(project: Project, session: str, data: dict[str, Any]) -> None:
     p.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
 
 
-def session_start(project: Project, session: str, model: str | None, source: str = "", harness: dict[str, str] | None = None) -> None:
+def session_start(project: Project, session: str, model: str | None, source: str = "", harness: dict[str, Any] | None = None) -> None:
     """Remember the model and how the session started, and log the setup the session runs with.
 
     Args:
@@ -169,8 +171,135 @@ def stop(project: Project, session: str, model: str | None = None, tokens: dict[
     if tokens:
         record["tokens"] = tokens
     append(project, record)
-    # next turn starts fresh; the model is kept for the session
-    _save(project, session, {"session": session, "start": None, "model": data.get("model"), "skill": None, "tools": {}})
+    # next turn starts fresh; the model is kept for the session, and so are the sub-agents still running
+    _save(
+        project,
+        session,
+        {
+            "session": session,
+            "start": None,
+            "model": data.get("model"),
+            "skill": None,
+            "tools": {},
+            "subagents": data.get("subagents") or {},
+        },
+    )
+    return record
+
+
+def subagent_start(project: Project, session: str, agent_id: str, agent: str) -> None:
+    """Remember when a sub-agent started, until it stops.
+
+    Args:
+        project: The project.
+        session: The conversation.
+        agent_id: The sub-agent's own ID.
+        agent: Its name.
+
+    Example:
+        >>> subagent_start(project, "s1", "agent-1", "lantern-reviewer")  # doctest: +SKIP
+    """
+    data = _load(project, session)
+    data.setdefault("subagents", {})[agent_id] = {"agent": agent, "start": now_iso()}
+    _save(project, session, data)
+
+
+def subagent_stop(
+    project: Project, session: str, agent_id: str, agent: str, model: str | None, tokens: dict[str, int] | None
+) -> dict[str, Any]:
+    """Write one sub-agent call: its name, when it started and ended, the model and the tokens it spent.
+
+    Args:
+        project: The project.
+        session: The conversation.
+        agent_id: The sub-agent's own ID.
+        agent: Its name.
+        model: The model it ran on, when its transcript said.
+        tokens: What it spent (`Tool.agent_usage`); left out when the tool doesn't say.
+
+    Returns:
+        The record.
+
+    Example:
+        >>> subagent_stop(project, "s1", "agent-1", "lantern-reviewer", "claude-opus-5-5", None)["kind"]  # doctest: +SKIP
+        'subagent'
+    """
+    data = _load(project, session)
+    began = (data.get("subagents") or {}).pop(agent_id, {})
+    _save(project, session, data)
+    record: dict[str, Any] = {
+        "kind": "subagent",
+        "source": "hook",
+        "session": session,
+        "agent_id": agent_id,
+        "agent": agent or began.get("agent"),
+        "start": began.get("start"),
+        "end": now_iso(),
+        "model": model or None,
+    }
+    if tokens:
+        record["tokens"] = tokens
+    append(project, record)
+    return record
+
+
+def review_pack(project: Project, work: str, items: int) -> dict[str, Any]:
+    """Write that a review pack was made for a work and asks the reviewer about this many items.
+
+    A round is recorded only against a pack that waits for an answer, and only when it judges every item.
+
+    Args:
+        project: The project.
+        work: The work.
+        items: How many items the pack asks about.
+
+    Returns:
+        The record.
+
+    Example:
+        >>> review_pack(project, "W-012", 5)["kind"]  # doctest: +SKIP
+        'review_pack'
+    """
+    record = {"kind": "review_pack", "source": "cli", "at": now_iso(), "work": work, "items": items}
+    append(project, record)
+    return record
+
+
+def review(
+    project: Project, work: str, run: str, model: str, items: int, issue_list: list[str], unsupported: int, source: str
+) -> dict[str, Any]:
+    """Write one review round: what the reviewer judged, and the issues it found, in its own words.
+
+    Args:
+        project: The project.
+        work: The work reviewed.
+        run: The run the round belongs to (the loop run, else the review's own).
+        model: The reviewer's model; "" when unknown.
+        items: How many items were judged.
+        issue_list: What the issues said.
+        unsupported: How many of them name no `path:line`.
+        source: "hook" or "cli".
+
+    Returns:
+        The record.
+
+    Example:
+        >>> review(project, "W-012", "r1", "opus", 5, [], 0, "hook")["issues"]  # doctest: +SKIP
+        0
+    """
+    record = {
+        "kind": "review",
+        "source": source,
+        "at": now_iso(),
+        "work": work,
+        "run": run,
+        "review_model": model,
+        "items": items,
+        "issues": len(issue_list),
+        "issue_list": issue_list,
+        "unsupported": unsupported,
+    }
+    append(project, record)
     return record
 
 

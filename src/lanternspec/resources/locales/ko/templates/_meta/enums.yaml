@@ -202,6 +202,7 @@ retro_check:
   values:
     전체 테스트: {icon: 🧪, role: suite}
     통과 무효: {icon: 🚫, role: invalid}
+    검토: {icon: 🔎, role: review}
 
 retro_weakness:
   label: AI 회고의 약점 (첫 시도가 왜 막혔나)
@@ -223,3 +224,10 @@ retro_remedy:
     모델 선택: {icon: 🎚, role: model_choice}
     연결 도구: {icon: 🔌, role: tool_link}
     기획 습관: {icon: ✍, role: planning_habit}
+
+review_verdict:
+  label: 검토자가 항목마다 내리는 판정
+  applies: {}
+  values:
+    통과: {icon: ✅, role: pass}
+    지적: {icon: ⚠, role: issue}

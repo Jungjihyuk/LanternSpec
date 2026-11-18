@@ -63,6 +63,22 @@ The content of a rule (its tables and numbers) is written once, in the rules doc
   - Letting the AI write the try records. Whoever writes becomes whoever judges.
   - Signing the run log to tell lines the AI edited by hand. The gain is small for the cost; it stops at warning when the record is missing or differs from the setting.
 
+### The review after the build is by a reviewer in a fresh context, and code reads the verdict into the log (`lantern review`)
+- **Decided:**
+  - With `build.review: on`, one review is made after the acceptance-criteria tests all pass and before applying to the current state. It is `off` by default, and `lantern build-mode suggest` recommends `on` for a project that uses the automatic loop. When a review can't be made (the tool can't start a fresh context) it goes to the person — the core flow runs without a review (a choice point).
+  - The rubric is gathered from the documents by script (the review pack). The build conversation, the builder's explanation and the tries are left out. When the change is too big (120,000 characters), it is put in from the front and the remaining files are only named, for the reviewer to read itself.
+  - The verdict is read by code from the reviewer's own `- [Pass|Issue] item` lines (counted by lines, not by the reviewer's closing line). For Claude Code a hook records the answer when the sub-agent stops; other tools get the answer into a file and record it with `lantern review record`. The round limit (`build.review_limit`) is counted by `lantern review pack`, which makes no pack and hands the work to the person when no round is left. An issue without a `file:line` ground is counted in the record.
+  - Each sub-agent call leaves its name · start · end · model · tokens in the run log (`SubagentStart` · `SubagentStop`), and a session start leaves a hash of the sub-agent definition files it reads. Which combination of build and review models is efficient is decided from this record, not from a general rule.
+  - The model isn't fixed in the definition file but taken from `build.review_model`. Only the sub-agents of LanternSpec's flow (the reviewer) are installed; general sub-agents belong to the person's harness settings repository.
+- **Why:** tests check only what was written down. A weakly written test slips past both the tests and the invalid-pass catch. A builder that reviews itself shares its blind spots and is kind to its own output, so the review sees only the documents and the changes, in a fresh context. And if the builder retold the verdict it could change, so code reads the reviewer's lines as they are.
+- **Rejected alternatives:**
+  - **The building agent reviews itself.** Same context, same blind spots.
+  - **Judging by the tests alone.** Weak tests, drift from the design and breaches of the principles slip through.
+  - **An execution engine where LanternSpec picks the model and starts the agents.** The harness and executors already do that, and it changes fast. Only the connection points (definition file · command · hook) are provided.
+  - **Review by people only.** It doesn't fit the automatic loop's aim of easing the human bottleneck. People focus on the issues left and on confirming the retro.
+  - **Reading the reviewer's closing line (`Verdict: …`).** A closing line that disagrees with the items would go unnoticed. Only the item lines are read, and code counts.
+- **What was checked and what wasn't:** Claude Code's sub-agent definition (`.claude/agents/<name>.md`) and the input of `SubagentStart` · `SubagentStop` were checked against its docs; the fresh-context options of Codex (`codex exec --ephemeral -s read-only -m … -o …`) and Antigravity (`agy --print --sandbox --model …`) against `--help`. That a reviewer really runs in a live session and its verdict gets recorded has not been checked yet. A sub-agent's transcript is written asynchronously, so its tokens may come up a little short. The reviewer's definition disallows `Edit`, `Write` and `NotebookEdit` but leaves `Bash` (it has to run `git diff` and the tests), so that it writes no file through the shell rests on its instructions; and a builder writing the verdict itself with `lantern review record` isn't blocked either, only shown as a ⚠ at archive.
+
 ## 2. Where documents live
 
 ### Why `2. Work` and `3. Current State` are separate

@@ -1,0 +1,1 @@
+{"session_id": "abc123", "transcript_path": "/tmp/t.jsonl", "cwd": "/repo", "permission_mode": "default", "hook_event_name": "SubagentStop", "stop_hook_active": false, "agent_id": "def456", "agent_type": "lantern-reviewer", "agent_transcript_path": "/tmp/t/subagents/agent-def456.jsonl", "last_assistant_message": "검토: W-001\n- [통과] R1"}

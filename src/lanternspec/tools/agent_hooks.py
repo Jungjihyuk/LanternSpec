@@ -12,6 +12,8 @@ post-tool      check the format as soon as a docs/ document is written → fix i
 feedback       (Antigravity) deliver the document-check result that post-tool could not say right away
 stop           one run-log line per finished answer (with the tokens it spent, when the tool's transcript says)
                suggest /l-sync when code changed but the work documents did not (once per work item, never forced)
+subagent-start (Claude Code) note that a sub-agent started
+subagent-stop  (Claude Code) one run-log line per sub-agent call (model · tokens); a reviewer's answer is read into a review round
 pre-compact    save progress into "지금 상황" of `기록.md` (or the session document) before compaction; session-start puts it back
 
 Every handler takes (project, tool, hook call) and returns a HookResult; it never stops the agent.
@@ -21,11 +23,13 @@ and in the conversation record (tools/sessions.py), so `lantern resume` can carr
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
 from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 from .. import __version__
 from ..core.messages import msg
@@ -91,7 +95,7 @@ def session_start(project: Project, tool: Tool, inp: HookInput) -> HookResult:
         >>> session_start(project, tool, HookInput(source="startup")).context.splitlines()[0]  # doctest: +SKIP
         '[LanternSpec 지금 상황]'
     """
-    harness = None if inp.source == "compact" else harness_fields(tool)  # after compaction it is the same session
+    harness = None if inp.source == "compact" else harness_fields(tool, project)  # after compaction it is the same session
     runlog.session_start(project, inp.session, inp.model or None, inp.source, harness)
     if not project.profile.exists:
         return HookResult(context=msg("[LanternSpec] The project isn't set up yet — start with /l-init."))
@@ -111,7 +115,7 @@ def session_start(project: Project, tool: Tool, inp: HookInput) -> HookResult:
     return HookResult(context="\n".join(out))
 
 
-def harness_fields(tool: Tool) -> dict[str, str]:
+def harness_fields(tool: Tool, project: Project | None = None) -> dict[str, Any]:
     """Collect the setup a session runs with, for the run log.
 
     The settings commit comes from the folder named by the `LANTERN_HARNESS_CONFIG` environment variable: the
@@ -119,10 +123,12 @@ def harness_fields(tool: Tool) -> dict[str, str]:
 
     Args:
         tool: The tool that called.
+        project: The project, to find the sub-agent definition files the tool reads.
 
     Returns:
-        The tool's name, its installed version, LanternSpec's version and the settings repository's commit;
-        a part that can't be found is "".
+        The tool's name, its installed version, LanternSpec's version, the settings repository's commit and, under
+        `agents`, a short hash of each sub-agent definition file it reads (so a changed reviewer can be told from
+        the log); a part that can't be found is "".
 
     Example:
         >>> harness_fields(get("claude"))["harness"]  # doctest: +SKIP
@@ -135,7 +141,23 @@ def harness_fields(tool: Tool) -> dict[str, str]:
         "harness_version": health.installed_version(tool, timeout=VERSION_TIMEOUT) or "",
         "lanternspec_version": __version__,
         "harness_config": _commit_of(folder),
+        "agents": _agent_hashes(tool, project) if project else {},
     }
+
+
+def _agent_hashes(tool: Tool, project: Project) -> dict[str, str]:
+    """A short hash for each sub-agent definition the tool reads; a file that can't be read is left out."""
+    out: dict[str, str] = {}
+    try:
+        for path in tool.agent_definitions(project):
+            try:
+                key = project.rel(path) if project.root in path.parents else f"~/{path.relative_to(Path.home())}"
+                out[key] = hashlib.sha1(path.read_bytes()).hexdigest()[:12]
+            except (OSError, ValueError):
+                continue
+    except OSError:
+        pass
+    return out
 
 
 def _commit_of(folder: Path | None) -> str:
@@ -716,6 +738,58 @@ def _reminder(project: Project, session: str) -> str:
     return "\n".join([msg("[LanternSpec now]"), *now, *([part] if part else [])])
 
 
+def subagent_start(project: Project, tool: Tool, inp: HookInput) -> HookResult:
+    """Note that a sub-agent started (its time is written when it stops).
+
+    Args:
+        project: The project.
+        tool: The tool that called.
+        inp: The hook call.
+
+    Returns:
+        Nothing to say.
+
+    Example:
+        >>> subagent_start(project, tool, HookInput(session="s1", agent_id="a1", agent_type="Explore"))  # doctest: +SKIP
+        HookResult(context='', block='', notice='', reminder='')
+    """
+    runlog.subagent_start(project, inp.session, inp.agent_id, inp.agent_type)
+    return HookResult()
+
+
+def subagent_stop(project: Project, tool: Tool, inp: HookInput) -> HookResult:
+    """Write the sub-agent's call to the run log; when it is the reviewer, write its verdict as a review round.
+
+    The verdict is read from the reviewer's own last answer, so what the agent that built tells afterwards
+    cannot change it.
+
+    Args:
+        project: The project.
+        tool: The tool that called.
+        inp: The hook call.
+
+    Returns:
+        Nothing to say.
+
+    Example:
+        >>> subagent_stop(project, tool, HookInput(session="s1", agent_type="lantern-reviewer"))  # doctest: +SKIP
+        HookResult(context='', block='', notice='', reminder='')
+    """
+    from ..work import review
+
+    usage = None
+    if inp.agent_transcript:
+        try:
+            usage = tool.agent_usage(Path(inp.agent_transcript))
+        except OSError:
+            usage = None
+    model = usage[0] if usage else inp.model
+    runlog.subagent_stop(project, inp.session, inp.agent_id, inp.agent_type, model or None, usage[1] if usage else None)
+    if inp.agent_type == review.REVIEWER and inp.last_message:
+        review.record(project, inp.last_message, model, "hook")
+    return HookResult()
+
+
 HANDLERS: dict[str, Callable[[Project, Tool, HookInput], HookResult]] = {
     "session-start": session_start,
     "prompt": prompt,
@@ -724,4 +798,6 @@ HANDLERS: dict[str, Callable[[Project, Tool, HookInput], HookResult]] = {
     "feedback": feedback,
     "stop": stop,
     "pre-compact": pre_compact,
+    "subagent-start": subagent_start,
+    "subagent-stop": subagent_stop,
 }

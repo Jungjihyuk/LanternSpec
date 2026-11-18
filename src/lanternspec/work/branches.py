@@ -1194,7 +1194,7 @@ def archive(project: Project, work_id: str, now: bool = False) -> list[str]:
         if p.exists():
             write(p, frontmatter.set_fields(read(p), {"status": project.enums.value("work_status", "done")}))
     from ..learn.debt import understanding_debt
-    from . import loop
+    from . import loop, review
 
     try:
         card = understanding_debt(project, work_id)
@@ -1215,7 +1215,7 @@ def archive(project: Project, work_id: str, now: bool = False) -> list[str]:
     if problem:
         notes.append(msg("⚠ Couldn't make the understanding-debt card: {problem}", problem=problem))
     try:
-        notes += loop.doubts(project, work_id)  # the loop's record is optional too: it only warns
+        notes += loop.doubts(project, work_id) + review.doubts(project, work_id)  # their records are optional too: they only warn
     except (OSError, ValueError, LookupError):
         pass
     waits = [] if now else archive_waits_for(project, work_id)

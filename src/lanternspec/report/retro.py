@@ -157,6 +157,46 @@ def rows_from_run(lines: list[dict[str, Any]], enums: Enums) -> list[Row]:
     return rows
 
 
+def rows_from_review(rounds: list[Any], work: str, ended: bool, enums: Enums) -> list[Row]:
+    """Work out the retro row of a work's review: one `[검증:: 검토]` row when a round found issues and the review is over.
+
+    Args:
+        rounds: The review rounds (`work.review.Round`), oldest first.
+        work: The work, e.g. "W-012".
+        ended: Whether the review is over (the last round found nothing, or no round remains).
+        enums: The project's lists (the result and check names).
+
+    Returns:
+        The row, with the number of rounds as its tries and "통과" when the last round was clean, else "중단";
+        empty when the review is not over or no round found an issue.
+
+    Example:
+        >>> from lanternspec.core.enums import load
+        >>> from lanternspec.work.review import Round
+        >>> found = Round(1, "2026-11-20T09:00:00+09:00", "m", 5, 2, 0, ["x"], "r1", "hook")
+        >>> clean = Round(2, "2026-11-20T09:30:00+09:00", "m", 5, 0, 0, [], "r1", "hook")
+        >>> done = [found, clean]
+        >>> [(r.key, r.tries, r.result) for r in rows_from_review(done, "W-1", True, load())]
+        [('검토', 2, '통과')]
+    """
+    first = next((r for r in rounds if r.issues), None)
+    if not ended or first is None:
+        return []
+    result = "passed" if not rounds[-1].issues else "stopped"
+    return [
+        Row(
+            first.at[:10],
+            first.at[11:16],
+            work,
+            enums.value("retro_check", "review"),
+            True,
+            len(rounds),
+            enums.value("retro_result", result),
+            first.run,
+        )
+    ]
+
+
 # --------------------------------------------------------------------------- reading and writing a line
 
 
@@ -368,7 +408,7 @@ def _add_line(text: str, date: str, line: str) -> str:
 
 
 def record(project: Project, work_id: str) -> list[Row]:
-    """Add the retro rows of a work's latest loop, once it has ended; rows already there are left alone.
+    """Add the retro rows of a work's latest loop and of its review, once each has ended; rows already there are left alone.
 
     Args:
         project: The project.
@@ -378,19 +418,22 @@ def record(project: Project, work_id: str) -> list[Row]:
         The rows added; empty when the loop has not ended or every row is there already.
 
     Raises:
-        ValueError: The work has no loop record.
+        ValueError: The work has neither a loop record nor a review.
 
     Example:
         >>> [r.key for r in record(project, "W-012")]  # doctest: +SKIP
         ['AC-2']
     """
     from ..work.loop import last_run
+    from ..work.review import rounds, standing
 
-    lines = last_run(project, work_id)
-    if not lines:
-        raise ValueError(msg("The run log has no loop for {work_id}", work_id=work_id))
+    lines, reviewed = last_run(project, work_id), rounds(project, work_id)
+    if not lines and not reviewed:
+        raise ValueError(msg("The run log has no loop or review for {work_id}", work_id=work_id))
+    over = standing(project, work_id) in ("clean", "limit")
+    rows = (rows_from_run(lines, project.enums) if lines else []) + rows_from_review(reviewed, work_id, over, project.enums)
     have = {(r.run, r.key) for _, r in all_rows(project)}
-    added = [r for r in rows_from_run(lines, project.enums) if (r.run, r.key) not in have]
+    added = [r for r in rows if (r.run, r.key) not in have]
     touched: set[Path] = set()
     for row in added:
         path = _file(project, row.date)

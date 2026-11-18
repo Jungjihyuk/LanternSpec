@@ -543,7 +543,20 @@ def changed(project: Project, start: dict[str, Any]) -> list[dict[str, str]]:
 # --------------------------------------------------------------------------- the loop
 
 
-def _run(project: Project, cmd: str) -> tuple[int, str]:
+def run_command(project: Project, cmd: str) -> tuple[int, str]:
+    r"""Run a shell command in the project root and wait for it, within the test time limit.
+
+    Args:
+        project: The project.
+        cmd: The shell command.
+
+    Returns:
+        The exit code (124 when it ran out of time) and everything it printed.
+
+    Example:
+        >>> run_command(project, "echo hi")  # doctest: +SKIP
+        (0, "hi\n")
+    """
     try:
         r = subprocess.run(cmd, shell=True, cwd=str(project.root), capture_output=True, text=True, timeout=TEST_TIMEOUT)
     except subprocess.TimeoutExpired:
@@ -601,7 +614,7 @@ def start(project: Project, work_id: str, again: bool = False) -> Started:
         "test_config": [str(f) for f in project.profile.get("build.test_config") or []],
     }
     if elig.ok:
-        code, out = _run(project, settings["test"])
+        code, out = run_command(project, settings["test"])
         if code in NOT_RUN:
             mode, reasons = MODE_EACH, [msg("`{cmd}` did not run (exit {code})", cmd=settings["test"], code=code)]
         before = count_tests(out)
@@ -687,7 +700,7 @@ def attempt(project: Project, work_id: str, ac: str, task: str = "") -> Tried:
     def write(n: int, result: str, failed: str, scope: str) -> None:
         runlog.loop_attempt(project, start_line["run"], task, ac, n, result, failed, understood, work_id, scope)
 
-    code, out = _run(project, command_for(settings["test_one"], link) if one else settings["test"])
+    code, out = run_command(project, command_for(settings["test_one"], link) if one else settings["test"])
     result = PASS if code == 0 else FAIL
     last = next((x for x in reversed(out.strip().splitlines()) if x.strip()), "")
     write(made + 1, result, "" if code == 0 else f"{link}: {last[:200]}", "one" if one else "all")
@@ -729,7 +742,7 @@ def finish(project: Project, work_id: str) -> Finished:
     latest = _latest(lines)
     judged_per_ac = bool(settings.get("test_one"))
     unpassed = [ac for ac in start_line.get("tests") or {} if judged_per_ac and latest.get(ac) != PASS]
-    code, out = _run(project, settings["test"])
+    code, out = run_command(project, settings["test"])
     after, before = count_tests(out), start_line.get("tests_before")
     violations = changed(project, start_line)
     if code == 0 and before is not None and after is not None and after < before:

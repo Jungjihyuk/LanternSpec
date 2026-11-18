@@ -233,6 +233,24 @@ class Codex(ClaudeHooks, Tool):
             "Stop": [entry("stop", 10)],
         }
 
+    def review_command(self, pack: Path, out: Path, model: str) -> str | None:
+        """Implement Tool.review_command: `codex exec` in a fresh, read-only, unsaved session; the answer goes to a file.
+
+        Args:
+            pack: The review pack, read from stdin as the prompt.
+            out: Where `--output-last-message` writes the reviewer's last answer.
+            model: The model (`-m`), "" for Codex's own.
+
+        Returns:
+            The shell command.
+
+        Example:
+            >>> Codex().review_command(Path("p.md"), Path("o.md"), "gpt-5.1-codex")
+            'codex exec --ephemeral -s read-only -m gpt-5.1-codex -o o.md - < p.md'
+        """
+        flags = f"-m {shlex.quote(model)} " if model else ""
+        return f"codex exec --ephemeral -s read-only {flags}-o {shlex.quote(str(out))} - < {shlex.quote(str(pack))}"
+
     def worktree_command(self, path: Path, work_id: str, merge_folder: Path) -> str:
         r"""Implement Tool.worktree_command: open Codex with a permission profile that lets git work from a worktree.
 

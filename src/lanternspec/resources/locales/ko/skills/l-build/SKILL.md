@@ -138,6 +138,28 @@ lantern scaffold idea "<짧은 제목>" --kind <유형> --raw "W-012 구현 중 
    - 확인(`[<<retro.confirmed>>:: ✅]`)은 사람이 주 1회 `lantern retro review`로 한다. 네가 확인하지 않는다.
 <!-- lantern:endif -->
 
+<!-- lantern:if build.review=on -->
+## 3¾. 구현 뒤 검토 (build.review: on · 첫 검토 뒤 고치고 다시 검토는 최대 <<build.review_limit>>번)
+수락 기준 테스트가 모두 통과하면(자동 반복이면 반복이 끝나면) **현재 상태에 반영하기 전에** 검토를 받는다. 검토자는 이 구현을 만든 대화를 보지 않고, 꾸러미(기획 · 설계 · 개발 원칙 · 파일 규칙 · 작업 시작 뒤의 변경 · 테스트 결과)만 본다. 판정은 검토자가 쓴 줄을 코드가 읽어 실행 기록에 남긴다 — **네가 판정을 옮겨 적거나 바꾸지 않는다.** 남은 회차도 명령이 센다.
+1. 꾸러미를 만든다.
+<!-- lantern:if tool=claude -->
+   `lantern review pack W-012` — 출력대로 `lantern-reviewer` 서브 에이전트를 부른다 ("W-012을 검토해 줘, 꾸러미는 <경로>"). **구현 대화나 설명을 덧붙이지 않는다.** 서브 에이전트가 끝나면 hook이 그 답을 판정으로 기록한다.
+<!-- lantern:endif -->
+<!-- lantern:if tool=codex -->
+   `lantern review pack W-012 --tool codex` — 출력된 명령을 실행해 새 문맥에서 검토자를 돌린다. 그 답이 든 파일이 만들어지면 출력이 알려 준 `lantern review record W-012 --file <답 파일>`로 기록한다.
+<!-- lantern:endif -->
+<!-- lantern:if tool=antigravity -->
+   `lantern review pack W-012 --tool antigravity` — 출력된 명령을 실행해 새 문맥에서 검토자를 돌린다. 그 답이 든 파일이 만들어지면 출력이 알려 준 `lantern review record W-012 --file <답 파일>`로 기록한다.
+<!-- lantern:endif -->
+   명령이 거절하면(검토가 꺼짐 · 변경 없음 · 이미 끝남 · 남은 회차 없음) 그 말을 사람에게 그대로 전한다. 이 도구에서 새 문맥을 띄울 수 없으면 스스로 검토하지 말고 사람에게 넘긴다.
+2. `lantern review status W-012`로 판정을 확인한다 (명령이 읽은 사실이다).
+   - 남은 지적 없음 → 4단계로.
+   - 꾸러미를 만들었는데 기록이 없다고 하면(`꾸러미를 만들었고 검토자의 답을 기다리는 중`) 검토자의 답이 형식에 맞지 않았거나 기록되지 못한 것이다. 같은 꾸러미로 검토자를 **한 번만 더** 불러 모든 항목에 형식대로 답하게 한다. 그래도 기록되지 않으면 멈추고 사람에게 넘긴다. **판정을 네가 직접 기록하지 않는다 (`lantern review record W-012 --file <답 파일>`은 검토자의 답을 받는 도구에서만 쓴다)** (Claude Code에서는 hook이 기록한다. 직접 기록한 회차는 보관 때 ⚠로 남는다).
+   - 지적이 남음 → 지적마다 고친다 (근거 `파일:줄`을 따라). 테스트를 약하게 고치지 않는다. 고친 뒤 테스트를 다시 돌리고(자동 반복이면 `lantern loop finish W-012`) 1번으로 돌아가 다시 검토를 받는다.
+   - 회차가 남지 않았다고 하면 멈추고 사람에게 남은 지적을 그대로 보고한다 (한 일 · 남은 지적 · 골라야 할 것).
+3. 지적이 있었으면 AI 회고에 `[<<retro.check>>:: <<retro_check.review>>]` 줄이 자동으로 쌓인다. 반복의 회고처럼 `lantern retro add W-012`로 판단 칸을 채운다 (검토가 틀린 경우도 약점 `<<retro_weakness.verification>>`으로 남긴다).
+<!-- lantern:endif -->
+
 ## 4. 모두 끝나면 — 현재 상태에 반영
 `lantern task next W-012`가 **"이 폴더는 동시 작업용 worktree"**라고 알리면 여기서 멈춘다. 여러 작업이 함께 쓰는 문서는 `/l-finish`가 기준 폴더에서 한 번에 맞춘다:
 - 이 작업의 문서를 모두 커밋한다: `<<file.tasks>>`, `<<file.record>>`, 대화 압축 때 자동으로 저장된 `<<folder.sessions>>/<날짜>-W-012.md`. 현재 상태 문서 · 보관 · 보고는 건드리지 않는다.

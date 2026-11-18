@@ -197,15 +197,15 @@ def test_outside_rules_stay_out_of_committed_files_and_are_printed_on_request(re
     _parts_with_rules(repo)
     folder = Path.home() / "company"
     folder.mkdir(exist_ok=True)
-    (folder / "보안.md").write_text("# 보안\n## 비밀 값\n비밀 값은 코드에 두지 않는다.\n## 검토\n두 사람이 본다.\n", encoding="utf-8")
+    (folder / "보안.md").write_text("# 보안\n## 비밀 값\n비밀 값은 코드에 두지 않는다.\n## 야간 점검\n두 사람이 본다.\n", encoding="utf-8")
     repo("ref", "index", "rules", "~/company")
     repo("ref", "tag", "보안#비밀 값", "--scope", "all", "--strength", "must")
-    repo("ref", "tag", "보안#검토", "--scope", "backend", "--strength", "should")
+    repo("ref", "tag", "보안#야간 점검", "--scope", "backend", "--strength", "should")
     repo("ref", "exclude", "보안#없는 절", ok=False)
     repo("upgrade")
     committed = "".join((repo.root / p).read_text(encoding="utf-8") for p in ("AGENTS.md", "backend/AGENTS.md", "lantern.yaml"))
     assert yaml.safe_load((repo.root / "lantern.yaml").read_text(encoding="utf-8"))["references"]["outside_rules"] is True
-    assert "비밀 값" not in committed and "검토" not in committed and "company" not in committed and "보안" not in committed
+    assert "비밀 값" not in committed and "야간 점검" not in committed and "company" not in committed and "보안" not in committed
     assert "`lantern ref rules`를 실행해" in (repo.root / "AGENTS.md").read_text(encoding="utf-8")
     assert "`lantern ref rules backend`를 실행해" in (repo.root / "backend/AGENTS.md").read_text(encoding="utf-8")
     _, out = repo("ref", "rules")
@@ -223,8 +223,8 @@ def test_outside_rules_stay_out_of_committed_files_and_are_printed_on_request(re
     assert "[프로젝트 밖에 둔 사내 규칙 — 반드시 지킴]" in hook.stdout and "비밀 값은 코드에 두지 않는다." in hook.stdout
     assert "두 사람이 본다." not in hook.stdout
 
-    repo("ref", "exclude", "보안#검토")
-    assert "보안#검토" in (repo.root / ".lantern/references.yaml").read_text(encoding="utf-8")  # an outside title stays out of git
+    repo("ref", "exclude", "보안#야간 점검")
+    assert "보안#야간 점검" in (repo.root / ".lantern/references.yaml").read_text(encoding="utf-8")  # an outside title stays out of git
     _, out = repo("ref", "rules", "backend")
     assert "이 컴퓨터에는 프로젝트 밖에 둔 사내 규칙이 없습니다" in out
 

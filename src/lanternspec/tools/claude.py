@@ -32,6 +32,7 @@ from .base import (
 from .rules import nested_agents
 
 if TYPE_CHECKING:
+    from ..core.enums import Enums
     from ..core.profile import Profile
     from .skills import SkillSource
 
@@ -81,6 +82,10 @@ class ClaudeHooks:
             tool_input=tool_input if isinstance(tool_input, dict) else {},
             cwd=str(data.get("cwd") or ""),
             transcript=str(data.get("transcript_path") or ""),
+            agent_id=str(data.get("agent_id") or ""),
+            agent_type=str(data.get("agent_type") or ""),
+            agent_transcript=str(data.get("agent_transcript_path") or ""),
+            last_message=str(data.get("last_assistant_message") or ""),
         )
 
     def written_paths(self, inp: HookInput) -> list[str]:
@@ -167,6 +172,7 @@ class ClaudeCode(ClaudeHooks, Tool):
     reads_nested_rules = True  # a folder's AGENTS.md loads when it opens a file there (no CLAUDE.md in the project)
     restores_after_compaction = True  # SessionStart with source compact
     model_prefixes = ("claude-",)
+    agent_root = ".claude/agents"
 
     def skill_meta(self, src: SkillSource, profile: Profile, prefix: str) -> dict[str, Any]:
         """Implement Tool.skill_meta with Claude Code's extra frontmatter keys.
@@ -214,7 +220,7 @@ class ClaudeCode(ClaudeHooks, Tool):
 
         Example:
             >>> sorted(ClaudeCode().hooks())
-            ['PostToolUse', 'PreCompact', 'SessionStart', 'Stop', 'UserPromptSubmit']
+            ['PostToolUse', 'PreCompact', 'SessionStart', 'Stop', 'SubagentStart', 'SubagentStop', 'UserPromptSubmit']
         """
 
         def entry(event: str, matcher: str = "") -> dict[str, Any]:
@@ -229,7 +235,79 @@ class ClaudeCode(ClaudeHooks, Tool):
             "PostToolUse": [entry("post-tool", "*")],
             "Stop": [entry("stop")],
             "PreCompact": [entry("pre-compact")],
+            "SubagentStart": [entry("subagent-start")],
+            "SubagentStop": [entry("subagent-stop")],
         }
+
+    def agent_files(self, profile: Profile, enums: Enums | None = None) -> dict[str, str]:
+        """Implement Tool.agent_files: the reviewer's definition (`.claude/agents/lantern-reviewer.md`) while `build.review` is on.
+
+        The model line comes from `build.review_model` and is left out when that is empty, so the reviewer runs on
+        the tool's own default. The definition disallows Edit, Write and NotebookEdit; Bash stays (the reviewer
+        runs `git diff` and the tests), so that it writes no file through the shell rests on its instructions.
+
+        Args:
+            profile: The project's settings.
+            enums: The project's choice lists; the bundled ones when None.
+
+        Returns:
+            Path → text; empty while the review is off.
+
+        Example:
+            >>> from lanternspec.core.profile import Profile
+            >>> ".claude/agents/lantern-reviewer.md" in ClaudeCode().agent_files(Profile(data={"build": {"review": "on"}}))
+            True
+        """
+        from .. import resources
+        from ..core import templating
+        from ..work.review import REVIEWER
+        from .skills import body_context, fill_tokens
+
+        if profile.get("build.review") != "on":
+            return {}
+        ctx = body_context(profile, self.name, enums)
+        text = resources.read_text(f"locales/{profile.language}/agents/{REVIEWER}.md")
+        return {f"{self.agent_root}/{REVIEWER}.md": fill_tokens(templating.apply_conditions(text, ctx), ctx)}
+
+    def agent_definitions(self, project: Project) -> list[Path]:
+        """Implement Tool.agent_definitions: the project's `.claude/agents/*.md` and the person's own `~/.claude/agents/*.md`.
+
+        Args:
+            project: The project.
+
+        Returns:
+            The files, project ones first.
+
+        Example:
+            >>> ClaudeCode().agent_definitions(project)  # doctest: +SKIP
+            [PosixPath('…/.claude/agents/lantern-reviewer.md')]
+        """
+        folders = [project.root / self.agent_root, Path.home() / ".claude" / "agents"]
+        return [p for folder in folders if folder.is_dir() for p in sorted(folder.glob("*.md"))]
+
+    def agent_usage(self, path: Path) -> tuple[str, dict[str, int]] | None:
+        """Implement Tool.agent_usage: the model of the sub-agent's answers and the sum of their `usage`.
+
+        Args:
+            path: The sub-agent's own transcript.
+
+        Returns:
+            The model and the tokens (each response counted once); None when the file holds no answer.
+
+        Example:
+            >>> ClaudeCode().agent_usage(Path("…/agent-x.jsonl"))  # doctest: +SKIP
+            ('claude-opus-5-5', {'input': 330, 'cached': 4500, 'output': 150})
+        """
+        usages: dict[str, dict[str, Any]] = {}
+        model = ""
+        for i, d in enumerate(jsonl_records(path)):
+            message = d.get("message")
+            if d.get("type") != "assistant" or not isinstance(message, dict):
+                continue
+            model = str(message.get("model") or model)
+            if usage := _dict(message.get("usage")):
+                usages[str(message.get("id") or f"line-{i}")] = usage
+        return (model, _sum_usage(usages)) if usages else None
 
     def install_config(self, project: Project, mcp: bool) -> list[str]:
         """Implement Tool.install_config for Claude Code.
@@ -331,13 +409,7 @@ class ClaudeCode(ClaudeHooks, Tool):
             message, usage = d.get("message"), _dict(_dict(d.get("message")).get("usage"))
             if d.get("type") == "assistant" and not d.get("isSidechain") and isinstance(message, dict) and usage:
                 usages[str(message.get("id") or f"line-{i}")] = usage
-        if not usages:
-            return None
-        return {
-            "input": sum(as_count(u.get("input_tokens")) + as_count(u.get("cache_creation_input_tokens")) for u in usages.values()),
-            "cached": sum(as_count(u.get("cache_read_input_tokens")) for u in usages.values()),
-            "output": sum(as_count(u.get("output_tokens")) for u in usages.values()),
-        }
+        return _sum_usage(usages) if usages else None
 
     def check_config(self, project: Project) -> list[tuple[str, str]]:
         """Implement Tool.check_config: does Claude Code read the root and the nested AGENTS.md?
@@ -395,6 +467,15 @@ class ClaudeCode(ClaudeHooks, Tool):
             )
             rows.insert(0, ("ok", ok))
         return rows
+
+
+def _sum_usage(usages: dict[str, dict[str, Any]]) -> dict[str, int]:
+    """Add up the `usage` of responses (one entry per response): fresh input with the cache writes, cached input, output."""
+    return {
+        "input": sum(as_count(u.get("input_tokens")) + as_count(u.get("cache_creation_input_tokens")) for u in usages.values()),
+        "cached": sum(as_count(u.get("cache_read_input_tokens")) for u in usages.values()),
+        "output": sum(as_count(u.get("output_tokens")) for u in usages.values()),
+    }
 
 
 CLAUDE_FILES = {"CLAUDE.md": "@AGENTS.md", ".claude/CLAUDE.md": "@../AGENTS.md"}  # file → the import that reaches the root AGENTS.md

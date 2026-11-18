@@ -25,8 +25,19 @@ def _glance(text: str) -> str:
     return "\n".join(l.lstrip(">").strip() for l in m.group(1).split("\n") if l.strip(">").strip()) if m else ""
 
 
-def _strip_guides(text: str) -> str:
-    """Drop frontmatter and writing guides — the AI needs content, not instructions."""
+def strip_guides(text: str) -> str:
+    r"""Drop a document's frontmatter and its writing guides (`> [!guide]` blocks): the AI needs content, not instructions.
+
+    Args:
+        text: The whole document.
+
+    Returns:
+        The body without the guides, with runs of blank lines squeezed.
+
+    Example:
+        >>> strip_guides("---\nid: x\n---\n# 제목\n> [!guide]- 작성법\n> 이렇게 쓴다\n본문\n")
+        '# 제목\n본문'
+    """
     body = frontmatter.parse(text).body
     out: list[str] = []
     skipping = False
@@ -106,7 +117,7 @@ def build(project: Project, work_id: str) -> str:
         if not p.exists():
             continue
         text = read(p)
-        parts += ["", f"---\n## 📄 {p.name}", _strip_guides(text)]
+        parts += ["", f"---\n## 📄 {p.name}", strip_guides(text)]
         for link in iter_links(text):
             target = resolver.resolve(link, p)
             if target and target.suffix == ".md" and folder not in target.parents and target not in linked:
@@ -125,7 +136,7 @@ def build(project: Project, work_id: str) -> str:
     for p in linked:
         if p == definition:
             continue
-        parts += [f"### {project.docs_rel(p)}", _strip_guides(read(p))]
+        parts += [f"### {project.docs_rel(p)}", strip_guides(read(p))]
     return "\n".join(parts).rstrip() + "\n"
 
 

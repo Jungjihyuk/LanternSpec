@@ -289,7 +289,7 @@ def write_commit_template(project: Project) -> str:
 
 
 def generated_files(project: Project, tools: list[Tool], ci: bool) -> dict[str, str]:
-    """Build every file the installer manages: skill files, and the CI workflow when asked.
+    """Build every file the installer manages: skill files, sub-agent definitions (the reviewer), and the CI workflow when asked.
 
     Args:
         project: The project.
@@ -304,14 +304,16 @@ def generated_files(project: Project, tools: list[Tool], ci: bool) -> dict[str, 
         True
     """
     files = skills.generate(project.profile, tools, project.enums)
+    for tool in tools:
+        files.update(tool.agent_files(project.profile, project.enums))
     if ci:
         files[CI_PATH] = ci_workflow(project)
     return files
 
 
 def _ours(rel: str, tools: list[Tool]) -> bool:
-    """A generated file this install still manages: the chosen tools' skill files, or the CI workflow."""
-    return rel == CI_PATH or tools_cover(rel, tools)
+    """A generated file this install still manages: the chosen tools' skill files and sub-agent definitions, or the CI workflow."""
+    return rel == CI_PATH or tools_cover(rel, tools) or any(t.owns_agent_file(rel) for t in tools)
 
 
 def install(

@@ -202,6 +202,7 @@ retro_check:
   values:
     Whole suite: {icon: 🧪, role: suite}
     Invalid pass: {icon: 🚫, role: invalid}
+    Review: {icon: 🔎, role: review}
 
 retro_weakness:
   label: Weakness in the AI retro (why the first try was blocked)
@@ -223,3 +224,10 @@ retro_remedy:
     Model choice: {icon: 🎚, role: model_choice}
     Connected tool: {icon: 🔌, role: tool_link}
     Planning habit: {icon: ✍, role: planning_habit}
+
+review_verdict:
+  label: The verdict a reviewer gives on each item
+  applies: {}
+  values:
+    Pass: {icon: ✅, role: pass}
+    Issue: {icon: ⚠, role: issue}

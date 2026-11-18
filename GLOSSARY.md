@@ -34,6 +34,7 @@ LanternSpec이 이름을 쓰는 여러 곳(lantern.yaml 키 · enums.yaml 목록
 | `task` · `tasks` | 할 일 — 작업 안의 한 줄 단위 일 | 문서 · CLI · 스킬 |
 | `build` | 구현 단계. lantern.yaml `build.*`는 구현 때 쓰는 설정 (확인 명령 · 보고 주기 · 루프) | lantern.yaml · 스킬 |
 | `loop` | 구현 반복 — 수락 기준 테스트가 통과할 때까지 자동으로 도는 것. lantern.yaml `build.loop`는 사람이 바라는 것(의도)이고, `lantern loop`는 반복이 실제로 돈 사실(시작 · 시도 · 회차)을 실행 기록에 쓴다. 이후 단계는 설정이 아니라 그 기록을 읽는다 | lantern.yaml · CLI(`lantern loop`) · 스킬 |
+| `review` | 구현 뒤 검토 — 테스트를 통과한 구현을 새 문맥의 검토자가 기획 · 설계 · 규칙에 비추어 확인하는 것. lantern.yaml `build.review`(off · on) · `build.review_limit` · `build.review_model`이 설정이고, `lantern review`가 꾸러미 · 판정 기록 · 현황을 맡는다. 코드 리뷰(PR 검토)나 이해 표시와는 다른 것 | lantern.yaml(`build.review*`) · CLI(`lantern review`) · 서브 에이전트(`lantern-reviewer`) · 스킬 |
 | `retro` | AI 회고 — 자율 반복이 끝날 때 첫 시도에 통과하지 못한 수락 기준 · 검증을 한 줄씩 쌓는 운영 기록. 폴더 `4. 운영 기록/AI 회고/`(달마다 파일 하나), 문서 `AI 회고`, 줄의 칸 `retro_attrs`, 목록 `retro_*`(enums.yaml), 명령 `lantern retro`. 개발 회고나 작업 기록과는 다른 것 | 폴더 · 문서 · names.yaml · enums.yaml · CLI(`lantern retro`) · 스킬 |
 | `finish` | 작업 마무리 — 합치기와 정리. `lantern work finish`는 작업 하나를 합치고, `/l-finish`는 동시 작업 여러 개를 합친 뒤 현재 상태를 맞춘다 | CLI · 스킬 |
 | `work` · `works` | 작업 — 기능 · 변경 하나 = 폴더 하나 | 폴더 · CLI |

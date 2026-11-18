@@ -47,6 +47,10 @@ class HookInput:
         turn_start: For prompt: whether this is the first model call of a user turn.
         finished: For stop: whether the turn ended normally (not an error or a cancel).
         transcript: Where the tool keeps this conversation's transcript ("" when it didn't say).
+        agent_id: For subagent-start · subagent-stop: the sub-agent's own ID.
+        agent_type: For subagent-start · subagent-stop: the sub-agent's name (its definition's `name`).
+        agent_transcript: For subagent-stop: the sub-agent's own transcript file ("" when it didn't say).
+        last_message: For subagent-stop: what the sub-agent answered last.
 
     Example:
         >>> HookInput(session="s1", prompt="/l-build W-012").prompt
@@ -63,6 +67,10 @@ class HookInput:
     turn_start: bool = True  # prompt: the first model call of a user turn
     finished: bool = True  # stop: the turn ended normally (not an error or a cancel)
     transcript: str = ""  # the tool's transcript file for this conversation
+    agent_id: str = ""  # subagent-start · subagent-stop: the sub-agent's ID
+    agent_type: str = ""  # the sub-agent's name
+    agent_transcript: str = ""  # subagent-stop: the sub-agent's own transcript
+    last_message: str = ""  # subagent-stop: its last answer
 
 
 @dataclass
@@ -180,6 +188,7 @@ class Tool:
     reads_nested_rules = False  # reads a folder's AGENTS.md by itself (else hooks hand it over)
     restores_after_compaction = False  # has a hook right after compaction (else a short reminder goes with every call)
     model_prefixes: tuple[str, ...] = ()  # how this tool's model names begin; such a name in [한 사람:: …] is an AI
+    agent_root = ""  # folder that holds the sub-agent definitions we install ("" = the tool has none)
 
     # ---- skills
     def skill_meta(self, src: SkillSource, profile: Profile, prefix: str) -> dict[str, Any]:
@@ -248,6 +257,85 @@ class Tool:
         for rel, text in self.skill_extras(src, profile).items():
             files[f"{base}/{rel}"] = text
         return files
+
+    def agent_files(self, profile: Profile, enums: Enums | None = None) -> dict[str, str]:
+        """Build the sub-agent definition files this tool gets (the reviewer, when `build.review` is on).
+
+        Args:
+            profile: The project's settings.
+            enums: The project's choice lists; the bundled ones when None.
+
+        Returns:
+            Path relative to the project root → text; none by default (the tool has no sub-agent files).
+
+        Example:
+            >>> get("codex").agent_files(profile)  # doctest: +SKIP
+            {}
+        """
+        return {}
+
+    def owns_agent_file(self, rel: str) -> bool:
+        """Tell whether an installed file is one of this tool's sub-agent definitions.
+
+        Args:
+            rel: Path relative to the project root.
+
+        Returns:
+            True when it lies under agent_root.
+
+        Example:
+            >>> from lanternspec.tools import get
+            >>> get("claude").owns_agent_file(".claude/agents/lantern-reviewer.md")
+            True
+        """
+        return bool(self.agent_root) and rel.startswith(self.agent_root + "/")
+
+    def agent_definitions(self, project: Project) -> list[Path]:
+        """List the sub-agent definition files the tool reads for this project, ours or the person's own.
+
+        Args:
+            project: The project.
+
+        Returns:
+            The files; none by default.
+
+        Example:
+            >>> get("claude").agent_definitions(project)  # doctest: +SKIP
+            [PosixPath('…/.claude/agents/lantern-reviewer.md')]
+        """
+        return []
+
+    def agent_usage(self, path: Path) -> tuple[str, dict[str, int]] | None:
+        """Read the model and the tokens a sub-agent spent from its own transcript.
+
+        Args:
+            path: The sub-agent's transcript file the tool named at subagent-stop.
+
+        Returns:
+            The model and `input` · `cached` · `output` tokens; None when this tool's transcript doesn't say.
+
+        Example:
+            >>> get("claude").agent_usage(Path("…/agent-x.jsonl"))  # doctest: +SKIP
+            ('claude-opus-5-5', {'input': 330, 'cached': 4500, 'output': 150})
+        """
+        return None
+
+    def review_command(self, pack: Path, out: Path, model: str) -> str | None:
+        """Build the shell command that runs a reviewer in a fresh context for tools without sub-agent files.
+
+        Args:
+            pack: The review pack (the prompt).
+            out: Where the reviewer's last answer goes.
+            model: The model to run, "" for the tool's own.
+
+        Returns:
+            The command; None when this tool can't be started that way (the person reviews, or the build is handed over).
+
+        Example:
+            >>> get("codex").review_command(Path("pack.md"), Path("out.md"), "")  # doctest: +SKIP
+            'codex exec --ephemeral -s read-only -o out.md - < pack.md'
+        """
+        return None
 
     def owns_skill_file(self, rel: str) -> bool:
         """Tell whether an installed file is one of this tool's skill files.

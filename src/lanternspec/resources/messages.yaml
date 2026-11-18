@@ -1611,7 +1611,7 @@
 "- {count} rows not judged yet": {ko: "- 아직 판단하지 않은 행 {count}개"}
 "Weaknesses": {ko: "약점"}
 "Remedies": {ko: "보완"}
-"The run log has no loop for {work_id}": {ko: "실행 기록에 {work_id}의 반복이 없습니다"}
+"The run log has no loop or review for {work_id}": {ko: "실행 기록에 {work_id}의 반복이나 검토가 없습니다"}
 "'{value}' is not one of: {items}": {ko: "'{value}'은(는) 목록에 없습니다: {items}"}
 "The hypothesis can't be empty — write the guess in one line": {ko: "가설은 비울 수 없습니다 — 추측을 한 줄로 적어 주세요"}
 "No retro row for run {run} · {key}": {ko: "실행 {run} · {key}의 회고 줄이 없습니다"}
@@ -1620,3 +1620,60 @@
 "{field} is not a field of an AI retro row": {ko: "{field}은(는) AI 회고 줄의 칸이 아닙니다"}
 "{key}: the weakness and the remedy are filled together": {ko: "{key}: 약점과 보완은 함께 채웁니다"}
 "⚠ The AI retro could not be written: {problem}": {ko: "⚠ AI 회고를 쓰지 못했습니다: {problem}"}
+"✔ {rel} — the review pack": {ko: "✔ {rel} — 검토 꾸러미"}
+"Run the reviewer in a fresh context, then record what it said:": {ko: "새 문맥에서 검토자를 돌리고, 그 답을 기록하세요:"}
+"Call the `{reviewer}` sub-agent with: Review {work}, the pack is {rel}": {ko: "`{reviewer}` 서브 에이전트를 부르세요: {work}을(를) 검토해 줘, 꾸러미는 {rel}"}
+"The text holds no verdict: one `- [verdict] item` line each, and the work's ID": {ko: "판정을 찾지 못했습니다: 항목마다 `- [판정] 항목` 한 줄, 그리고 작업 ID가 있어야 합니다"}
+"Round {n}: {items} items, {issues} issues": {ko: "{n}회차: 항목 {items}개, 지적 {issues}개"}
+"not reviewed yet": {ko: "아직 검토하지 않음"}
+"reviewed: nothing left": {ko: "검토 끝: 남은 지적 없음"}
+"issues left: fix them and review again": {ko: "지적이 남음: 고치고 다시 검토하세요"}
+"issues left and no round remains: hand them to the person": {ko: "지적이 남았고 검토 회차도 없습니다: 사람에게 넘기세요"}
+"{work}: {state}": {ko: "{work}: {state}"}
+"The review after a build: pack · record · status (inside /l-build)": {ko: "구현 뒤 검토: pack · record · status (/l-build 안에서)"}
+"pack: the AI tool, to print the command that runs the reviewer in a fresh context": {ko: "pack: AI 도구 — 새 문맥에서 검토자를 돌리는 명령을 보여 줍니다"}
+"record: the file holding the reviewer's answer": {ko: "record: 검토자의 답이 든 파일"}
+"record: the reviewer's model, when known": {ko: "record: 검토자의 모델 (알면)"}
+"The verdict names {named}, not {work_id}": {ko: "판정이 {work_id}이(가) 아니라 {named}을(를) 가리킵니다"}
+"⚠ build.review is on but nobody reviewed {work_id}": {ko: "⚠ build.review는 on인데 {work_id}은(는) 검토하지 않았습니다"}
+"⚠ The review of {work_id} left {count} issues": {ko: "⚠ {work_id}의 검토에 지적 {count}개가 남았습니다"}
+"The diff is too big to put here. Read these files yourself (`git diff {base} -- <file>`):": {ko: "변경이 너무 커서 여기 다 싣지 못했습니다. 아래 파일은 직접 읽어 주세요 (`git diff {base} -- <파일>`):"}
+"Nothing changed in the code since {work_id} started, so there is nothing to review": {ko: "{work_id}을(를) 시작한 뒤 코드가 바뀐 것이 없어 검토할 것이 없습니다"}
+"test": {ko: "테스트"}
+"Does the build satisfy {ac}: {text}": {ko: "구현이 {ac}의 기준을 만족하는가: {text}"}
+"Does each test really check its criterion? Are the expected values concrete, with no skipped test and no assertion that always passes?": {ko: "테스트가 수락 기준을 실제로 확인하는가? 기대값이 구체적이고, 건너뛴 테스트나 항상 참인 단언이 없는가?"}
+"Is it built as the design says (structure, data, screens)?": {ko: "설계대로 만들었는가 (구조 · 데이터 · 화면)?"}
+"Does it keep the development principles and the code conventions?": {ko: "개발 원칙과 코드 컨벤션을 지켰는가?"}
+"Are the files where the repository file rules put them?": {ko: "저장소 파일 규칙이 정한 자리에 파일을 두었는가?"}
+"# Review pack — {work_id}": {ko: "# 검토 꾸러미 — {work_id}"}
+"You did not make this change and you do not see the conversation that made it. Judge only from this pack and the files it points to. Do not edit anything.": {ko: "너는 이 변경을 만들지 않았고, 만든 대화도 보지 않는다. 이 꾸러미와 그것이 가리키는 파일만으로 판단한다. 아무것도 고치지 않는다."}
+"## How to answer": {ko: "## 답하는 법"}
+"Start with `Review: {work_id}`. Then one line for every item below, in this form, and nothing else after them:": {ko: "첫 줄은 `검토: {work_id}`. 그다음 아래 항목마다 한 줄, 이 형식으로, 그 뒤에는 아무것도 덧붙이지 않는다:"}
+"what you checked": {ko: "무엇을 확인했나"}
+"what is wrong": {ko: "무엇이 틀렸나"}
+"Every {issue} needs the file and line it rests on (`path:line`).": {ko: "{issue}에는 근거가 되는 파일과 줄(`경로:줄`)을 단다."}
+"## Items": {ko: "## 항목"}
+"## Plan": {ko: "## 기획"}
+"## Design": {ko: "## 설계"}
+"## Development principles": {ko: "## 개발 원칙"}
+"## Repository file rules": {ko: "## 저장소 파일 규칙"}
+"## Test result": {ko: "## 테스트 결과"}
+"## Changes since the work started ({base})": {ko: "## 작업을 시작한 뒤의 변경 ({base})"}
+"The last round of the loop: {result} (the whole suite exited {code}; {count} tests ran)": {ko: "반복의 마지막 회차: {result} (전체 테스트 종료 코드 {code}, 실행된 테스트 {count}개)"}
+"There is no test command (build.test), so no test result": {ko: "테스트 명령(build.test)이 없어 테스트 결과도 없습니다"}
+"`{cmd}` exited {code}": {ko: "`{cmd}` 종료 코드 {code}"}
+"build.review is off, so no review is made (lantern build-mode suggest)": {ko: "build.review가 off라서 검토하지 않습니다 (lantern build-mode suggest)"}
+"{work_id} was reviewed and the last round found nothing": {ko: "{work_id}은(는) 검토를 마쳤고 마지막 회차에 지적이 없었습니다"}
+"{work_id} has no review round left (build.review_limit): hand the remaining issues to the person": {ko: "{work_id}은(는) 검토 회차가 남지 않았습니다 (build.review_limit): 남은 지적은 사람에게 넘기세요"}
+"  review: {s}              # off | on (after the build, a reviewer in a fresh context checks it against the plan and the rules)": {ko: "  review: {s}              # off | on (구현이 끝나면 새 문맥의 검토자가 기획과 규칙에 비추어 확인한다)"}
+"  review_limit: {s}        # how many times the build is fixed and reviewed again after the first review": {ko: "  review_limit: {s}        # 첫 검토 뒤에 고치고 다시 검토하는 횟수"}
+"  review_model: {s}   # the model of the reviewer (empty: the tool's own)": {ko: "  review_model: {s}   # 검토자의 모델 (비우면 도구의 기본 모델)"}
+"Once it passes, a reviewer in a fresh context checks it against the plan and the rules (build.review)": {ko: "통과하면 새 문맥의 검토자가 기획과 규칙에 비추어 한 번 더 확인한다 (build.review)"}
+"build.review is off, so no round is recorded": {ko: "build.review가 off라서 검토 회차를 기록하지 않습니다"}
+"The review of {work_id} is over: no more rounds are recorded": {ko: "{work_id}의 검토는 끝났습니다: 더는 회차를 기록하지 않습니다"}
+"No review pack waits for an answer for {work_id}: make one first (lantern review pack)": {ko: "{work_id}에는 답을 기다리는 검토 꾸러미가 없습니다: 먼저 만드세요 (lantern review pack)"}
+"The verdict judges {found} of the {expected} items: ask the reviewer to answer every item": {ko: "판정이 항목 {expected}개 중 {found}개만 다뤘습니다: 검토자에게 모든 항목에 답하게 하세요"}
+"⚠ A round of {work_id} was recorded by hand although the reviewer's hook was installed": {ko: "⚠ {work_id}의 회차 하나가 검토자의 hook이 설치돼 있는데도 손으로 기록됐습니다"}
+"These new files are not added to git yet, so they are not in the diff. Read them yourself:": {ko: "아래 새 파일은 아직 git에 더하지 않아 변경에 없습니다. 직접 읽어 주세요:"}
+"An item you could not check is an {issue} too: write what you could not check where the file and line would go. It goes to the person.": {ko: "확인하지 못한 항목도 {issue}이다: 파일과 줄이 들어갈 자리에 무엇을 확인하지 못했는지 적는다. 그 항목은 사람에게 간다."}
+"pack made: waiting for the reviewer's answer (if it is not recorded, call the reviewer once more, then hand it to the person)": {ko: "꾸러미를 만들었고 검토자의 답을 기다리는 중 (기록되지 않았으면 검토자를 한 번 더 부르고, 그래도 안 되면 사람에게 넘기세요)"}

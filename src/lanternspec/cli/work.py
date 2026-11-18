@@ -347,6 +347,68 @@ def cmd_loop(a: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_review(a: argparse.Namespace) -> int:
+    """`lantern review pack|record|status W-012` — the review after a build: the pack, the reviewer's verdict, where it stands."""
+    from pathlib import Path
+
+    from ..tools import get
+    from ..work import review
+
+    project = _p()
+    work = a.work.upper()
+    if a.action == "pack":
+        path = review.pack(project, work)
+        model = str(project.profile.get("build.review_model") or "")
+        print(msg("✔ {rel} — the review pack", rel=project.rel(path)))
+        out = path.with_suffix(".out")
+        command = get(a.tool).review_command(Path(project.rel(path)), Path(project.rel(out)), model) if a.tool else None
+        if command:
+            print(msg("Run the reviewer in a fresh context, then record what it said:"))
+            print(f"  {command}")
+            print(f"  lantern review record {work} --file {project.rel(out)}")
+        else:
+            print(
+                msg(
+                    "Call the `{reviewer}` sub-agent with: Review {work}, the pack is {rel}",
+                    reviewer=review.REVIEWER,
+                    work=work,
+                    rel=project.rel(path),
+                )
+            )
+        return 0
+    if a.action == "record":
+        if not a.file:
+            raise CliError(f"lantern review record {work} --file <the reviewer's answer>")
+        done = review.record(project, Path(a.file).read_text(encoding="utf-8"), a.model or "", "cli", work)
+        if done is None:
+            raise CliError(msg("The text holds no verdict: one `- [verdict] item` line each, and the work's ID"))
+        print(msg("Round {n}: {items} items, {issues} issues", n=done.n, items=done.items, issues=done.issues))
+        for line in done.issue_list:
+            print(f"  ⚠ {line}")
+        return 1 if done.issues else 0
+    state = review.standing(project, work)
+    waiting = state == "none" and review.open_pack(project, work) is not None
+    words = {
+        "none": msg("not reviewed yet"),
+        "clean": msg("reviewed: nothing left"),
+        "open": msg("issues left: fix them and review again"),
+        "limit": msg("issues left and no round remains: hand them to the person"),
+    }
+    said = msg(
+        "pack made: waiting for the reviewer's answer (if it is not recorded, call the reviewer once more, then hand it to the person)"
+    )
+    print(msg("{work}: {state}", work=work, state=said if waiting else words[state]))
+    for r in review.rounds(project, work):
+        print(
+            f"  {msg('Round {n}: {items} items, {issues} issues', n=r.n, items=r.items, issues=r.issues)}"
+            + (f" · {r.model}" if r.model else "")
+            + f" [{r.source}]"
+        )
+        for line in r.issue_list:
+            print(f"    ⚠ {line}")
+    return 0 if state == "clean" else 1
+
+
 def cmd_unit_log(a: argparse.Namespace) -> int:
     """`lantern unit-log add` — record the work unit the AI recommended and the one the person chose."""
     from ..work import stages
@@ -539,6 +601,8 @@ def cmd_check_dbml(a: argparse.Namespace) -> int:
 
 def register(add: Add) -> None:
     """Register the work-line commands."""
+    from ..tools import REGISTRY
+
     p = add("scaffold", cmd_scaffold, msg("Make folders · documents from templates"))
     ss = p.add_subparsers(dest="kind", required=True)
     s = ss.add_parser("init", help=msg("Folders · templates · MOC as lantern.yaml says"))
@@ -594,6 +658,16 @@ def register(add: Add) -> None:
     p.add_argument(
         "--again", action="store_true", help=msg("Start another loop for a work that already had one (only when the person says so)")
     )
+    p = add("review", cmd_review, msg("The review after a build: pack · record · status (inside /l-build)"))
+    p.add_argument("action", choices=["pack", "record", "status"])
+    p.add_argument("work")
+    p.add_argument(
+        "--tool",
+        choices=list(REGISTRY),
+        help=msg("pack: the AI tool, to print the command that runs the reviewer in a fresh context"),
+    )
+    p.add_argument("--file", help=msg("record: the file holding the reviewer's answer"))
+    p.add_argument("--model", help=msg("record: the reviewer's model, when known"))
     p = add("unit-log", cmd_unit_log, msg("Record why the person changed the suggested work unit"))
     p.add_argument("action", choices=["add"])
     p.add_argument("--what", required=True)

@@ -48,6 +48,24 @@ class Antigravity(Tool):
     verified_version = "1.4.10"
     rules_max_bytes = 24_000  # its guide: each rules file is cut at 24,000 bytes
 
+    def review_command(self, pack: Path, out: Path, model: str) -> str | None:
+        """Implement Tool.review_command: `agy --print` is a fresh conversation each time, in the tool's sandbox.
+
+        Args:
+            pack: The review pack, passed as the prompt.
+            out: Where the printed answer goes.
+            model: The model (`--model`), "" for the tool's own.
+
+        Returns:
+            The shell command.
+
+        Example:
+            >>> Antigravity().review_command(Path("p.md"), Path("o.md"), "")
+            'agy --print --sandbox "$(cat p.md)" > o.md'
+        """
+        flags = f"--model {shlex.quote(model)} " if model else ""
+        return f'agy --print --sandbox {flags}"$(cat {shlex.quote(str(pack))})" > {shlex.quote(str(out))}'
+
     def worktree_command(self, path: Path, work_id: str, merge_folder: Path) -> str:
         """Implement Tool.worktree_command: a first prompt for an interactive session goes through `-i`.
 
