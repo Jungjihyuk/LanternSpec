@@ -7,6 +7,8 @@
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-18
+
 업그레이드: `uv tool upgrade lanternspec` → 프로젝트마다 `lantern upgrade` (새 스킬 `/l-migrate`를 설치한다). `lantern legacy adopt`를 부르던 스크립트가 있으면 `--apply`를 붙인다
 
 ### 추가
@@ -336,7 +338,8 @@
   Rust · Go)와 규모로 코드 컨벤션을 기준표대로 골라 `AGENTS.md`와 `개발 원칙.md`에 넣는다 (`principles`, `lint`)
 - **작업 방식 · 평가** — 하네스 · 루프 · 그래프 추천(`harness suggest`), 실행 기록으로 스킬 · 모델 · 설정 비교(`eval`)
 
-[Unreleased]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.3.3...HEAD
+[Unreleased]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.3.3...v0.4.0
 [0.3.3]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.3.0...v0.3.1

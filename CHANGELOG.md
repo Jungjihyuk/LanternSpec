@@ -7,6 +7,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-18
+
 Upgrade: `uv tool upgrade lanternspec` → `lantern upgrade` in each project (installs the new `/l-migrate` skill). If a script of yours calls `lantern legacy adopt`, add `--apply`
 
 ### Added
@@ -327,7 +329,8 @@ First release.
 - **Design principles and code conventions** — design principles chosen from a table by project kind · external integrations · size, and code conventions by language (Python · TypeScript · Swift · Rust · Go) and size, written into `AGENTS.md` and `개발 원칙.md` (`principles`, `lint`)
 - **Ways of working and evaluation** — harness · loop · graph recommendation (`harness suggest`); comparing skills · models · settings from the run log (`eval`)
 
-[Unreleased]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.3.3...HEAD
+[Unreleased]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.3.3...v0.4.0
 [0.3.3]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.3.0...v0.3.1
