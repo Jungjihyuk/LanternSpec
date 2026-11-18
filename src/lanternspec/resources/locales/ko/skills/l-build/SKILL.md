@@ -131,8 +131,11 @@ lantern scaffold idea "<짧은 제목>" --kind <유형> --raw "W-012 구현 중 
 1. 수락 기준 하나의 구현이 끝날 때마다 `lantern loop attempt W-012 AC-1`로 그 AC의 테스트를 돌린다. `✖`이면 고치고 같은 명령을 다시 돈다. `⛔`(한 AC가 연달아 실패)이 나오면 멈추고 사람에게 보고한다.
 2. 모든 할 일이 끝나면 `lantern loop finish W-012`를 실행한다. 모든 AC의 마지막 시도가 통과이고 전체 테스트(<!-- lantern:if build.test -->`<<build.test>>`<!-- lantern:endif -->)가 통과하고, 연결된 테스트 · 설정 파일이 그대로이고 실행된 테스트 수가 줄지 않았을 때만 `✔`이다.
    - `✔` → 4단계로.
-   - `✖` → 통과하지 못한 AC마다 고칠 할 일을 추가하고(`lantern task add W-012 "<AC-n 맞추기>" --size <<size.s>> --ac AC-n`) 1단계의 구현으로 돌아가 이 절을 다시 돈다. `<<file.record>>`에 "큰 반복 n회차: 실패한 AC · 원인 한 줄"을 남긴다.
+   - `✖` → 통과하지 못한 AC마다 고칠 할 일을 추가하고(`lantern task add W-012 "<AC-n 맞추기>" --size <<size.s>> --ac AC-n`) 1단계의 구현으로 돌아가 이 절을 다시 돈다. `<<file.record>>`에 "큰 반복 n회차: 실패한 AC · 원인 한 줄"을 남기고, 줄 끝에 `[<<retro.run>>:: 실행 ID]`를 붙인다 (실행 ID는 `lantern loop start W-012`가 알려 준다).
    - `⛔`(무효) 또는 "회차 한도"가 나오면 멈추고 보고한다 (한 일 · 남은 실패 · 골라야 할 것). 무효는 테스트가 바뀌었거나 실행된 테스트 수가 줄었다는 뜻이니, 출력된 내용을 그대로 적는다.
+3. **회고:** 반복이 끝나면(`✔` · `⛔` · 한도) `lantern retro add W-012`를 실행한다. 첫 시도에 통과하지 못한 수락 기준(또는 검증)마다 회고 줄은 lantern이 이미 써 두었다 — 사실 칸(시각 · 작업 · 시도 · 결과 · 실행)은 고치지 않는다. 명령이 판단할 줄을 보여 주면 줄마다 `lantern retro judge <실행 ID> <AC-n 또는 검증> --weakness <<retro_weakness.spec>> --remedy <<retro_remedy.lanternspec>> --hypothesis "한 줄"`로 판단 칸을 채운다.
+   - 약점 · 보완은 명령이 보여 주는 목록에서만 고른다 (목록 밖의 값은 거절된다). 가설은 **확인한 사실로** 한 줄만 쓰고, 추측이면 추측이라고 쓴다. 버전이나 원인을 지어내지 않는다. 제안(`--suggestion`)은 선택이다.
+   - 확인(`[<<retro.confirmed>>:: ✅]`)은 사람이 주 1회 `lantern retro review`로 한다. 네가 확인하지 않는다.
 <!-- lantern:endif -->
 
 ## 4. 모두 끝나면 — 현재 상태에 반영

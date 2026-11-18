@@ -185,6 +185,39 @@ class Names:
         """
         return next((r for r, n in self.table["task_attrs"].items() if n == name), name)
 
+    def retro_attr(self, role: str) -> str:
+        """Return the name of a field of an AI retro line.
+
+        Args:
+            role: Field role, e.g. "weakness".
+
+        Returns:
+            The name.
+
+        Raises:
+            KeyError: The role is not in names.yaml.
+
+        Example:
+            >>> load("ko").retro_attr("weakness")
+            '약점'
+        """
+        return str(self.table["retro_attrs"][role])
+
+    def retro_attr_role(self, name: str) -> str:
+        """Return the role of a retro-line field name (the reverse of retro_attr).
+
+        Args:
+            name: The name as written in a document.
+
+        Returns:
+            The role; the name itself when it is not a known field.
+
+        Example:
+            >>> load("ko").retro_attr_role("약점"), load("ko").retro_attr_role("메모")
+            ('weakness', '메모')
+        """
+        return next((r for r, n in self.table["retro_attrs"].items() if n == name), name)
+
     def marker(self, key: str) -> str:
         """Return a marker lantern recognizes in documents.
 
@@ -322,7 +355,7 @@ class Names:
         """Build the values skills and rules are filled with.
 
         Returns:
-            `folder.<key>`, `doc.<role>`, `file.<role>`, `attr.<role>`, `marker.<key>` and
+            `folder.<key>`, `doc.<role>`, `file.<role>`, `attr.<role>`, `retro.<role>`, `marker.<key>` and
             `section.<role>` (the project's current title) → name.
 
         Example:
@@ -336,6 +369,7 @@ class Names:
             ctx[f"doc.{role}"] = self.doc(role)
             ctx[f"file.{role}"] = self.file(role)
         ctx.update({f"attr.{r}": self.attr(r) for r in self.table["task_attrs"]})
+        ctx.update({f"retro.{r}": self.retro_attr(r) for r in self.table["retro_attrs"]})
         ctx.update({f"marker.{k}": self.marker(k) for k in self.table["markers"]})
         ctx.update({f"section.{s.role}": self.title(s.role) for s in self.sections()})
         return ctx

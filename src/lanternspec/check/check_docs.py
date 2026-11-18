@@ -639,6 +639,12 @@ def check_file(project: Project, path: Path, text: str, ctx: _Ctx) -> list[Findi
     if doc_type == "tasks":
         out += _check_tasks(project, path, text, rel)
 
+    # AI retro rows: the weakness and the remedy come from the lists
+    if path.parent == project.folder("retro"):
+        from ..report.retro import problems
+
+        out += [Finding("warn", rel, code, message, line) for line, code, message in problems(project, text)]
+
     # length
     max_lines = int(project.profile.get("check.max_lines") or 300)
     n_lines = text.count("\n") + 1

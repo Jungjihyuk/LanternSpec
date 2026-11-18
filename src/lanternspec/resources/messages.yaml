@@ -1593,3 +1593,30 @@
 "invalid": {ko: "무효"}
 "Start another loop for a work that already had one (only when the person says so)": {ko: "이미 반복한 작업의 반복을 또 시작한다 (사람이 말했을 때만)"}
 "✖ The whole suite did not pass (try {n} for {ac}) — nothing is judged per criterion without build.test_one": {ko: "✖ 전체 테스트가 통과하지 못했습니다 ({ac}의 {n}번째 시도) — build.test_one이 없으면 수락 기준별로 판정하지 않습니다"}
+"  R (remedy): {items}": {ko: "  R(보완): {items}"}
+"  W (weakness): {items}": {ko: "  W(약점): {items}"}
+"AI retro: add rows of a finished loop · judge · confirm · review": {ko: "AI 회고: 끝난 반복의 줄 더하기 · 판단 · 확인 · 검토"}
+"Judge each: lantern retro judge <run> <key> --weakness W --remedy R --hypothesis \"…\"": {ko: "줄마다 판단하세요: lantern retro judge <실행> <키> --weakness W --remedy R --hypothesis \"…\""}
+"judge needs --weakness, --remedy and --hypothesis": {ko: "judge에는 --weakness, --remedy, --hypothesis가 필요합니다"}
+"judge: the guess, one line": {ko: "judge: 가설 — 추측을 한 줄로"}
+"judge: what to change, one line": {ko: "judge: 제안 — 무엇을 바꿀지 한 줄로"}
+"judge: where fixing it helps (a value of the remedy list)": {ko: "judge: 어디를 고치면 나아지나 (보완 목록의 값)"}
+"judge: why the first try was blocked (a value of the weakness list)": {ko: "judge: 첫 시도가 왜 막혔나 (약점 목록의 값)"}
+"{count} rows wait for a person (lantern retro confirm <run> <key>)": {ko: "사람의 확인을 기다리는 줄 {count}개 (lantern retro confirm <실행> <키>)"}
+"✔ Nothing to confirm": {ko: "✔ 확인할 줄이 없습니다"}
+"✔ {count} rows added": {ko: "✔ 회고 줄 {count}개를 더했습니다"}
+"ℹ No new rows (the loop has not ended, or they are there already)": {ko: "ℹ 더할 줄이 없습니다 (반복이 아직 끝나지 않았거나 이미 있습니다)"}
+"{tries} tries": {ko: "{tries}번 시도"}
+"- {rows} rows · {confirmed} confirmed · {pending} unconfirmed": {ko: "- 회고 행 {rows}개 · 확인 {confirmed}개 · 미확인 {pending}개"}
+"- {count} rows not judged yet": {ko: "- 아직 판단하지 않은 행 {count}개"}
+"Weaknesses": {ko: "약점"}
+"Remedies": {ko: "보완"}
+"The run log has no loop for {work_id}": {ko: "실행 기록에 {work_id}의 반복이 없습니다"}
+"'{value}' is not one of: {items}": {ko: "'{value}'은(는) 목록에 없습니다: {items}"}
+"The hypothesis can't be empty — write the guess in one line": {ko: "가설은 비울 수 없습니다 — 추측을 한 줄로 적어 주세요"}
+"No retro row for run {run} · {key}": {ko: "실행 {run} · {key}의 회고 줄이 없습니다"}
+"Judge {key} first (lantern retro judge)": {ko: "{key}을(를) 먼저 판단하세요 (lantern retro judge)"}
+"'{value}' is not in the {label} list ({items})": {ko: "'{value}'은(는) {label} 목록에 없습니다 ({items})"}
+"{field} is not a field of an AI retro row": {ko: "{field}은(는) AI 회고 줄의 칸이 아닙니다"}
+"{key}: the weakness and the remedy are filled together": {ko: "{key}: 약점과 보완은 함께 채웁니다"}
+"⚠ The AI retro could not be written: {problem}": {ko: "⚠ AI 회고를 쓰지 못했습니다: {problem}"}

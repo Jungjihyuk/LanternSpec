@@ -21,6 +21,7 @@ LanternSpec이 이름을 쓰는 여러 곳(lantern.yaml 키 · enums.yaml 목록
 | `domain` | lantern.yaml `references.domain` · 폴더 `📚 도메인 지식/` = 도메인 지식 — 필요할 때만 한 절씩 읽는 참고서 (법령 · 업무 규칙 …). 색인은 `lantern ref domain`, 작업이 쓰는 절은 기획의 보호 칸 `domain_refs`. 기획 frontmatter `domain` = 그 작업의 업무 분야 한 단어 | lantern.yaml · names.yaml folders · CLI(`lantern ref domain`) · 기획 frontmatter |
 | `deploy` | lantern.yaml `git.deploy` = 배포 때 PR로 올리는 브랜치. 문서 `deploy` = 현재 상태의 배포 문서 "배포" | lantern.yaml · names.yaml |
 | `debt_status` | enums.yaml `debt_status` = 부채 카드 하나의 상태 값 목록. 문서 `debt_status` = 부채 전체를 보여 주는 자동 생성 문서 "부채 현황" | enums.yaml · names.yaml docs |
+| `result` | names.yaml `acceptance.result` = 수락 기준 줄의 "결과:" 말(상황 · 행동 · 결과). `retro_attrs.result` = AI 회고 줄의 `[결과:: 통과]` 칸 (통과 · 중단) | names.yaml |
 
 ## 한 개념, 여러 곳
 
@@ -33,6 +34,7 @@ LanternSpec이 이름을 쓰는 여러 곳(lantern.yaml 키 · enums.yaml 목록
 | `task` · `tasks` | 할 일 — 작업 안의 한 줄 단위 일 | 문서 · CLI · 스킬 |
 | `build` | 구현 단계. lantern.yaml `build.*`는 구현 때 쓰는 설정 (확인 명령 · 보고 주기 · 루프) | lantern.yaml · 스킬 |
 | `loop` | 구현 반복 — 수락 기준 테스트가 통과할 때까지 자동으로 도는 것. lantern.yaml `build.loop`는 사람이 바라는 것(의도)이고, `lantern loop`는 반복이 실제로 돈 사실(시작 · 시도 · 회차)을 실행 기록에 쓴다. 이후 단계는 설정이 아니라 그 기록을 읽는다 | lantern.yaml · CLI(`lantern loop`) · 스킬 |
+| `retro` | AI 회고 — 자율 반복이 끝날 때 첫 시도에 통과하지 못한 수락 기준 · 검증을 한 줄씩 쌓는 운영 기록. 폴더 `4. 운영 기록/AI 회고/`(달마다 파일 하나), 문서 `AI 회고`, 줄의 칸 `retro_attrs`, 목록 `retro_*`(enums.yaml), 명령 `lantern retro`. 개발 회고나 작업 기록과는 다른 것 | 폴더 · 문서 · names.yaml · enums.yaml · CLI(`lantern retro`) · 스킬 |
 | `finish` | 작업 마무리 — 합치기와 정리. `lantern work finish`는 작업 하나를 합치고, `/l-finish`는 동시 작업 여러 개를 합친 뒤 현재 상태를 맞춘다 | CLI · 스킬 |
 | `work` · `works` | 작업 — 기능 · 변경 하나 = 폴더 하나 | 폴더 · CLI |
 | `check` | 문서 양식 검사. lantern.yaml `check.*`는 그 기준 (최대 줄 수) | lantern.yaml · CLI · 스킬 |

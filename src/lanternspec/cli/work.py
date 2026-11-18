@@ -265,6 +265,7 @@ def cmd_loop(a: argparse.Namespace) -> int:
                     limit=tried.limit,
                 )
             )
+            print(tried.tail)
             return 1
         if not tried.streak:
             print(

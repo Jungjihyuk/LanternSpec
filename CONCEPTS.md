@@ -185,6 +185,14 @@ Everything LanternSpec writes lives in the `docs/` folder.
 ### Invalid pass
 > The device that **catches a pass reached by changing the tests**. If, after a loop starts, a linked test file or a test settings file listed in `build.test_config` changes, or fewer tests run in the whole-suite run, the pass doesn't count and the work goes to the person. Writing new tests in new files is fine (adding to a linked file voids the pass). Edits aren't blocked: a fingerprint of the files is kept when the loop starts, and what changed is caught. The number of tests is compared only in a round whose suite passed.
 
+### AI retro
+> A record kept each time an automatic loop ends: **one line for every acceptance criterion (or check) that did not pass on its first try**. One file per month (`2026-11.md`) in `4. Operations/AI Retro/`. The point is to pile up what got blocked and see whether the same weakness keeps coming back, so the harness can be fixed.
+
+- **The fact fields** (time · work · tries · result · run) are written by lantern from the run log. A criterion that passed at once leaves no line; one that passed after several tries leaves one (`[tries:: 3] [result:: Passed]`); one that never did and stopped leaves `[result:: Stopped]`. A check that isn't a criterion (a failed whole suite · an invalid pass) is kept as `[check:: …]`.
+- **The judgment fields** (weakness · remedy · hypothesis · suggestion) are filled by the AI with `lantern retro judge`. The weakness (spec · context · harness · model · verification · environment) and the remedy (LanternSpec · harness settings · model choice · connected tool · planning habit) accept only the values of the lists in `enums.yaml`.
+- **Confirmation** is a person's: once a week, `lantern retro review` shows the unconfirmed lines and `lantern retro confirm` marks the ones that are right. The summary at the top is rewritten by lantern each time a line is added or confirmed.
+- A loop judged by the whole suite only (`build.test_one` empty) makes no line per criterion.
+
 ### Task delegation
 > Within one work, the AI hands **tasks that don't depend on each other** to several helper AIs (sub-agents) — like a person splitting a job among teammates. Tasks that can run at the same time are marked `[P]`.
 

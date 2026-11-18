@@ -188,3 +188,38 @@ legacy_route:
     흡수: 🧽
     보관: 🗄
     옮기기: 🚚
+
+retro_result:
+  label: AI 회고 줄의 결과
+  applies: {}
+  values:
+    통과: {icon: ✅, role: passed}
+    중단: {icon: ⛔, role: stopped}
+
+retro_check:
+  label: AI 회고의 AC가 아닌 검증
+  applies: {}
+  values:
+    전체 테스트: {icon: 🧪, role: suite}
+    통과 무효: {icon: 🚫, role: invalid}
+
+retro_weakness:
+  label: AI 회고의 약점 (첫 시도가 왜 막혔나)
+  applies: {}
+  values:
+    명세: {icon: 📋, role: spec}
+    컨텍스트: {icon: 📎, role: context}
+    하네스: {icon: 🧰, role: harness}
+    모델: {icon: 🧠, role: model}
+    검증: {icon: 🔍, role: verification}
+    환경: {icon: 🌐, role: environment}
+
+retro_remedy:
+  label: AI 회고의 보완 (어디를 고치면 나아지나)
+  applies: {}
+  values:
+    LanternSpec: {icon: 🏮, role: lanternspec}
+    하네스 설정: {icon: ⚙, role: harness_config}
+    모델 선택: {icon: 🎚, role: model_choice}
+    연결 도구: {icon: 🔌, role: tool_link}
+    기획 습관: {icon: ✍, role: planning_habit}

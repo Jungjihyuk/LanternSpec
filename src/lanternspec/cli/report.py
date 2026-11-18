@@ -1,4 +1,4 @@
-"""Report and sync commands: report · status · scan · sync · map · eval · build-mode · obsidian."""
+"""Report and sync commands: report · status · scan · sync · map · eval · retro · build-mode · obsidian."""
 
 from __future__ import annotations
 
@@ -79,6 +79,50 @@ def cmd_eval(a: argparse.Namespace) -> int:
         print(json.dumps(evaluate.summary(project), ensure_ascii=False, indent=2))
     else:
         print(evaluate.markdown(project))
+    return 0
+
+
+def cmd_retro(a: argparse.Namespace) -> int:
+    """`lantern retro add|judge|confirm|review` — the AI retro: rows from finished loops, the AI's judgment, a person's confirmation."""
+    from ..report import retro
+
+    project = _p()
+    if a.action == "review":
+        todo = retro.review(project)
+        if not todo:
+            print(msg("✔ Nothing to confirm"))
+            return 0
+        print(msg("{count} rows wait for a person (lantern retro confirm <run> <key>)", count=len(todo)))
+        for _, row in todo:
+            print(f"{row.date} {retro.render_row(row, project.names)}")
+        return 0
+    if not a.args:
+        raise CliError("lantern retro add W-012 · judge <run> <key> · confirm <run> <key>")
+    if a.action == "add":
+        added = retro.record(project, a.args[0])
+        print(
+            msg("✔ {count} rows added", count=len(added))
+            if added
+            else msg("ℹ No new rows (the loop has not ended, or they are there already)")
+        )
+        todo = [row for _, row in retro.all_rows(project) if row.work == a.args[0].upper() and not row.judged]
+        for row in todo:
+            print(f"  · {row.run} {row.key} — {msg('{tries} tries', tries=row.tries)}, {row.result}")
+        if todo:
+            e = project.enums
+            print(msg('Judge each: lantern retro judge <run> <key> --weakness W --remedy R --hypothesis "…"'))
+            print(msg("  W (weakness): {items}", items=" | ".join(e.values("retro_weakness"))))
+            print(msg("  R (remedy): {items}", items=" | ".join(e.values("retro_remedy"))))
+        return 0
+    if len(a.args) < 2:
+        raise CliError(f"lantern retro {a.action} <run> <key>")
+    if a.action == "judge":
+        if not (a.weakness and a.remedy and a.hypothesis):
+            raise CliError(msg("judge needs --weakness, --remedy and --hypothesis"))
+        row = retro.judge(project, a.args[0], a.args[1], a.weakness, a.remedy, a.hypothesis, a.suggestion or "")
+    else:
+        row = retro.confirm(project, a.args[0], a.args[1])
+    print("✔ " + retro.render_row(row, project.names))
     return 0
 
 
@@ -174,6 +218,13 @@ def register(add: Add) -> None:
     add("map", cmd_map, msg("Update the MOC"))
     p = add("eval", cmd_eval, msg("Evaluate AI work — which setups helped (run records)"))
     p.add_argument("--json", action="store_true")
+    p = add("retro", cmd_retro, msg("AI retro: add rows of a finished loop · judge · confirm · review"))
+    p.add_argument("action", choices=["add", "judge", "confirm", "review"])
+    p.add_argument("args", nargs="*")
+    p.add_argument("--weakness", help=msg("judge: why the first try was blocked (a value of the weakness list)"))
+    p.add_argument("--remedy", help=msg("judge: where fixing it helps (a value of the remedy list)"))
+    p.add_argument("--hypothesis", help=msg("judge: the guess, one line"))
+    p.add_argument("--suggestion", help=msg("judge: what to change, one line"))
     for name in ("build-mode", "harness"):  # harness: the old name, kept for a while
         p = add(name, cmd_build_mode, msg("Suggest how to build: loop scope · task delegation · parallel works"))
         p.add_argument("action", choices=["suggest"])

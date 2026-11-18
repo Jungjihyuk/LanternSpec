@@ -11,11 +11,13 @@ Responsibilities:
     - end a round: run the whole suite and say passed · failed · invalid
     - catch what makes a pass invalid: a linked test or a test settings file changed, or fewer tests ran
     - refuse more tries once the loop stopped, and a second loop for the same work unless the person says so
+    - ask for the retro rows when a loop ends (the retro itself is optional: nothing it does can stop the loop)
     - read back what the run log says about a work's loop
 
 Not here:
     - the format of the run log lines → tools/runlog.py
     - suggesting how to build → report/build_mode.py
+    - the retro rows and their judgment → report/retro.py
     - the commands → cli/work.py
 """
 
@@ -25,6 +27,7 @@ import hashlib
 import re
 import shlex
 import subprocess
+import sys
 import uuid
 from dataclasses import dataclass, field
 from typing import Any
@@ -94,7 +97,7 @@ class Tried:
     Attributes:
         ac: The criterion.
         attempt: Which try this is, from 1 (the last one made when the try was refused).
-        result: "pass" · "fail" · "limit" (refused: it failed too often in a row).
+        result: "pass" · "fail" · "limit" (this try was the one that failed too often in a row: the loop stopped).
         tail: The end of the test output.
         streak: Failures in a row, this one included; 0 when nothing is judged per criterion (no `build.test_one`).
         limit: How many in a row stop the loop.
@@ -311,12 +314,41 @@ def last_start(project: Project, work_id: str) -> dict[str, Any] | None:
     return starts[-1] if starts else None
 
 
+def last_run(project: Project, work_id: str) -> list[dict[str, Any]]:
+    """Read the lines of a work's latest loop run: its start line, then its tries and rounds.
+
+    Args:
+        project: The project.
+        work_id: E.g. "W-012".
+
+    Returns:
+        The lines in order; empty when no loop was started for the work.
+
+    Example:
+        >>> [r["kind"] for r in last_run(project, "W-012")]  # doctest: +SKIP
+        ['loop', 'attempt', 'loop']
+    """
+    start = last_start(project, work_id)
+    return [start, *_run_lines(project, start)] if start else []
+
+
 def _run_lines(project: Project, start: dict[str, Any]) -> list[dict[str, Any]]:
     return [r for r in _lines(project, start["work"]) if r.get("run") == start["run"] and r.get("event") != "start"]
 
 
-def _stopped(lines: list[dict[str, Any]]) -> bool:
-    """Whether the run was told to stop: a round that ended invalid or at its limit, or a criterion at its limit."""
+def stopped(lines: list[dict[str, Any]]) -> bool:
+    """Whether the run was told to stop: a round that ended invalid or at its limit, or a criterion at its limit.
+
+    Args:
+        lines: The run's attempt and round lines.
+
+    Returns:
+        True when the loop may not go on.
+
+    Example:
+        >>> stopped([{"kind": "attempt", "result": "limit"}]), stopped([{"kind": "attempt", "result": "fail"}])
+        (True, False)
+    """
     return any(r.get("stop") or r.get("result") == LIMIT for r in lines)
 
 
@@ -324,7 +356,7 @@ def _active(project: Project, work_id: str) -> dict[str, Any]:
     start = last_start(project, work_id)
     if start is None or start.get("mode") != MODE_LOOP:
         raise ValueError(msg("No loop is running for {work_id} — run `lantern loop start {work_id}` first", work_id=work_id))
-    if _stopped(_run_lines(project, start)):
+    if stopped(_run_lines(project, start)):
         raise ValueError(
             msg(
                 "The loop for {work_id} has stopped — hand it to the person (another loop needs `lantern loop start {work_id} --again`)",
@@ -595,6 +627,16 @@ def start(project: Project, work_id: str, again: bool = False) -> Started:
     return Started(run, mode, reasons, elig.missing, before)
 
 
+def _retro(project: Project, work_id: str) -> None:
+    """Add the retro rows of a loop that just ended; the retro is optional, so a failure here never stops the loop."""
+    from ..report import retro
+
+    try:
+        retro.record(project, work_id)
+    except Exception as e:  # noqa: BLE001  the retro is optional: whatever goes wrong in it, the loop goes on
+        print(msg("⚠ The AI retro could not be written: {problem}", problem=e), file=sys.stderr)
+
+
 def _task_of(project: Project, work_id: str, ac: str) -> str:
     folder = project.find_work(work_id, include_archive=False)
     path = project.doc_path(folder, "tasks") if folder else None
@@ -605,8 +647,8 @@ def _task_of(project: Project, work_id: str, ac: str) -> str:
 def attempt(project: Project, work_id: str, ac: str, task: str = "") -> Tried:
     """Run one criterion's test and write the try; the result is the command's exit code, nothing else.
 
-    A criterion that already failed `same_ac_limit` times in a row is not run again: the try is written as
-    "limit", the loop has stopped, and every later try or round is refused. Without `build.test_one` the whole
+    The try that makes a criterion fail `same_ac_limit` times in a row is followed by a "limit" line: the loop
+    has stopped, and every later try or round is refused. Without `build.test_one` the whole
     suite stands in and nothing is judged per criterion: a failing suite says nothing about this criterion
     (the others may not be built yet), so no failures are counted and no limit applies.
 
@@ -645,15 +687,16 @@ def attempt(project: Project, work_id: str, ac: str, task: str = "") -> Tried:
     def write(n: int, result: str, failed: str, scope: str) -> None:
         runlog.loop_attempt(project, start_line["run"], task, ac, n, result, failed, understood, work_id, scope)
 
-    if streak >= limit:
-        if not mine or mine[-1]["result"] != LIMIT:
-            write(made, LIMIT, link, "one")
-        return Tried(ac, made, LIMIT, "", streak, limit)
     code, out = _run(project, command_for(settings["test_one"], link) if one else settings["test"])
     result = PASS if code == 0 else FAIL
     last = next((x for x in reversed(out.strip().splitlines()) if x.strip()), "")
     write(made + 1, result, "" if code == 0 else f"{link}: {last[:200]}", "one" if one else "all")
-    return Tried(ac, made + 1, result, _tail(out), streak + 1 if one and code != 0 else 0, limit)
+    failing = streak + 1 if one and code != 0 else 0
+    if failing >= limit:  # the try that reaches the limit ends the loop: nothing after it runs
+        write(made + 1, LIMIT, link, "one")
+        _retro(project, work_id)
+        return Tried(ac, made + 1, LIMIT, _tail(out), failing, limit)
+    return Tried(ac, made + 1, result, _tail(out), failing, limit)
 
 
 def finish(project: Project, work_id: str) -> Finished:
@@ -708,4 +751,6 @@ def finish(project: Project, work_id: str) -> Finished:
         exit=code,
         stop=stop,
     )
+    if result == PASSED or stop:
+        _retro(project, work_id)
     return Finished(round_no, result, unpassed, violations, before, after, _tail(out), stop)

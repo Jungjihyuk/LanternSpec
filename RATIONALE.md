@@ -109,6 +109,19 @@ The content of a rule (its tables and numbers) is written once, in the rules doc
 - **Turned down:** ① the domain knowledge folder — that is for reference material brought in from outside and read only when needed, unlike a standard to follow every time. ② creating a `DESIGN.md` at the repository root — the format is still a draft and may change, and outside the documents folder people don't see it. With the sections in the same order, moving to it later is easy.
 - **Source:** `src/lanternspec/resources/locales/<language>/templates/Design System.md`
 
+### The AI retro lives in `4. Operations`; code writes the facts, and the judgment stays inside the lists (`lantern retro`)
+- **Decided:**
+  - For each acceptance criterion (or check) that did not pass on its first try, one line goes into `4. Operations/AI Retro/YYYY-MM.md`. A criterion that fails several times still gets one line, written once, when the loop **ends** (`loop finish` and the try that hits the limit call it; if the retro fails the loop does not stop).
+  - The fact fields (time · work · tries · result · run ID) are computed by code from the run log; the judgment fields (weakness · remedy · hypothesis · suggestion) are filled by the AI with `lantern retro judge`. That command **refuses, as it writes**, a value that is not in the lists of `enums.yaml` (`retro_weakness` · `retro_remedy`), and `lantern check` catches, once more, a value outside the lists, an unknown field or half a judgment in a hand-edited file.
+  - A person confirms once a week. Writing the judgment again clears the confirmation. The summary is rewritten by code whenever a line changes.
+- **Why:** the values of a retro exist to count "does the same weakness pile up", and names that vary can't be counted. Stopping a wrong value at the moment of writing leaves the AI no way to slip, which beats finding it later with a check. Facts the AI would write from memory can be wrong (tries · times · run IDs), so they are read from the run log. A retro is "what happened then", so it goes to the operations record, not the current state.
+- **Rejected alternatives:**
+  - **Keeping it in `3. Current State`.** Current state keeps today's facts in one place; a retro only piles up as history.
+  - **A table.** The same reason the task list isn't a table: when a column is missing, a value lands in another column with no warning.
+  - **The AI writing the whole retro.** It can write facts such as versions, times and tries wrongly, and its diagnosis of a cause shares its own blind spots. So the hypothesis is one line from checked facts, and a person confirms.
+  - **One file per work.** The same weakness scatters across files and the repetition stays hidden. A month is a good size for a weekly check.
+  - **A line per try.** A line is complete only with the final result and the number of tries. The detail of each try is found by the run ID in the run log.
+
 ## 3. Formats
 
 ### One task per line (`- [ ] W-001-T01 What [size:: 1h] [ac:: AC-1]`)

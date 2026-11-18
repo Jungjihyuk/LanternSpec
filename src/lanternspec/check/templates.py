@@ -29,6 +29,7 @@ SYSTEM_KEYS = {
     "id",
     "name",
     "today",
+    "month",
     "work_id",
     "links",
     "project",

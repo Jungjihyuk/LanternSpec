@@ -161,3 +161,6 @@ def fill_plan(r: Runner, wid: str, ac_lines: str = None) -> Path:
         ],
     )
     return p
+
+
+from loop_support import work  # noqa: E402, F401  (a fixture the loop and retro tests share; it needs the helpers above)

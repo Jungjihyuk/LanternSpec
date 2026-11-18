@@ -131,8 +131,11 @@ Only a work for which `lantern loop start W-012` printed `✔` loops (step 6 of 
 1. After each acceptance criterion is built, run its test with `lantern loop attempt W-012 AC-1`. On `✖`, fix it and run the same command again. On `⛔` (one AC failing again and again), stop and report to the person.
 2. When every task is done, run `lantern loop finish W-012`. It prints `✔` only when the latest try of every AC passed, the whole suite (<!-- lantern:if build.test -->`<<build.test>>`<!-- lantern:endif -->) passed, the linked tests and settings files are unchanged and no fewer tests ran than before.
    - `✔` → step 4.
-   - `✖` → add a task to fix each AC that did not pass (`lantern task add W-012 "<make AC-n pass>" --size <<size.s>> --ac AC-n`), go back to building, and run this section again. Write in `<<file.record>>`: "big loop round n: failing ACs · the cause in one line".
+   - `✖` → add a task to fix each AC that did not pass (`lantern task add W-012 "<make AC-n pass>" --size <<size.s>> --ac AC-n`), go back to building, and run this section again. Write in `<<file.record>>`: "big loop round n: failing ACs · the cause in one line", and end the line with `[<<retro.run>>:: run ID]` (`lantern loop start W-012` prints the run ID).
    - On `⛔` (invalid) or "the round limit", stop and report (what was done · remaining failures · what needs choosing). Invalid means a test changed or fewer tests ran: say what was printed, as it was.
+3. **Retro:** when the loop ends (`✔` · `⛔` · the limit), run `lantern retro add W-012`. For each acceptance criterion (or check) that did not pass on the first try, lantern has already written the retro row — don't edit the fact fields (time · work · tries · result · run). When the command shows rows to judge, fill the judgment fields row by row with `lantern retro judge <run ID> <AC-n or check> --weakness <<retro_weakness.spec>> --remedy <<retro_remedy.lanternspec>> --hypothesis "one line"`.
+   - Pick the weakness and the remedy only from the lists the command shows (a value outside them is refused). Write the hypothesis in one line from **facts you checked**, and say so when it is a guess. Don't invent versions or causes. The suggestion (`--suggestion`) is optional.
+   - Confirmation (`[<<retro.confirmed>>:: ✅]`) is a person's, once a week with `lantern retro review`. You don't confirm.
 <!-- lantern:endif -->
 
 ## 4. When everything is done — apply to the current state

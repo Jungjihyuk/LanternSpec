@@ -8,74 +8,17 @@ import json
 
 import pytest
 
-from conftest import docs, fill, fill_plan, init_project, work_dir
+from conftest import docs, fill, work_dir
 from lanternspec.core.profile import DEFAULTS, Profile, _deep_merge
 from lanternspec.core.project import Project
 from lanternspec.report import build_mode
 from lanternspec.tools import get
 from lanternspec.tools.skills import generate
 from lanternspec.work import loop
-
-FAKE_TESTS = """import pathlib
-import sys
-
-# usage: fake_tests.py [tests/test_X.py[::name]] — one test, or every test file
-root = pathlib.Path(".")
-
-
-def passes(path):
-    return (root / "src" / (pathlib.Path(path).stem.removeprefix("test_") + ".txt")).exists()
-
-
-if sys.argv[1:]:
-    path = sys.argv[1].split("::")[0]
-    ok = passes(path)
-    print("1 passed in 0.01s" if ok else "1 failed in 0.01s")
-    sys.exit(0 if ok else 1)
-files = sorted((root / "tests").glob("test_*.py"))
-bad = [f for f in files if not passes(f)]
-print(f"{len(files) - len(bad)} passed, {len(bad)} failed in 0.01s")
-sys.exit(1 if bad else 0)
-"""
-
-TWO_ACS = (
-    "- [ ] AC-1 상황: 로그인 화면에서 · 행동: 카카오 버튼을 누르면 · 결과: 2초 안에 홈이 열린다 "
-    "[테스트:: tests/test_login.py::test_kakao]\n"
-    "- [ ] AC-2 행동: 로그아웃을 누르면 · 결과: 로그인 화면으로 돌아간다 [테스트:: tests/test_logout.py]"
-)
-
-
-def _lines(project, kind=None):
-    path = project.state / "runs.jsonl"
-    rows = [json.loads(x) for x in path.read_text(encoding="utf-8").splitlines()] if path.exists() else []
-    return [r for r in rows if kind is None or r["kind"] == kind]
-
-
-def _commit(repo, message="commit"):
-    repo.git("add", "-A")
-    repo.git("commit", "-q", "-m", message)
-
-
-def _implement(repo, name):
-    (repo.root / "src").mkdir(exist_ok=True)
-    (repo.root / "src" / f"{name}.txt").write_text("done", encoding="utf-8")
-
-
-@pytest.fixture
-def work(repo):
-    """A work W-001 whose two criteria link two committed tests, in a project with the loop on."""
-    init_project(repo)
-    repo("scaffold", "work", "카카오 로그인")
-    fill_plan(repo, "W-001", TWO_ACS)
-    (repo.root / "fake_tests.py").write_text(FAKE_TESTS, encoding="utf-8")
-    (repo.root / "tests").mkdir()
-    for name in ("login", "logout", "other"):
-        (repo.root / "tests" / f"test_{name}.py").write_text("# a test", encoding="utf-8")
-    _implement(repo, "other")
-    repo("profile", "set", "build.loop=on", "build.test=python3 fake_tests.py", "build.test_one=python3 fake_tests.py {test}")
-    _commit(repo, "tests")
-    return Project.load(repo.root)
-
+from loop_support import TWO_ACS  # noqa: F401
+from loop_support import commit as _commit
+from loop_support import implement as _implement
+from loop_support import lines as _lines
 
 # --------------------------------------------------------------------------- the pieces
 
@@ -195,18 +138,19 @@ def test_without_a_one_test_command_nothing_is_judged_per_criterion(repo, work):
     assert "✔" in out
 
 
-def test_a_criterion_that_fails_too_often_in_a_row_is_not_run_again(repo, work):
+def test_the_try_that_reaches_the_limit_stops_the_loop(repo, work):
     repo("loop", "start", "W-001")
-    for _ in range(3):
-        repo("loop", "attempt", "W-001", "AC-1", ok=False)
-    _implement(repo, "login")  # fixed too late: the loop has to stop and hand it to the person anyway
-    code, out = repo("loop", "attempt", "W-001", "AC-1", ok=False)
+    for _ in range(2):
+        _, out = repo("loop", "attempt", "W-001", "AC-1", ok=False)
+        assert "✖" in out and "⛔" not in out
+    code, out = repo("loop", "attempt", "W-001", "AC-1", ok=False)  # the third failure in a row says it at once
     assert code == 1 and "⛔" in out
+    _implement(repo, "login")  # fixed too late: the loop has to stop and hand it to the person anyway
     for command in (("attempt", "W-001", "AC-2"), ("attempt", "W-001", "AC-1"), ("finish", "W-001")):
         code, out = repo("loop", *command, ok=False)
         assert code == 1 and "멈췄습니다" in out  # the loop has stopped: nothing more runs
     results = [r["result"] for r in _lines(work, "attempt")]
-    assert results == ["fail", "fail", "fail", "limit"]  # the refusal is written once, and nothing ran
+    assert results == ["fail", "fail", "fail", "limit"]
 
 
 def test_a_criterion_outside_the_loop_is_refused(repo, work):

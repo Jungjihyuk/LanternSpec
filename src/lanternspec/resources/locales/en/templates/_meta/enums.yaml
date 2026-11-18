@@ -188,3 +188,38 @@ legacy_route:
     Absorb: 🧽
     Archive: 🗄
     Move: 🚚
+
+retro_result:
+  label: Result of an AI retro row
+  applies: {}
+  values:
+    Passed: {icon: ✅, role: passed}
+    Stopped: {icon: ⛔, role: stopped}
+
+retro_check:
+  label: A check other than an acceptance criterion, in the AI retro
+  applies: {}
+  values:
+    Whole suite: {icon: 🧪, role: suite}
+    Invalid pass: {icon: 🚫, role: invalid}
+
+retro_weakness:
+  label: Weakness in the AI retro (why the first try was blocked)
+  applies: {}
+  values:
+    Spec: {icon: 📋, role: spec}
+    Context: {icon: 📎, role: context}
+    Harness: {icon: 🧰, role: harness}
+    Model: {icon: 🧠, role: model}
+    Verification: {icon: 🔍, role: verification}
+    Environment: {icon: 🌐, role: environment}
+
+retro_remedy:
+  label: Remedy in the AI retro (where fixing it helps)
+  applies: {}
+  values:
+    LanternSpec: {icon: 🏮, role: lanternspec}
+    Harness settings: {icon: ⚙, role: harness_config}
+    Model choice: {icon: 🎚, role: model_choice}
+    Connected tool: {icon: 🔌, role: tool_link}
+    Planning habit: {icon: ✍, role: planning_habit}
