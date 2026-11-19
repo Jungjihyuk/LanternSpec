@@ -56,11 +56,7 @@
 .lt-task-bar { --c: #8a8fa3; overflow: visible; color: var(--text-normal); border-radius: 3px;
   background: color-mix(in srgb, var(--c) 26%, var(--background-primary)); border-left: 3px solid var(--c); }
 .lt-task-bar.lt-done { --c: #66a249; }
-.lt-task-bar.lt-doing { --c: var(--interactive-accent); }
-/* who did it: AI models alone · people with AI · people alone */
-.lt-task-bar.lt-who-ai { --c: #c251a0; }
-.lt-task-bar.lt-who-both { --c: #d4892a; }
-.lt-task-bar.lt-who-human { --c: #3b78d8; }
+.lt-task-bar.lt-doing { --c: #e8a33d; }  /* the kanban's glow for "in progress" */
 .lt-task-bar.lt-estimated { background: transparent; border: 1px dashed var(--text-faint); border-left-width: 3px; line-height: 16px; }
 .lt-mark { position: absolute; top: 9px; width: 10px; height: 10px; transform: rotate(45deg); }
 .lt-mark-idea { background: #e0a93b; }

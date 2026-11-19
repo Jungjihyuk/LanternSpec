@@ -441,7 +441,7 @@ def test_upgrade_apply_renames_sizes_as_an_earlier_version_named_them(repo):
     assert "반나절" not in enums.read_text(encoding="utf-8")
 
 
-def test_task_done_records_who_did_it_and_the_charts_tell_people_from_ai(repo):
+def test_task_done_records_who_did_it_and_the_timeline_carries_the_names(repo):
     init_project(repo)
     repo("scaffold", "work", "작업")
     repo("scaffold", "doc", "W-001", "할 일")
@@ -459,8 +459,8 @@ def test_task_done_records_who_did_it_and_the_charts_tell_people_from_ai(repo):
     repo("report", "--views", "timeline")
     report = (docs(repo) / "4. 운영 기록/보고/현황.md").read_text(encoding="utf-8")
     tasks = json.loads(report.split("```lantern-timeline\n")[1].split("\n```")[0])["works"][0]["tasks"]
-    assert [t.get("who") for t in tasks] == ["ai", "both", "human"]
-    assert tasks[1]["by"] == ["지혁", "gpt-5.1-codex"]
+    assert [t.get("by") for t in tasks] == [["claude-opus-5-5"], ["지혁", "gpt-5.1-codex"], ["지혁"]]
+    assert all("who" not in t for t in tasks)  # the timeline tells done from in progress, not people from AI
 
 
 def test_task_start_records_who_is_on_it_and_a_second_start_only_adds_names(repo):

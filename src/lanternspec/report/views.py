@@ -95,13 +95,6 @@ def _who(task: Task) -> dict:
     return {"by": names, "who": who_did(names)} if names else {}
 
 
-def _who_of_work(tasks: list[Task]) -> str:
-    """Who did a work's tasks, taken together: "ai", "human", "both", or "" when none says."""
-    from ..tools import who_did
-
-    return who_did(list(dict.fromkeys(n for t in tasks for n in t.list_attr("worked_by"))))
-
-
 def _worked_minutes(tasks: list[Task]) -> int:
     """Add up the time finished tasks ran, from their start and finish times."""
     total = 0.0
@@ -138,7 +131,6 @@ def _kanban_board(project: Project) -> str:
                 "person": sum(line.startswith(person) for line in read(record).split("\n")) if record.exists() else 0,
                 "finished": (finished or frontmatter.as_str(plan_meta.get("updated")))[:10],
                 "worked": _worked_minutes(tasks),
-                "who": _who_of_work(tasks),
                 "tasks": [
                     {
                         "id": t.id.split("-")[-1],
@@ -192,8 +184,6 @@ def _kanban_board(project: Project) -> str:
         "state_done": msg("Done"),
         "read_only": msg("Read only — /l-build checks tasks off as it leaves tests and evidence"),
         "who_ai": msg("AI"),
-        "who_human": msg("Person"),
-        "who_both": msg("Person with AI"),
         "by": names.attr("worked_by"),
         "minutes": msg("{{n}} min"),
         "hours": msg("{{n}} h"),
@@ -274,8 +264,9 @@ def _work_bars(project: Project, w: Path) -> list[dict]:
             "title": _plain_title(t.title),
             "state": "done" if t.done else "doing" if t.started else "todo",
             "size": t.size,
-            **_who(t),
         }
+        if by := t.list_attr("worked_by"):
+            bar["by"] = by
         if start:
             # a task in progress runs until now
             end = (end if end > start else start + _dt.timedelta(minutes=30)) if end else max(_dt.datetime.now(), start)
@@ -339,9 +330,6 @@ def _timeline_plugin_block(project: Project, rows: list[dict]) -> str:
         "after_hint": msg("In a finished work, point at a task to see its order"),
         "needs": msg("Comes after: {{ids}}"),
         "needs_none": msg("Comes after nothing"),
-        "who_ai": msg("AI"),
-        "who_human": msg("Person"),
-        "who_both": msg("Person with AI"),
         "by": project.names.attr("worked_by"),
         "size_label": project.names.attr("size"),
         "planned_for": msg("planned"),

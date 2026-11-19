@@ -152,12 +152,8 @@ class Board extends MarkdownRenderChild {
     const { labels } = this.data;
     if (work.tasks.length) {
       // one segment per task: done · doing · blocked · to do
-      // a done task takes the color of who did it; the one in progress keeps the glow
       const segs = make(card, "lk-segs");
-      for (const task of work.tasks) {
-        const seg = make(segs, `lk-seg-${task.state}${task.state === "done" && task.who ? ` lk-who-${task.who}` : ""}`);
-        seg.title = [task.id, ...(task.by || [])].join(" · ");
-      }
+      for (const task of work.tasks) make(segs, `lk-seg-${task.state}`).title = [task.id, ...(task.by || [])].join(" · ");
       const c = counts(work);
       const meta = make(card, "lk-meta");
       const parts = [fill(labels.progress, { done: c.done, total: work.tasks.length })];
@@ -192,7 +188,7 @@ class Board extends MarkdownRenderChild {
       make(row, "lk-row-title", work.name).title = work.name;
       const time = make(row, "lk-time", work.worked ? duration(work.worked, labels) : "");
       // time worked, as a short bar against the longest in the list
-      if (work.worked) make(time, `lk-time-bar${work.who ? ` lk-who-${work.who}` : ""}`).style.width = `${Math.max(4, (work.worked / longest) * 48)}px`;
+      if (work.worked) make(time, "lk-time-bar").style.width = `${Math.max(4, (work.worked / longest) * 48)}px`;
     }
   }
 
@@ -217,18 +213,14 @@ class Board extends MarkdownRenderChild {
     };
     count(labels.doing, active.length);
     count(labels.recent, recent.length);
-    // the colors of who did the work, when any task says; the AI one also counts the AIs on a task now (names on hover).
-    // Kept next to "waiting for a person" as the two "who" notes
-    const whos = new Set(works.flatMap((w) => w.tasks.map((t) => t.who)).filter(Boolean));
+    // the AIs on a task now (names on hover), shown once any task has an AI's name; kept next to "waiting for a person"
     const working = active.flatMap((w) => w.tasks.filter(aiOn).map((t) => `${w.id}-${t.id} · ${(t.by || []).join(", ")}`));
-    for (const who of ["human", "both", "ai"].filter((w) => whos.has(w))) {
+    if (works.some((w) => w.tasks.some((t) => t.who === "ai" || t.who === "both"))) {
       const key = make(top, "lk-top-who");
-      make(key, `lk-who-dot lk-who-${who}`);
-      key.appendText(labels[`who_${who}`]);
-      if (who === "ai") {
-        key.createEl("b", { text: String(working.length) });
-        key.title = working.join("\n");
-      }
+      make(key, "lk-who-dot lk-who-ai");
+      key.appendText(labels.who_ai);
+      key.createEl("b", { text: String(working.length) });
+      key.title = working.join("\n");
     }
     count(labels.waiting, waiting, active.some(stops) ? "lk-top-gate" : waiting ? "lk-top-wait" : "");
 

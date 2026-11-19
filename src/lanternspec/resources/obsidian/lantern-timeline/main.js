@@ -610,8 +610,7 @@ class Timeline extends MarkdownRenderChild {
       }
       // a plan with no time is a day to do it in, drawn as that day rather than as hours of work
       const dayPlan = task.basis === "planned" && !hasTime(task.start) ? " lt-day-plan" : "";
-      const who = task.who ? ` lt-who-${task.who}` : "";
-      const bar = make(track, `lt-bar lt-task-bar lt-${task.state} lt-${task.basis}${dayPlan}${who}`);
+      const bar = make(track, `lt-bar lt-task-bar lt-${task.state} lt-${task.basis}${dayPlan}`);
       const caption = make(bar, "lt-bar-text", this.caption(task));
       place(bar, drawnSpan(task, scale), scale);
       const end = task.basis === "estimated" ? dateText(barDays(task)[1]) : task.end;
@@ -715,7 +714,6 @@ class Timeline extends MarkdownRenderChild {
     const tasks = works.flatMap((work) => work.tasks);
     const kind = (t) => (t.state !== "todo" ? t.state : t.basis === "estimated" || t.basis === "unscheduled" ? t.basis : "todo");
     const has = new Set(tasks.map(kind));
-    for (const task of tasks) if (task.who) has.add(`who_${task.who}`);
     if (tasks.some(dated)) has.add("span");
     if (works.some((work) => work.idea)) has.add("idea");
     if (works.some((work) => work.created)) has.add("plan");
@@ -725,9 +723,6 @@ class Timeline extends MarkdownRenderChild {
     for (const [cls, key, name] of [
       ["lt-swatch lt-bar lt-task-bar lt-done lt-actual", "done", "done"],
       ["lt-swatch lt-bar lt-task-bar lt-doing lt-actual", "doing", "doing"],
-      ["lt-swatch lt-bar lt-task-bar lt-who-human", "who_human", "who_human"],
-      ["lt-swatch lt-bar lt-task-bar lt-who-both", "who_both", "who_both"],
-      ["lt-swatch lt-bar lt-task-bar lt-who-ai", "who_ai", "who_ai"],
       ["lt-swatch lt-bar lt-task-bar lt-todo lt-planned", "todo", "legend_todo"],
       ["lt-swatch lt-bar lt-task-bar lt-todo lt-estimated", "estimated", "legend_estimated"], // in a report written by an older version
       ["lt-chip lt-chip-swatch", "unscheduled", "unscheduled"],

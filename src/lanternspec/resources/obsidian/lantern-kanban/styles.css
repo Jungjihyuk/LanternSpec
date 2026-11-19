@@ -51,11 +51,11 @@
 .lk-segs .lk-seg-done { background: var(--lk-done); }
 .lk-segs .lk-seg-doing { background: var(--lk-glow); }
 .lk-segs .lk-seg-blocked { background: color-mix(in srgb, var(--lk-ask) 45%, var(--background-modifier-border)); }
-/* who did it: AI models alone · people with AI · people alone (the same colors as the timeline) */
+/* who is on a task: AI models alone · people with AI · people alone, as the dot beside their names */
 .lk-root, .lk-window { --lk-ai: #c251a0; --lk-both: #d4892a; --lk-human: #3b78d8; }
-.lk-segs .lk-who-ai, .lk-time-bar.lk-who-ai, .lk-who-dot.lk-who-ai { background: var(--lk-ai); }
-.lk-segs .lk-who-both, .lk-time-bar.lk-who-both, .lk-who-dot.lk-who-both { background: var(--lk-both); }
-.lk-segs .lk-who-human, .lk-time-bar.lk-who-human, .lk-who-dot.lk-who-human { background: var(--lk-human); }
+.lk-who-dot.lk-who-ai { background: var(--lk-ai); }
+.lk-who-dot.lk-who-both { background: var(--lk-both); }
+.lk-who-dot.lk-who-human { background: var(--lk-human); }
 .lk-who-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 0; }
 .lk-top-who { display: inline-flex; align-items: center; color: var(--text-muted); }
 .lk-top-who b { margin-left: 4px; }
