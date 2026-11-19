@@ -2,8 +2,8 @@
 /* the board and its task window (which Obsidian opens outside the board) share the palette */
 .lk-root, .lk-window {
   /* a lantern's glow for "now" and "waiting", and one quiet hue per stage */
-  --lk-glow: #e8a33d; --lk-ask: #cf5b62;
-  --lk-plan: #7b8fd6; --lk-design: #a07cd6; --lk-tasks: #3f9d8a; --lk-build: #e8a33d; --lk-done: #5c9670; --lk-on_hold: #9a958a;
+  --lk-glow: #e8a33d; --lk-ask: #cf5b62; --lk-gate: #d63031;
+  --lk-plan: #7b8fd6; --lk-design: #a07cd6; --lk-tasks: #3f9d8a; --lk-build: #e8a33d; --lk-done: #66a249; --lk-on_hold: #9a958a;
 }
 .lk-root {
   margin: 8px 0 16px; font-size: 13px; color: var(--text-normal); overflow-x: auto;
@@ -18,6 +18,7 @@
 .lk-top { display: flex; gap: 14px; font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
 .lk-top b { color: var(--text-normal); font-variant-numeric: tabular-nums; }
 .lk-top .lk-top-wait b { color: var(--lk-glow); }
+.lk-top .lk-top-gate b { color: var(--lk-gate); }
 
 /* the flow rail */
 .lk-rail { position: relative; margin-bottom: 6px; }
@@ -51,18 +52,22 @@
 .lk-segs .lk-seg-doing { background: var(--lk-glow); }
 .lk-segs .lk-seg-blocked { background: color-mix(in srgb, var(--lk-ask) 45%, var(--background-modifier-border)); }
 /* who did it: AI models alone · people with AI · people alone (the same colors as the timeline) */
-.lk-root, .lk-window { --lk-ai: #2a9d8f; --lk-both: #d4892a; --lk-human: #3b78d8; }
+.lk-root, .lk-window { --lk-ai: #c251a0; --lk-both: #d4892a; --lk-human: #3b78d8; }
 .lk-segs .lk-who-ai, .lk-time-bar.lk-who-ai, .lk-who-dot.lk-who-ai { background: var(--lk-ai); }
 .lk-segs .lk-who-both, .lk-time-bar.lk-who-both, .lk-who-dot.lk-who-both { background: var(--lk-both); }
 .lk-segs .lk-who-human, .lk-time-bar.lk-who-human, .lk-who-dot.lk-who-human { background: var(--lk-human); }
 .lk-who-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 0; }
 .lk-top-who { display: inline-flex; align-items: center; color: var(--text-muted); }
+.lk-top-who b { margin-left: 4px; }
 .lk-window-body .lk-by { font-size: 12px; color: var(--text-muted); }
-.lk-meta { font-size: 12px; color: var(--text-muted); }
+.lk-meta, .lk-now-line { font-size: 12px; color: var(--text-muted); }
+.lk-now-line { margin-top: 2px; }
+.lk-now-line span { white-space: nowrap; }
 .lk-flag { display: inline-flex; align-items: center; gap: 6px; margin: 8px 6px 0 0; padding: 2px 8px 2px 6px; border-radius: 6px; font-size: 12px;
   color: color-mix(in srgb, var(--f) 75%, var(--text-normal)); background: color-mix(in srgb, var(--f) 12%, transparent); }
 .lk-flag::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--f); }
-.lk-flag-wait { --f: var(--lk-glow); } .lk-flag-ask { --f: var(--lk-ask); }
+/* red stops the whole work until a person acts; orange holds back only a part of it */
+.lk-flag-gate { --f: var(--lk-gate); } .lk-flag-wait, .lk-flag-ask { --f: var(--lk-glow); }
 
 /* finished works: a short rail of days, one line per work */
 .lk-done { position: relative; padding-left: 14px; }
@@ -90,10 +95,6 @@
 .lk-window-title .lk-id { font-size: 13px; margin-right: 8px; }
 .lk-window-facts { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; color: var(--text-muted); }
 .lk-window-facts b { color: var(--text-normal); font-weight: 600; }
-.lk-window-docs { display: flex; gap: 6px; margin-top: 12px; }
-.lk-window-docs a { font-size: 12px; color: var(--text-muted); text-decoration: none; padding: 3px 9px; border-radius: 6px;
-  border: 1px solid var(--background-modifier-border); background: var(--background-primary); }
-.lk-window-docs a:hover { color: var(--text-normal); border-color: var(--text-faint); }
 .lk-window-body { padding: 6px 24px 16px; }
 .lk-window-body table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .lk-window-body th { text-align: left; font-size: 11px; font-weight: 500; color: var(--text-faint); padding: 10px 8px 6px; border-bottom: 1px solid var(--background-modifier-border); }

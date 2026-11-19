@@ -34,10 +34,11 @@ const dayNumber = (text) => {
 const dateLabel = (text, labels) => fill(labels.date, { m: Number(text.slice(5, 7)), d: Number(text.slice(8, 10)) });
 
 // What a work waits on, if anything: a person (approval or a check) or an answer.
+// "gate" stops the whole work until a person acts (red); a check or an answer holds back only a part of it (orange).
 function flags(work, labels) {
   const out = [];
   if (work.unknown) out.push(["ask", fill(labels.unknown, { n: work.unknown })]);
-  if (work.stage === "design" && !work.approved) out.push(["wait", labels.design_wait]);
+  if (work.stage === "design" && !work.approved) out.push(["gate", labels.design_wait]);
   if (work.person) out.push(["wait", fill(labels.person, { n: work.person })]);
   return out;
 }
@@ -45,8 +46,11 @@ function flags(work, labels) {
 const counts = (work) => ({
   done: work.tasks.filter((t) => t.state === "done").length,
   blocked: work.tasks.filter((t) => t.state === "blocked").length,
-  doing: work.tasks.find((t) => t.state === "doing"),
+  doing: work.tasks.filter((t) => t.state === "doing"),
 });
+
+// An AI is on a task when its names say so: an AI alone, or a person with AI.
+const aiOn = (task) => task.state === "doing" && (task.who === "ai" || task.who === "both");
 
 class TaskWindow extends Modal {
   constructor(app, board, work) {
@@ -80,15 +84,6 @@ class TaskWindow extends Modal {
     }
     const next = this.board.nextStep(work);
     if (next) fact(labels.next, next);
-    const docs = make(head, "lk-window-docs");
-    for (const [role, path] of Object.entries(work.docs)) {
-      const link = docs.createEl("a", { text: labels.docs[role] || role, href: "#" });
-      link.addEventListener("click", (event) => {
-        event.preventDefault();
-        this.close();
-        this.app.workspace.openLinkText(path, this.board.sourcePath);
-      });
-    }
     const body = make(el, "lk-window-body");
     if (!work.tasks.length) {
       make(body, "lk-window-empty", labels.empty);
@@ -124,12 +119,11 @@ class TaskWindow extends Modal {
 }
 
 class Board extends MarkdownRenderChild {
-  constructor(el, data, app, sourcePath) {
+  constructor(el, data, app) {
     super(el);
     this.el = el;
     this.data = data;
     this.app = app;
-    this.sourcePath = sourcePath;
     this.showOlder = false;
     this.showHold = false;
   }
@@ -158,15 +152,26 @@ class Board extends MarkdownRenderChild {
     const { labels } = this.data;
     if (work.tasks.length) {
       // one segment per task: done · doing · blocked · to do
+      // a done task takes the color of who did it; the one in progress keeps the glow
       const segs = make(card, "lk-segs");
-      for (const task of work.tasks) make(segs, `lk-seg-${task.state}${task.who ? ` lk-who-${task.who}` : ""}`);
+      for (const task of work.tasks) {
+        const seg = make(segs, `lk-seg-${task.state}${task.state === "done" && task.who ? ` lk-who-${task.who}` : ""}`);
+        seg.title = [task.id, ...(task.by || [])].join(" · ");
+      }
       const c = counts(work);
       const meta = make(card, "lk-meta");
       const parts = [fill(labels.progress, { done: c.done, total: work.tasks.length })];
       if (c.blocked) parts.push(fill(labels.blocked, { n: c.blocked }));
-      if (c.doing) parts.push(fill(labels.now, { id: c.doing.id }));
       meta.textContent = parts.join(" · ");
-      if (c.doing) card.addClass("lk-now");
+      for (const task of c.doing) {
+        // one line per task in progress, with who is on it; a name never breaks across lines
+        const now = make(card, "lk-now-line", fill(labels.now, { id: task.id }));
+        for (const name of task.by || []) {
+          now.appendText(" · ");
+          now.createSpan({ text: name });
+        }
+      }
+      if (c.doing.length) card.addClass("lk-now");
     }
     for (const [kind, text] of flags(work, labels)) make(card, `lk-flag lk-flag-${kind}`, text);
   }
@@ -199,7 +204,8 @@ class Board extends MarkdownRenderChild {
     const recent = done.filter((w) => w.finished && today - dayNumber(w.finished) < this.data.recent_days);
     const older = done.filter((w) => !recent.includes(w));
     const active = works.filter((w) => BEFORE.includes(w.stage) || w.stage === "build");
-    const waiting = active.filter((w) => flags(w, labels).some(([kind]) => kind === "wait")).length;
+    const stops = (w) => flags(w, labels).some(([kind]) => kind === "gate");
+    const waiting = active.filter((w) => stops(w) || flags(w, labels).some(([kind]) => kind === "wait")).length;
 
     const root = document.createElement("div");
     root.className = "lk-root";
@@ -210,15 +216,21 @@ class Board extends MarkdownRenderChild {
       span.createEl("b", { text: String(n) });
     };
     count(labels.doing, active.length);
-    count(labels.waiting, waiting, waiting ? "lk-top-wait" : "");
     count(labels.recent, recent.length);
-    // the colors of who did the work, when any task says
+    // the colors of who did the work, when any task says; the AI one also counts the AIs on a task now (names on hover).
+    // Kept next to "waiting for a person" as the two "who" notes
     const whos = new Set(works.flatMap((w) => w.tasks.map((t) => t.who)).filter(Boolean));
+    const working = active.flatMap((w) => w.tasks.filter(aiOn).map((t) => `${w.id}-${t.id} · ${(t.by || []).join(", ")}`));
     for (const who of ["human", "both", "ai"].filter((w) => whos.has(w))) {
       const key = make(top, "lk-top-who");
       make(key, `lk-who-dot lk-who-${who}`);
       key.appendText(labels[`who_${who}`]);
+      if (who === "ai") {
+        key.createEl("b", { text: String(working.length) });
+        key.title = working.join("\n");
+      }
     }
+    count(labels.waiting, waiting, active.some(stops) ? "lk-top-gate" : waiting ? "lk-top-wait" : "");
 
     // the flow rail: the five steps as one line, with the three groups named on it
     const rail = make(root, "lk-rail lk-grid");
@@ -277,7 +289,7 @@ module.exports = class LanternKanban extends Plugin {
         make(el, "lk-error", `Lantern Kanban: ${error.message}`);
         return;
       }
-      ctx.addChild(new Board(el, data, this.app, ctx.sourcePath));
+      ctx.addChild(new Board(el, data, this.app));
     });
   }
 };

@@ -139,11 +139,6 @@ def _kanban_board(project: Project) -> str:
                 "finished": (finished or frontmatter.as_str(plan_meta.get("updated")))[:10],
                 "worked": _worked_minutes(tasks),
                 "who": _who_of_work(tasks),
-                "docs": {
-                    role: project.docs_rel(project.doc_path(w, role))
-                    for role in ("plan", "design", "tasks", "record")
-                    if project.doc_path(w, role).exists()
-                },
                 "tasks": [
                     {
                         "id": t.id.split("-")[-1],
@@ -203,7 +198,6 @@ def _kanban_board(project: Project) -> str:
         "minutes": msg("{{n}} min"),
         "hours": msg("{{n}} h"),
         "days": msg("{{n}} d"),
-        "docs": {role: names.doc(role) for role in ("plan", "design", "tasks", "record")},
     }
     data = {"labels": labels, "stages": stages, "today": today(), "recent_days": 14, "works": works}
     return _plugin_block(obsidian.KANBAN_PLUGIN, json.dumps(data, ensure_ascii=False, separators=(",", ":")))
