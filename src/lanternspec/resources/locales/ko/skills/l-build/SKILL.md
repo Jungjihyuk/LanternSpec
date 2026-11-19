@@ -32,7 +32,7 @@ argument-hint: "W-NNN | W-NNN-T03 [--report-cycle work|criterion|task]"
 ```bash
 lantern task next W-012          # 순서대로 지금 시작할 수 있는 할 일 (막힌 것은 이유와 함께 건너뜀)
 lantern task next W-012 --all    # 지금 시작할 수 있는 할 일 전부 — [P] 표시는 서로 동시에 해도 되는 할 일
-lantern task start W-012-T03     # [<<attr.start>>:: 시각]을 정확히 찍는다
+lantern task start W-012-T03 --by "<네 정확한 모델명>"   # [<<attr.start>>:: 시각]을 정확히 찍고 [<<attr.worked_by>>:: …]에 네 모델명을 남긴다 (칸반이 지금 누가 하는지 보여 준다)
 ```
 **할 일 나눠 맡기기:** `--all`에 `[P]` 할 일이 둘 이상이고 이 도구가 서브 에이전트를 지원하면, `[P]` 할 일을 **하나씩** 서브 에이전트에 맡길 수 있다. 각자 같은 규칙(시작 · 증거 · 할 일 하나 = 커밋 하나)을 지키게 하고, 같은 파일을 고치는 할 일은 함께 맡기지 않는다. 지원하지 않으면 차례로 한다.
 
@@ -55,7 +55,7 @@ lantern task start W-012-T03     # [<<attr.start>>:: 시각]을 정확히 찍는
    ```bash
    lantern task done W-012-T03 --by "<네 정확한 모델명>"   # [<<attr.finish>>:: 시각] · [<<attr.worked_by>>:: …] + 수락 기준 체크포인트 알림
    ```
-   `--by`에는 **네 정확한 모델명**(예: `claude-opus-5-5`, `gpt-5.1-codex`, `gemini-3-pro`)을 쓴다. 사람이 이 할 일을 함께 했으면 그 사람 이름도 더한다: `--by "<모델명>, <이름>"`. 사람이 혼자 한 할 일이면 그 사람 이름만 쓴다.
+   `--by`에는 **네 정확한 모델명**(예: `claude-opus-5-5`, `gpt-5.1-codex`, `gemini-3-pro`)을 쓴다. 시작할 때와 같은 이름이면 한 번만 적힌다. 사람이 이 할 일을 함께 했으면 그 사람 이름도 더한다: `--by "<모델명>, <이름>"`. 사람이 혼자 한 할 일이면 그 사람 이름만 쓴다.
    커밋 메시지 형식 (사용자의 커밋 규칙이 있으면 그것을 따르고, ID는 끝에 둔다):
 ```
 <<commit.template>>

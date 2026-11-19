@@ -32,7 +32,7 @@ Current settings: report cycle `<<build.report_cycle>>` · applying to the curre
 ```bash
 lantern task next W-012          # the next task that can start, in order (blocked ones are skipped, with the reason)
 lantern task next W-012 --all    # every task that can start now — [P] marks tasks that can run at the same time
-lantern task start W-012-T03     # stamps [<<attr.start>>:: time] exactly
+lantern task start W-012-T03 --by "<your exact model name>"   # stamps [<<attr.start>>:: time] exactly and leaves your model name in [<<attr.worked_by>>:: …] (the kanban shows who is on it now)
 ```
 **Task delegation:** if `--all` shows two or more `[P]` tasks and this tool supports subagents, you may hand the `[P]` tasks **one each** to subagents. Make each follow the same rules (start · evidence · one task = one commit), and never hand out tasks that change the same files together. Without subagent support, do them in turn.
 
@@ -55,7 +55,7 @@ Read a 📌 verbatim section again right before turning its rule into code. Know
    ```bash
    lantern task done W-012-T03 --by "<your exact model name>"   # [<<attr.finish>>:: time] · [<<attr.worked_by>>:: …] + acceptance checkpoint notice
    ```
-   For `--by`, write **your exact model name** (e.g. `claude-opus-5-5`, `gpt-5.1-codex`, `gemini-3-pro`). If a person worked on this task too, add their name: `--by "<model>, <name>"`. A task a person did alone gets only their name.
+   For `--by`, write **your exact model name** (e.g. `claude-opus-5-5`, `gpt-5.1-codex`, `gemini-3-pro`). The same name as at the start is written once. If a person worked on this task too, add their name: `--by "<model>, <name>"`. A task a person did alone gets only their name.
    Commit message format (if the user has commit rules, follow them, with the ID at the end):
 ```
 <<commit.template>>

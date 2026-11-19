@@ -171,7 +171,7 @@ def cmd_task(a: argparse.Namespace) -> int:
             print(msg("  · skipped {tid}: {why}", tid=tid, why=why))
         return 0
     if a.action == "start":
-        t = task_cmd.start(project, a.target)
+        t = task_cmd.start(project, a.target, by=_csv(a.by))
         print(msg("▶ Started {id} [{attr}:: {started}]", id=t.id, attr=project.names.attr("start"), started=t.started))
         return 0
     if a.action == "done":
@@ -683,7 +683,7 @@ def register(add: Add) -> None:
     p.add_argument("--from", dest="from_date", help=msg("estimate: start date"))
     p.add_argument("--hours", type=float, default=6.0, help=msg("estimate: working hours a day"))
     p.add_argument("--apply", action="store_true", help=msg("estimate: write the suggestion into the tasks document"))
-    p.add_argument("--by", help=msg("done: who did it — people's names and exact AI model names, comma-separated"))
+    p.add_argument("--by", help=msg("start · done: who works on it — people's names and exact AI model names, comma-separated"))
     p = add("task-add", cmd_task_add, argparse.SUPPRESS)
     p.add_argument("work")
     p.add_argument("what")

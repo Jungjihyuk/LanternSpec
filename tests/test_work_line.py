@@ -461,3 +461,20 @@ def test_task_done_records_who_did_it_and_the_charts_tell_people_from_ai(repo):
     tasks = json.loads(report.split("```lantern-timeline\n")[1].split("\n```")[0])["works"][0]["tasks"]
     assert [t.get("who") for t in tasks] == ["ai", "both", "human"]
     assert tasks[1]["by"] == ["지혁", "gpt-5.1-codex"]
+
+
+def test_task_start_records_who_is_on_it_and_a_second_start_only_adds_names(repo):
+    init_project(repo)
+    repo("scaffold", "work", "작업")
+    repo("scaffold", "doc", "W-001", "할 일")
+    repo("task", "add", "W-001", "하나", "--size", "1h")
+    tasks = work_dir(repo, "W-001") / "할 일.md"
+    repo("task", "start", "W-001-T01", "--by", "claude-opus-5-5")
+    first = tasks.read_text(encoding="utf-8")
+    stamp = first[first.index("[시작::") :].split("]")[0]
+    assert "[한 사람:: claude-opus-5-5]" in first
+    repo("task", "start", "W-001-T01", "--by", "gpt-5.1-codex")  # another AI takes it over: the first start time stays
+    second = tasks.read_text(encoding="utf-8")
+    assert stamp in second and "[한 사람:: claude-opus-5-5, gpt-5.1-codex]" in second
+    repo("task", "done", "W-001-T01", "--by", "gpt-5.1-codex")  # a name already there is not written twice
+    assert "[한 사람:: claude-opus-5-5, gpt-5.1-codex]" in tasks.read_text(encoding="utf-8")

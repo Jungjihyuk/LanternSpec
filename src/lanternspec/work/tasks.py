@@ -180,12 +180,22 @@ def _edit_task(project: Project, task_id: str, edit: Callable[[str, Task], str])
     return find_task(new_tasks, task_id), tf, new_tasks  # type: ignore[return-value]
 
 
-def start(project: Project, task_id: str) -> Task:
+def _with_names(project: Project, line: str, t: Task, by: list[str] | None) -> str:
+    """Add names to the task line's `[한 사람:: …]`, keeping the ones already there."""
+    names = [*t.list_attr("worked_by"), *(n.strip() for n in by or [] if n.strip())]
+    return set_attr(line, "worked_by", ", ".join(dict.fromkeys(names)), project.names) if names else line
+
+
+def start(project: Project, task_id: str, by: list[str] | None = None) -> Task:
     """Mark a task started (`[시작:: time]`) and move the work's documents to the build stage.
+
+    Starting a task again keeps its first start time, so a task another AI takes over only gains that AI's name.
 
     Args:
         project: The project.
         task_id: The task, e.g. "W-012-T02".
+        by: Who works on it — people's names and the exact names of AI models (e.g. ["claude-opus-5-5"]);
+            added to the names already on the line.
 
     Returns:
         The task as it is now.
@@ -194,12 +204,13 @@ def start(project: Project, task_id: str) -> Task:
         ValueError: The work or the task does not exist.
 
     Example:
-        >>> start(project, "W-012-T02").started  # doctest: +SKIP
+        >>> start(project, "W-012-T02", by=["claude-opus-5-5"]).started  # doctest: +SKIP
         '2026-10-28 09:00'
     """
 
     def edit(line: str, t: Task) -> str:
-        return line if t.started else set_attr(line, "start", now_minute(), project.names)
+        line = line if t.started else set_attr(line, "start", now_minute(), project.names)
+        return _with_names(project, line, t, by)
 
     t, tf, _ = _edit_task(project, task_id, edit)
     for role in ("plan", "tasks", "record"):
@@ -250,9 +261,7 @@ def done(project: Project, task_id: str, by: list[str] | None = None) -> DoneRes
         line = set_checked(line, True)
         if not t.started:
             line = set_attr(line, "start", now_minute(), project.names)
-        names = [*t.list_attr("worked_by"), *(n.strip() for n in by or [] if n.strip())]
-        if names:
-            line = set_attr(line, "worked_by", ", ".join(dict.fromkeys(names)), project.names)
+        line = _with_names(project, line, t, by)
         return set_attr(line, "finish", now_minute(), project.names)
 
     t, tf, tasks = _edit_task(project, task_id, edit)

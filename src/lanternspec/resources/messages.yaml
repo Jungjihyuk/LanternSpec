@@ -1510,7 +1510,7 @@
 "Person": {ko: "사람"}
 "Person with AI": {ko: "사람 + AI"}
 "planned": {ko: "예정"}
-"done: who did it — people's names and exact AI model names, comma-separated": {ko: "done: 한 사람 — 사람 이름과 정확한 AI 모델명, 쉼표로 구분"}
+"start · done: who works on it — people's names and exact AI model names, comma-separated": {ko: "start · done: 하는 사람 — 사람 이름과 정확한 AI 모델명, 쉼표로 구분"}
 "Not started": {ko: "시작 전"}
 "In progress": {ko: "진행 중"}
 "Finished": {ko: "끝남"}
