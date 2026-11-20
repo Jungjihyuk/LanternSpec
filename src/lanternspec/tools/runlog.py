@@ -6,6 +6,8 @@ Writers, one format, one line per `kind`:
 * agent hooks, `subagent`: per sub-agent call — name · start · end · model · tokens
 * `lantern review` and the reviewer's stop hook, `review`: one line per review round — model · items · issues
 * `lantern close <skill>`, `skill`: tools without agent hooks still leave one line per skill run
+* agent hooks, `skill_time`: per skill run — from the `/l-…` prompt that started it to its `lantern close`, with the time
+  the AI worked (the turns added up; the waits for the person between turns are left out) · tool calls · tokens
 * the build loop, `loop`: where a loop starts (`event: start`, the settings and the base commit it runs with) and where
   each round ends (`event: end`); `attempt`: one line per try at one acceptance criterion. `lantern loop` writes them
   from what it measured — the agent never states a result itself
@@ -18,6 +20,7 @@ Not here:
 
 from __future__ import annotations
 
+import datetime as _dt
 import json
 import re
 from collections import Counter
@@ -48,6 +51,32 @@ def append(project: Project, record: dict[str, Any]) -> None:
     ensure_state_dir(project)
     with (project.state / RUNS).open("a", encoding="utf-8") as f:
         f.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
+
+
+def _seconds(start: str | None, end: str | None) -> int:
+    """Whole seconds from one run-log time to another; 0 when either is missing or unreadable."""
+    if not start or not end:
+        return 0
+    try:
+        return max(0, round((_dt.datetime.fromisoformat(end) - _dt.datetime.fromisoformat(start)).total_seconds()))
+    except ValueError:
+        return 0
+
+
+def _open_run(data: dict[str, Any], skill: str, restart: bool) -> None:
+    """Start the skill run this session is in, unless one is already open (a prompt names a new skill: `restart`)."""
+    if restart or not data.get("run"):
+        data["run"] = {"skill": skill, "start": data.get("start") or now_iso(), "worked": 0, "tool_calls": 0, "tokens": {}}
+
+
+def _closes(tool_input: dict[str, Any] | None) -> tuple[str, str] | None:
+    """Find a `lantern close <skill> [--work <id>]` command in a tool's input, whatever the tool calls its fields."""
+    parts = [" ".join(map(str, v)) if isinstance(v, list) else str(v) for v in (tool_input or {}).values()]
+    m = re.search(r"\blantern\s+close\s+(l-[a-z]+)\b([^\n;&|]*)", " ".join(parts))
+    if not m:
+        return None
+    work = re.search(r"--work[\s=]+(\S+)", m.group(2))
+    return m.group(1), work.group(1).strip("\"'") if work else ""
 
 
 def _load(project: Project, session: str) -> dict[str, Any]:
@@ -108,6 +137,7 @@ def prompt(project: Project, session: str, text: str) -> None:
     m = re.match(r"\s*[/$](l-[a-z]+)\b", text or "")
     if m:
         data["skill"] = m.group(1)
+        _open_run(data, m.group(1), restart=True)  # a run the person left open is dropped, not guessed at
     _save(project, session, data)
 
 
@@ -133,6 +163,10 @@ def tool(project: Project, session: str, tool_name: str, tool_input: dict | None
         name = str(tool_input.get("skill") or tool_input.get("command") or "")
         if name.startswith("l-"):
             data["skill"] = name
+            _open_run(data, name, restart=False)
+    closing, run = _closes(tool_input), data.get("run")
+    if closing and run and closing[0] == run["skill"]:  # another skill's close inside this run does not end it
+        run["closed"] = {"at": now_iso(), "work": closing[1]}
     _save(project, session, data)
 
 
@@ -157,12 +191,13 @@ def stop(project: Project, session: str, model: str | None = None, tokens: dict[
         data["model"] = model
     if not data.get("start") and not data.get("tools"):
         return None
+    end = now_iso()
     record = {
         "kind": "turn",
         "source": "hook",
         "session": session,
         "start": data.get("start"),
-        "end": now_iso(),
+        "end": end,
         "model": data.get("model"),
         "skill": data.get("skill"),
         "tools": data.get("tools") or {},
@@ -171,7 +206,8 @@ def stop(project: Project, session: str, model: str | None = None, tokens: dict[
     if tokens:
         record["tokens"] = tokens
     append(project, record)
-    # next turn starts fresh; the model is kept for the session, and so are the sub-agents still running
+    run = _add_turn_to_run(project, session, data, record, end, tokens)
+    # next turn starts fresh; the model is kept for the session, and so are the sub-agents still running and the open skill run
     _save(
         project,
         session,
@@ -182,9 +218,46 @@ def stop(project: Project, session: str, model: str | None = None, tokens: dict[
             "skill": None,
             "tools": {},
             "subagents": data.get("subagents") or {},
+            **({"run": run} if run else {}),
         },
     )
     return record
+
+
+def _add_turn_to_run(
+    project: Project, session: str, data: dict[str, Any], record: dict[str, Any], end: str, tokens: dict[str, int] | None
+) -> dict[str, Any] | None:
+    """Add a finished turn to the open skill run; when the turn closed it, write the run's line.
+
+    A turn that closed the run counts only up to the `lantern close`, so the AI's time never runs past the run's end.
+
+    Returns:
+        The run to keep open; None when there was none or this turn closed it.
+    """
+    run = data.get("run")
+    if not run:
+        return None
+    closed = run.get("closed")
+    run["worked"] += _seconds(data.get("start"), closed["at"] if closed else end)
+    run["tool_calls"] += record["tool_calls"]
+    for key, n in (tokens or {}).items():
+        run["tokens"][key] = run["tokens"].get(key, 0) + n
+    if not closed:
+        return run
+    line = {
+        "kind": "skill_time",
+        "source": "hook",
+        "session": session,
+        "skill": run["skill"],
+        "work": closed["work"],
+        "model": record["model"],
+        "start": run["start"],
+        "end": closed["at"],
+        "worked": run["worked"],
+        "tool_calls": run["tool_calls"],
+    }
+    append(project, line | ({"tokens": run["tokens"]} if run["tokens"] else {}))
+    return None
 
 
 def subagent_start(project: Project, session: str, agent_id: str, agent: str) -> None:

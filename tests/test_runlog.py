@@ -258,3 +258,66 @@ def test_eval_reads_a_log_from_before_these_fields_and_one_with_them(repo):
     assert s["by_model"]["m2"]["avg_tokens"] == (400 + 100 + 200 + 300) / 2  # fresh input + output; cache reads are cheap
     assert s["by_skill"]["l-build"]["avg_tokens"] == (400 + 100 + 200 + 300) / 2  # only turns that know their tokens count
     assert "평균 토큰" in evaluate.markdown(project)
+
+
+# --------------------------------------------------------------------------- skill-time lines (one per skill run)
+
+
+def _clock(monkeypatch, hhmmss: str) -> None:
+    monkeypatch.setattr(runlog, "now_iso", lambda: f"2026-11-19T{hhmmss}+09:00")
+
+
+def _close_call(project, session: str, command: str):
+    return _hook(project, "claude", "post-tool", {"session_id": session, "tool_name": "Bash", "tool_input": {"command": command}})
+
+
+def test_a_skill_run_is_timed_from_its_prompt_to_lantern_close_and_counts_only_the_turns(repo, monkeypatch):
+    init_project(repo)
+    project = Project.load(repo.root)
+    _clock(monkeypatch, "10:00:00")
+    _hook(project, "claude", "prompt", {"session_id": "s1", "prompt": "/l-plan IDEA-001"})
+    _clock(monkeypatch, "10:05:00")
+    _hook(project, "claude", "stop", {"session_id": "s1"})  # a question for the person: the turn ends here
+    _clock(monkeypatch, "11:00:00")  # the person answers an hour later; that wait is not the AI's
+    _hook(project, "claude", "prompt", {"session_id": "s1", "prompt": "답변입니다"})
+    _clock(monkeypatch, "11:01:00")
+    _close_call(project, "s1", "lantern close l-learn --work W-009")  # another skill's close does not end this run
+    _clock(monkeypatch, "11:02:00")
+    _close_call(project, "s1", "uv run lantern close l-plan --work W-001 --commit")
+    _clock(monkeypatch, "11:02:30")
+    _hook(project, "claude", "stop", {"session_id": "s1"})
+
+    *turns, run = _lines(project)
+
+    assert [t["kind"] for t in turns] == ["turn", "turn"] and run["kind"] == "skill_time"
+    assert (run["skill"], run["work"], run["session"]) == ("l-plan", "W-001", "s1")
+    assert (run["start"], run["end"]) == ("2026-11-19T10:00:00+09:00", "2026-11-19T11:02:00+09:00")
+    assert run["worked"] == 300 + 120  # 10:00→10:05 and 11:00→11:02 (the close), not the hour between
+    assert run["tool_calls"] == 2
+
+
+def test_a_skill_run_nobody_closes_leaves_no_line_and_a_new_skill_starts_fresh(repo, monkeypatch):
+    init_project(repo)
+    project = Project.load(repo.root)
+    _clock(monkeypatch, "10:00:00")
+    _hook(project, "claude", "prompt", {"session_id": "s1", "prompt": "/l-plan IDEA-001"})
+    _clock(monkeypatch, "10:10:00")
+    _hook(project, "claude", "stop", {"session_id": "s1"})
+    _clock(monkeypatch, "12:00:00")
+    _hook(project, "claude", "prompt", {"session_id": "s1", "prompt": "/l-design W-001"})  # the plan run was left open
+    _clock(monkeypatch, "12:03:00")
+    _close_call(project, "s1", "lantern close l-design --work W-001")
+    _hook(project, "claude", "stop", {"session_id": "s1"})
+
+    *_, run = _lines(project)
+
+    assert run["kind"] == "skill_time" and run["skill"] == "l-design" and run["worked"] == 180
+    assert [r["kind"] for r in _lines(project)].count("skill_time") == 1  # the abandoned plan run wrote nothing
+
+
+def test_a_close_command_is_found_in_whatever_field_a_tool_puts_it():
+    assert runlog._closes({"command": "uv run lantern close l-plan --work W-001 --commit"}) == ("l-plan", "W-001")
+    assert runlog._closes({"command": ["bash", "-lc", "lantern close l-task --work 'W-002'"]}) == ("l-task", "W-002")
+    assert runlog._closes({"cmd": "cd docs && lantern close l-idea"}) == ("l-idea", "")  # a skill with no work
+    assert runlog._closes({"command": "lantern check && echo done"}) is None
+    assert runlog._closes(None) is None
