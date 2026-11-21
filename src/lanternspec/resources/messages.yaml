@@ -1510,6 +1510,10 @@
 "planned": {ko: "예정"}
 "start · done: who works on it — people's names and exact AI model names, comma-separated": {ko: "start · done: 하는 사람 — 사람 이름과 정확한 AI 모델명, 쉼표로 구분"}
 "Not started": {ko: "시작 전"}
+"Stage": {ko: "단계"}
+"Splitting into tasks": {ko: "할 일 나누기"}
+"Tasks in the build": {ko: "구현 안의 할 일"}
+"AI worked": {ko: "AI가 일한 시간"}
 "In progress": {ko: "진행 중"}
 "Finished": {ko: "끝남"}
 "Waiting for a person": {ko: "사람을 기다림"}

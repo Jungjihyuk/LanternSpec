@@ -77,6 +77,13 @@ const span = (task) => {
 // A task with neither actual times nor planned dates has no place on the axis.
 const dated = (task) => task.basis !== "unscheduled";
 const datedTasks = (works) => works.flatMap((work) => work.tasks.filter(dated));
+// The stages the run log timed, each drawn from the skill run that made it; the build is drawn from its tasks.
+const TIMED_STAGES = ["plan", "design", "tasks"];
+const STAGES = [...TIMED_STAGES, "build"];
+const timedStages = (work) => (work.stages || []).filter((s) => TIMED_STAGES.includes(s.role) && s.start && s.end);
+const stageSpan = (stage) => [minuteOf(stage.start), Math.max(minuteOf(stage.end), minuteOf(stage.start) + 1)];
+// Every stretch of time the chart has to show: the tasks' and the timed stages'.
+const activeSpans = (works) => [...datedTasks(works).map(span), ...works.flatMap(timedStages).map(stageSpan)];
 // The whole days a bar covers, which is what dragging moves.
 const barDays = (task) => {
   const [from, to] = span(task);
@@ -211,7 +218,7 @@ function piecesOf(ranges, slot) {
 
 // The chart's time axis: its column size, and the pieces of time it shows left to right.
 function scaleFor(data, today, room) {
-  const spans = datedTasks(data.works).map(span);
+  const spans = activeSpans(data.works);
   const busy = busyRanges(spans, FOLD_MINUTES);
   if (spans.length && busy.reduce((sum, [from, to]) => sum + to - from, 0) <= FINE_HOURS * 60) {
     // two columns on the left for a pinned date, and two after each stretch for the text beside its last bars
@@ -231,6 +238,7 @@ function scaleFor(data, today, room) {
     if (work.idea) days.push(dayNumber(work.idea.date));
     if (work.created) days.push(dayNumber(work.created));
     for (const task of work.tasks.filter(dated)) days.push(...barDays(task));
+    for (const stage of timedStages(work)) days.push(Math.floor(minuteOf(stage.start) / MIN_PER_DAY), Math.floor(minuteOf(stage.end) / MIN_PER_DAY));
   }
   // a little before the first day, and room after today and the last day to drag into
   const last = Math.max(today + 30, Math.max(...days) + 14);
@@ -266,6 +274,13 @@ function drawnSpan(task, scale) {
   if (!isDays(scale)) return [from, to];
   const [first, last] = barDays(task);
   return [first * MIN_PER_DAY, (last + 1) * MIN_PER_DAY];
+}
+
+// A stage's [from, to) as drawn: whole days on a day chart, the actual minutes on a finer one.
+function stageDrawn(stage, scale) {
+  const [from, to] = stageSpan(stage);
+  if (!isDays(scale)) return [from, to];
+  return [Math.floor(from / MIN_PER_DAY) * MIN_PER_DAY, (Math.floor((to - 1) / MIN_PER_DAY) + 1) * MIN_PER_DAY];
 }
 
 const padOf = (scale) => (isDays(scale) ? 2 : 1);
@@ -562,23 +577,35 @@ class Timeline extends MarkdownRenderChild {
     const track = make(row, "lt-track");
     const placed = work.tasks.filter(dated);
     this.trayCell(row, work.tasks.length - placed.length, work);
+    // the stages one after another: those the run log timed, then the build from its tasks
+    const stageBar = (role, drawn, lines, open = false) => {
+      const bar = make(track, `lt-bar lt-stage lt-stage-${role}${open ? " lt-open" : ""}`);
+      make(bar, "lt-bar-text", labels[`stage_${role}`] || role);
+      place(bar, drawn, scale);
+      bar.title = lines.join("\n");
+      return bar;
+    };
+    for (const stage of timedStages(work)) stageBar(stage.role, stageDrawn(stage, scale), this.stageLines(stage.role, ...stageSpan(stage), stage));
     if (placed.length) {
       const spans = placed.map((task) => drawnSpan(task, scale));
       const whole = [Math.min(...spans.map((s) => s[0])), Math.max(...spans.map((s) => s[1]))];
-      const summary = make(track, "lt-bar lt-summary");
-      place(summary, whole, scale);
+      const times = placed.map(span);
+      const record = (work.stages || []).find((s) => s.role === "build");
+      const lines = this.stageLines("build", Math.min(...times.map((s) => s[0])), Math.max(...times.map((s) => s[1])), record);
       // a finished work shows how long its tasks took, added up, and how long it took from first start to last end
-      if (labels.worked && work.tasks.every((task) => task.state === "done" && task.basis === "actual")) {
-        const times = work.tasks.map(span);
+      const finished = labels.worked && work.tasks.every((task) => task.state === "done" && task.basis === "actual");
+      if (finished) {
         const worked = times.reduce((sum, [from, to]) => sum + to - from, 0);
         const taken = Math.max(...times.map((s) => s[1])) - Math.min(...times.map((s) => s[0]));
         const total = besideBar(track, "lt-total", duration(worked, labels), whole, scale);
-        total.title = summary.title = `${labels.worked} ${duration(worked, labels)} · ${labels.elapsed} ${duration(taken, labels)}`;
+        total.title = `${labels.worked} ${duration(worked, labels)} · ${labels.elapsed} ${duration(taken, labels)}`;
+        lines.push(total.title);
       }
+      stageBar("build", whole, lines, work.tasks.some((task) => task.state !== "done"));
     }
     for (const [date, label, cls] of [
       [work.idea && work.idea.date, work.idea && `${work.idea.id} · ${labels.idea}`, "lt-mark-idea"],
-      [work.created, labels.plan, "lt-mark-plan"],
+      [timedStages(work).some((s) => s.role === "plan") ? "" : work.created, labels.plan, "lt-mark-plan"],
     ]) {
       if (!date) continue;
       // a date has no time: the middle of its column on a day chart, the start of the day on a finer one
@@ -634,6 +661,17 @@ class Timeline extends MarkdownRenderChild {
     return work.tasks;
   }
 
+  // What a stage's bar says when pointed at: its name, when it ran, and how long the AI worked on it with which models.
+  stageLines(role, from, to, record) {
+    const labels = this.data.labels;
+    const lines = [labels[`stage_${role}`] || role, `${stamp(from)} → ${stamp(to)}`];
+    if (record && record.worked) {
+      const minutes = Math.max(1, Math.round(record.worked / 60));
+      lines.push([`${labels.ai_worked || ""} ${duration(minutes, labels)}`.trim(), ...(record.by || [])].join(" · "));
+    }
+    return lines;
+  }
+
   // A bar's text, from where it starts: a finished task with how long it took, a plan with a time with how long it is
   // planned for (it follows a drag), a plan for a day with its size.
   caption(task) {
@@ -648,8 +686,8 @@ class Timeline extends MarkdownRenderChild {
   // where the open works begin, for a finer chart to open at: today may be far from them
   openStart() {
     const open = this.data.works.filter((work) => this.folds.get(work.id) && work.tasks.some(dated));
-    const tasks = datedTasks(open.length ? open : this.data.works);
-    return tasks.length ? Math.min(...tasks.map((task) => span(task)[0])) : nowMinute();
+    const spans = activeSpans(open.length ? open : this.data.works);
+    return spans.length ? Math.min(...spans.map((s) => s[0])) : nowMinute();
   }
 
   // The cell of the "no date yet" column at the end of a row, when the chart has one; a work's row shows how many wait.
@@ -714,19 +752,28 @@ class Timeline extends MarkdownRenderChild {
     const tasks = works.flatMap((work) => work.tasks);
     const kind = (t) => (t.state !== "todo" ? t.state : t.basis === "estimated" || t.basis === "unscheduled" ? t.basis : "todo");
     const has = new Set(tasks.map(kind));
-    if (tasks.some(dated)) has.add("span");
+    const staged = (role) => (role === "build" ? tasks.some(dated) : works.some((work) => timedStages(work).some((s) => s.role === role)));
     if (works.some((work) => work.idea)) has.add("idea");
-    if (works.some((work) => work.created)) has.add("plan");
+    if (works.some((work) => work.created && !timedStages(work).some((s) => s.role === "plan"))) has.add("plan");
     if (tasks.some((task) => (task.after || []).length)) has.add("after");
     if (lines.late) has.add("late");
     if (labels.column) make(legend, "lt-legend-item lt-legend-column", labels.column.replace("{size}", duration(scale.slot, labels)));
+    // the stages first, then what a task's bar can be: each color says one thing
+    const shown = STAGES.filter(staged);
+    if (shown.length && labels.stage_title) make(legend, "lt-legend-item lt-legend-group", labels.stage_title);
+    for (const role of shown) {
+      const item = make(legend, "lt-legend-item");
+      make(item, `lt-swatch lt-bar lt-stage lt-stage-${role}`);
+      make(item, "", labels[`stage_${role}`] || role);
+    }
+    if (["doing", "todo", "estimated", "unscheduled"].some((key) => has.has(key)) && labels.tasks_title) {
+      make(legend, "lt-legend-item lt-legend-group", labels.tasks_title);
+    }
     for (const [cls, key, name] of [
-      ["lt-swatch lt-bar lt-task-bar lt-done lt-actual", "done", "done"],
       ["lt-swatch lt-bar lt-task-bar lt-doing lt-actual", "doing", "doing"],
       ["lt-swatch lt-bar lt-task-bar lt-todo lt-planned", "todo", "legend_todo"],
       ["lt-swatch lt-bar lt-task-bar lt-todo lt-estimated", "estimated", "legend_estimated"], // in a report written by an older version
       ["lt-chip lt-chip-swatch", "unscheduled", "unscheduled"],
-      ["lt-swatch lt-bar lt-summary", "span", "span"],
       ["lt-mark lt-mark-idea", "idea", "idea"],
       ["lt-mark lt-mark-plan", "plan", "plan"],
       ["lt-arrow-focus", "after", "after"],
@@ -745,7 +792,7 @@ class Timeline extends MarkdownRenderChild {
   // ◀ [date ▾] ▶ over a chart wider than the note: the days with tasks, one list however many there are.
   // Choosing a day puts its start at the chart's left edge. Returns what to call after scrolling.
   drawDateNav(root, scroller, scale) {
-    const days = [...new Set(datedTasks(this.data.works).map((task) => Math.floor(span(task)[0] / MIN_PER_DAY)))];
+    const days = [...new Set(activeSpans(this.data.works).map(([from]) => Math.floor(from / MIN_PER_DAY)))];
     days.sort((a, b) => a - b);
     if (days.length < 2) return () => {};
     const nav = document.createElement("div");

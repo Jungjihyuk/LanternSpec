@@ -45,18 +45,23 @@
   position: absolute; top: 5px; height: 18px; box-sizing: border-box; padding: 0 5px; border-radius: 4px;
   font-size: 11px; line-height: 18px; white-space: nowrap; overflow: hidden; color: #fff;
 }
-.lt-summary {  /* a bracket ├──┤, not a bar, so it never reads as a task */
-  top: 9px; height: 10px; padding: 0; border-radius: 0; background: linear-gradient(var(--text-muted), var(--text-muted)) center / 100% 2px no-repeat;
-  border-left: 2px solid var(--text-muted); border-right: 2px solid var(--text-muted);
-}
 .lt-bar-label, .lt-total { z-index: 2; position: absolute; top: 5px; line-height: 18px; font-size: 11px; white-space: nowrap; color: var(--text-muted); pointer-events: none; }
 .lt-total { font-weight: 600; pointer-events: auto; }
 .lt-legend-column { font-weight: 600; }
 /* a task's bar: a tint of its color with a solid left edge, and its text from where it starts, inside or past its end alike */
-.lt-task-bar { --c: #8a8fa3; overflow: visible; color: var(--text-normal); border-radius: 3px;
+.lt-task-bar, .lt-stage { --c: #8a8fa3; overflow: visible; color: var(--text-normal); border-radius: 3px;
   background: color-mix(in srgb, var(--c) 26%, var(--background-primary)); border-left: 3px solid var(--c); }
-.lt-task-bar.lt-done { --c: #66a249; }
-.lt-task-bar.lt-doing { --c: #e8a33d; }  /* the kanban's glow for "in progress" */
+/* the kanban's colors: a stage's bar says which stage; a task of the build takes the build's color, striped while it runs */
+.lt-stage-plan { --c: #7b8fd6; } .lt-stage-design { --c: #a07cd6; } .lt-stage-tasks { --c: #3f9d8a; } .lt-stage-build { --c: #e8a33d; }
+.lt-task-bar.lt-done, .lt-task-bar.lt-doing { --c: #e8a33d; }
+/* a stage and a finished task are a full color; one still running is the same color in stripes */
+.lt-stage, .lt-task-bar.lt-done { background: color-mix(in srgb, var(--c) 58%, var(--background-primary)); }
+.lt-task-bar.lt-doing { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--c) 58%, var(--background-primary)) 0 5px, color-mix(in srgb, var(--c) 22%, var(--background-primary)) 5px 10px); }
+.lt-stage .lt-bar-text { overflow: hidden; text-overflow: ellipsis; }  /* stages sit end to end: a long name is cut, not spilled onto the next */
+/* still running: a faint end past the bar says it is not over (not a guess of when it will be) */
+.lt-open:not(.lt-swatch)::after, .lt-task-bar.lt-doing.lt-actual:not(.lt-swatch)::after {
+  content: ""; position: absolute; left: 100%; top: 0; width: 10px; height: 100%; background: var(--c); opacity: .22; border-radius: 0 3px 3px 0; }
+.lt-legend-group { font-weight: 600; color: var(--text-normal); }
 .lt-task-bar.lt-estimated { background: transparent; border: 1px dashed var(--text-faint); border-left-width: 3px; line-height: 16px; }
 .lt-mark { position: absolute; top: 9px; width: 10px; height: 10px; transform: rotate(45deg); }
 .lt-mark-idea { background: #e0a93b; }

@@ -281,8 +281,41 @@ def _work_bars(project: Project, w: Path) -> list[dict]:
     return bars
 
 
+STAGE_OF_SKILL = {"l-plan": "plan", "l-design": "design", "l-task": "tasks", "l-build": "build"}  # the skill that makes each stage
+
+
+def _run_minute(iso: object) -> str:
+    """A run-log time as the timeline writes times ("2026-11-19 10:02"); "" when it can't be read."""
+    try:
+        return _dt.datetime.fromisoformat(str(iso)).replace(tzinfo=None).strftime("%Y-%m-%d %H:%M")
+    except ValueError:
+        return ""
+
+
+def _stage_times(runs: list[dict], work_id: str) -> list[dict]:
+    """The time each stage of a work took, from the skill runs the run log timed (`skill_time` lines).
+
+    Runs of one stage are merged: the first start, the last end, the seconds the AI worked added up, and every model.
+    """
+    stages: dict[str, dict] = {}
+    for r in runs:
+        role = STAGE_OF_SKILL.get(str(r.get("skill")))
+        start, end = _run_minute(r.get("start")), _run_minute(r.get("end"))
+        if r.get("kind") != "skill_time" or r.get("work") != work_id or not (role and start and end):
+            continue
+        stage = stages.setdefault(role, {"role": role, "start": start, "end": end, "worked": 0, "by": []})
+        stage["start"], stage["end"] = min(stage["start"], start), max(stage["end"], end)
+        stage["worked"] += int(r.get("worked") or 0)
+        if r.get("model") and r["model"] not in stage["by"]:
+            stage["by"].append(r["model"])
+    return [stages[role] for role in STAGE_OF_SKILL.values() if role in stages]
+
+
 def _timeline_rows(project: Project) -> list[dict]:
-    """Collect every work (archived ones too) with its dated tasks and the day its idea appeared."""
+    """Collect every work (archived ones too) with its dated tasks, the time its stages took and the day its idea appeared."""
+    from .evaluate import load_runs
+
+    runs = load_runs(project)
     rows = []
     for w in project.work_dirs(include_archive=True):
         plan_meta = _meta(project.doc_path(w, "plan"))
@@ -292,6 +325,8 @@ def _timeline_rows(project: Project) -> list[dict]:
             "file": project.docs_rel(project.doc_path(w, "tasks")),
             "tasks": _work_bars(project, w),
         }
+        if stages := _stage_times(runs, work_id_of(w)):
+            row["stages"] = stages
         for link in frontmatter.as_list(plan_meta.get("links")):
             m = re.search(r"(IDEA-\d{3,})", str(link))
             idea = project.find_by_id(m.group(1)) if m else None
@@ -313,7 +348,13 @@ def _timeline_plugin_block(project: Project, rows: list[dict]) -> str:
         "actual": msg("actual dates"),
         "planned": msg("planned dates"),
         "unscheduled": msg("No date yet"),
-        "span": msg("whole work"),
+        "stage_title": msg("Stage"),
+        "stage_plan": project.enums.value("work_status", "plan"),
+        "stage_design": project.enums.value("work_status", "design"),
+        "stage_tasks": msg("Splitting into tasks"),
+        "stage_build": project.enums.value("work_status", "build"),
+        "tasks_title": msg("Tasks in the build"),
+        "ai_worked": msg("AI worked"),
         "idea": msg("idea added"),
         "plan": msg("plan started"),
         "after": msg("Order (before → after)"),

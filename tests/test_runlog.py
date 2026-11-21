@@ -7,7 +7,7 @@ import json
 import subprocess
 from pathlib import Path
 
-from conftest import init_project
+from conftest import docs, init_project
 from lanternspec.core.project import Project
 from lanternspec.report import evaluate
 from lanternspec.tools import agent_hooks, get, health, runlog
@@ -321,3 +321,81 @@ def test_a_close_command_is_found_in_whatever_field_a_tool_puts_it():
     assert runlog._closes({"cmd": "cd docs && lantern close l-idea"}) == ("l-idea", "")  # a skill with no work
     assert runlog._closes({"command": "lantern check && echo done"}) is None
     assert runlog._closes(None) is None
+
+
+def test_the_timeline_gets_each_stage_of_a_work_from_its_timed_skill_runs(repo):
+    init_project(repo)
+    repo("scaffold", "work", "작업")
+    repo("scaffold", "work", "다른 작업")
+    project = Project.load(repo.root)
+    run = {"kind": "skill_time", "source": "hook", "model": "claude-opus-5-5"}
+    for rec in (
+        {
+            **run,
+            "skill": "l-plan",
+            "work": "W-001",
+            "start": "2026-11-19T10:02:00+09:00",
+            "end": "2026-11-19T10:30:00+09:00",
+            "worked": 240,
+        },
+        {
+            **run,
+            "skill": "l-plan",
+            "work": "W-001",
+            "start": "2026-11-19T10:35:00+09:00",
+            "end": "2026-11-19T10:41:00+09:00",
+            "worked": 120,
+            "model": "gpt-5.1-codex",
+        },
+        {
+            **run,
+            "skill": "l-design",
+            "work": "W-001",
+            "start": "2026-11-19T10:55:00+09:00",
+            "end": "2026-11-19T11:20:00+09:00",
+            "worked": 500,
+        },
+        {
+            **run,
+            "skill": "l-build",
+            "work": "W-001",
+            "start": "2026-11-20T09:20:00+09:00",
+            "end": "2026-11-20T09:50:00+09:00",
+            "worked": 900,
+        },
+        {**run, "skill": "l-plan", "work": "W-002", "start": "2026-11-19T12:00:00+09:00", "end": "2026-11-19T12:05:00+09:00", "worked": 60},
+        {**run, "skill": "l-check", "work": "W-001", "start": "2026-11-19T12:00:00+09:00", "end": "2026-11-19T12:01:00+09:00", "worked": 5},
+        {"kind": "turn", "skill": "l-plan", "work": "W-001", "start": "2026-11-19T09:00:00+09:00", "end": "2026-11-19T09:10:00+09:00"},
+    ):
+        runlog.append(project, rec)
+    plugin = docs(repo) / ".obsidian/plugins/lantern-timeline"  # the timeline plugin, there and turned on
+    plugin.mkdir(parents=True)
+    (plugin / "main.js").write_text("", encoding="utf-8")
+    (docs(repo) / ".obsidian/community-plugins.json").write_text('["lantern-timeline"]', encoding="utf-8")
+
+    repo("report", "--views", "timeline")
+
+    report = (docs(repo) / "4. 운영 기록/보고/현황.md").read_text(encoding="utf-8")
+    data = json.loads(report.split("```lantern-timeline\n")[1].split("\n```")[0])
+    first, second = data["works"]
+    assert first["stages"] == [
+        {"role": "plan", "start": "2026-11-19 10:02", "end": "2026-11-19 10:41", "worked": 360, "by": ["claude-opus-5-5", "gpt-5.1-codex"]},
+        {"role": "design", "start": "2026-11-19 10:55", "end": "2026-11-19 11:20", "worked": 500, "by": ["claude-opus-5-5"]},
+        {"role": "build", "start": "2026-11-20 09:20", "end": "2026-11-20 09:50", "worked": 900, "by": ["claude-opus-5-5"]},
+    ]  # runs of one stage are merged; another skill, another kind of line and another work are left out
+    assert [s["role"] for s in second["stages"]] == ["plan"]
+    assert data["labels"]["stage_tasks"] == "할 일 나누기" and data["labels"]["ai_worked"] == "AI가 일한 시간"
+
+
+def test_a_work_with_no_timed_skill_runs_has_no_stages_key(repo):
+    init_project(repo)
+    repo("scaffold", "work", "작업")
+    plugin = docs(repo) / ".obsidian/plugins/lantern-timeline"
+    plugin.mkdir(parents=True)
+    (plugin / "main.js").write_text("", encoding="utf-8")
+    (docs(repo) / ".obsidian/community-plugins.json").write_text('["lantern-timeline"]', encoding="utf-8")
+
+    repo("report", "--views", "timeline")
+
+    report = (docs(repo) / "4. 운영 기록/보고/현황.md").read_text(encoding="utf-8")
+    assert "stages" not in json.loads(report.split("```lantern-timeline\n")[1].split("\n```")[0])["works"][0]
