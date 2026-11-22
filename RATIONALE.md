@@ -200,12 +200,19 @@ The content of each rule is in its rules document template (`src/lanternspec/res
 - **Why:** if the screen check stopped the work, every parallel work would wait for a person. The checks left over are gathered and asked before merging.
 
 ### Drawing the timeline
-- **Decided:** the time axis holds **only real times**: when work was actually done, and dates a person planned. Only stretches with work get fine columns (5 minutes to an hour); an hour or more without any task is folded and labelled like "⋯ 5 h ⋯". A finished task shows how long it took as text. Tasks not started and without a date wait in a "no date yet" column on the right with their size; dragging one onto a day plans it.
+- **Decided:** the time axis holds **only real times**: when work was actually done, and dates a person planned. Only stretches with work get fine columns (5 minutes to an hour); an hour or more without any task is folded and labelled like "⋯ 5 h ⋯". A finished task shows how long it took as text. Tasks not started and without a date wait in a "no date yet" column on the right with their size; dragging one onto a day plans it. A work's row has one bar per stage: planning, design and splitting into tasks are drawn from the time their skill actually ran (the skill time in the run log), the build from its tasks' times. A bar's color names its stage; task bars take the build's color, a solid fill when finished and stripes while in progress. Who did a task shows on hover and is not a color. On a day chart, stages that fall on the same day split that day between them, side by side in stage order.
 - **Why:**
   - AI work comes in bursts with long gaps. Drawn by days, minute-long tasks pile into one column; drawn by hours, most of the chart is empty.
   - A size says how much work, not when. Putting undated tasks on the axis with a length guessed from their size needed a conversion like "hours in a day", and that guess even changed the column size.
-- **Turned down:** estimated bars chaining unstarted tasks by order and size. They ignored nights and weekends, looking like overnight work, and on a day chart `1h` filled a whole day. For a forecast, `lantern task estimate` suggests dates and skips weekends.
-- **Source:** `src/lanternspec/resources/obsidian/lantern-timeline/main.js`
+  - It should show where a work spent its time. One span for the whole work can't tell the time spent planning and designing from the time spent building. A stage's time counts only the time the AI worked, not the waits for the person.
+  - A color reads only when it means one thing. When the same bar's color says both the stage and who did it, people read it as a third status. Who is on a task now is for the kanban, which answers "where is it stuck now".
+- **Turned down:**
+  - Estimated bars chaining unstarted tasks by order and size. They ignored nights and weekends, looking like overnight work, and on a day chart `1h` filled a whole day. For a forecast, `lantern task estimate` suggests dates and skips weekends.
+  - A bracket (├──┤) over the whole work's span. It showed only when the work started and ended, not which stage took the time in between.
+  - Coloring task bars by who did them (person · person + AI · AI). It covered the done and in-progress colors, so there seemed to be three statuses.
+  - Coloring finished tasks green like the kanban. On the timeline, which stage a task belongs to matters more, so tasks keep the build's color and a solid fill or stripes tell done from in progress.
+  - Drawing stages on top of each other on a day chart. Planning, design and splitting into tasks done on one day hid under each other and under the build bar.
+- **Source:** `src/lanternspec/resources/obsidian/lantern-timeline/main.js`; stage times from `tools/runlog.py` (skill time); data from `report/views.py`
 
 ### Kanban
 - **Decided:** works appear as cards in stage columns (plan · design · tasks · build · done), and clicking a card opens that work's tasks in a window. It is read only.
