@@ -283,7 +283,23 @@ function stageDrawn(stage, scale) {
   return [Math.floor(from / MIN_PER_DAY) * MIN_PER_DAY, (Math.floor((to - 1) / MIN_PER_DAY) + 1) * MIN_PER_DAY];
 }
 
-const padOf = (scale) => (isDays(scale) ? 2 : 1);
+// On a day chart a stage fills whole days, so stages run on the same day would lie on top of each other:
+// a day that several stages share is split between them, in their order. Takes and returns [from, to) in minutes.
+function shareDays(spans, scale) {
+  if (!isDays(scale)) return spans;
+  const day = (minute) => Math.floor(minute / MIN_PER_DAY);
+  const sharing = (d) => spans.filter(([from, to]) => day(from) <= d && d <= day(to - 1));
+  return spans.map((s) => {
+    const [first, last] = [day(s[0]), day(s[1] - 1)];
+    const [atFirst, atLast] = [sharing(first), sharing(last)];
+    return [
+      (first + atFirst.indexOf(s) / atFirst.length) * MIN_PER_DAY,
+      (last + (atLast.indexOf(s) + 1) / atLast.length) * MIN_PER_DAY,
+    ];
+  });
+}
+
+const padOf = (scale) =>(isDays(scale) ? 2 : 1);
 const widthOf = ([from, to], scale) => Math.max(MIN_BAR, xOf(scale, to) - xOf(scale, from) - 2 * padOf(scale));
 
 function place(bar, drawn, scale) {
@@ -578,14 +594,8 @@ class Timeline extends MarkdownRenderChild {
     const placed = work.tasks.filter(dated);
     this.trayCell(row, work.tasks.length - placed.length, work);
     // the stages one after another: those the run log timed, then the build from its tasks
-    const stageBar = (role, drawn, lines, open = false) => {
-      const bar = make(track, `lt-bar lt-stage lt-stage-${role}${open ? " lt-open" : ""}`);
-      make(bar, "lt-bar-text", labels[`stage_${role}`] || role);
-      place(bar, drawn, scale);
-      bar.title = lines.join("\n");
-      return bar;
-    };
-    for (const stage of timedStages(work)) stageBar(stage.role, stageDrawn(stage, scale), this.stageLines(stage.role, ...stageSpan(stage), stage));
+    const stages = timedStages(work).map((stage) => ({ role: stage.role, drawn: stageDrawn(stage, scale), lines: this.stageLines(stage.role, ...stageSpan(stage), stage) }));
+    let total = null; // a finished work's total, beside its build bar
     if (placed.length) {
       const spans = placed.map((task) => drawnSpan(task, scale));
       const whole = [Math.min(...spans.map((s) => s[0])), Math.max(...spans.map((s) => s[1]))];
@@ -597,12 +607,22 @@ class Timeline extends MarkdownRenderChild {
       if (finished) {
         const worked = times.reduce((sum, [from, to]) => sum + to - from, 0);
         const taken = Math.max(...times.map((s) => s[1])) - Math.min(...times.map((s) => s[0]));
-        const total = besideBar(track, "lt-total", duration(worked, labels), whole, scale);
-        total.title = `${labels.worked} ${duration(worked, labels)} · ${labels.elapsed} ${duration(taken, labels)}`;
+        total = { text: duration(worked, labels), title: `${labels.worked} ${duration(worked, labels)} · ${labels.elapsed} ${duration(taken, labels)}` };
         lines.push(total.title);
       }
-      stageBar("build", whole, lines, work.tasks.some((task) => task.state !== "done"));
+      stages.push({ role: "build", drawn: whole, lines, open: work.tasks.some((task) => task.state !== "done") });
     }
+    const drawn = shareDays(
+      stages.map((stage) => stage.drawn),
+      scale,
+    );
+    stages.forEach((stage, i) => {
+      const bar = make(track, `lt-bar lt-stage lt-stage-${stage.role}${stage.open ? " lt-open" : ""}`);
+      make(bar, "lt-bar-text", labels[`stage_${stage.role}`] || stage.role);
+      place(bar, drawn[i], scale);
+      bar.title = stage.lines.join("\n");
+      if (stage.role === "build" && total) besideBar(track, "lt-total", total.text, drawn[i], scale).title = total.title;
+    });
     for (const [date, label, cls] of [
       [work.idea && work.idea.date, work.idea && `${work.idea.id} · ${labels.idea}`, "lt-mark-idea"],
       [timedStages(work).some((s) => s.role === "plan") ? "" : work.created, labels.plan, "lt-mark-plan"],
