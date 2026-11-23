@@ -2,7 +2,7 @@
 
 Writers, one format, one line per `kind`:
 * agent hooks, `session`: once per conversation — the tool and its version, LanternSpec's version, the settings repository's commit
-* agent hooks, `turn`: per turn — start · end · model · skill · tool counts · tokens
+* agent hooks, `turn`: per turn — start · end · model · skill · tool counts (the calls that worked) · failed tool calls · tokens
 * agent hooks, `subagent`: per sub-agent call — name · start · end · model · tokens
 * `lantern review` and the reviewer's stop hook, `review`: one line per review round — model · items · issues
 * `lantern close <skill>`, `skill`: tools without agent hooks still leave one line per skill run
@@ -170,6 +170,26 @@ def tool(project: Project, session: str, tool_name: str, tool_input: dict | None
     _save(project, session, data)
 
 
+def tool_failed(project: Project, session: str, tool_name: str) -> None:
+    """Count one tool call that ran and failed (a call the person refused or cancelled is not one).
+
+    Args:
+        project: The project.
+        session: The conversation.
+        tool_name: The tool that failed.
+
+    Example:
+        >>> tool_failed(project, "s1", "mcp__qmd__query")  # doctest: +SKIP
+    """
+    data = _load(project, session)
+    if not data.get("start"):
+        data["start"] = now_iso()
+    failures = Counter(data.get("failures") or {})
+    failures[tool_name or "?"] += 1
+    data["failures"] = dict(failures)
+    _save(project, session, data)
+
+
 def stop(project: Project, session: str, model: str | None = None, tokens: dict[str, int] | None = None) -> dict[str, Any] | None:
     """Write the turn's record and start the next turn fresh (the model is kept).
 
@@ -189,7 +209,7 @@ def stop(project: Project, session: str, model: str | None = None, tokens: dict[
     data = _load(project, session)
     if model:
         data["model"] = model
-    if not data.get("start") and not data.get("tools"):
+    if not data.get("start") and not data.get("tools") and not data.get("failures"):
         return None
     end = now_iso()
     record = {
@@ -203,6 +223,8 @@ def stop(project: Project, session: str, model: str | None = None, tokens: dict[
         "tools": data.get("tools") or {},
         "tool_calls": sum((data.get("tools") or {}).values()),
     }
+    if data.get("failures"):
+        record["failures"] = data["failures"]
     if tokens:
         record["tokens"] = tokens
     append(project, record)
@@ -217,6 +239,7 @@ def stop(project: Project, session: str, model: str | None = None, tokens: dict[
             "model": data.get("model"),
             "skill": None,
             "tools": {},
+            "failures": {},
             "subagents": data.get("subagents") or {},
             **({"run": run} if run else {}),
         },

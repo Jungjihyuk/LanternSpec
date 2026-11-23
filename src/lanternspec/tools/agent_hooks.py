@@ -255,6 +255,26 @@ def _saved_progress(project: Project, session: str) -> list[str]:
 # --------------------------------------------------------------------------- document check · tool count
 
 
+def tool_failure(project: Project, tool: Tool, inp: HookInput) -> HookResult:
+    """Count a tool call that ran and failed, so `lantern eval` can tell an MCP server that fails from one that works.
+
+    Args:
+        project: The project.
+        tool: The tool that called.
+        inp: The hook call.
+
+    Returns:
+        Nothing to say.
+
+    Example:
+        >>> tool_failure(project, tool, HookInput(session="s1", tool="mcp__qmd__query")).context  # doctest: +SKIP
+        ''
+    """
+    if inp.session:
+        runlog.tool_failed(project, inp.session, inp.tool)
+    return HookResult()
+
+
 def post_tool(project: Project, tool: Tool, inp: HookInput) -> HookResult:
     """Count the tool call, and check any document the tool just wrote.
 
@@ -809,6 +829,7 @@ HANDLERS: dict[str, Callable[[Project, Tool, HookInput], HookResult]] = {
     "prompt": prompt,
     "pre-tool": pre_tool,
     "post-tool": post_tool,
+    "tool-failure": tool_failure,
     "feedback": feedback,
     "stop": stop,
     "pre-compact": pre_compact,

@@ -1,7 +1,7 @@
 """Show what the AI tool started with (MCP servers, plugins, skills, hooks) and how often the MCP tools among them were called.
 
 Responsibilities:
-    - join each session's component list with the tool calls of that session's turns
+    - join each session's component list with the tool calls (and failed calls) of that session's turns
     - list what was added or removed between one session's list and the next
 
 Not here:
@@ -84,7 +84,7 @@ def usage(runs: list[dict[str, Any]]) -> dict[str, Any]:
         runs: The run log's records, oldest first.
 
     Returns:
-        `rows`: one per component with its sessions, sessions with a call and calls; `changes`: what was added or
+        `rows`: one per component with its sessions, sessions with a call, calls that worked and failed calls; `changes`: what was added or
         removed from one session's list to the next, with the start of the later session; `unlisted`: the sessions
         and turns that have no list (so their calls are in no row), such as a session an older lantern logged.
 
@@ -106,10 +106,13 @@ def usage(runs: list[dict[str, Any]]) -> dict[str, Any]:
 
     sessions = [r for r in runs if r.get("kind") == "session" and "components" in r]
     tools_of: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+    failed_of: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
     for r in runs:
         if r.get("kind") == "turn":
             for name, n in (r.get("tools") or {}).items():
                 tools_of[str(r.get("session"))][name] += int(n)
+            for name, n in (r.get("failures") or {}).items():
+                failed_of[str(r.get("session"))][name] += int(n)
 
     seen: dict[tuple[str, str], dict[str, Any]] = {}
     for s in sessions:
@@ -119,15 +122,20 @@ def usage(runs: list[dict[str, Any]]) -> dict[str, Any]:
         except ValueError:
             tool = None
         calls: dict[tuple[str, str], int] = defaultdict(int)
+        failures: dict[tuple[str, str], int] = defaultdict(int)
         if tool:
-            for name, n in tools_of[str(s.get("session"))].items():
-                if owner := tool.call_component(name, listed):
-                    calls[owner] += n
+            for counted, per_component in ((tools_of, calls), (failed_of, failures)):
+                for name, n in counted[str(s.get("session"))].items():
+                    if owner := tool.call_component(name, listed):
+                        per_component[owner] += n
         for item in _flat(listed):
-            row = seen.setdefault(item, {"kind": item[0], "name": item[1], "sessions": 0, "sessions_with_calls": None, "calls": None})
+            row = seen.setdefault(
+                item, {"kind": item[0], "name": item[1], "sessions": 0, "sessions_with_calls": None, "calls": None, "failures": None}
+            )
             row["sessions"] += 1
             if tool and item[0] in CALL_KINDS:
                 row["calls"] = (row["calls"] or 0) + calls[item]
+                row["failures"] = (row["failures"] or 0) + failures[item]
                 row["sessions_with_calls"] = (row["sessions_with_calls"] or 0) + (1 if calls[item] else 0)
 
     changes = []

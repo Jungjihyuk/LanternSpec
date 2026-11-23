@@ -221,7 +221,7 @@ class ClaudeCode(ClaudeHooks, Tool):
 
         Example:
             >>> sorted(ClaudeCode().hooks())
-            ['PostToolUse', 'PreCompact', 'SessionStart', 'Stop', 'SubagentStart', 'SubagentStop', 'UserPromptSubmit']
+            ['PostToolUse', 'PostToolUseFailure', 'PreCompact', 'SessionStart', 'Stop', 'SubagentStart', 'SubagentStop', 'UserPromptSubmit']
         """
 
         def entry(event: str, matcher: str = "") -> dict[str, Any]:
@@ -234,6 +234,7 @@ class ClaudeCode(ClaudeHooks, Tool):
             "SessionStart": [entry("session-start")],
             "UserPromptSubmit": [entry("prompt")],
             "PostToolUse": [entry("post-tool", "*")],
+            "PostToolUseFailure": [entry("tool-failure", "*")],
             "Stop": [entry("stop")],
             "PreCompact": [entry("pre-compact")],
             "SubagentStart": [entry("subagent-start")],

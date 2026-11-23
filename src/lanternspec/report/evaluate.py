@@ -252,9 +252,9 @@ def markdown(project: Project) -> str:
     counted = [r for r in found["rows"] if r["kind"] in components.CALL_KINDS]
     table(
         msg("Components the AI tool started with — how often their MCP tools were called"),
-        (msg("Kind"), msg("Name"), msg("Sessions"), msg("Sessions with calls"), msg("MCP tool calls")),
+        (msg("Kind"), msg("Name"), msg("Sessions"), msg("Sessions with calls"), msg("MCP tool calls"), msg("MCP tool failures")),
         [
-            (components.kind_label(r["kind"], project.enums), r["name"], r["sessions"], r["sessions_with_calls"], r["calls"])
+            (components.kind_label(r["kind"], project.enums), r["name"], r["sessions"], r["sessions_with_calls"], r["calls"], r["failures"])
             for r in counted
         ],
     )
@@ -262,7 +262,8 @@ def markdown(project: Project) -> str:
         out.extend(
             [
                 msg(
-                    "_Only MCP tool calls are counted: skills, hooks and what else a plugin brings are not, "
+                    "_Only MCP tools are counted: the calls that worked, and the calls that failed in their own column. "
+                    "Skills, hooks and what else a plugin brings are not, "
                     "and 0 calls only says the tools were not used in the recorded sessions._"
                 ),
                 "",

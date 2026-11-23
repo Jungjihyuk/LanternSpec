@@ -406,7 +406,7 @@
 "Run records: {turns} conversation turns · {skill_runs} skill wrap-ups": {ko: "실행 기록: 대화 턴 {turns}개 · 스킬 마무리 {skill_runs}개"}
 "Cost by skill": {ko: "스킬별 비용"}
 "Components the AI tool started with — how often their MCP tools were called": {ko: "AI 도구가 시작할 때 가진 구성 요소 — MCP 도구 호출 횟수"}
-"_Only MCP tool calls are counted: skills, hooks and what else a plugin brings are not, and 0 calls only says the tools were not used in the recorded sessions._": {ko: "_MCP 도구 호출만 셉니다. 스킬 · hook · 플러그인이 가져오는 다른 기능은 세지 않고, 0회는 기록된 세션에서 그 도구가 쓰이지 않았다는 뜻일 뿐입니다._"}
+"_Only MCP tools are counted: the calls that worked, and the calls that failed in their own column. Skills, hooks and what else a plugin brings are not, and 0 calls only says the tools were not used in the recorded sessions._": {ko: "_MCP 도구만 셉니다: 잘 된 호출과, 실패한 호출은 따로 칸이 있습니다. 스킬 · hook · 플러그인이 가져오는 다른 기능은 세지 않고, 0회는 기록된 세션에서 그 도구가 쓰이지 않았다는 뜻일 뿐입니다._"}
 "Changes between sessions": {ko: "세션 사이에 바뀐 것"}
 "{kind}: {count}": {ko: "{kind}: {count}"}
 "Unknown component kind: {kind} (available: {items})": {ko: "알 수 없는 구성 요소 종류: {kind} (쓸 수 있는 것: {items})"}
@@ -421,6 +421,7 @@
 "Sessions": {ko: "세션"}
 "Sessions with calls": {ko: "호출이 있던 세션"}
 "MCP tool calls": {ko: "MCP 도구 호출"}
+"MCP tool failures": {ko: "MCP 도구 실패"}
 "When": {ko: "언제"}
 "Change": {ko: "변화"}
 "Added": {ko: "더해짐"}

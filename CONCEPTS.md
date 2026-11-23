@@ -282,6 +282,7 @@ Everything LanternSpec writes lives in the `docs/` folder.
 
 - Only names are kept, never a command, an address or a variable. The tool's settings files are read; nothing is run.
 - `lantern eval` shows, for each component, in how many sessions it was there and how often its MCP tools were called, and tells what was added or dropped between sessions. Calls are counted for **MCP tools only**, so the table has one line for each MCP server and plugin, while skills and hook events are only counted in one line (the names are in `lantern eval --json`). 0 calls only means "not used in the recorded sessions", not that it isn't needed. Turns of a session that has no component list (from before the lists were kept, or logged by another version of lantern) can't have their calls counted, so how many there are is told separately.
+- MCP tool calls that **ran and failed** are counted in their own column (a call the person refused or cancelled is not counted as a failure). A server that is connected but only fails shows up. The `PostToolUseFailure` hook writes this, so an existing project gets the new hook with `lantern upgrade`.
 - For now it is read from Claude Code only (other tools show nothing). Plugins built into the tool are not in a settings file, so they are not listed.
 - Whether to add or drop one is up to a person. lantern only shows the facts and never changes the AI tool's settings.
 

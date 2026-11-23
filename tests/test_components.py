@@ -152,7 +152,7 @@ def test_eval_counts_mcp_calls_per_listed_component_and_names_the_ones_never_cal
 
     rows = {(r["kind"], r["name"]): r for r in evaluate.summary(project)["components"]["rows"]}
 
-    assert rows[("mcp", "qmd")] == {"kind": "mcp", "name": "qmd", "sessions": 2, "sessions_with_calls": 1, "calls": 4}
+    assert rows[("mcp", "qmd")] == {"kind": "mcp", "name": "qmd", "sessions": 2, "sessions_with_calls": 1, "calls": 4, "failures": 0}
     assert rows[("mcp", "obsidian")]["calls"] == 0 and rows[("mcp", "obsidian")]["sessions_with_calls"] == 0
     assert rows[("skill", "my-skill")]["calls"] is None  # skills' calls are not counted: not "0"
 
@@ -267,3 +267,63 @@ def test_eval_does_not_mention_unlisted_turns_when_every_turn_has_a_list_or_no_s
 
     _log(project, [_turn("s9", {"Read": 1})])  # a log from before the lists existed at all
     assert "목록이 없는 세션" not in evaluate.markdown(project)
+
+
+# --------------------------------------------------------------------------- failed MCP calls
+
+
+def test_a_failed_tool_call_is_counted_apart_from_the_calls_that_worked(repo):
+    init_project(repo)
+    project = Project.load(repo.root)
+    start = {"session_id": "s1", "model": "claude-opus-5-5", "source": "startup"}
+    for event, payload in (
+        ("session-start", start),
+        ("post-tool", {"session_id": "s1", "tool_name": "mcp__qmd__query", "tool_input": {}}),
+        ("tool-failure", {"session_id": "s1", "tool_name": "mcp__qmd__query", "tool_input": {}, "error": "boom", "is_interrupt": False}),
+        ("tool-failure", {"session_id": "s1", "tool_name": "mcp__qmd__get"}),
+        ("stop", {"session_id": "s1"}),
+    ):
+        reply = agent_hooks.run(project, event, get("claude"), json.dumps(payload))
+        assert reply.code == 0
+
+    turn = next(r for r in evaluate.load_runs(project) if r["kind"] == "turn")
+
+    assert turn["tools"] == {"mcp__qmd__query": 1} and turn["tool_calls"] == 1  # the calls that worked
+    assert turn["failures"] == {"mcp__qmd__query": 1, "mcp__qmd__get": 1}
+
+
+def test_a_turn_without_failures_has_no_failures_field_and_a_failure_without_a_session_does_not_stop_the_hook(repo):
+    init_project(repo)
+    project = Project.load(repo.root)
+    agent_hooks.run(project, "post-tool", get("claude"), json.dumps({"session_id": "s1", "tool_name": "Read", "tool_input": {}}))
+    agent_hooks.run(project, "stop", get("claude"), json.dumps({"session_id": "s1"}))
+    assert agent_hooks.run(project, "tool-failure", get("claude"), "{}").code == 0
+
+    turn = next(r for r in evaluate.load_runs(project) if r["kind"] == "turn")
+
+    assert "failures" not in turn
+
+
+def test_claude_installs_a_hook_for_the_failure_event_and_other_tools_do_not():
+    assert "PostToolUseFailure" in get("claude").hooks() and "tool-failure" in get("claude").hook_events()
+    assert "tool-failure" not in get("codex").hook_events() and "tool-failure" not in get("antigravity").hook_events()
+
+
+def test_eval_shows_the_failed_calls_of_a_component_next_to_its_calls(repo):
+    init_project(repo)
+    project = Project.load(repo.root)
+    _log(
+        project,
+        [
+            _session("s1", "2026-11-23T10:00:00", {"mcp": ["qmd"], "skill": ["a"]}),
+            {**_turn("s1", {"mcp__qmd__query": 3}), "failures": {"mcp__qmd__get": 2}},
+            _session("s2", "2026-11-23T12:00:00", {"mcp": ["qmd"]}),
+            {**_turn("s2", {}), "failures": {"mcp__qmd__query": 1}},  # only failures: connected, tried, never worked
+        ],
+    )
+
+    rows = {r["name"]: r for r in evaluate.summary(project)["components"]["rows"]}
+
+    assert rows["qmd"]["calls"] == 3 and rows["qmd"]["failures"] == 3
+    assert rows["a"]["failures"] is None  # a skill has no count: not "0"
+    assert "MCP 도구 실패" in evaluate.markdown(project)
