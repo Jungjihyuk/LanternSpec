@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 def cmd_scaffold(a: argparse.Namespace) -> int:
-    """`lantern scaffold init|work|doc|idea|adr|meeting|custom` — create folders and documents from templates."""
+    """`lantern scaffold init|work|doc|idea|adr|component|meeting|custom` — create folders and documents from templates."""
     from ..core.profile import FOLLOW_UP_QUESTIONS
     from ..work import scaffold
 
@@ -55,6 +55,9 @@ def cmd_scaffold(a: argparse.Namespace) -> int:
         return 0
     if a.kind == "adr":
         print(f"✔ {project.rel(scaffold.new_adr(project, a.name, a.work))}")
+        return 0
+    if a.kind == "component":
+        print(f"✔ {project.rel(scaffold.new_component_card(project, a.name, a.component_kind))}")
         return 0
     if a.kind == "meeting":
         print(f"✔ {project.rel(scaffold.new_meeting(project, a.name))}")
@@ -624,6 +627,9 @@ def register(add: Add) -> None:
     s = ss.add_parser("adr", help=msg("Decision record"))
     s.add_argument("name")
     s.add_argument("--work")
+    s = ss.add_parser("component", help=msg("Component card: why an MCP server · plugin · skill · hook was added"))
+    s.add_argument("name", help=msg("The name as the AI tool lists it"))
+    s.add_argument("--kind", dest="component_kind", default="mcp", help=msg("mcp (default) · plugin · skill · hook"))
     s = ss.add_parser("meeting", help=msg("Meeting notes (2 or more people)"))
     s.add_argument("name")
     s = ss.add_parser("custom", help=msg("A document from a custom template"))

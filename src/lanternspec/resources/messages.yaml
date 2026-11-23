@@ -409,6 +409,11 @@
 "_Only MCP tool calls are counted: skills, hooks and what else a plugin brings are not, and 0 calls only says the tools were not used in the recorded sessions._": {ko: "_MCP 도구 호출만 셉니다. 스킬 · hook · 플러그인이 가져오는 다른 기능은 세지 않고, 0회는 기록된 세션에서 그 도구가 쓰이지 않았다는 뜻일 뿐입니다._"}
 "Changes between sessions": {ko: "세션 사이에 바뀐 것"}
 "{kind}: {count}": {ko: "{kind}: {count}"}
+"Unknown component kind: {kind} (available: {items})": {ko: "알 수 없는 구성 요소 종류: {kind} (쓸 수 있는 것: {items})"}
+"Component card: why an MCP server · plugin · skill · hook was added": {ko: "구성 카드: MCP 서버 · 플러그인 · 스킬 · hook을 왜 더했는지"}
+"The name as the AI tool lists it": {ko: "AI 도구가 목록에 적는 이름 그대로"}
+"mcp (default) · plugin · skill · hook": {ko: "mcp (기본) · plugin · skill · hook"}
+"[LanternSpec] A new {kind} showed up in this tool: {name}. If it was added on purpose, ask the person once whether to leave a component card (why it was added, what it should achieve, what to measure): lantern scaffold component \"{name}\" --kind {role}": {ko: "[LanternSpec] 이 도구에 새로 보이는 {kind}가 있습니다: {name}. 일부러 더한 것이면 구성 카드(왜 더했는지 · 기대하는 효과 · 무엇으로 잴지)를 남길지 사용자에게 한 번만 물어보세요: lantern scaffold component \"{name}\" --kind {role}"}
 "Also listed — {items} (the names are in `lantern eval --json`)": {ko: "그 밖에 기록된 것 — {items} (이름은 `lantern eval --json`에서 볼 수 있습니다)"}
 "_{turns} turns of {sessions} sessions have no component list, so their calls are not counted above (a session from before the lists were kept, or one another version of lantern logged)._": {ko: "_구성 요소 목록이 없는 세션 {sessions}개의 턴 {turns}개는 위에서 호출을 세지 않았습니다 (목록을 기록하기 전의 세션이거나 다른 버전의 lantern이 기록한 것)._"}
 "Kind": {ko: "종류"}
@@ -420,9 +425,6 @@
 "Change": {ko: "변화"}
 "Added": {ko: "더해짐"}
 "Removed": {ko: "빠짐"}
-"MCP server": {ko: "MCP 서버"}
-"Plugin": {ko: "플러그인"}
-"Hook event": {ko: "hook 이벤트"}
 "Cost by model": {ko: "모델별 비용"}
 "Wrap-up quality (format check at close)": {ko: "마무리 품질 (close 때 양식 검사)"}
 "Actual time by task size": {ko: "할 일 크기별 실제 시간"}

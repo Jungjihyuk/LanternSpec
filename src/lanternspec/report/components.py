@@ -15,27 +15,31 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Any
 
-from ..core.messages import msg
+from ..core.enums import Enums
 
 KINDS = ("mcp", "plugin", "skill", "hook")
 CALL_KINDS = ("mcp", "plugin")  # kinds whose tool calls can be tied to them (an MCP tool's name says which server it came from)
 
 
-def kind_label(kind: str) -> str:
-    """Return the name of a component kind as people read it.
+def kind_label(kind: str, enums: Enums) -> str:
+    """Return the name of a component kind as people read it (from the `component_kind` list of enums.yaml).
 
     Args:
         kind: A kind kept in the run log (`mcp` · `plugin` · `skill` · `hook`).
+        enums: The project's choice lists.
 
     Returns:
-        The label in the project's language; the kind itself when it is not a known one.
+        The kind's name in the project's language; the kind itself when it is not a known one.
 
     Example:
-        >>> kind_label("mcp")
+        >>> from lanternspec.core.enums import load
+        >>> kind_label("mcp", load())
         'MCP 서버'
     """
-    labels = {"mcp": msg("MCP server"), "plugin": msg("Plugin"), "skill": msg("Skill"), "hook": msg("Hook event")}
-    return labels.get(kind, kind)
+    try:
+        return enums.value("component_kind", kind)
+    except (KeyError, LookupError):
+        return kind
 
 
 def other_counts(rows: list[dict[str, Any]]) -> dict[str, int]:

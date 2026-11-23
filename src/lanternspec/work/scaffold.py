@@ -722,6 +722,41 @@ def new_adr(project: Project, name: str, work_id: str | None = None) -> Path:
     return dest
 
 
+def new_component_card(project: Project, name: str, kind: str) -> Path:
+    """Create a component card (an MCP server, plugin, skill or hook that was added) under the next CMP ID.
+
+    The card sits in the decisions folder, next to the decision records. Its `component` property keeps the name
+    exactly as the AI tool lists it, which is how a card is found for a component.
+
+    Args:
+        project: The project.
+        name: The component's name as the AI tool lists it (a server name, `plugin@marketplace` …).
+        kind: What it is, by role: `mcp`, `plugin`, `skill` or `hook`.
+
+    Returns:
+        The new card.
+
+    Raises:
+        ValueError: The kind is not one of the roles of `component_kind` in enums.yaml.
+
+    Example:
+        >>> new_component_card(project, "obsidian", "mcp").name  # doctest: +SKIP
+        'CMP-001 obsidian.md'
+    """
+    try:
+        kind_name = project.enums.value("component_kind", kind)
+    except LookupError as e:
+        kinds = project.enums["component_kind"]
+        raise ValueError(
+            msg("Unknown component kind: {kind} (available: {items})", kind=kind, items=", ".join(kinds.role_of(v) for v in kinds.values))
+        ) from e
+    card_id = next_id(project, "component")
+    dest = project.folder("decisions") / f"{card_id} {safe_name(name)}.md"
+    values = {"id": card_id, "name": safe_name(name), "component": name.replace('"', "'"), "kind": kind_name, "links": "[]"}
+    create_from_template(project, project.names.doc("component_card"), dest, values)
+    return dest
+
+
 def new_meeting(project: Project, name: str) -> Path:
     """Create meeting notes under the next meeting ID, named with today's date.
 

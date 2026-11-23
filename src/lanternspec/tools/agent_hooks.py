@@ -36,6 +36,7 @@ from ..core.messages import msg
 from ..core.project import Project, git_out, read
 from . import health, runlog, sessions
 from .base import HookInput, HookReply, HookResult, Tool, hook_state_dir
+from .components import safe_notice
 
 HARNESS_CONFIG_ENV = "LANTERN_HARNESS_CONFIG"  # the folder of the person's own AI tool settings, when it is a git repository
 VERSION_TIMEOUT = 3  # seconds a hook waits for the tool's version, well within the hook's own limit
@@ -111,6 +112,9 @@ def session_start(project: Project, tool: Tool, inp: HookInput) -> HookResult:
         out += _saved_progress(project, inp.session)
         out += [line for line in (_part_line(project, inp.session),) if line]
         out += _domain_read(project)
+    note = safe_notice(project, harness.get("components")) if harness else ""
+    if note:
+        out += ["", note]
     out += _outside_must_rules(project)
     return HookResult(context="\n".join(out))
 

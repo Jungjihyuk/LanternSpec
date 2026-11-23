@@ -1,10 +1,10 @@
-"""Issue IDs: IDEA-001 · W-012 · W-012-T03 · ADR-004 · D-007 · MTG-001.
+"""Issue IDs: IDEA-001 · W-012 · W-012-T03 · ADR-004 · D-007 · MTG-001 · CMP-002.
 
 The next number is always max(existing)+1, found by scanning file names, frontmatter
 and task lines — so the same project state always yields the same ID.
 
 Responsibilities:
-    - the next document ID of each kind (IDEA · W · ADR · D · MTG)
+    - the next document ID of each kind (IDEA · W · ADR · D · MTG · CMP)
     - the next task ID inside a work
 
 Not here:
@@ -27,10 +27,11 @@ KINDS: dict[str, dict[str, object]] = {
     "adr": {"prefix": "ADR", "width": 3, "folder": "decisions"},
     "debt": {"prefix": "D", "width": 3, "folder": "debt_cards"},
     "meeting": {"prefix": "MTG", "width": 3, "folder": "meetings"},
+    "component": {"prefix": "CMP", "width": 3, "folder": "decisions"},  # component cards sit next to the decision records
 }
-ALIASES = {"ideas": "idea", "w": "work", "task": "task", "decision": "adr", "d": "debt", "mtg": "meeting"}
+ALIASES = {"ideas": "idea", "w": "work", "task": "task", "decision": "adr", "d": "debt", "mtg": "meeting", "cmp": "component"}
 TASK_RE = re.compile(r"\b(W-\d{3,})-T(\d{2,})\b")
-ID_RE = re.compile(r"\b(IDEA|W|ADR|D|MTG)-(\d{3,})\b")
+ID_RE = re.compile(r"\b(IDEA|W|ADR|D|MTG|CMP)-(\d{3,})\b")
 
 
 def _numbers(prefix: str, texts: Iterable[str]) -> Iterable[int]:
@@ -47,7 +48,7 @@ def next_id(project: Project, kind: str) -> str:
 
     Args:
         project: The project.
-        kind: "idea", "work", "adr", "debt" or "meeting" (aliases such as "w", "d", "decision" work too).
+        kind: "idea", "work", "adr", "debt", "meeting" or "component" (aliases such as "w", "d", "decision" work too).
 
     Returns:
         The ID, e.g. "W-013".

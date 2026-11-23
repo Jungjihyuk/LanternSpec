@@ -253,7 +253,10 @@ def markdown(project: Project) -> str:
     table(
         msg("Components the AI tool started with — how often their MCP tools were called"),
         (msg("Kind"), msg("Name"), msg("Sessions"), msg("Sessions with calls"), msg("MCP tool calls")),
-        [(components.kind_label(r["kind"]), r["name"], r["sessions"], r["sessions_with_calls"], r["calls"]) for r in counted],
+        [
+            (components.kind_label(r["kind"], project.enums), r["name"], r["sessions"], r["sessions_with_calls"], r["calls"])
+            for r in counted
+        ],
     )
     if counted:
         out.extend(
@@ -267,7 +270,7 @@ def markdown(project: Project) -> str:
         )
     others = components.other_counts(found["rows"])
     if others:
-        listed = " · ".join(msg("{kind}: {count}", kind=components.kind_label(k), count=n) for k, n in others.items())
+        listed = " · ".join(msg("{kind}: {count}", kind=components.kind_label(k, project.enums), count=n) for k, n in others.items())
         out.extend([msg("Also listed — {items} (the names are in `lantern eval --json`)", items=listed), ""])
     if found["unlisted"]["turns"] and found["rows"]:
         out.extend(
@@ -285,7 +288,12 @@ def markdown(project: Project) -> str:
         msg("Changes between sessions"),
         (msg("When"), msg("Change"), msg("Kind"), msg("Name")),
         [
-            (c["at"], msg("Added") if c["change"] == "added" else msg("Removed"), components.kind_label(c["kind"]), c["name"])
+            (
+                c["at"],
+                msg("Added") if c["change"] == "added" else msg("Removed"),
+                components.kind_label(c["kind"], project.enums),
+                c["name"],
+            )
             for c in found["changes"]
         ],
     )

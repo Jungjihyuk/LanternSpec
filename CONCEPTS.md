@@ -285,6 +285,14 @@ Everything LanternSpec writes lives in the `docs/` folder.
 - For now it is read from Claude Code only (other tools show nothing). Plugins built into the tool are not in a settings file, so they are not listed.
 - Whether to add or drop one is up to a person. lantern only shows the facts and never changes the AI tool's settings.
 
+### Component card
+> A document, one per component you added, that holds **why it was added, what you expect, what to measure and when to look again**. Make it with `lantern scaffold component "<name>" --kind mcp`; it appears in the decisions folder as `CMP-001 …`.
+
+- Its parts are: what · why (the problem) · expected effect · measure · cost · review time · review result. What to measure is picked from: number of calls · time taken · tokens · check errors · retro lines · review findings.
+- The status (`status`) is watching · keep · dropped. **A person** writes the review result and changes the status then.
+- When a conversation starts and there is an MCP server or plugin that wasn't there before, the AI is told once, so that it asks the user whether to leave a card. The first conversation only takes stock of what is already there and asks nothing, and skills and hooks are not asked about. A component that already has a card is not asked about.
+- A card is not required. The component log and `lantern eval` work without one.
+
 ---
 
 If you're changing LanternSpec itself, also see [`RATIONALE.md`](RATIONALE.md), which records why the flow, folders and rules are the way they are, and [`GLOSSARY.md`](GLOSSARY.md), which lists where names in the code overlap.

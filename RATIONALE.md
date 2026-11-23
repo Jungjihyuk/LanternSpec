@@ -259,6 +259,23 @@ The content of each rule is in its rules document template (`src/lanternspec/res
   - **Counting skill calls too.** The tool-call log doesn't say which skill, and adding it would count the total twice. It is added separately if the need shows up.
 - **Source:** `src/lanternspec/tools/claude.py` (`components` · `call_component`), `src/lanternspec/tools/agent_hooks.py` (the session line), `src/lanternspec/report/components.py`
 
+### A component card is a new template next to the decision records, and the bar is written when it is added (`lantern scaffold component`)
+- **Decided:** when an MCP server, plugin, skill or hook is added, one page (`CMP-001 …`) holds why it was added, the expected effect, what to measure, the cost and the review time. It sits in the decisions folder, and its status is watching · keep · dropped. When a conversation starts and there is an MCP server or plugin that wasn't there before, the AI asks the user once whether to leave a card (`tools/components.py`).
+- **Why:**
+  - To say an effect, the bar has to exist first. The experiment comparing MCP servers had a hypothesis and a scoring bar, so it could say "it didn't improve", but everyday work has none. Written when the component is added, the numbers can't be fitted afterwards.
+  - It is a new template. The status of a decision record (proposed · accepted · superseded) differs from this card's life (watching · keep · dropped), and adding parts to the decision record would add them to every ordinary decision too. The shape is the decision record's, so both are read together in one folder.
+  - What to measure is picked from a list. Only what code can collect (calls · time · tokens · check errors · retro lines · review findings) counts as quantitative, so it can be collected automatically later.
+  - Only MCP servers and plugins are asked about. Skills and hook events come and go in a person's own setup, and suggesting a card for each would be noise.
+  - The first conversation only takes stock of what is there. Otherwise everything a person already has would be asked about the moment this is turned on. Once told, a component is not asked about again, whether or not a card was made (`.lantern/components-seen.json`).
+  - Without a card the flow runs. It is an add-on, and the core flow doesn't go through it.
+- **Turned down:**
+  - **Adding parts to the decision record (ADR).** For the reason above.
+  - **A new skill.** More skills blur the core flow, and a command and a template are enough. It is made if the need shows up.
+  - **Letting people write the measure freely.** An item code can't collect can't be compared later.
+  - **Asking about everything that looks new.** Narrowed to MCP servers and plugins for the reason above.
+- **Limits:** only Claude Code is noticed (other tools have an empty list). If the settings can't be read in the first conversation, what was already there can look new later and be asked about once.
+- **Source:** `src/lanternspec/tools/components.py` (noticing), `src/lanternspec/work/scaffold.py` (`new_component_card`), `resources/locales/<language>/templates/Component Card.md`
+
 ## 5. Changing this document
 - A change to a rule or the flow updates that section's **decided · why · turned down** along with it.
 - A new rule gets a new section. The rule's content goes in its rules document template; here, only the reasons and a link.

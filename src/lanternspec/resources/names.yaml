@@ -42,6 +42,7 @@ docs:                       # 문서 이름 (확장자 없이) — 템플릿 이
   record: {ko: "기록", en: "Log"}
   idea: {ko: "아이디어", en: "Idea"}
   adr: {ko: "ADR", en: "ADR"}
+  component_card: {ko: "구성 카드", en: "Component Card"}  # 더한 MCP · 플러그인 · 스킬 · hook의 이유 · 기대 · 측정 (결정 기록 폴더에 둔다)
   meeting: {ko: "회의록", en: "Meeting Notes"}
   session: {ko: "세션 기록", en: "Session Log"}
   debt_card: {ko: "부채 카드", en: "Debt Card"}

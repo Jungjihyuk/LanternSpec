@@ -12,12 +12,14 @@
 #     Status         idea_status         how far an idea has come (New → Reviewing → In Work …)
 #                    work_status         which stage a work is in (Plan → Design → Tasks → Build → Done)
 #                    adr_status          whether a decision is proposed or accepted
+#                    component_status    whether a component card is being watched, kept or dropped
 #                    debt_status         whether a debt card was asked once, asked again, or resolved
 #                    current_status      whether a current-state document is in use
 #                    note_draft_status   whether a learning-note draft waits for approval or was applied
 #                    meeting_status      whether meeting notes are a draft or final
 #     Kind           idea_kind           whether an idea is a feature, an improvement, a bug, an experiment …
 #                    debt_kind           whether a debt is understanding, competency or tech
+#                    component_kind      whether a component is an MCP server, a plugin, a skill or a hook
 #     Topic          area                which topic a debt card belongs to (backend · frontend …)
 #     Other          size                the size of a task (15m · 1h · 4h · 8h)
 #                    legacy_route        how to handle a legacy document: absorb · archive · move
@@ -78,6 +80,7 @@ doc_type:
     moc: 🗺
     report: 📊
     meeting: 🗣
+    component: 🧩
     legacy-map: 🗂
     known-tech: 🧠
     session: 🕐
@@ -122,6 +125,23 @@ adr_status:
     Proposed: {icon: 🟡, role: proposed}
     Accepted: {icon: ✅, role: accepted}
     Superseded: {icon: ↩️, role: superseded}
+
+component_status:
+  label: Component card status
+  applies: {component: status}
+  values:
+    Watching: {icon: 👀, role: watching}
+    Keep: {icon: ✅, role: keep}
+    Dropped: {icon: ➖, role: dropped}
+
+component_kind:
+  label: Component kind
+  applies: {component: kind}
+  values:
+    MCP server: {icon: 🔌, role: mcp}
+    Plugin: {icon: 🧩, role: plugin}
+    Skill: {icon: 🪄, role: skill}
+    Hook event: {icon: 🪝, role: hook}
 
 debt_kind:
   label: Debt kind

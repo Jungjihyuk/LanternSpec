@@ -12,12 +12,14 @@
 #     상태          idea_status         아이디어가 어디까지 왔나 (새 아이디어 → 검토 중 → 작업됨 …)
 #                   work_status         작업이 어느 단계인가 (기획 → 설계 → 할 일 → 구현 → 완료)
 #                   adr_status          결정 기록이 제안인가 채택인가
+#                   component_status    구성 카드가 지켜보는 중인가 · 유지인가 · 뺐나
 #                   debt_status         부채 카드를 처음 물었나, 또 물었나, 해결했나
 #                   current_status      현재 상태 문서를 지금 쓰고 있나
 #                   note_draft_status   학습 노트 초안이 승인을 기다리나, 반영됐나
 #                   meeting_status      회의록이 초안인가 확정인가
 #     유형 · 종류    idea_kind           아이디어가 기능인가 개선 · 버그 · 실험인가
 #                   debt_kind           부채가 이해 · 역량 · 기술 중 무엇인가
+#                   component_kind      구성 요소가 MCP 서버 · 플러그인 · 스킬 · hook 중 무엇인가
 #     주제          area                부채 카드가 어느 주제인가 (backend · frontend …)
 #     그 밖         size                할 일의 크기 (15m · 1h · 4h · 8h)
 #                   legacy_route        기존 문서를 흡수 · 보관 · 옮기기 중 어떻게 처리할까
@@ -78,6 +80,7 @@ doc_type:
     moc: 🗺
     report: 📊
     meeting: 🗣
+    component: 🧩
     legacy-map: 🗂
     known-tech: 🧠
     session: 🕐
@@ -122,6 +125,23 @@ adr_status:
     제안: {icon: 🟡, role: proposed}
     채택: {icon: ✅, role: accepted}
     대체됨: {icon: ↩️, role: superseded}
+
+component_status:
+  label: 구성 카드 상태
+  applies: {component: status}
+  values:
+    지켜봄: {icon: 👀, role: watching}
+    유지: {icon: ✅, role: keep}
+    뺌: {icon: ➖, role: dropped}
+
+component_kind:
+  label: 구성 요소 종류
+  applies: {component: kind}
+  values:
+    MCP 서버: {icon: 🔌, role: mcp}
+    플러그인: {icon: 🧩, role: plugin}
+    스킬: {icon: 🪄, role: skill}
+    hook 이벤트: {icon: 🪝, role: hook}
 
 debt_kind:
   label: 부채 종류
