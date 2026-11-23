@@ -277,6 +277,14 @@ Everything LanternSpec writes lives in the `docs/` folder.
 
 - Setting: `project.lifespan` in `lantern.yaml` (`short` · `long`)
 
+### Components
+> What was **added to the AI tool** when it started: the names of its MCP servers, plugins, skills you put there and hook events are written to the run log when a conversation (session) starts.
+
+- Only names are kept, never a command, an address or a variable. The tool's settings files are read; nothing is run.
+- `lantern eval` shows, for each component, in how many sessions it was there and how often its MCP tools were called, and tells what was added or dropped between sessions. Calls are counted for **MCP tools only**, so the table has one line for each MCP server and plugin, while skills and hook events are only counted in one line (the names are in `lantern eval --json`). 0 calls only means "not used in the recorded sessions", not that it isn't needed. Turns of a session that has no component list (from before the lists were kept, or logged by another version of lantern) can't have their calls counted, so how many there are is told separately.
+- For now it is read from Claude Code only (other tools show nothing). Plugins built into the tool are not in a settings file, so they are not listed.
+- Whether to add or drop one is up to a person. lantern only shows the facts and never changes the AI tool's settings.
+
 ---
 
 If you're changing LanternSpec itself, also see [`RATIONALE.md`](RATIONALE.md), which records why the flow, folders and rules are the way they are, and [`GLOSSARY.md`](GLOSSARY.md), which lists where names in the code overlap.

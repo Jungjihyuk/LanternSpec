@@ -405,6 +405,24 @@
 "_No run records yet (.lantern/runs.jsonl) — they build up as skills are used._": {ko: "_실행 기록이 아직 없습니다 (.lantern/runs.jsonl) — 스킬을 쓰면 쌓인다._"}
 "Run records: {turns} conversation turns · {skill_runs} skill wrap-ups": {ko: "실행 기록: 대화 턴 {turns}개 · 스킬 마무리 {skill_runs}개"}
 "Cost by skill": {ko: "스킬별 비용"}
+"Components the AI tool started with — how often their MCP tools were called": {ko: "AI 도구가 시작할 때 가진 구성 요소 — MCP 도구 호출 횟수"}
+"_Only MCP tool calls are counted: skills, hooks and what else a plugin brings are not, and 0 calls only says the tools were not used in the recorded sessions._": {ko: "_MCP 도구 호출만 셉니다. 스킬 · hook · 플러그인이 가져오는 다른 기능은 세지 않고, 0회는 기록된 세션에서 그 도구가 쓰이지 않았다는 뜻일 뿐입니다._"}
+"Changes between sessions": {ko: "세션 사이에 바뀐 것"}
+"{kind}: {count}": {ko: "{kind}: {count}"}
+"Also listed — {items} (the names are in `lantern eval --json`)": {ko: "그 밖에 기록된 것 — {items} (이름은 `lantern eval --json`에서 볼 수 있습니다)"}
+"_{turns} turns of {sessions} sessions have no component list, so their calls are not counted above (a session from before the lists were kept, or one another version of lantern logged)._": {ko: "_구성 요소 목록이 없는 세션 {sessions}개의 턴 {turns}개는 위에서 호출을 세지 않았습니다 (목록을 기록하기 전의 세션이거나 다른 버전의 lantern이 기록한 것)._"}
+"Kind": {ko: "종류"}
+"Name": {ko: "이름"}
+"Sessions": {ko: "세션"}
+"Sessions with calls": {ko: "호출이 있던 세션"}
+"MCP tool calls": {ko: "MCP 도구 호출"}
+"When": {ko: "언제"}
+"Change": {ko: "변화"}
+"Added": {ko: "더해짐"}
+"Removed": {ko: "빠짐"}
+"MCP server": {ko: "MCP 서버"}
+"Plugin": {ko: "플러그인"}
+"Hook event": {ko: "hook 이벤트"}
 "Cost by model": {ko: "모델별 비용"}
 "Wrap-up quality (format check at close)": {ko: "마무리 품질 (close 때 양식 검사)"}
 "Actual time by task size": {ko: "할 일 크기별 실제 시간"}

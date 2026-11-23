@@ -141,7 +141,8 @@ class Tool:
 
     Shared code knows only this class; each tool overrides what its format needs.
     Methods with a default (skill_meta, skill_extras, install_config, check_config, hooks, written_paths,
-    read_transcript, turn_tokens, worktree_command, guarded_command) are overridden only by tools that need them.
+    read_transcript, turn_tokens, worktree_command, guarded_command, components, call_component) are overridden
+    only by tools that need them.
 
     Attributes:
         name: Key used on the command line and in installed.json, e.g. "claude".
@@ -304,6 +305,41 @@ class Tool:
             [PosixPath('…/.claude/agents/lantern-reviewer.md')]
         """
         return []
+
+    def components(self, project: Project) -> dict[str, list[str]]:
+        """List the names of the add-ons the tool starts with: MCP servers, plugins, skills the person added, hook events.
+
+        Only names are given (never a command, an address or a variable) and nothing is started or called: the
+        tool's settings files are read. A file that is missing or broken just leaves its part out.
+
+        Args:
+            project: The project.
+
+        Returns:
+            Kind (`mcp` · `plugin` · `skill` · `hook`) → sorted names; a kind with no names is left out; none by default.
+
+        Example:
+            >>> get("claude").components(project)  # doctest: +SKIP
+            {'mcp': ['qmd'], 'plugin': ['memo@market']}
+        """
+        return {}
+
+    def call_component(self, tool_name: str, components: dict[str, list[str]]) -> tuple[str, str] | None:
+        """Tell which listed add-on a tool call belongs to, from the tool's own naming of its tools.
+
+        Args:
+            tool_name: The name of the tool that ran, as the run log counted it.
+            components: What `components` listed for the session.
+
+        Returns:
+            The kind and name from `components`; None when the call is not one an add-on's tool (or the tool can't tell).
+
+        Example:
+            >>> from lanternspec.tools import get
+            >>> get("claude").call_component("mcp__qmd__query", {"mcp": ["qmd"]})
+            ('mcp', 'qmd')
+        """
+        return None
 
     def agent_usage(self, path: Path) -> tuple[str, dict[str, int]] | None:
         """Read the model and the tokens a sub-agent spent from its own transcript.

@@ -6,6 +6,7 @@ cost (duration, tool calls, tokens) and outcome (check errors left at close, tas
 
 Not here:
     - writing the run log → tools/runlog.py
+    - the components the AI tool started with and how often their tools were called → report/components.py
 """
 
 from __future__ import annotations
@@ -19,6 +20,7 @@ from typing import Any
 from ..core.messages import msg
 from ..core.project import Project, read
 from ..core.taskfile import parse_tasks, size_role
+from . import components
 
 CONFIG_KEYS = [
     "design.approval",
@@ -132,7 +134,7 @@ def summary(project: Project) -> dict[str, Any]:
     Returns:
         turns, skill_runs, by_skill and by_model (count, median minutes, average tool calls, average tokens: fresh input plus output),
         close_quality and by_config (count, percent closed without errors, average warnings),
-        and task_hours (size → count and median hours).
+        task_hours (size → count and median hours) and components (what the sessions started with, see report/components.py).
 
     Example:
         >>> summary(project)["skill_runs"]  # doctest: +SKIP
@@ -188,6 +190,7 @@ def summary(project: Project) -> dict[str, Any]:
         "close_quality": {k: quality(v) for k, v in sorted(closes.items())},
         "by_config": {k: quality(v) for k, v in by_config.items()},
         "task_hours": {k: {"n": len(v), "median_h": round(median(v), 2)} for k, v in sorted(durations.items())},
+        "components": components.usage(runs),
     }
 
 
@@ -244,5 +247,46 @@ def markdown(project: Project) -> str:
         msg("Actual time by task size"),
         (msg("Size"), msg("Tasks done"), msg("Median time (h)")),
         [(k, v["n"], v["median_h"]) for k, v in s["task_hours"].items()],
+    )
+    found = s["components"]
+    counted = [r for r in found["rows"] if r["kind"] in components.CALL_KINDS]
+    table(
+        msg("Components the AI tool started with — how often their MCP tools were called"),
+        (msg("Kind"), msg("Name"), msg("Sessions"), msg("Sessions with calls"), msg("MCP tool calls")),
+        [(components.kind_label(r["kind"]), r["name"], r["sessions"], r["sessions_with_calls"], r["calls"]) for r in counted],
+    )
+    if counted:
+        out.extend(
+            [
+                msg(
+                    "_Only MCP tool calls are counted: skills, hooks and what else a plugin brings are not, "
+                    "and 0 calls only says the tools were not used in the recorded sessions._"
+                ),
+                "",
+            ]
+        )
+    others = components.other_counts(found["rows"])
+    if others:
+        listed = " · ".join(msg("{kind}: {count}", kind=components.kind_label(k), count=n) for k, n in others.items())
+        out.extend([msg("Also listed — {items} (the names are in `lantern eval --json`)", items=listed), ""])
+    if found["unlisted"]["turns"] and found["rows"]:
+        out.extend(
+            [
+                msg(
+                    "_{turns} turns of {sessions} sessions have no component list, so their calls are not counted above "
+                    "(a session from before the lists were kept, or one another version of lantern logged)._",
+                    turns=found["unlisted"]["turns"],
+                    sessions=found["unlisted"]["sessions"],
+                ),
+                "",
+            ]
+        )
+    table(
+        msg("Changes between sessions"),
+        (msg("When"), msg("Change"), msg("Kind"), msg("Name")),
+        [
+            (c["at"], msg("Added") if c["change"] == "added" else msg("Removed"), components.kind_label(c["kind"]), c["name"])
+            for c in found["changes"]
+        ],
     )
     return "\n".join(out).rstrip()

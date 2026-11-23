@@ -25,6 +25,7 @@ from .base import (
     Tool,
     Turn,
     as_count,
+    is_our_hook,
     jsonl_records,
     merge_json_file,
     replace_hook_entries,
@@ -309,6 +310,83 @@ class ClaudeCode(ClaudeHooks, Tool):
                 usages[str(message.get("id") or f"line-{i}")] = usage
         return (model, _sum_usage(usages)) if usages else None
 
+    def components(self, project: Project) -> dict[str, list[str]]:
+        """Implement Tool.components from Claude Code's settings files (nothing is started).
+
+        MCP servers come from the project's `.mcp.json` (`mcpServers`) and, in `~/.claude.json`, from the project's own entry
+        (`projects.<path>.mcpServers`) and a top-level `mcpServers`. The docs name the first two places; the top-level one
+        for servers every project uses is not described there, so it is read when it is present and may be missing.
+        Plugins come from the keys of `plugins` in `~/.claude/plugins/installed_plugins.json` (plugins built into the tool
+        are not in that file), skills from the folders under the project's and the person's `.claude/skills` that
+        LanternSpec did not write, and hooks from the event names in the settings files that hold a handler that is not ours.
+
+        Args:
+            project: The project.
+
+        Returns:
+            Kind → sorted names; see Tool.components.
+
+        Example:
+            >>> ClaudeCode().components(project)  # doctest: +SKIP
+            {'mcp': ['qmd'], 'plugin': ['memo@market']}
+        """
+        home = Path.home()
+        settings = [home / ".claude" / "settings.json", *(project.root / ".claude" / f for f in ("settings.json", "settings.local.json"))]
+        user_json = _read_object(home / ".claude.json")
+        projects = _dict(user_json.get("projects"))
+        own = _dict(projects.get(str(project.root))) or _dict(projects.get(str(project.root.resolve())))
+        found = {
+            "mcp": {
+                *_dict(_read_object(project.root / ".mcp.json").get("mcpServers")),
+                *_dict(own.get("mcpServers")),
+                *_dict(user_json.get("mcpServers")),
+            },
+            "plugin": set(_dict(_read_object(home / ".claude" / "plugins" / "installed_plugins.json").get("plugins"))),
+            "skill": self._added_skills(project, [project.root / self.skill_root, home / ".claude" / "skills"]),
+            "hook": {event for path in settings for event in _hook_events(_read_object(path))},
+        }
+        return {kind: sorted(names) for kind, names in found.items() if names}
+
+    def _added_skills(self, project: Project, folders: list[Path]) -> set[str]:
+        """The skill folders (with a SKILL.md) that LanternSpec did not generate."""
+        marker = project.names.marker("generated_skill")
+        out: set[str] = set()
+        for folder in folders:
+            for skill in sorted(folder.glob("*/SKILL.md")) if folder.is_dir() else []:
+                try:
+                    if marker not in skill.read_text(encoding="utf-8"):
+                        out.add(skill.parent.name)
+                except (OSError, UnicodeDecodeError):
+                    continue
+        return out
+
+    def call_component(self, tool_name: str, components: dict[str, list[str]]) -> tuple[str, str] | None:
+        """Implement Tool.call_component from Claude Code's MCP tool names.
+
+        A server's tools are `mcp__<server>__<tool>` and a plugin's `mcp__plugin_<plugin>_<server>__<tool>`, with every
+        character outside letters, digits, `_` and `-` written as `_` (a plugin is listed as `<plugin>@<marketplace>`).
+
+        Args:
+            tool_name: The tool's name from the run log.
+            components: What `components` listed for the session.
+
+        Returns:
+            The kind and name from `components`; None for a tool that is not an MCP tool of a listed server or plugin.
+
+        Example:
+            >>> ClaudeCode().call_component("mcp__qmd__query", {"mcp": ["qmd"]})
+            ('mcp', 'qmd')
+        """
+        if not tool_name.startswith("mcp__"):
+            return None
+        for name in components.get("plugin", []):
+            if tool_name.startswith(f"mcp__plugin_{_tool_safe(name.split('@')[0])}_"):
+                return ("plugin", name)
+        for name in components.get("mcp", []):
+            if tool_name.startswith(f"mcp__{_tool_safe(name)}__"):
+                return ("mcp", name)
+        return None
+
     def install_config(self, project: Project, mcp: bool) -> list[str]:
         """Implement Tool.install_config for Claude Code.
 
@@ -573,3 +651,31 @@ def _is_prompt(record: dict[str, Any]) -> bool:
 def _dict(value: Any) -> dict[str, Any]:
     """The value when it is a mapping, else an empty one (a transcript is not checked input)."""
     return value if isinstance(value, dict) else {}
+
+
+def _read_object(path: Path) -> dict[str, Any]:
+    """A JSON file's top-level object; empty when the file is missing, unreadable or not an object."""
+    try:
+        return _dict(json.loads(path.read_text(encoding="utf-8")))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return {}
+
+
+def _has_handler(entry: dict[str, Any]) -> bool:
+    """Whether a hook entry runs a command (itself or in its `hooks` list)."""
+    return bool(entry.get("command")) or any(isinstance(h, dict) and h.get("command") for h in entry.get("hooks") or [])
+
+
+def _hook_events(settings: dict[str, Any]) -> list[str]:
+    """The events of a settings file that have a handler which is not LanternSpec's."""
+    out = []
+    for event, entries in _dict(settings.get("hooks")).items():
+        others = [e for e in entries if isinstance(e, dict) and not is_our_hook(e)] if isinstance(entries, list) else []
+        if any(_has_handler(e) for e in others):
+            out.append(str(event))
+    return out
+
+
+def _tool_safe(name: str) -> str:
+    """A server or plugin name as it appears inside a tool name: characters outside A-Z a-z 0-9 _ - become `_`."""
+    return re.sub(r"[^A-Za-z0-9_-]", "_", name)

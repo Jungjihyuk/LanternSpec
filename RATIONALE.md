@@ -240,6 +240,25 @@ The content of each rule is in its rules document template (`src/lanternspec/res
   - **Letting lantern's MCP server change the AI tool's settings.** If a tool the AI calls can change security settings, that is the hole.
 - **Source:** `src/lanternspec/learn/knowledge/access.py` (which folders are open), `src/lanternspec/tools/guard.py` (the guarded run)
 
+### Components are kept as names in the session line, and only MCP tool calls are counted (`components`)
+- **Decided:** when a conversation starts, the AI tool's settings files are read and the names of its MCP servers, plugins, skills you added and hook events go into the session line of the run log (`Tool.components`). `lantern eval` joins that list with the tool calls counted per turn and shows, per component, the sessions it was in and how often its MCP tools were called, and what was added or dropped between sessions (`report/components.py`).
+- **Why:**
+  - Connected is not the same as used. In an experiment comparing MCP servers, the connected MCP was never called and only the score table came out, so nobody noticed for a while. "Connected but 0 calls" is the cheapest and most reliable signal.
+  - A setup changes without anyone noticing. In the same experiment the AI tool was upgraded, two built-in plugins appeared and the isolation check stopped every run. With a list kept per session you can tell when it changed.
+  - Only names are kept. Commands, addresses and variables can carry tokens, and names are enough to compare.
+  - It only reads. Starting the servers to check would slow down every conversation start. When a file can't be read, that part is left out and the rest goes on, which keeps the promise that an agent hook never stops the agent.
+  - Only MCP tool calls are counted. The tool's name carries its server's name, so the call can be tied to it. For a skill that is not a lantern skill the log doesn't say which one was called, and a hook is not a tool call. They are not counted and the cell is left empty, so that 0 and unknown are not mixed.
+  - The contract stays small. How to read the settings and how an AI tool names its tools differ per tool, so `Tool` gets two methods with defaults (`components` · `call_component`); only Claude Code implements them.
+- **Limits:**
+  - The docs don't say where user-scope MCP servers sit in `~/.claude.json`, so a top-level `mcpServers` is read when there is one. The local scope (`projects.<path>.mcpServers`) and the project scope (`.mcp.json`) are read as the docs say.
+  - Plugins built into the tool and MCP servers deployed by an administrator are not read.
+  - Everyday work mixes difficulty, model and date, so the numbers before and after a change can't be said to come from the setup. For now only the list and the call counts are shown.
+- **Turned down:**
+  - **Finding the connection state with `claude mcp list`.** It starts the servers, so every conversation start gets slower, and it doesn't fit the promise that an agent hook never stops the agent.
+  - **Recommending which components to drop.** lantern doesn't rank what the user installed. What lantern builds itself is only what takes LanternSpec's documents as its source (see "What we build and what we leave to other tools" above), so it shows the facts only.
+  - **Counting skill calls too.** The tool-call log doesn't say which skill, and adding it would count the total twice. It is added separately if the need shows up.
+- **Source:** `src/lanternspec/tools/claude.py` (`components` · `call_component`), `src/lanternspec/tools/agent_hooks.py` (the session line), `src/lanternspec/report/components.py`
+
 ## 5. Changing this document
 - A change to a rule or the flow updates that section's **decided · why · turned down** along with it.
 - A new rule gets a new section. The rule's content goes in its rules document template; here, only the reasons and a link.

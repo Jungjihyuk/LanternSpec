@@ -128,7 +128,8 @@ def harness_fields(tool: Tool, project: Project | None = None) -> dict[str, Any]
     Returns:
         The tool's name, its installed version, LanternSpec's version, the settings repository's commit and, under
         `agents`, a short hash of each sub-agent definition file it reads (so a changed reviewer can be told from
-        the log); a part that can't be found is "".
+        the log) and, under `components`, the names of the MCP servers, plugins, skills and hook events it starts with;
+        a part that can't be found is "".
 
     Example:
         >>> harness_fields(get("claude"))["harness"]  # doctest: +SKIP
@@ -142,7 +143,16 @@ def harness_fields(tool: Tool, project: Project | None = None) -> dict[str, Any]
         "lanternspec_version": __version__,
         "harness_config": _commit_of(folder),
         "agents": _agent_hashes(tool, project) if project else {},
+        "components": _components(tool, project) if project else {},
     }
+
+
+def _components(tool: Tool, project: Project) -> dict[str, list[str]]:
+    """The names of the add-ons the tool starts with; empty when the settings can't be read (the session still gets its line)."""
+    try:
+        return tool.components(project)
+    except (OSError, ValueError, TypeError, AttributeError, KeyError):
+        return {}
 
 
 def _agent_hashes(tool: Tool, project: Project) -> dict[str, str]:
