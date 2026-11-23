@@ -239,6 +239,23 @@ The content of each rule is in its rules document template (`src/lanternspec/res
   - **Searching through the official Notion MCP.** It has no way to narrow what it reaches, and its results don't fit this contract (`lantern knowledge`) as they are.
 - **Source:** `src/lanternspec/learn/knowledge/notion.py` (`listed` · `match` · `NotionAdapter.search`)
 
+### One command guides the Notion connection, and the Keychain takes the token itself (`lantern knowledge setup notion`)
+- **Decided:** one command that the person runs in a terminal guides these steps: ask how notes are written · guide making the integration (it opens the integrations page in the browser) · tell which permissions to turn on · take the token · check that Notion accepts it and how many pages the integration sees · check the page new notes are made under · save `lantern.yaml`. When there is no `lantern.yaml` yet (in the middle of `/l-init`) it makes no file and prints the values `/l-init` will use. It saves only after every step has worked, so stopping part way leaves `lantern.yaml` as it was.
+- **lantern never receives the token:** on macOS it runs `security add-generic-password -U … -w` (with `-w` last and no value) attached to the terminal, and the Keychain tool asks for the input itself. The token never becomes a command argument, nor enters lantern's memory or a log. The adapter looks in the environment variable and then the Keychain (service = the name of the token's environment variable, account = the user), so people who used an environment variable and people who put the item in with `security` both keep working.
+- **Why:**
+  - A token that enters a conversation with the AI stays in its record. A command that asks for a token has to be run by the person, and refuses to run without a terminal.
+  - With the Keychain, an AI tool opened from somewhere other than a terminal, a hook and `lantern mcp` read the same token without an environment variable line.
+  - The permissions are guided to the minimum for how notes are written (read content for drafts only, read and insert for writing). Update content, comments, user information and agent features, which the adapter doesn't use, are turned off.
+  - At the end it shows how many pages the integration can see and the titles edited most recently. The pages connected to the integration set what can be read, so this lets the person see at once whether it is wider than meant.
+  - The token is checked with the search API, a call that is known to work with this permission (no user information).
+- **Limits:** whether in an environment variable or the Keychain, the AI can read the token if it tries from a shell. That can't be stopped, and the real defense is the pages connected to the integration. The Keychain works on macOS only; other systems are pointed to the environment variable. Making the integration and connecting pages can't be done through Notion's API, so they are only guided. Whether `!` in Claude Code's input gives the terminal this command needs is not confirmed, so a separate terminal is suggested.
+- **Turned down:**
+  - **Taking the token with `getpass` and putting it in the Keychain from lantern.** The token would pass through lantern's memory and arguments. When the Keychain tool takes it, it doesn't; the check then comes after saving.
+  - **Environment variable only.** An AI tool opened from somewhere other than a terminal may not get it, and the person has to edit a shell settings file.
+  - **The AI relaying the token in `/l-init`.** It stays in the conversation record.
+  - **OAuth.** A public integration needs a client secret, which can't be in open source, and a server for the login.
+- **Source:** `src/lanternspec/learn/knowledge/notion_setup.py` (the steps), `src/lanternspec/learn/knowledge/keychain.py` (the Keychain), `src/lanternspec/learn/knowledge/notion.py` (`notion_token`)
+
 ### Closed folders of the knowledge store (`knowledge.allow` · `knowledge.deny` · `lantern guard`)
 - **Decided:** the folders of the knowledge store to open or to close are written in one place, `lantern.yaml`. lantern's search · read · write leave closed folders alone, and `lantern guard -- <tool>` starts the AI tool inside the operating system's sandbox so the tool can't open them directly either. Once any folder is closed, the store's hidden folders (`.git` and the like) are closed with it, and `lantern.yaml` can't be changed during a guarded run.
 - **Why:**

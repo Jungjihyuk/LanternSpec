@@ -18,12 +18,12 @@ import time
 import unicodedata
 import urllib.error
 import urllib.request
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Any
 
 from ...core.messages import msg
-from . import Adapter, Hit, KnowledgeError
+from . import Adapter, Hit, KnowledgeError, keychain
 
 API = "https://api.notion.com/v1"
 VERSION = "2022-06-28"
@@ -43,6 +43,25 @@ def _plain(rich: list[dict[str, Any]]) -> str:
 
 
 _PAGE_ID = re.compile(r"([0-9a-fA-F]{8}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{12})(?:[?#].*)?$")
+
+
+def notion_token(env_name: str = "NOTION_TOKEN", store: Any = keychain, env: Mapping[str, str] | None = None) -> str | None:
+    """Find the integration token: the environment variable first, then (on a Mac) the Keychain item of the same name.
+
+    Args:
+        env_name: The name of the environment variable, which is also the Keychain service name (`knowledge.token_env`).
+        store: Where the Keychain is read (the keychain module; tests pass a fake).
+        env: The environment; the process's own when None.
+
+    Returns:
+        The token; None when there is none.
+
+    Example:
+        >>> notion_token("X", env={"X": "abc"})
+        'abc'
+    """
+    value = (os.environ if env is None else env).get(env_name, "").strip()
+    return value or store.read(env_name)
 
 
 def page_id(ref: str) -> str:
@@ -314,7 +333,7 @@ class NotionAdapter(Adapter):
         >>> NotionAdapter("abc-123", token=None)
         Traceback (most recent call last):
         ...
-        lanternspec.learn.knowledge.KnowledgeError: Notion 토큰이 없습니다 — 환경 변수 NOTION_TOKEN (또는 knowledge.token_env)
+        lanternspec.learn.knowledge.KnowledgeError: Notion 토큰이 없습니다 — `lantern knowledge setup notion`을 실행하세요
     """
 
     name = "notion"
@@ -332,7 +351,7 @@ class NotionAdapter(Adapter):
             KnowledgeError: There is no token.
         """
         if not token:
-            raise KnowledgeError(msg("No Notion token — environment variable NOTION_TOKEN (or knowledge.token_env)"))
+            raise KnowledgeError(msg("No Notion token — run `lantern knowledge setup notion`"))
         self.parent = parent_id.replace("-", "")
         self.token = token
         self._open = opener or urllib.request.urlopen
@@ -391,6 +410,45 @@ class NotionAdapter(Adapter):
             pages, _ = self._list(force=True)
             hits = match(pages, terms, limit)
         return hits
+
+    def overview(self, newest: int = 5) -> tuple[int, list[str]]:
+        """Count the pages the integration can see and name the ones edited most recently (the list is fetched anew).
+
+        Args:
+            newest: How many titles to give.
+
+        Returns:
+            The number of pages and the titles of the `newest` most recently edited ones.
+
+        Raises:
+            KnowledgeError: The API call failed (a token Notion doesn't accept is the usual reason).
+
+        Example:
+            >>> NotionAdapter(parent, token).overview()  # doctest: +SKIP
+            (445, ['모니터링', 'FastAPI'])
+        """
+        pages, _ = self._list(force=True)
+        recent = sorted(pages, key=lambda p: p["edited"], reverse=True)[:newest]
+        return len(pages), [p["title"] or msg("(untitled)") for p in recent]
+
+    def can_see(self, ref: str) -> bool:
+        """Tell whether the integration can open a page (it is shared with it).
+
+        Args:
+            ref: The page's address or ID.
+
+        Returns:
+            True when Notion gives the page; False when it doesn't (not shared, or no such page).
+
+        Example:
+            >>> NotionAdapter(parent, token).can_see(page_id)  # doctest: +SKIP
+            True
+        """
+        try:
+            self._call("GET", f"/pages/{page_id(ref)}")
+        except KnowledgeError:
+            return False
+        return True
 
     def _list(self, force: bool = False) -> tuple[list[dict[str, Any]], bool]:
         """The listed pages and whether they were fetched just now (within `FRESH_SECONDS`)."""
@@ -550,6 +608,6 @@ def from_config(k: dict[str, Any], state_dir: Path | None = None) -> NotionAdapt
         >>> from_config({"path": "abc", "token_env": "NO_SUCH_TOKEN_VAR"})
         Traceback (most recent call last):
         ...
-        lanternspec.learn.knowledge.KnowledgeError: Notion 토큰이 없습니다 — 환경 변수 NOTION_TOKEN (또는 knowledge.token_env)
+        lanternspec.learn.knowledge.KnowledgeError: Notion 토큰이 없습니다 — `lantern knowledge setup notion`을 실행하세요
     """
-    return NotionAdapter(str(k.get("path") or ""), os.environ.get(str(k.get("token_env") or "NOTION_TOKEN")), state_dir=state_dir)
+    return NotionAdapter(str(k.get("path") or ""), notion_token(str(k.get("token_env") or "NOTION_TOKEN")), state_dir=state_dir)

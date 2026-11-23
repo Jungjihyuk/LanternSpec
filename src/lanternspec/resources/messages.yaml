@@ -349,13 +349,54 @@
 "(Only after a person approves) write the draft to the knowledge store → where it was made. A propose_only store refuses": {ko: "(사람이 승인한 뒤에만) 초안을 지식 저장소에 쓴다 → 만들어진 위치. propose_only 저장소는 거절"}
 
 # learn/knowledge/notion.py
-"No Notion token — environment variable NOTION_TOKEN (or knowledge.token_env)": {ko: "Notion 토큰이 없습니다 — 환경 변수 NOTION_TOKEN (또는 knowledge.token_env)"}
 "Notion API error {code}: {value}": {ko: "Notion API 오류 {code}: {value}"}
 "Couldn't connect to Notion: {reason}": {ko: "Notion에 연결하지 못했습니다: {reason}"}
 "[Bookmark] {url}": {ko: "[북마크] {url}"}
 "[Subpage] {title} ({id})": {ko: "[하위 페이지] {title} ({id})"}
 "[Database] {title} ({id})": {ko: "[데이터베이스] {title} ({id})"}
 "… (only part was read: too many requests)": {ko: "… (요청이 너무 많아 일부만 읽었습니다)"}
+
+# learn/knowledge/notion_setup.py · notion.py (setup)
+"How should new notes reach Notion?": {ko: "새 노트를 Notion에 어떻게 보낼까요?"}
+"  1) draft files only, and you move them in yourself (a safe start)": {ko: "  1) 초안 파일만 만들고, 옮기는 것은 직접 합니다 (안전한 시작)"}
+"  2) written to Notion right after you approve them": {ko: "  2) 승인하면 바로 Notion에 씁니다"}
+"Choose 1 or 2 [1]: ": {ko: "1 또는 2를 고르세요 [1]: "}
+"Read content · Insert content": {ko: "콘텐츠 읽기 · 콘텐츠 삽입"}
+"Read content": {ko: "콘텐츠 읽기"}
+"Do this in Notion (it opens in your browser):": {ko: "Notion에서 이렇게 합니다 (브라우저로 열립니다):"}
+"  1. {url} → New integration. Name it (for example LanternSpec) and pick your workspace (you must be its owner).": {ko: "  1. {url} → New integration(새 연결). 이름을 정하고 (예: LanternSpec) 워크스페이스를 고릅니다 (그 워크스페이스의 소유자여야 합니다)."}
+"  2. Configuration tab → capabilities: turn on only {caps}. Turn off the rest (update content · comments · user information · agent).": {ko: "  2. Configuration(구성) 탭 → 기능: {caps}만 켭니다. 나머지(콘텐츠 업데이트 · 댓글 · 사용자 정보 · 에이전트 기능)는 끕니다."}
+"  3. On the same tab, show the token and copy it.": {ko: "  3. 같은 탭에서 토큰을 표시해 복사합니다."}
+"  4. Open the page or database whose notes should be searched → ••• → Add connections → pick your integration.": {ko: "  4. 검색할 노트가 있는 페이지나 데이터베이스를 엽니다 → ••• → Add connections(연결 추가) → 만든 통합을 고릅니다."}
+"     Only what you connect, and what is under it, can be seen. Connect as little as you need.": {ko: "     연결한 곳과 그 아래만 보입니다. 필요한 만큼만 연결하세요."}
+"Press Enter when you have copied the token. The next prompt is the Keychain's: paste the token there (nothing is shown): ": {ko: "토큰을 복사했으면 Enter를 누르세요. 다음에 나오는 입력창은 키체인의 것입니다: 거기에 토큰을 붙여 넣습니다 (화면에 보이지 않습니다): "}
+"Where should new notes be made? In Notion open that page, copy its link and paste it here (a link is not a secret).": {ko: "새 노트를 어느 페이지 아래에 만들까요? Notion에서 그 페이지를 열어 링크를 복사해 여기에 붙여 넣으세요 (링크는 비밀이 아닙니다)."}
+"Page link: ": {ko: "페이지 링크: "}
+"That doesn't look like a page link (it ends with 32 letters and digits).": {ko: "페이지 링크가 아닌 것 같습니다 (끝에 영문자와 숫자 32자리가 있어야 합니다)."}
+"✔ Saved the knowledge settings in lantern.yaml (notion · {write}).": {ko: "✔ lantern.yaml에 지식 저장소 설정을 저장했습니다 (notion · {write})."}
+"✖ No token found. Add it to your shell settings, open a new terminal and run this again:": {ko: "✖ 토큰이 없습니다. 쉘 설정에 아래 줄을 추가하고, 새 터미널을 열어 다시 실행하세요:"}
+"✖ The Keychain tool did not save the token. Nothing was changed.": {ko: "✖ 키체인에 토큰을 저장하지 못했습니다. 바뀐 것은 없습니다."}
+"✖ The integration can't see that page. Open it → ••• → Add connections → pick your integration.": {ko: "✖ 통합이 그 페이지를 볼 수 없습니다. 페이지를 열어 ••• → Add connections(연결 추가) → 만든 통합을 고르세요."}
+"✔ Notion accepts the token. The integration can see {count} page(s); the newest: {titles}": {ko: "✔ Notion이 토큰을 받아들였습니다. 통합이 볼 수 있는 페이지는 {count}개이고, 가장 최근 것은 {titles}입니다."}
+"  If that is more than you meant, connect fewer pages (••• → Add connections): what is connected is what can be read.": {ko: "  의도보다 많다면 연결을 줄이세요 (••• → Add connections): 연결한 것이 곧 읽을 수 있는 범위입니다."}
+"ℹ lantern.yaml isn't there yet. /l-init makes it with: --knowledge {page} --knowledge-type notion --knowledge-write {write}": {ko: "ℹ 아직 lantern.yaml이 없습니다. /l-init이 이 값으로 만듭니다: --knowledge {page} --knowledge-type notion --knowledge-write {write}"}
+"A token for {env} is already there. Use it? [Y/n]: ": {ko: "{env} 토큰이 이미 있습니다. 그대로 쓸까요? [Y/n]: "}
+"The token works, but the integration can't see any page yet. Open a page → ••• → Add connections → pick your integration.": {ko: "토큰은 맞지만 통합이 볼 수 있는 페이지가 아직 없습니다. 페이지를 열어 ••• → Add connections(연결 추가) → 만든 통합을 고르세요."}
+"Press Enter after connecting a page (q to stop): ": {ko: "페이지를 연결한 뒤 Enter를 누르세요 (그만하려면 q): "}
+"Notion setup — about 5 minutes. The token goes into the Keychain prompt, never into a chat.": {ko: "Notion 연결 — 5분쯤 걸립니다. 토큰은 키체인 입력창에만 넣고, 대화에는 붙이지 마세요."}
+"Notion setup — about 5 minutes. On this computer the token goes in the environment variable {env}, never into a chat.": {ko: "Notion 연결 — 5분쯤 걸립니다. 이 컴퓨터에서는 토큰을 환경 변수 {env}에 넣습니다. 대화에는 붙이지 마세요."}
+"✔ Searching “{title}” works: {count} page(s) found.": {ko: "✔ “{title}” 검색이 됩니다: 페이지 {count}개를 찾았습니다."}
+"Stopped. lantern.yaml was not changed.": {ko: "멈췄습니다. lantern.yaml은 바뀌지 않았습니다."}
+"Try again? [Y/n]: ": {ko: "다시 해 볼까요? [Y/n]: "}
+"✖ Notion did not accept the token ({error}).": {ko: "✖ Notion이 토큰을 받아들이지 않았습니다 ({error})."}
+"Enter a different token now? [Y/n]: ": {ko: "다른 토큰을 지금 넣을까요? [Y/n]: "}
+"Knowledge connector: search · read · propose · write · areas · setup notion": {ko: "지식 연결기: search · read · propose · write · areas · setup notion"}
+"setup: don't open Notion's integrations page in the browser": {ko: "setup: Notion의 통합 페이지를 브라우저로 열지 않음"}
+"Only Notion has a setup: lantern knowledge setup notion": {ko: "설정을 돕는 것은 Notion뿐입니다: lantern knowledge setup notion"}
+"This asks for a token, so run it yourself in a terminal: lantern knowledge setup notion (the AI must not see the token, so don't paste it into a chat)": {ko: "토큰을 묻는 명령이라 사용자가 터미널에서 직접 실행해야 합니다: lantern knowledge setup notion (AI가 토큰을 보면 안 되니 대화에 붙이지 마세요)"}
+"No Notion token — run `lantern knowledge setup notion` (or set the environment variable {env})": {ko: "Notion 토큰이 없습니다 — `lantern knowledge setup notion`을 실행하세요 (또는 환경 변수 {env} 설정)"}
+"No Notion token — run `lantern knowledge setup notion`": {ko: "Notion 토큰이 없습니다 — `lantern knowledge setup notion`을 실행하세요"}
+"(untitled)": {ko: "(제목 없음)"}
 
 # learn/knowledge/obsidian.py
 "Knowledge store folder doesn't exist: {root}": {ko: "지식 저장소 폴더가 없습니다: {root}"}
@@ -680,7 +721,6 @@
 "{count} skills up to date ({items})": {ko: "스킬 {count}개 최신 ({items})"}
 "AGENTS.md has no LanternSpec rules — lantern upgrade": {ko: "AGENTS.md에 LanternSpec 규칙이 없습니다 — lantern upgrade"}
 "Notion token {env} is set": {ko: "Notion 토큰 {env} 있음"}
-"No Notion token — environment variable {env}": {ko: "Notion 토큰이 없습니다 — 환경 변수 {env}"}
 "Knowledge store {path} ({type})": {ko: "지식 저장소 {path} ({type})"}
 "Knowledge store path doesn't exist: {path}": {ko: "지식 저장소 경로가 없습니다: {path}"}
 "{count} skills edited by the user (upgrade skips them): ": {ko: "사용자가 고친 스킬 {count}개 (upgrade가 건너뜀): "}
@@ -1061,7 +1101,6 @@
 "  · old names: {items}": {ko: "  · 예전 이름: {items}"}
 
 # cli/learn.py
-"Knowledge connector: search · read · propose · write · areas": {ko: "지식 연결기: search · read · propose · write · areas"}
 "Debt ledger: find · new · ask · resolve · promote · practice · known · status · list": {ko: "부채 장부: find · new · ask · resolve · promote · practice · known · status · list"}
 "Knowledge connector MCP server (stdio)": {ko: "지식 연결기 MCP 서버 (stdio)"}
 "✔ Draft {draft} (awaiting approval) → suggested place in the store: {target}": {ko: "✔ 초안 {draft} (승인 대기) → 저장소 위치 제안: {target}"}

@@ -245,7 +245,7 @@ Anything you don't understand yet is kept as a debt card, and every time you ask
 | Knowledge base (`knowledge.type`) | How | Writing |
 |---|---|---|
 | `obsidian` · `folder` | reads Markdown files directly | creates notes after approval (drafts only with `propose_only`) |
-| `notion` | planned | — |
+| `notion` | Fetches the list of pages and searches titles and properties; reads blocks inside blocks | New page after approval (drafts only with `propose_only`). Connect with `lantern knowledge setup notion` |
 
 Every knowledge base supports the same four actions: search · read · propose · write. The CLI (`lantern knowledge …`) and the MCP server (`lantern mcp`) use the same functions.
 

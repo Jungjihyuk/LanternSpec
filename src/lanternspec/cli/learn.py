@@ -12,7 +12,7 @@ from .common import Add, CliError, _p
 
 
 def cmd_knowledge(a: argparse.Namespace) -> int:
-    """`lantern knowledge search|read|propose|write|areas` — talk to the knowledge store."""
+    """`lantern knowledge search|read|propose|write|areas|setup` — talk to the knowledge store, or connect Notion."""
     from ..learn.knowledge import adapter_for, drafts
 
     project = _p()
@@ -56,6 +56,19 @@ def cmd_knowledge(a: argparse.Namespace) -> int:
         res = drafts.write_draft(project, draft, a.target)
         print(msg("✔ Wrote to the knowledge store: {path}", path=res["path"]))
         return 0
+    if a.action == "setup":
+        if a.arg != "notion":
+            raise CliError(msg("Only Notion has a setup: lantern knowledge setup notion"))
+        if not sys.stdin.isatty():
+            raise CliError(
+                msg(
+                    "This asks for a token, so run it yourself in a terminal: lantern knowledge setup notion "
+                    "(the AI must not see the token, so don't paste it into a chat)"
+                )
+            )
+        from ..learn.knowledge import notion_setup
+
+        return notion_setup.run(project, notion_setup.TerminalIo(), open_browser=not a.no_open)
     if a.action == "areas":
         k = project.profile.knowledge or {}
         folder = a.arg or k.get("areas_from")
@@ -167,8 +180,8 @@ def cmd_mcp(a: argparse.Namespace) -> int:
 
 def register(add: Add) -> None:
     """Register the learning-line commands."""
-    p = add("knowledge", cmd_knowledge, msg("Knowledge connector: search · read · propose · write · areas"))
-    p.add_argument("action", choices=["search", "read", "propose", "write", "areas"])
+    p = add("knowledge", cmd_knowledge, msg("Knowledge connector: search · read · propose · write · areas · setup notion"))
+    p.add_argument("action", choices=["search", "read", "propose", "write", "areas", "setup"])
     p.add_argument("arg", nargs="?")
     p.add_argument("--alias", action="append")
     p.add_argument("--limit", type=int, default=5)
@@ -177,6 +190,7 @@ def register(add: Add) -> None:
     p.add_argument("--stdin", action="store_true")
     p.add_argument("--area")
     p.add_argument("--target")
+    p.add_argument("--no-open", action="store_true", help=msg("setup: don't open Notion's integrations page in the browser"))
     p = add("debt", cmd_debt, msg("Debt ledger: find · new · ask · resolve · promote · practice · known · status · list"))
     p.add_argument("action", choices=["find", "new", "ask", "resolve", "promote", "practice", "known", "status", "list"])
     p.add_argument("arg", nargs="?")

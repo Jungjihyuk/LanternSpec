@@ -48,7 +48,7 @@ argument-hint: "[바뀐 점 (다시 실행할 때)]"
    - 직접 개발 — FastAPI, Spring, Express 등 (저장값 `custom`: 서버 코드를 직접 작성. 어디에 띄우든, 로컬에서만 돌려도 여기)
    - 기존 서비스 활용 — Supabase, Firebase 등 (저장값 `external`: 서버 코드를 직접 쓰지 않음)
    - 필요 없음 — 브라우저나 기기 안에서만 동작 (저장값 `none`)
-5. 공부 노트를 모아 둔 지식 저장소가 있나? 없음 / Obsidian 볼트 / 일반 Markdown 폴더 — **종류만** 묻는다 (경로 · 쓰기 방식은 아래에서 따로)
+5. 공부 노트를 모아 둔 지식 저장소가 있나? 없음 / Obsidian 볼트 / 일반 Markdown 폴더 / Notion — **종류만** 묻는다 (경로 · 쓰기 방식은 아래에서 따로. Notion은 아래 "Notion을 골랐으면")
 6. 디자인 도구는? Claude Design / Figma / Canva / 없음 — Claude Design은 Claude 안의 Design 캔버스다. Claude Code에서는 AI가 와이어프레임을 직접 그리고, 다른 AI 도구에서는 Claude에서 만든 화면을 HTML로 받는다. Figma · Canva는 그 도구의 MCP 서버가 이 AI 도구에 연결돼 있어야 한다 (없으면 연결 방법을 안내하고, 연결 전까지는 내보낸 파일을 받는다)
 7. **바깥 도구 · 서비스에 붙나?** (AI 도구 · 결제 · 외부 API · 플러그인을 받는 구조 등) — 3번의 프로젝트 종류와 이 답으로 설계 원칙을 고른다
    - 언어는 묻기 전에 먼저 `lantern principles detect`로 알아본다. 알아본 것이 없으면(새 프로젝트) 3번의 답에 따라 정한다
@@ -79,7 +79,17 @@ lantern template show "<<file.tech_criteria>>"
 - (2번이 team이면) 팀원 이름 — 후보를 만들 수 없으니 평범한 메시지로: "함께하는 사람 이름을 쉼표로 적어 주세요"
 - (4번이 external이면) "API 명세 문서도 만들까요?" — 예면 `--extra api`
 
-**지식 저장소를 골랐으면** (5번이 없음이 아닐 때만, 하나씩)
+**Notion을 골랐으면** — 아래 "지식 저장소를 골랐으면"의 질문(경로 · 쓰기 방식 · 폴더 분류 · 닫을 폴더)은 하지 않는다. Notion은 폴더가 없고, 필요한 것은 명령이 직접 묻는다.
+- 먼저 말한다: **토큰은 이 대화에 붙이지 마세요.** 통합 만들기 · 권한 · 토큰 · 페이지 연결을 안내하는 명령이 있고, 토큰은 그 명령이 키체인(macOS)에 직접 받는다.
+- 사용자에게 **터미널에서 직접** 실행하게 한다 (토큰을 묻는 명령이라 AI가 대신 실행할 수 없다. Claude Code 입력창의 `!`로 되는지는 확인되지 않았으니 별도 터미널을 권한다):
+  ```bash
+  lantern knowledge setup notion
+  ```
+- 끝났다고 하면 명령이 마지막에 출력한 `--knowledge <ID> --knowledge-type notion --knowledge-write <방식>`을 2단계 `profile write`에 그대로 쓴다.
+- 지금 하지 않겠다고 하거나 막히면 **지식 저장소 없음**으로 계속한다 (나중에 같은 명령으로 연결할 수 있다고 알린다).
+- 토큰 · 키체인을 AI가 읽거나 다루지 않는다.
+
+**지식 저장소를 골랐으면** (5번이 Obsidian · 폴더일 때만, 하나씩)
 - **어디에 있나요?** — 먼저 후보를 찾는다: Obsidian이면 `.obsidian` 폴더가 있는 곳(`find ~ -maxdepth 4 -name .obsidian -type d`), Markdown 폴더면 문서 폴더 근처. 찾은 경로가 2개 이상이면 선택지로 내고(최대 3개), 하나면 평범한 메시지로 "이 경로가 맞나요?"라고 묻고, 못 찾으면 평범한 메시지로 "노트 폴더의 경로를 알려 주세요"라고 묻는다.
 - **새 노트는 어떻게 만들까요?** — 승인하면 저장소에 바로 쓰기(direct, 추천) / 저장소는 건드리지 않고 초안 파일만 만들기(propose_only)
 - **(저장소에 주제별로 나눈 폴더가 보일 때만) 그 분류도 함께 쓸까요?** (선택) — 먼저 저장소 맨 위 폴더를 훑어, 하위 폴더가 주제처럼 나뉜 폴더(예: `2. Study`)가 없으면 **이 질문은 건너뛴다**. 있으면 질문 문장에 뜻을 먼저 적는다: "모르는 기술은 부채 카드로 남고, 카드마다 주제가 하나 붙어요 (지금은 backend · frontend · data · ai · infra · 기타). 저장소에 주제별로 나눠 둔 폴더가 있는 것 같은데, 그 이름도 주제로 함께 쓸까요? 프로젝트 구조와는 상관없어요." 선택지는 찾은 폴더들과 "기본 주제만 쓰기"(추천).
@@ -123,7 +133,7 @@ lantern work flow --team solo|team --origin greenfield|brownfield
 ```bash
 lantern profile write --name "<이름>" --origin greenfield|brownfield --team solo|team [--members "지혁,민수"] \
   --clients web,mobile --server none|external|custom [--extra api] \
-  [--knowledge "<지식 저장소 경로>" --knowledge-type obsidian|folder --knowledge-write direct|propose_only [--areas-from "2. Study"]] \
+  [--knowledge "<지식 저장소 경로>" --knowledge-type obsidian|folder|notion --knowledge-write direct|propose_only [--areas-from "2. Study"]] \
   --design claude-design|figma|canva|none --remote shared|local --base main --pr none|deploy|work [--deploy main] [--branch "feature/{id}-{slug}"] \
   --kind script|cli|library|service|data --external yes|no [--languages python,typescript] --comment-language ko|en --lifespan short|long
 lantern profile set "knowledge.deny=[4. Work]"   # 닫을 폴더를 골랐을 때만 (열 폴더를 골랐으면 knowledge.allow=[…])

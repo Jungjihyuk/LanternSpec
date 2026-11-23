@@ -30,6 +30,14 @@ def _no_tool_version_lookup(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _no_keychain(monkeypatch):
+    """Tests never read or write the developer's Keychain: the tool is named something that doesn't exist, so no call is made."""
+    from lanternspec.learn.knowledge import keychain
+
+    monkeypatch.setattr(keychain, "TOOL", "lantern-test-no-such-keychain-tool")
+
+
+@pytest.fixture(autouse=True)
 def _isolated_git(monkeypatch, tmp_path_factory):
     """Tests never read the developer's git config (hooksPath, signing …)."""
     home = tmp_path_factory.mktemp("home")

@@ -48,7 +48,7 @@ First check the CLI is there with `lantern --version`. If it isn't, only tell th
    - Build it yourself — FastAPI, Spring, Express and so on (stored as `custom`: you write the server code, wherever it runs, even if only locally)
    - Use an existing service — Supabase, Firebase and so on (stored as `external`: you don't write server code)
    - Not needed — runs inside the browser or device only (stored as `none`)
-5. Do you keep study notes in a knowledge store? None / an Obsidian vault / a plain Markdown folder — ask **only the kind** (path and write mode come below)
+5. Do you keep study notes in a knowledge store? None / an Obsidian vault / a plain Markdown folder / Notion — ask **only the kind** (path and write mode come below; for Notion see "If Notion was chosen")
 6. Design tool? Claude Design / Figma / Canva / none — Claude Design is the Design canvas inside Claude. In Claude Code the AI draws the wireframes itself; in other AI tools, take the screens made in Claude as HTML. Figma and Canva need that tool's MCP server connected to this AI tool (if it isn't, explain how to connect it, and take exported files until then)
 7. **Does it connect to outside tools or services?** (AI tools · payments · outside APIs · a structure that takes plugins and so on) — this answer and the project kind from 3 choose the design principles
    - Before asking about languages, find them with `lantern principles detect`. If nothing is found (a new project), decide by the answer to 3
@@ -78,7 +78,17 @@ lantern template show "<<file.tech_criteria>>"
 - (if 2 is team) team member names — there are no candidates, so ask in a plain message: "Please list the people working with you, separated by commas"
 - (if 4 is external) "Create an API document too?" — if yes, `--extra api`
 
-**If a knowledge store was chosen** (only when 5 is not none, one at a time)
+**If Notion was chosen** — skip the questions under "If a knowledge store was chosen" (path · write mode · folder topics · closed folders). Notion has no folders, and the command asks what it needs itself.
+- Say first: **don't paste the token into this conversation.** A command guides making the integration, its permissions, the token and connecting pages, and it takes the token itself into the Keychain (macOS).
+- Have the user run it **in a terminal themselves** (it asks for a token, so the AI can't run it for them. Whether `!` in Claude Code's input works is not confirmed, so suggest a separate terminal):
+  ```bash
+  lantern knowledge setup notion
+  ```
+- When they say it is done, use the `--knowledge <ID> --knowledge-type notion --knowledge-write <mode>` the command printed at its end in the `profile write` of step 2, as it is.
+- If they don't want to now or get stuck, go on with **no knowledge store** (and say the same command connects it later).
+- The AI never reads or handles the token or the Keychain.
+
+**If a knowledge store was chosen** (only when 5 is Obsidian or a folder, one at a time)
 - **Where is it?** — look for candidates first: for Obsidian, folders that contain `.obsidian` (`find ~ -maxdepth 4 -name .obsidian -type d`); for a Markdown folder, near the documents folder. With 2 or more paths found, offer them as choices (up to 3); with one, ask in a plain message "Is this the right path?"; if none are found, ask in a plain message: "What is the path of your notes folder?"
 - **How should new notes be made?** — write to the store right away once approved (direct, recommended) / never touch the store, only make draft files (propose_only)
 - **(only when the store has folders split by topic) Use those folders as topics too?** (optional) — first skim the store's top-level folders; if there is no folder whose subfolders look like topics (e.g. `2. Study`), **skip this question**. If there is, say what it means first: "Unfamiliar technologies are kept as debt cards, and each card gets one topic (now: backend · frontend · data · ai · infra · other). Your store seems to have folders split by topic — use those names as topics too? This has nothing to do with the project's structure." Offer the folders found and "only the default topics" (recommended).
@@ -122,7 +132,7 @@ If an answer is unclear, ask again instead of guessing. Once everything is colle
 ```bash
 lantern profile write --language en --name "<name>" --origin greenfield|brownfield --team solo|team [--members "Ana,Ben"] \
   --clients web,mobile --server none|external|custom [--extra api] \
-  [--knowledge "<knowledge store path>" --knowledge-type obsidian|folder --knowledge-write direct|propose_only [--areas-from "2. Study"]] \
+  [--knowledge "<knowledge store path>" --knowledge-type obsidian|folder|notion --knowledge-write direct|propose_only [--areas-from "2. Study"]] \
   --design claude-design|figma|canva|none --remote shared|local --base main --pr none|deploy|work [--deploy main] [--branch "feature/{id}-{slug}"] \
   --kind script|cli|library|service|data --external yes|no [--languages python,typescript] --lifespan short|long
 lantern profile set "knowledge.deny=[4. Work]"   # only when folders to close were picked (for folders to open: knowledge.allow=[…])

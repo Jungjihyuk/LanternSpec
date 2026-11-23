@@ -82,13 +82,13 @@ def run(project: Project) -> list[tuple[str, str]]:
         from pathlib import Path
 
         if k["type"] == "notion":
-            import os
+            from ..learn.knowledge.notion import notion_token
 
             env = str(k.get("token_env") or "NOTION_TOKEN")
             out.append(
                 (OK, msg("Notion token {env} is set", env=env))
-                if os.environ.get(env)
-                else (WARN, msg("No Notion token — environment variable {env}", env=env))
+                if notion_token(env)
+                else (WARN, msg("No Notion token — run `lantern knowledge setup notion` (or set the environment variable {env})", env=env))
             )
         else:
             path = Path(str(k["path"])).expanduser()

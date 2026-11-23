@@ -243,7 +243,7 @@ AI가 쓴 기술 중 모르는 것은 내 지식 저장소의 노트와 비교�
 | 저장소 (`knowledge.type`) | 어떻게 | 쓰기 |
 |---|---|---|
 | `obsidian` · `folder` | Markdown 파일을 직접 읽음 | 승인 후 노트 생성 (`propose_only`면 초안만) |
-| `notion` | 구현 예정 | — |
+| `notion` | Notion의 페이지 목록을 받아 제목과 속성에서 찾고, 읽기는 블록 안까지 | 승인 후 새 페이지 생성 (`propose_only`면 초안만). 연결은 `lantern knowledge setup notion` |
 
 어느 저장소든 찾기 · 읽기 · 제안 · 쓰기 네 가지로 다룬다. CLI(`lantern knowledge …`)와 MCP 서버(`lantern mcp`)가 같은 기능을 쓴다.
 
