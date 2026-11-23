@@ -25,6 +25,7 @@ class FakeTree:
     ) -> None:
         self.children = children
         self.pages = pages or {}
+        self.found: list[dict[str, Any]] = []  # what a search answers
         self.endless = endless
         self.asked: list[str] = []
 
@@ -38,6 +39,8 @@ class FakeTree:
                 data = {"results": [_block("paragraph", f"in {block_id}", block_id=block_id + "x", children=True)], "has_more": False}
             else:
                 data = {"results": self.children.get(block_id, []), "has_more": False}
+        elif path == "/search":
+            data = {"results": self.found}
         elif path.startswith("/pages/"):
             page_id = path.split("/")[2]
             if page_id not in self.pages:
@@ -214,3 +217,44 @@ def test_a_request_that_stays_rate_limited_gives_up_with_the_api_error(monkeypat
     with pytest.raises(KnowledgeError, match="429"):
         NotionAdapter("parent", "secret", opener=flaky).read("root")
     assert flaky.calls == 4  # the first try and three more
+
+
+PAGE = "124791d2c4e380b086defba8b13fd766"
+
+
+def _found(title: str, url: str = f"https://app.notion.com/p/FastAPI-{PAGE}") -> dict[str, Any]:
+    return {
+        "id": "124791d2-c4e3-80b0-86de-fba8b13fd766",
+        "url": url,
+        "last_edited_time": "2025-10-07T00:00:00.000Z",
+        "properties": {"제목": {"type": "title", "title": [{"plain_text": title}]}},
+    }
+
+
+def test_a_title_that_ends_in_a_space_still_matches_its_name_exactly():
+    fake = FakeTree({})
+    fake.found = [_found("FastAPI ")]  # Notion titles often end in a space
+
+    (hit,) = _adapter(fake).search("FastAPI")
+
+    assert hit.title == "FastAPI" and hit.score == 100
+
+
+def test_a_hit_points_at_the_page_by_its_address_and_read_takes_that_address_back():
+    fake = FakeTree({PAGE: [_block("paragraph", "본문")]})
+    fake.found = [_found("FastAPI")]
+    adapter = _adapter(fake)
+
+    (hit,) = adapter.search("FastAPI")
+
+    assert hit.path == f"https://app.notion.com/p/FastAPI-{PAGE}"  # a person can open it, and a debt card keeps it as its note
+    assert adapter.read(hit.path) == "본문"
+    assert fake.asked == [PAGE]  # the page ID is taken from the end of the address
+
+
+def test_read_takes_an_id_with_or_without_dashes_a_query_and_a_bare_name():
+    for ref in (PAGE, "124791d2-c4e3-80b0-86de-fba8b13fd766", f"https://www.notion.so/me/FastAPI-{PAGE}?pvs=4", f"https://x.so/{PAGE}#h"):
+        fake = FakeTree({PAGE: [_block("paragraph", "본문")]})
+        assert _adapter(fake).read(ref) == "본문" and fake.asked == [PAGE], ref
+    fake = FakeTree({"p1": [_block("paragraph", "본문")]})
+    assert _adapter(fake).read("p1") == "본문" and fake.asked == ["p1"]  # not an address or an ID: left as it is

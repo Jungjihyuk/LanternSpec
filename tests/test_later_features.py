@@ -119,7 +119,7 @@ def test_notion_adapter_contract():
     fake = FakeNotion()
     n = NotionAdapter("abc-def", "secret", opener=fake)
     hits = n.search("JWT")
-    assert hits[0].title == "JWT" and hits[0].path == "p1"
+    assert hits[0].title == "JWT" and hits[0].path == "https://notion.so/p1"  # where the page is, which a debt card keeps
     assert n.read("p1") == "## 개요\n서명된 토큰"
     url = n.write("2. Study/CRDT.md", "# CRDT\n- 충돌 없는 복제\n" + "\n".join(f"줄 {i}" for i in range(120)))
     assert url == "https://notion.so/new"

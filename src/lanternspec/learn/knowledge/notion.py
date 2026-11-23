@@ -36,10 +36,32 @@ def _plain(rich: list[dict[str, Any]]) -> str:
     return "".join(str(r.get("plain_text") or r.get("text", {}).get("content") or "") for r in rich or [])
 
 
+_PAGE_ID = re.compile(r"([0-9a-fA-F]{8}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{12})(?:[?#].*)?$")
+
+
+def page_id(ref: str) -> str:
+    """Take the page ID out of a page's address, or give an ID back without its dashes.
+
+    Args:
+        ref: A page address (`https://…/Title-<32 hex>?…`), an ID with or without dashes, or any other text.
+
+    Returns:
+        The 32-character ID; the text itself when it holds none (so a name that is not an address passes through).
+
+    Example:
+        >>> page_id("https://www.notion.so/me/FastAPI-124791d2c4e380b086defba8b13fd766?pvs=4")
+        '124791d2c4e380b086defba8b13fd766'
+        >>> page_id("124791d2-c4e3-80b0-86de-fba8b13fd766"), page_id("p1")
+        ('124791d2c4e380b086defba8b13fd766', 'p1')
+    """
+    m = _PAGE_ID.search(ref.strip())
+    return m.group(1).replace("-", "") if m else ref
+
+
 def _title(page: dict[str, Any]) -> str:
     for prop in (page.get("properties") or {}).values():
         if isinstance(prop, dict) and prop.get("type") == "title":
-            return _plain(prop.get("title") or [])
+            return _plain(prop.get("title") or []).strip()  # Notion titles often end in a space; "FastAPI " is "FastAPI"
     return ""
 
 
@@ -251,7 +273,7 @@ class NotionAdapter(Adapter):
             limit: Most results to return.
 
         Returns:
-            The best matches; path is the page ID and summary the page URL.
+            The best matches; the path is the page's address (read takes it back) and the summary is empty.
 
         Raises:
             KnowledgeError: The API call failed.
@@ -269,8 +291,13 @@ class NotionAdapter(Adapter):
                 title = _title(page)
                 score = (100 if title.lower() == term.lower() else 40) - i
                 if pid not in seen or seen[pid].score < score:
+                    # the path is where a person can open the page (a debt card keeps it as its note); read takes the ID out of it
                     seen[pid] = Hit(
-                        title=title, path=pid, summary=page.get("url", ""), updated=str(page.get("last_edited_time", ""))[:10], score=score
+                        title=title,
+                        path=page.get("url") or pid,
+                        summary="",
+                        updated=str(page.get("last_edited_time", ""))[:10],
+                        score=score,
                     )
         return sorted(seen.values(), key=lambda h: -h.score)[:limit]
 
@@ -282,7 +309,7 @@ class NotionAdapter(Adapter):
         A database row starts with its filled properties.
 
         Args:
-            path: The page ID.
+            path: The page's address (what a search gave) or its ID.
 
         Returns:
             The page's text.
@@ -294,6 +321,7 @@ class NotionAdapter(Adapter):
             >>> NotionAdapter(parent, token).read(page_id)  # doctest: +SKIP
             '---\n분류: 개발\n---\n# JWT\n  서명된 토큰'
         """
+        path = page_id(path)
         lines = self._read_blocks(path, 0, [MAX_REQUESTS])
         try:
             header = properties_text(self._call("GET", f"/pages/{path}"))

@@ -30,7 +30,7 @@ class Hit:
 
     Attributes:
         title: The note's title.
-        path: Where it is, relative to the store root (a page ID for Notion).
+        path: Where it is, relative to the store root (the page's address for Notion).
         summary: A short summary (for Notion, the page URL).
         updated: Last modified date (YYYY-MM-DD).
         score: How well it matched; higher is better.
