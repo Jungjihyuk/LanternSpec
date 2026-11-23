@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 import unicodedata
 
 from ..core.messages import msg
@@ -73,12 +74,13 @@ def cmd_map(a: argparse.Namespace) -> int:
 def cmd_eval(a: argparse.Namespace) -> int:
     """`lantern eval` — show the AI work evaluation (text or JSON)."""
     from ..report import evaluate
+    from . import table
 
     project = _p()
     if a.json:
         print(json.dumps(evaluate.summary(project), ensure_ascii=False, indent=2))
     else:
-        print(evaluate.markdown(project))
+        print(table.for_terminal(evaluate.markdown(project), sys.stdout))
     return 0
 
 
