@@ -15,9 +15,11 @@ import json
 import os
 import re
 import time
+import unicodedata
 import urllib.error
 import urllib.request
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
 from ...core.messages import msg
@@ -28,6 +30,10 @@ VERSION = "2022-06-28"
 MAX_DEPTH = 6  # how many levels of blocks inside blocks one read goes down
 MAX_REQUESTS = 100  # most block requests one read makes (Notion answers about three a second)
 RETRIES = 3  # how many times a rate-limited (429) request is tried again
+CACHE_SECONDS = 600  # how long a kept list of the pages is used before the pages are asked for again
+FRESH_SECONDS = 30  # a list fetched this recently is not fetched again just because a search found nothing
+CACHE_FILE = "knowledge-notion.json"  # in the project's state folder (a personal record: it is never committed)
+MAX_LIST_REQUESTS = 100  # a stop for listing the pages (100 pages each): a workspace of 10,000 pages
 _NO_LINE = ("table_of_contents", "breadcrumb")  # blocks that hold no text of their own
 _OTHER_DOCUMENT = {"child_page": "[Subpage] {title} ({id})", "child_database": "[Database] {title} ({id})"}  # named, not followed
 
@@ -159,25 +165,32 @@ def _retry_wait(error: urllib.error.HTTPError) -> float:
         return 1.0
 
 
-def _property_value(prop: dict[str, Any]) -> str:
+def _property_items(prop: dict[str, Any]) -> list[str]:
+    """The values of one property as separate texts (a multi-select gives one per choice); empty when it has none or no plain value."""
     kind = prop.get("type", "")
     value = prop.get(kind)
     if kind == "rich_text":
-        return _plain(value or [])
-    if kind in ("select", "status"):
-        return str((value or {}).get("name") or "")
-    if kind == "multi_select":
-        return ", ".join(str(v.get("name") or "") for v in value or [])
-    if kind == "date":
+        items = [_plain(value or [])]
+    elif kind in ("select", "status"):
+        items = [str((value or {}).get("name") or "")]
+    elif kind == "multi_select":
+        items = [str(v.get("name") or "") for v in value or []]
+    elif kind == "date":
         start, end = (value or {}).get("start") or "", (value or {}).get("end")
-        return f"{start} → {end}" if end else start
-    if kind == "number":
-        return "" if value is None else str(value)
-    if kind == "checkbox":
-        return "✔" if value else ""
-    if kind in ("url", "email", "phone_number"):
-        return str(value or "")
-    return ""
+        items = [f"{start} → {end}" if end else start]
+    elif kind == "number":
+        items = ["" if value is None else str(value)]
+    elif kind == "checkbox":
+        items = ["✔" if value else ""]
+    elif kind in ("url", "email", "phone_number"):
+        items = [str(value or "")]
+    else:
+        items = []
+    return [i for i in items if i]
+
+
+def _property_value(prop: dict[str, Any]) -> str:
+    return ", ".join(_property_items(prop))
 
 
 def properties_text(page: dict[str, Any]) -> str:
@@ -208,6 +221,88 @@ def properties_text(page: dict[str, Any]) -> str:
     return "---\n" + "\n".join(lines) + "\n---\n" if lines else ""
 
 
+def _fold(text: str) -> str:
+    return unicodedata.normalize("NFC", text).casefold().strip()
+
+
+def listed(page: dict[str, Any]) -> dict[str, Any]:
+    """Keep what a search needs of a page the search API listed: its title, address, edit date and the values of its properties.
+
+    Args:
+        page: A Notion page object, as the search lists it.
+
+    Returns:
+        `id`, `title`, `url` (the ID when Notion gave none), `edited` (a date) and `props` (name → values; no title, no empty ones).
+
+    Example:
+        >>> page = {"id": "p", "url": "u", "last_edited_time": "2026-11-20T01:00:00Z", "properties": {
+        ...     "이름": {"type": "title", "title": [{"plain_text": "모니터링 "}]},
+        ...     "유형": {"type": "multi_select", "multi_select": [{"name": "Grafana"}]}}}
+        >>> listed(page)["props"], listed(page)["title"]
+        ({'유형': ['Grafana']}, '모니터링')
+    """
+    props = {
+        name: items
+        for name, prop in (page.get("properties") or {}).items()
+        if isinstance(prop, dict) and prop.get("type") != "title" and (items := _property_items(prop))
+    }
+    return {
+        "id": page.get("id", ""),
+        "title": _title(page),
+        "url": page.get("url") or page.get("id", ""),
+        "edited": str(page.get("last_edited_time", ""))[:10],
+        "props": props,
+    }
+
+
+def match(pages: list[dict[str, Any]], terms: list[str], limit: int) -> list[Hit]:
+    """Find the pages that a name (or one of its aliases) belongs to, by title and by property values.
+
+    A title equal to the name scores 100 and one containing it 60; a property value equal to it 50 and one containing it 30.
+    An alias scores one less for each place it stands after the first name. The result says which property matched.
+    What the pages' text says is not looked at.
+
+    Args:
+        pages: What `listed` made of each page.
+        terms: The name and its aliases.
+        limit: Most results to return.
+
+    Returns:
+        The best matches, best first (the more recently edited first among equals); the summary is `property: value` for a
+        match in a property and empty for one in the title.
+
+    Example:
+        >>> pages = [{"title": "JWT", "url": "u1", "edited": "2026-01-01", "props": {}},
+        ...          {"title": "인증", "url": "u2", "edited": "2026-01-02", "props": {"유형": ["JWT 토큰"]}}]
+        >>> [(h.title, h.score, h.summary) for h in match(pages, ["JWT"], 5)]
+        [('JWT', 100, ''), ('인증', 30, '유형: JWT 토큰')]
+    """
+    names = [_fold(t) for t in terms if t and t.strip()]
+    hits: list[Hit] = []
+    for page in pages:
+        title = _fold(page["title"])
+        best, why = 0, ""
+        for i, name in enumerate(names):
+            score, note = 0, ""
+            if title == name:
+                score = 100
+            elif title and name in title:
+                score = 60
+            else:
+                for prop, items in (page.get("props") or {}).items():
+                    for item in items:
+                        s = 50 if _fold(item) == name else 30 if name in _fold(item) else 0
+                        if s > score:
+                            score, note = s, f"{prop}: {item}"
+            if score and score - i > best:
+                best, why = score - i, note
+        if best:
+            hits.append(Hit(title=page["title"], path=page["url"], summary=why, updated=page["edited"], score=best))
+    hits.sort(key=lambda h: h.updated, reverse=True)
+    hits.sort(key=lambda h: -h.score)  # stable: the more recently edited stays first among equals
+    return hits[:limit]
+
+
 class NotionAdapter(Adapter):
     """A knowledge store in Notion, reached with an integration token.
 
@@ -224,13 +319,14 @@ class NotionAdapter(Adapter):
 
     name = "notion"
 
-    def __init__(self, parent_id: str, token: str | None, opener: Callable[..., Any] | None = None) -> None:
+    def __init__(self, parent_id: str, token: str | None, opener: Callable[..., Any] | None = None, state_dir: Path | None = None) -> None:
         """Set up the adapter.
 
         Args:
             parent_id: The page new notes are created under.
             token: The integration token.
             opener: Replaces urllib.request.urlopen (tests pass a fake).
+            state_dir: Where the list of the pages is kept between runs; None keeps it only for this run.
 
         Raises:
             KnowledgeError: There is no token.
@@ -240,6 +336,8 @@ class NotionAdapter(Adapter):
         self.parent = parent_id.replace("-", "")
         self.token = token
         self._open = opener or urllib.request.urlopen
+        self.state_dir = state_dir
+        self._memo: tuple[float, list[dict[str, Any]]] | None = None  # when the list was fetched, and the list
 
     def _call(self, method: str, path: str, body: dict[str, Any] | None = None) -> dict[str, Any]:
         req = urllib.request.Request(
@@ -265,7 +363,11 @@ class NotionAdapter(Adapter):
                 raise KnowledgeError(msg("Couldn't connect to Notion: {reason}", reason=e.reason)) from e
 
     def search(self, query: str, aliases: list[str] | None = None, limit: int = 5) -> list[Hit]:
-        """Implement Adapter.search with Notion's page search, once per name.
+        """Implement Adapter.search over the titles and property values of all the pages, from a list fetched whole.
+
+        Notion's own search looks at titles only, so the pages (with their properties) are listed once and searched here.
+        The list is kept for `CACHE_SECONDS`. A search that finds nothing in a list older than `FRESH_SECONDS` fetches the list
+        once more and looks again, so a note added a minute ago is not missed.
 
         Args:
             query: The term.
@@ -273,7 +375,7 @@ class NotionAdapter(Adapter):
             limit: Most results to return.
 
         Returns:
-            The best matches; the path is the page's address (read takes it back) and the summary is empty.
+            The best matches; the path is the page's address (read takes it back) and the summary says which property matched.
 
         Raises:
             KnowledgeError: The API call failed.
@@ -282,24 +384,63 @@ class NotionAdapter(Adapter):
             >>> NotionAdapter(parent, token).search("JWT")[0].title  # doctest: +SKIP
             'JWT'
         """
-        seen: dict[str, Hit] = {}
-        terms: list[str] = [query, *(aliases or [])]
-        for i, term in enumerate(terms):
-            res = self._call("POST", "/search", {"query": term, "page_size": limit, "filter": {"property": "object", "value": "page"}})
-            for page in res.get("results") or []:
-                pid = page.get("id", "")
-                title = _title(page)
-                score = (100 if title.lower() == term.lower() else 40) - i
-                if pid not in seen or seen[pid].score < score:
-                    # the path is where a person can open the page (a debt card keeps it as its note); read takes the ID out of it
-                    seen[pid] = Hit(
-                        title=title,
-                        path=page.get("url") or pid,
-                        summary="",
-                        updated=str(page.get("last_edited_time", ""))[:10],
-                        score=score,
-                    )
-        return sorted(seen.values(), key=lambda h: -h.score)[:limit]
+        terms = [query, *(aliases or [])]
+        pages, fresh = self._list()
+        hits = match(pages, terms, limit)
+        if not hits and not fresh:
+            pages, _ = self._list(force=True)
+            hits = match(pages, terms, limit)
+        return hits
+
+    def _list(self, force: bool = False) -> tuple[list[dict[str, Any]], bool]:
+        """The listed pages and whether they were fetched just now (within `FRESH_SECONDS`)."""
+        now = time.time()
+        if not force:
+            got = self._memo or self._read_kept()
+            if got and 0 <= now - got[0] < CACHE_SECONDS:
+                self._memo = got
+                return got[1], now - got[0] < FRESH_SECONDS
+        pages = [listed(p) for p in self._fetch_pages()]
+        self._memo = (now, pages)
+        self._write_kept(now, pages)
+        return pages, True
+
+    def _fetch_pages(self) -> list[dict[str, Any]]:
+        """Ask for every page the integration can see, 100 at a time."""
+        out: list[dict[str, Any]] = []
+        cursor = None
+        for _ in range(MAX_LIST_REQUESTS):
+            body: dict[str, Any] = {"page_size": 100, "filter": {"property": "object", "value": "page"}}
+            if cursor:
+                body["start_cursor"] = cursor
+            res = self._call("POST", "/search", body)
+            out += res.get("results") or []
+            if not res.get("has_more"):
+                break
+            cursor = res.get("next_cursor")
+        return out
+
+    def _read_kept(self) -> tuple[float, list[dict[str, Any]]] | None:
+        """The list kept in the state folder; None when there is none or it can't be used."""
+        if self.state_dir is None:
+            return None
+        try:
+            data = json.loads((self.state_dir / CACHE_FILE).read_text(encoding="utf-8"))
+            return float(data["fetched_at"]), [p for p in data["pages"] if isinstance(p, dict) and "title" in p and "url" in p]
+        except (OSError, UnicodeDecodeError, ValueError, KeyError, TypeError):
+            return None
+
+    def _write_kept(self, fetched_at: float, pages: list[dict[str, Any]]) -> None:
+        """Keep the list for the next run; a folder that can't be written to just means no list is kept."""
+        if self.state_dir is None:
+            return
+        try:
+            self.state_dir.mkdir(parents=True, exist_ok=True)
+            (self.state_dir / CACHE_FILE).write_text(
+                json.dumps({"fetched_at": fetched_at, "pages": pages}, ensure_ascii=False), encoding="utf-8"
+            )
+        except OSError:
+            pass
 
     def read(self, path: str) -> str:
         r"""Implement Adapter.read by reading a page's blocks as Markdown lines.
@@ -392,11 +533,12 @@ class NotionAdapter(Adapter):
         return str(page.get("url") or page.get("id"))
 
 
-def from_config(k: dict[str, Any]) -> NotionAdapter:
+def from_config(k: dict[str, Any], state_dir: Path | None = None) -> NotionAdapter:
     """Create the adapter from the `knowledge` block of lantern.yaml.
 
     Args:
         k: The knowledge settings (path = parent page ID, token_env = token variable).
+        state_dir: Where the list of the pages is kept between runs (the project's state folder).
 
     Returns:
         The adapter.
@@ -410,4 +552,4 @@ def from_config(k: dict[str, Any]) -> NotionAdapter:
         ...
         lanternspec.learn.knowledge.KnowledgeError: Notion 토큰이 없습니다 — 환경 변수 NOTION_TOKEN (또는 knowledge.token_env)
     """
-    return NotionAdapter(str(k.get("path") or ""), os.environ.get(str(k.get("token_env") or "NOTION_TOKEN")))
+    return NotionAdapter(str(k.get("path") or ""), os.environ.get(str(k.get("token_env") or "NOTION_TOKEN")), state_dir=state_dir)

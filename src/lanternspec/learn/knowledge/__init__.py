@@ -185,7 +185,8 @@ def adapter_for(project: Project) -> Adapter:
 
         return ObsidianAdapter(Path(str(k["path"])).expanduser(), Access.from_config(k))
     if kind == "notion":
+        from ...core.state import ensure_state_dir
         from .notion import from_config
 
-        return from_config(k)
+        return from_config(k, ensure_state_dir(project))  # the list of pages is kept there, and its .gitignore covers it
     raise KnowledgeError(msg("No '{kind}' adapter (available: obsidian · folder · notion)", kind=kind))

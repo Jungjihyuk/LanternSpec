@@ -223,6 +223,22 @@ The content of each rule is in its rules document template (`src/lanternspec/res
 - **Turned down:** adding a kanban view to the Lantern Timeline plugin. The timeline and the kanban change for different reasons, so one plugin would mean touching one to change the other. As two plugins, a view nobody wants can be turned off in Obsidian's settings.
 - **Source:** `src/lanternspec/resources/obsidian/lantern-kanban/`; the data comes from `report/views.py`
 
+### Notion fetches the list of pages and searches titles and properties here (`learn/knowledge/notion.py`)
+- **Decided:** Notion's search API looks at titles only, so the list of the connected pages (title · address · edit date · property values) is fetched, 100 at a time to the end with no search term, and searched here. A title equal to the name scores 100, one containing it 60, a property value equal to it 50 and one containing it 30, and each alias after the first name scores one less. The summary of a result says which property matched (`Type: Grafana`). The fetched list is kept in `.lantern/knowledge-notion.json` for 10 minutes.
+- **Why:**
+  - A note's category and tags are often in properties, and the list response already carries them. In a real workspace (445 pages) the whole list took 5 requests · about 5 seconds, and the terms found out of six went from 2 to 4 (Prometheus and Grafana were only in a `Type` property).
+  - The body costs dozens of requests per page, so reading all of them is estimated to take hours and is left out for now. Whether a body index is needed is decided after this search has been used.
+  - The list is kept for a while. Searching with one list instead of asking for each name (the name and its aliases) separately would cost 5 seconds per search without it.
+  - When nothing is found the list is fetched once more and searched again, unless it was fetched within the last 30 seconds. That keeps a note made a moment ago from being judged missing, without repeating 5 seconds when several terms in a row have no note.
+  - The titles and properties in the list are a personal record, so they go in the state folder and in its git-ignore list. If the folder can't be written to or the file is broken, no list is kept and the search just runs.
+  - The deciding part (`match`) is a pure function, so it is tested without files or network.
+- **Limits:** a word only the body has is not found (Pydantic · Starlette). A note made a moment ago takes tens of seconds for Notion to put into its search. Values of different properties score the same.
+- **Turned down:**
+  - **Calling Notion's search for each name.** It only sees titles.
+  - **Refreshing only what changed.** A page that was deleted or unshared can't be noticed.
+  - **Searching through the official Notion MCP.** It has no way to narrow what it reaches, and its results don't fit this contract (`lantern knowledge`) as they are.
+- **Source:** `src/lanternspec/learn/knowledge/notion.py` (`listed` · `match` · `NotionAdapter.search`)
+
 ### Closed folders of the knowledge store (`knowledge.allow` · `knowledge.deny` · `lantern guard`)
 - **Decided:** the folders of the knowledge store to open or to close are written in one place, `lantern.yaml`. lantern's search · read · write leave closed folders alone, and `lantern guard -- <tool>` starts the AI tool inside the operating system's sandbox so the tool can't open them directly either. Once any folder is closed, the store's hidden folders (`.git` and the like) are closed with it, and `lantern.yaml` can't be changed during a guarded run.
 - **Why:**

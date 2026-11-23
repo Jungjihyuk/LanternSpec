@@ -239,6 +239,10 @@ Everything LanternSpec writes lives in the `docs/` folder.
 ### Knowledge store
 > Where you keep your study notes (Obsidian, a plain Markdown folder, Notion). Once connected, LanternSpec checks it for notes you've already written whenever it meets an unfamiliar technology.
 
+- **Notion is searched by title and properties.** Notion's own search looks at titles only, so the list of the connected pages (title · address · property values) is fetched whole and searched here. A name that is not in a title but in a property such as `Type` is found too, and the result says which property matched. A word only the body has is not found yet.
+- The fetched list is kept in the project's `.lantern/` for 10 minutes (a personal record, never committed). A search that finds nothing fetches the list once more and looks again, so a note made a moment ago isn't missed.
+- Obsidian and folder stores read the files directly and find the body and tags, so they don't use this list.
+
 ### Open and closed folders
 > The folders of the knowledge store the AI **may and may not open**. You list them in `lantern.yaml` under `knowledge.allow` (only these are open) or `knowledge.deny` (these are never opened). Notes in closed folders don't turn up in search, reading or writing.
 

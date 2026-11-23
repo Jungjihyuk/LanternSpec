@@ -30,6 +30,7 @@ IGNORED = (
     "references.yaml",
     "term-candidates.json",
     "components-seen.json",
+    "knowledge-notion.json",
 )  # personal records, never committed
 
 
