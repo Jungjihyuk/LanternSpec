@@ -608,11 +608,20 @@ def render(data: dict[str, Any]) -> str:
         k = _deep_merge(KNOWLEDGE_DEFAULTS, k)
         lines += [
             msg("knowledge:                  # the learning track. Delete this block if there is none"),
-            msg("  type: {s}            # obsidian | folder (any Markdown folder)", s=s(k["type"])),
-            f"  path: {s(k['path'])}",
+            msg("  type: {s}            # obsidian | folder (any Markdown folder) | notion", s=s(k["type"])),
+            msg("  path: {s}   # Notion: the page new notes are made under (the 32 characters at the end of its address)", s=s(k["path"]))
+            if k["type"] == "notion"
+            else f"  path: {s(k['path'])}",
         ]
         if k.get("token_env"):
             lines.append(msg("  token_env: {s}   # environment variable holding the Notion token", s=s(k["token_env"])))
+        elif k["type"] == "notion":
+            lines.append(
+                msg(
+                    "  # token_env: NOTION_TOKEN   # (Notion) the environment variable that holds the integration token; "
+                    "the token itself never goes in this file"
+                )
+            )
         if k.get("areas_from"):
             lines.append(
                 msg("  areas_from: {s}    # (optional) read this folder's categories to suggest debt-card topics", s=s(k["areas_from"]))

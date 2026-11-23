@@ -242,3 +242,37 @@ def test_the_kept_list_goes_in_the_project_state_folder_and_git_never_gets_it(re
     assert "knowledge-notion.json" in IGNORED
     assert adapter.state_dir == project.state  # type: ignore[attr-defined]
     assert "knowledge-notion.json" in (project.state / ".gitignore").read_text(encoding="utf-8").splitlines()
+
+
+# --------------------------------------------------------------------------- what the generated files say about Notion
+
+
+def _write_profile(repo, *knowledge: str) -> str:
+    repo(
+        "profile", "write", "--name", "시험", "--origin", "greenfield", "--team", "solo", "--clients", "mobile",
+        "--server", "external", "--design", "claude-design", "--base", "main", *knowledge,
+    )  # fmt: skip
+    return (repo.root / "lantern.yaml").read_text(encoding="utf-8")
+
+
+def test_lantern_yaml_says_notion_is_a_choice_and_what_its_path_and_token_are(repo):
+    text = _write_profile(repo, "--knowledge", "421791d2c4e3801ba520f8491d347229", "--knowledge-type", "notion")
+    lines = {line.split(":")[0].strip(): line for line in text.splitlines() if line.startswith("  ")}
+
+    assert "notion" in lines["type"] and "obsidian" in lines["type"]
+    assert "페이지" in lines["path"]  # for Notion it is the page that new notes are made under, not a folder
+    assert "NOTION_TOKEN" in text  # where the token is looked for (the token itself is never written)
+
+
+def test_the_notion_notes_are_not_written_for_an_obsidian_store(repo, tmp_path):
+    text = _write_profile(repo, "--knowledge", str(tmp_path), "--knowledge-type", "obsidian")
+
+    assert "NOTION_TOKEN" not in text and "페이지" not in text
+
+
+def test_the_learning_skill_names_every_kind_of_knowledge_store():
+    from lanternspec.tools.skills import load_sources
+
+    for language, name in (("ko", "Notion"), ("en", "Notion")):
+        learn = next(s for s in load_sources(language) if s.name == "l-learn")
+        assert name in learn.description and "Obsidian" in learn.description, language

@@ -1271,7 +1271,9 @@
 "  sections:                  # renamed protected sections (lantern sections rename) — in a list, the first is the current name": {ko: "  sections:                  # 이름을 바꾼 보호 칸 (lantern sections rename) — 목록이면 앞이 지금 이름"}
 "  unused_sections: {s}   # protected sections not used (lantern sections off)": {ko: "  unused_sections: {s}   # 쓰지 않는 보호 칸 (lantern sections off)"}
 "knowledge:                  # the learning track. Delete this block if there is none": {ko: "knowledge:                  # 배우는 선로. 없으면 이 블록을 지운다"}
-"  type: {s}            # obsidian | folder (any Markdown folder)": {ko: "  type: {s}            # obsidian | folder(아무 Markdown 폴더)"}
+"  type: {s}            # obsidian | folder (any Markdown folder) | notion": {ko: "  type: {s}            # obsidian | folder(아무 Markdown 폴더) | notion"}
+"  path: {s}   # Notion: the page new notes are made under (the 32 characters at the end of its address)": {ko: "  path: {s}   # Notion: 새 노트를 만들 부모 페이지 (주소 끝의 32자리)"}
+"  # token_env: NOTION_TOKEN   # (Notion) the environment variable that holds the integration token; the token itself never goes in this file": {ko: "  # token_env: NOTION_TOKEN   # (Notion) 통합 토큰을 담은 환경 변수. 토큰 값은 이 파일에 적지 않는다"}
 "  write: {s}            # direct (write right after approval) | propose_only (draft files only)": {ko: "  write: {s}            # direct(승인 후 바로 씀) | propose_only(초안 파일만)"}
 "  allow: {s}    # (optional) only these folders are open; without it, everything not in deny": {ko: "  allow: {s}    # (선택) 이 폴더만 엽니다. 없으면 deny를 뺀 전부"}
 "  deny: {s}    # (optional) folders never opened; wins over allow (lantern guard)": {ko: "  deny: {s}    # (선택) 열지 않는 폴더. allow보다 우선합니다 (lantern guard)"}

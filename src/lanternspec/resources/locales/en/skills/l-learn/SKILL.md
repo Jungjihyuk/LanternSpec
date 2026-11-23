@@ -1,6 +1,6 @@
 ---
 name: l-learn
-description: Compare an unfamiliar technology with your knowledge store — look up technical terms in the knowledge store (Obsidian), sort them into 🟢 has a note · 🟡 has a note but asked again · 🔴 no note, create understanding-debt cards (<<folder.debt_cards>>/D-NNN) or count another ask, and suggest what to review and what to learn (learning-note drafts). Use when the user asks what a technology is, or when /l-plan · /l-design · /l-build hand over unfamiliar terms.
+description: Compare an unfamiliar technology with your knowledge store — look up technical terms in the knowledge store (Obsidian · a Markdown folder · Notion), sort them into 🟢 has a note · 🟡 has a note but asked again · 🔴 no note, create understanding-debt cards (<<folder.debt_cards>>/D-NNN) or count another ask, and suggest what to review and what to learn (learning-note drafts). Use when the user asks what a technology is, or when /l-plan · /l-design · /l-build hand over unfamiliar terms.
 invocation: model
 argument-hint: "<technical term> [term …]"
 ---
