@@ -352,6 +352,10 @@
 "No Notion token — environment variable NOTION_TOKEN (or knowledge.token_env)": {ko: "Notion 토큰이 없습니다 — 환경 변수 NOTION_TOKEN (또는 knowledge.token_env)"}
 "Notion API error {code}: {value}": {ko: "Notion API 오류 {code}: {value}"}
 "Couldn't connect to Notion: {reason}": {ko: "Notion에 연결하지 못했습니다: {reason}"}
+"[Bookmark] {url}": {ko: "[북마크] {url}"}
+"[Subpage] {title} ({id})": {ko: "[하위 페이지] {title} ({id})"}
+"[Database] {title} ({id})": {ko: "[데이터베이스] {title} ({id})"}
+"… (only part was read: too many requests)": {ko: "… (요청이 너무 많아 일부만 읽었습니다)"}
 
 # learn/knowledge/obsidian.py
 "Knowledge store folder doesn't exist: {root}": {ko: "지식 저장소 폴더가 없습니다: {root}"}

@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import time
 import urllib.error
 import urllib.request
 from collections.abc import Callable
@@ -24,6 +25,11 @@ from . import Adapter, Hit, KnowledgeError
 
 API = "https://api.notion.com/v1"
 VERSION = "2022-06-28"
+MAX_DEPTH = 6  # how many levels of blocks inside blocks one read goes down
+MAX_REQUESTS = 100  # most block requests one read makes (Notion answers about three a second)
+RETRIES = 3  # how many times a rate-limited (429) request is tried again
+_NO_LINE = ("table_of_contents", "breadcrumb")  # blocks that hold no text of their own
+_OTHER_DOCUMENT = {"child_page": "[Subpage] {title} ({id})", "child_database": "[Database] {title} ({id})"}  # named, not followed
 
 
 def _plain(rich: list[dict[str, Any]]) -> str:
@@ -92,19 +98,28 @@ def block_text(block: dict[str, Any]) -> str:
         block: A Notion block object.
 
     Returns:
-        The block's text with its Markdown mark (heading, bullet, quote, code fence).
+        The block's text with its Markdown mark (heading, bullet, quote, code fence). A link block gives its address and a
+        table row its cells; blocks that hold no text give an empty string.
 
     Example:
         >>> block_text(markdown_to_blocks("## 소제목")[0])
         '## 소제목'
+        >>> block_text({"type": "bookmark", "bookmark": {"url": "https://a.b"}})
+        '[북마크] https://a.b'
+        >>> block_text({"type": "table_row", "table_row": {"cells": [[{"plain_text": "a"}], [{"plain_text": "b"}]]}})
+        '| a | b |'
     """
     kind = block.get("type", "")
     body = block.get(kind) or {}
     text = _plain(body.get("rich_text") or [])
     if kind.startswith("heading_"):
         return "#" * int(kind[-1]) + " " + text
-    if kind in ("bulleted_list_item", "to_do"):
+    if kind in ("bulleted_list_item", "to_do", "toggle"):
         return "- " + text
+    if kind in ("bookmark", "embed", "link_preview"):
+        return msg("[Bookmark] {url}", url=body.get("url", ""))
+    if kind == "table_row":
+        return "| " + " | ".join(_plain(cell) for cell in body.get("cells") or []) + " |"
     if kind == "numbered_list_item":
         return "1. " + text
     if kind == "quote":
@@ -112,6 +127,63 @@ def block_text(block: dict[str, Any]) -> str:
     if kind == "code":
         return "```\n" + text + "\n```"
     return text
+
+
+def _retry_wait(error: urllib.error.HTTPError) -> float:
+    """Seconds to wait after a 429: the Retry-After header, at most 10, one second when it is missing or unreadable."""
+    try:
+        return min(max(float(error.headers.get("Retry-After", 1)), 0.0), 10.0)
+    except (TypeError, ValueError):
+        return 1.0
+
+
+def _property_value(prop: dict[str, Any]) -> str:
+    kind = prop.get("type", "")
+    value = prop.get(kind)
+    if kind == "rich_text":
+        return _plain(value or [])
+    if kind in ("select", "status"):
+        return str((value or {}).get("name") or "")
+    if kind == "multi_select":
+        return ", ".join(str(v.get("name") or "") for v in value or [])
+    if kind == "date":
+        start, end = (value or {}).get("start") or "", (value or {}).get("end")
+        return f"{start} → {end}" if end else start
+    if kind == "number":
+        return "" if value is None else str(value)
+    if kind == "checkbox":
+        return "✔" if value else ""
+    if kind in ("url", "email", "phone_number"):
+        return str(value or "")
+    return ""
+
+
+def properties_text(page: dict[str, Any]) -> str:
+    r"""Write the filled properties of a page (a database row's columns) as a block of lines.
+
+    The title is left out (it is the page's name) and so are empty values and kinds with no plain value (formulas, relations, files).
+
+    Args:
+        page: A Notion page object.
+
+    Returns:
+        `---`, one `name: value` line per filled property, `---` and a newline; empty when no property has a value.
+
+    Example:
+        >>> page = {"properties": {"분류": {"type": "select", "select": {"name": "개발"}}, "빈칸": {"type": "select", "select": None}}}
+        >>> print(properties_text(page), end="")
+        ---
+        분류: 개발
+        ---
+        >>> properties_text({"properties": {}})
+        ''
+    """
+    lines = []
+    for name, prop in (page.get("properties") or {}).items():
+        value = _property_value(prop) if isinstance(prop, dict) else ""
+        if value:
+            lines.append(f"{name}: {value}")
+    return "---\n" + "\n".join(lines) + "\n---\n" if lines else ""
 
 
 class NotionAdapter(Adapter):
@@ -154,15 +226,21 @@ class NotionAdapter(Adapter):
             data=json.dumps(body).encode() if body is not None else None,
             headers={"Authorization": f"Bearer {self.token}", "Notion-Version": VERSION, "Content-Type": "application/json"},
         )
-        try:
-            with self._open(req) as resp:
-                return json.loads(resp.read().decode("utf-8"))
-        except urllib.error.HTTPError as e:  # pragma: no cover - needs the network
-            raise KnowledgeError(
-                msg("Notion API error {code}: {value}", code=e.code, value=e.read().decode("utf-8", "replace")[:200])
-            ) from e
-        except urllib.error.URLError as e:  # pragma: no cover
-            raise KnowledgeError(msg("Couldn't connect to Notion: {reason}", reason=e.reason)) from e
+        tries = 0
+        while True:
+            try:
+                with self._open(req) as resp:
+                    return json.loads(resp.read().decode("utf-8"))
+            except urllib.error.HTTPError as e:
+                if e.code == 429 and tries < RETRIES:  # rate limited: wait as long as Notion says, then ask again
+                    tries += 1
+                    time.sleep(_retry_wait(e))
+                    continue
+                raise KnowledgeError(
+                    msg("Notion API error {code}: {value}", code=e.code, value=e.read().decode("utf-8", "replace")[:200])
+                ) from e
+            except urllib.error.URLError as e:  # pragma: no cover
+                raise KnowledgeError(msg("Couldn't connect to Notion: {reason}", reason=e.reason)) from e
 
     def search(self, query: str, aliases: list[str] | None = None, limit: int = 5) -> list[Hit]:
         """Implement Adapter.search with Notion's page search, once per name.
@@ -199,6 +277,10 @@ class NotionAdapter(Adapter):
     def read(self, path: str) -> str:
         r"""Implement Adapter.read by reading a page's blocks as Markdown lines.
 
+        Blocks inside blocks (under a heading, a toggle, a list item) are read too, each level indented two spaces, down to
+        `MAX_DEPTH` levels and `MAX_REQUESTS` requests. A subpage or database inside the page is named with its ID, not read.
+        A database row starts with its filled properties.
+
         Args:
             path: The page ID.
 
@@ -206,21 +288,52 @@ class NotionAdapter(Adapter):
             The page's text.
 
         Raises:
-            KnowledgeError: The API call failed.
+            KnowledgeError: Reading the blocks failed (the properties are left out when only they fail).
 
         Example:
             >>> NotionAdapter(parent, token).read(page_id)  # doctest: +SKIP
-            '# JWT\n…'
+            '---\n분류: 개발\n---\n# JWT\n  서명된 토큰'
         """
-        lines, cursor = [], None
+        lines = self._read_blocks(path, 0, [MAX_REQUESTS])
+        try:
+            header = properties_text(self._call("GET", f"/pages/{path}"))
+        except KnowledgeError:  # not a page, or the properties cannot be read: the body is still worth returning
+            header = ""
+        return header + "\n".join(lines)
+
+    def _read_blocks(self, block_id: str, depth: int, budget: list[int]) -> list[str]:
+        """Read the children of a block as lines, going down into the ones that have children."""
+        lines: list[str] = []
+        cursor = None
         while True:
-            q = f"/blocks/{path}/children?page_size=100" + (f"&start_cursor={cursor}" if cursor else "")
+            if budget[0] <= 0:
+                if budget[0] < 0:  # already said so once
+                    return lines
+                budget[0] = -1
+                return [*lines, "  " * depth + msg("… (only part was read: too many requests)")]
+            budget[0] -= 1
+            q = f"/blocks/{block_id}/children?page_size=100" + (f"&start_cursor={cursor}" if cursor else "")
             res = self._call("GET", q)
-            lines += [block_text(b) for b in res.get("results") or []]
+            for block in res.get("results") or []:
+                lines += self._block_lines(block, depth, budget)
             if not res.get("has_more"):
-                break
+                return lines
             cursor = res.get("next_cursor")
-        return "\n".join(lines)
+
+    def _block_lines(self, block: dict[str, Any], depth: int, budget: list[int]) -> list[str]:
+        """The lines of one block (indented by its depth) and of everything inside it."""
+        kind = block.get("type", "")
+        pad = "  " * depth
+        if kind in _OTHER_DOCUMENT:
+            title = (block.get(kind) or {}).get("title", "")
+            return [pad + "- " + msg(_OTHER_DOCUMENT[kind], title=title, id=block.get("id", ""))]
+        text = block_text(block)
+        has_children = bool(block.get("has_children"))
+        skip = kind in _NO_LINE or (has_children and not text)
+        lines = [] if skip else [pad + line if line else "" for line in text.split("\n")]
+        if has_children and depth < MAX_DEPTH:
+            lines += self._read_blocks(block.get("id", ""), depth + 1, budget)
+        return lines
 
     def write(self, rel_path: str, content: str) -> str:
         r"""Implement Adapter.write by creating a page under the parent page.
