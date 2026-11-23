@@ -137,3 +137,17 @@ def test_a_card_is_not_asked_for_after_compaction(repo, monkeypatch):
     reply = agent_hooks.run(project, "session-start", get("claude"), json.dumps({"session_id": "s1", "source": "compact"}))
 
     assert "scaffold component" not in str(reply)  # the same conversation: it was not a new start
+
+
+def test_the_record_of_seen_components_is_a_personal_file_that_git_never_gets(repo):
+    from lanternspec.core.state import IGNORED
+
+    project = _project(repo)
+    assert "components-seen.json" in IGNORED
+
+    notice(project, {"mcp": ["obsidian"]})  # the first conversation writes the file
+
+    assert (project.state / "components-seen.json").exists()
+    assert "components-seen.json" in (project.state / ".gitignore").read_text(encoding="utf-8").splitlines()
+    ignored = repo.git("check-ignore", str(project.state / "components-seen.json"), check=False)
+    assert ignored.returncode == 0  # git itself agrees

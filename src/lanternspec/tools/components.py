@@ -18,6 +18,7 @@ from typing import Any
 from ..core import frontmatter
 from ..core.messages import msg
 from ..core.project import Project, read
+from ..core.state import ensure_state_dir
 from .base import MCP_NAME
 
 ASKED_KINDS = ("mcp", "plugin")  # skills and hook events come and go with the person's own setup; a card for each would be noise
@@ -34,7 +35,7 @@ def _load(project: Project) -> set[str] | None:
 
 
 def _save(project: Project, seen: set[str]) -> None:
-    project.state.mkdir(parents=True, exist_ok=True)
+    ensure_state_dir(project)  # the file lists the person's own add-ons: its folder's .gitignore must cover it
     (project.state / SEEN_FILE).write_text(json.dumps(sorted(seen), ensure_ascii=False), encoding="utf-8")
 
 

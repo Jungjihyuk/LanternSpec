@@ -29,6 +29,7 @@ IGNORED = (
     "sessions/",
     "references.yaml",
     "term-candidates.json",
+    "components-seen.json",
 )  # personal records, never committed
 
 
