@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from .. import resources
-from ..core import frontmatter, state, templating
+from ..core import frontmatter, sections, state, templating
 from ..core.messages import msg
 from ..core.names import WORK_DOCS
 from ..core.new_id import next_id
@@ -218,6 +218,62 @@ def _profile_table(project: Project) -> str:
         (msg("Documents"), msg("shared (pushed with the code)") if p.remote == "shared" else msg("local (docs-local branch, not pushed)")),
     ]
     return msg("| Question | Answer |\n|---|---|\n") + "\n".join(f"| {a} | {b} |" for a, b in rows)
+
+
+def update_table(lines: list[str], table: str) -> list[str] | None:
+    r"""Put a table in the place of the one with the same header, keeping rows only the old one has.
+
+    Args:
+        lines: The lines to look in.
+        table: The new table: header, divider and rows; a row is known by its first cell.
+
+    Returns:
+        The lines with the new table; None when there is no table with that header.
+
+    Example:
+        >>> update_table(["| Q | A |", "|---|---|", "| a | 1 |", "| mine | x |", "end"], "| Q | A |\n|---|---|\n| a | 2 |")
+        ['| Q | A |', '|---|---|', '| a | 2 |', '| mine | x |', 'end']
+    """
+    new = table.split("\n")
+
+    def key(row: str) -> str:
+        return row.strip().strip("|").split("|")[0].strip()
+
+    start = next((i for i, line in enumerate(lines) if line.strip() == new[0]), None)
+    if start is None:
+        return None
+    end = start
+    while end < len(lines) and lines[end].strip().startswith("|"):
+        end += 1
+    known = {key(row) for row in new[2:]}
+    mine = [row for row in lines[start + 2 : end] if key(row) not in known]
+    return [*lines[:start], *new, *mine, *lines[end:]]
+
+
+def refresh_profile_table(project: Project) -> Path | None:
+    """Rewrite the project definition's table of /l-init answers from lantern.yaml; the rest of the document stays.
+
+    Args:
+        project: The project.
+
+    Returns:
+        The document when it changed; None when the table is right, or there is no such document, section or table.
+
+    Example:
+        >>> refresh_profile_table(project).name  # doctest: +SKIP
+        '프로젝트 정의서.md'
+    """
+    path = project.docs / doc_place(project.names, "project-definition")
+    if not path.exists() or project.names.is_unused("project_profile"):
+        return None
+    text = read(path)
+    m = sections.find(text, project.names.titles("project_profile"))
+    lines = update_table(m.group(2).split("\n"), _profile_table(project)) if m else None
+    if m is None or lines is None or "\n".join(lines) == m.group(2):
+        return None
+    new = text[: m.start(2)] + "\n".join(lines) + text[m.end(2) :]
+    write(path, frontmatter.set_fields(new, {}) if frontmatter.parse(new).has_frontmatter else new)  # `updated` is today
+    return path
 
 
 def _members_table(project: Project) -> str:
@@ -455,6 +511,8 @@ def init_apply(project: Project) -> list[str]:
         elif action.kind == "enable":
             write(path, frontmatter.set_fields(read(path), {"status": project.enums.value("current_status", "active")}))
             done.append(project.rel(path) + msg(" (in use again)"))
+    refreshed = refresh_profile_table(project)
+    done += [project.rel(refreshed)] if refreshed else []
     if project.profile.clients:
         (project.folder("current") / project.names.folder("screens")).mkdir(parents=True, exist_ok=True)
     return done

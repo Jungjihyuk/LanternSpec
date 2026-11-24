@@ -169,6 +169,10 @@ sections:
     since: "1.1.0"
     ko: {title: "참고한 도메인 지식", feature: "/l-plan이 이 작업에 쓸 도메인 지식의 절을 이 칸에 고르고, /l-build가 그 할 일을 시작할 때 거기 연결된 절만 읽습니다"}
     en: {title: "Domain Knowledge Used", feature: "/l-plan picks here the domain-knowledge sections this work needs, and /l-build reads only the ones tied to a task when it starts that task"}
+  project_profile:
+    docs: [project_definition]
+    ko: {title: "프로젝트 성격", feature: "lantern scaffold init과 lantern upgrade가 이 칸의 표를 lantern.yaml의 지금 값으로 다시 씁니다"}
+    en: {title: "What kind of project", feature: "has its table rewritten from lantern.yaml by lantern scaffold init and lantern upgrade"}
   retro_summary:
     docs: [retro]
     ko: {title: "요약", feature: "AI 회고 줄이 더해지거나 확인될 때마다 줄 수 · 약점 · 보완의 합계를 이 칸에 다시 씁니다"}

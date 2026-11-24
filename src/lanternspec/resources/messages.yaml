@@ -1070,6 +1070,7 @@
 "{label} tool setup ({name})": {ko: "{label} 도구 준비 ({name})"}
 "{rel} (removed)": {ko: "{rel} (지움)"}
 "This project's language is set to '{fixed}' in lantern.yaml — it doesn't change once set": {ko: "이 프로젝트의 언어는 lantern.yaml에서 '{fixed}'로 정해졌습니다 — 처음 정한 뒤에는 바꾸지 않습니다"}
+"✔ {rel}: the table of answers now follows lantern.yaml": {ko: "✔ {rel}: 답 표를 lantern.yaml에 맞게 고쳤습니다"}
 "✔ Template '{name}' {get} → {base_ver}": {ko: "✔ 양식 '{name}' {get} → {base_ver}"}
 "ℹ Template '{name}': the base template went {get} → {base_ver}, but this one was refined, so it stays (compare: lantern template diff \"{name}\")": {ko: "ℹ 양식 '{name}': 기본 양식이 {get} → {base_ver}로 바뀌었지만 다듬은 양식이라 그대로 둠 (비교: lantern template diff \"{name}\")"}
 "   … and {value} more": {ko: "   … 외 {value}개"}

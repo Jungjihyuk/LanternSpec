@@ -579,8 +579,11 @@ def upgrade(project: Project, force: bool = False, apply: bool = False) -> Insta
             )
         )
     if project.docs.exists():  # documents a newer version turns on (e.g. the glossary) are made by scaffold init, never here
-        from ..work.scaffold import init_plan
+        from ..work.scaffold import init_plan, refresh_profile_table
 
+        refreshed_table = refresh_profile_table(project)
+        if refreshed_table:
+            report.templates.append(msg("✔ {rel}: the table of answers now follows lantern.yaml", rel=project.rel(refreshed_table)))
         new = [project.docs_rel(a.path) for a in init_plan(project) if a.kind == "create-doc"]
         if new:
             report.warnings.append(msg("ℹ New documents to make: {items} → lantern scaffold init", items=", ".join(new)))
