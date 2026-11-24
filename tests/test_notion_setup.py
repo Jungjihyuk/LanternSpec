@@ -495,3 +495,17 @@ def test_long_page_titles_are_cut_and_each_is_on_its_own_line(repo):
 
     bullets = [line for line in io.said if line.startswith("     · ")]
     assert len(bullets) == 3 and bullets[0].endswith("…") and bullets[2].endswith("FastAPI")
+
+
+def test_the_token_warning_is_marked_so_it_stands_out(repo):
+    from lanternspec.cli.color import paint
+
+    mac = _whole_run(repo, ["1", "", PAGE_URL])
+    other = ScriptedIo(["1", "y", PAGE_URL])
+    _run(_project(repo), other, FakeKeychain(on_mac=False), env={"NOTION_TOKEN": TOKEN})
+
+    for io in (mac, other):
+        warning = io.said[1:3]  # right under the title, before anything is asked
+        assert all(line.startswith("⚠ ") for line in warning), warning
+        assert "대화에는" in warning[1]
+        assert all(paint(line) != line for line in warning)  # on a terminal the whole line is colored

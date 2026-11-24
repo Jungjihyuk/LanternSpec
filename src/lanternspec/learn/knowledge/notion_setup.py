@@ -237,11 +237,11 @@ def run(
     try:
         io.say(msg("Notion setup — about 5 minutes."))
         io.say(
-            msg("The token goes only into the Keychain prompt.")
+            msg("⚠ The token goes only into the Keychain prompt.")
             if store.available()
-            else msg("The token goes in the environment variable {env}.", env=env_name)
+            else msg("⚠ The token goes in the environment variable {env}.", env=env_name)
         )
-        io.say(msg("Never paste it into a chat."))
+        io.say(msg("⚠ Never paste it into a chat."))
         mode = _write_mode(io)
         _guide(io, mode)
         if open_browser:

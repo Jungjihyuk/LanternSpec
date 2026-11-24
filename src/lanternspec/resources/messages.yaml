@@ -427,9 +427,9 @@
 "Paste the token there and press Enter (nothing is shown).": {ko: "토큰을 붙여 넣고 Enter를 누르세요 (화면에는 보이지 않습니다)."}
 "✖ No token found.": {ko: "✖ 토큰이 없습니다."}
 "Add this line to your shell settings, open a new terminal and run this again:": {ko: "쉘 설정에 아래 줄을 추가하고, 새 터미널을 열어 다시 실행하세요:"}
-"The token goes only into the Keychain prompt.": {ko: "토큰은 키체인 입력창에만 넣습니다."}
-"The token goes in the environment variable {env}.": {ko: "토큰은 환경 변수 {env}에 넣습니다."}
-"Never paste it into a chat.": {ko: "대화에는 절대 붙이지 마세요."}
+"⚠ The token goes only into the Keychain prompt.": {ko: "⚠ 토큰은 키체인 입력창에만 넣습니다."}
+"⚠ The token goes in the environment variable {env}.": {ko: "⚠ 토큰은 환경 변수 {env}에 넣습니다."}
+"⚠ Never paste it into a chat.": {ko: "⚠ 대화에는 절대 붙이지 마세요."}
 
 # learn/knowledge/obsidian.py
 "Knowledge store folder doesn't exist: {root}": {ko: "지식 저장소 폴더가 없습니다: {root}"}
