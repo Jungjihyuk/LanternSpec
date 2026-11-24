@@ -74,6 +74,13 @@ def cmd_knowledge(a: argparse.Namespace) -> int:
     if a.action == "setup":
         if a.arg != "notion":
             raise CliError(msg("Only Notion has a setup: lantern knowledge setup notion"))
+        if not project.profile.exists:
+            raise CliError(
+                msg(
+                    "No lantern.yaml in {root} — run /l-init first and choose Notion there; it tells you when to run this",
+                    root=project.root,
+                )
+            )
         if not sys.stdin.isatty():
             raise CliError(
                 msg(

@@ -78,15 +78,7 @@ lantern template show "<<file.tech_criteria>>"
 - (if 2 is team) team member names — there are no candidates, so ask in a plain message: "Please list the people working with you, separated by commas"
 - (if 4 is external) "Create an API document too?" — if yes, `--extra api`
 
-**If Notion was chosen** — skip the questions under "If a knowledge store was chosen" (path · write mode · folder topics · closed folders). Notion has no folders, and the command asks what it needs itself.
-- Say first: **don't paste the token into this conversation.** A command guides making the integration, its permissions, the token and connecting pages, and it takes the token itself into the Keychain (macOS).
-- Have the user run it **in a terminal themselves** (it asks for a token, so the AI can't run it for them. Whether `!` in Claude Code's input works is not confirmed, so suggest a separate terminal):
-  ```bash
-  lantern knowledge setup notion
-  ```
-- When they say it is done, use the `--knowledge <ID> --knowledge-type notion --knowledge-write <mode>` the command printed at its end in the `profile write` of step 2, as it is.
-- If they don't want to now or get stuck, go on with **no knowledge store** (and say the same command connects it later).
-- The AI never reads or handles the token or the Keychain.
+**If Notion was chosen** — skip the questions under "If a knowledge store was chosen" (path · write mode · folder topics · closed folders). Notion has no folders, and the command asks what it needs itself. **Don't connect it here**: that comes in step 2, once `lantern.yaml` is made ("Connecting Notion"). The same holds when they say it is already connected — which page or database to write to is saved in `lantern.yaml` for each project.
 
 **If a knowledge store was chosen** (only when 5 is Obsidian or a folder, one at a time)
 - **Where is it?** — look for candidates first: for Obsidian, folders that contain `.obsidian` (`find ~ -maxdepth 4 -name .obsidian -type d`); for a Markdown folder, near the documents folder. With 2 or more paths found, offer them as choices (up to 3); with one, ask in a plain message "Is this the right path?"; if none are found, ask in a plain message: "What is the path of your notes folder?"
@@ -132,7 +124,7 @@ If an answer is unclear, ask again instead of guessing. Once everything is colle
 ```bash
 lantern profile write --language en --name "<name>" --origin greenfield|brownfield --team solo|team [--members "Ana,Ben"] \
   --clients web,mobile --server none|external|custom [--extra api] \
-  [--knowledge "<knowledge store path>" --knowledge-type obsidian|folder|notion --knowledge-write direct|propose_only [--areas-from "2. Study"]] \
+  [--knowledge "<knowledge store path>" --knowledge-type obsidian|folder --knowledge-write direct|propose_only [--areas-from "2. Study"]] \
   --design claude-design|figma|canva|none --remote shared|local --base main --pr none|deploy|work [--deploy main] [--branch "feature/{id}-{slug}"] \
   --kind script|cli|library|service|data --external yes|no [--languages python,typescript] --lifespan short|long
 lantern profile set "knowledge.deny=[4. Work]"   # only when folders to close were picked (for folders to open: knowledge.allow=[…])
@@ -141,6 +133,18 @@ lantern principles show             # the chosen design principles · code conve
 lantern scaffold init --plan        # the folders · documents it would create (creates nothing yet)
 ```
 Tell the user the `principles show` result in a line or two (e.g. "CLI tool · external integrations → single responsibility and extension points are Must; Python uses ruff · pyright").
+
+**Connecting Notion** (only when 5 is Notion) — run `profile write` without `--knowledge`, and do this once `lantern.yaml` is there and before `lantern scaffold init`. That way the settings are saved right away, and the documents and skills are made for Notion from the start.
+- Say first: **don't paste the token into this conversation.** A command guides making the integration, its permissions, the token and picking a page or database, and it takes the token itself into the Keychain (macOS). A token put in before can be used again.
+- Have the user run it **themselves in a terminal in this project's folder**, and wait (it asks for a token, so the AI can't run it for them. Whether `!` in Claude Code's input works is not confirmed, so suggest a separate terminal):
+  ```bash
+  cd "<absolute path of this project>"
+  lantern knowledge setup notion
+  ```
+- When they say it is done, **check the file, not the words:** it is saved only when `lantern profile show` has `type: notion` under `knowledge:`. If not, say it was not saved, look together at whether it was run in another folder or stopped part way, and ask whether to run it again or leave it for later.
+- If they want to leave it for later or get stuck, go on with **no knowledge store** (and say the same command connects it later).
+- Once it is saved, look at `lantern scaffold init --plan` again (the debt documents are added).
+- The AI never reads or handles the token or the Keychain.
 
 **Parts (each folder its own rules):** a part is a sub-project inside the repository — a folder with its own language and check commands.
 `lantern parts` lists the sub-folders with their own package file (`pyproject.toml` · `package.json` …, e.g. `backend` · `frontend/apps/web`) as candidates.
@@ -239,4 +243,5 @@ Fix any ✖ errors in the check result, and say which ⚠ required blanks remain
 6. Don't change the document storage mode (shared ↔ local) here → `lantern docs-mode local|shared`.
    To change the branch flow, change the values in the table above like `lantern profile set git.base=dev git.pr=deploy git.deploy=main` (the naming rule is `git.branch`), then `lantern upgrade`. Works in progress keep their branches.
 7. If skill behavior values such as `idea.capture`, or the project kind (`project.kind` · `project.external` · `project.languages`) changed, `lantern upgrade` (re-creates the skills · the development principles in AGENTS.md · the development-principles document).
-8. Common wrap-up: `lantern close l-init`.
+8. To add Notion as the knowledge store, follow "Connecting Notion" in step 2, and once it is confirmed as saved, `lantern scaffold init` · `lantern upgrade`.
+9. Common wrap-up: `lantern close l-init`.

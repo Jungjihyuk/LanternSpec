@@ -6,12 +6,12 @@ Responsibilities:
     - get the token into the macOS Keychain without ever receiving it (the Keychain tool asks for it on the person's terminal);
       off a Mac, check the environment variable
     - check that Notion accepts the token, show how many pages the integration sees, and check the page or database new notes go in
-    - write the `knowledge` block of lantern.yaml, or print the values for /l-init when there is no lantern.yaml yet
+    - write the `knowledge` block of lantern.yaml
 
 Not here:
     - finding the token later and searching → learn/knowledge/notion.py
     - the Keychain commands → learn/knowledge/keychain.py
-    - refusing to run without a terminal → cli/learn.py
+    - refusing to run before /l-init or without a terminal → cli/learn.py
 
 The terminal, the Keychain, the browser and Notion are passed in, so the steps are tested without any of them.
 """
@@ -304,7 +304,7 @@ def run(
     Nothing is written to lantern.yaml until every step has worked, so stopping part way leaves it as it was.
 
     Args:
-        project: The project.
+        project: The project (its lantern.yaml is there: /l-init has made it).
         io: The terminal and browser.
         store: Where tokens are kept (the keychain module; tests pass a fake).
         make_adapter: Makes the Notion connection from a token and a folder for the kept list; the real adapter when None.
@@ -338,8 +338,7 @@ def run(
         token = _get_token(io, store, env_name, environment)
         if token is None:
             return 1
-        state = ensure_state_dir(project) if project.profile.exists else None
-        notion = _check_token(io, token, store, env_name, environment, maker, state)
+        notion = _check_token(io, token, store, env_name, environment, maker, ensure_state_dir(project))
         if notion is None:
             return 1
         parent = _parent(io, notion, mode)
@@ -359,20 +358,12 @@ def run(
 
 
 def _save(io: Io, project: Project, parent: str, mode: str) -> None:
-    """Write the `knowledge` block (other settings of it stay), or print the values when there is no lantern.yaml yet."""
-    if not project.profile.exists:
-        io.say(
-            msg(
-                "ℹ lantern.yaml isn't there yet. "
-                "/l-init makes it with: --knowledge {page} --knowledge-type notion --knowledge-write {write}",
-                page=parent,
-                write=mode,
-            )
-        )
-        return
+    """Write the `knowledge` block (other settings of it stay) and say what comes next."""
     data = pm.load(project.root).data
     knowledge = dict(data.get("knowledge") or {})
     knowledge.update({"type": "notion", "path": parent, "write": mode})
     data["knowledge"] = knowledge
     pm.save(project.root, data)
     io.say(msg("✔ Saved the knowledge settings in lantern.yaml (notion · {write}).", write=mode))
+    io.say(msg("   During /l-init: go back to the conversation and say it is saved."))
+    io.say(msg("   After /l-init: run `lantern scaffold init` and `lantern upgrade`."))

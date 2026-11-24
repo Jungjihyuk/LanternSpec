@@ -363,7 +363,6 @@
 "That doesn't look like a page link (it ends with 32 letters and digits).": {ko: "페이지 링크가 아닌 것 같습니다 (끝에 영문자와 숫자 32자리가 있어야 합니다)."}
 "✔ Saved the knowledge settings in lantern.yaml (notion · {write}).": {ko: "✔ lantern.yaml에 지식 저장소 설정을 저장했습니다 (notion · {write})."}
 "✖ The Keychain tool did not save the token. Nothing was changed.": {ko: "✖ 키체인에 토큰을 저장하지 못했습니다. 바뀐 것은 없습니다."}
-"ℹ lantern.yaml isn't there yet. /l-init makes it with: --knowledge {page} --knowledge-type notion --knowledge-write {write}": {ko: "ℹ 아직 lantern.yaml이 없습니다. /l-init이 이 값으로 만듭니다: --knowledge {page} --knowledge-type notion --knowledge-write {write}"}
 "✔ Searching “{title}” works: {count} page(s) found.": {ko: "✔ “{title}” 검색이 됩니다: 페이지 {count}개를 찾았습니다."}
 "Stopped. lantern.yaml was not changed.": {ko: "멈췄습니다. lantern.yaml은 바뀌지 않았습니다."}
 "setup: don't open Notion's integrations page in the browser": {ko: "setup: Notion의 통합 페이지를 브라우저로 열지 않음"}
@@ -475,6 +474,11 @@
 "The Keychain has no token. Only the environment variable {env} does.": {ko: "키체인에는 토큰이 없고, 환경 변수 {env}에만 있습니다."}
 "It may be an old value left in this terminal, even after its line was deleted.": {ko: "export 줄을 지웠어도 이 터미널에 남은 옛 값일 수 있습니다."}
 "▶ Use the variable's token? [y/N] (N = put a new one in the Keychain): ": {ko: "▶ 환경 변수의 토큰을 쓸까요? [y/N] (N = 키체인에 새로 입력): "}
+
+# learn/knowledge/notion_setup.py (steps)
+"   During /l-init: go back to the conversation and say it is saved.": {ko: "   /l-init 중이면: 대화로 돌아가 저장됐다고 알려 주세요."}
+"   After /l-init: run `lantern scaffold init` and `lantern upgrade`.": {ko: "   /l-init 뒤라면: `lantern scaffold init`과 `lantern upgrade`를 실행하세요."}
+"No lantern.yaml in {root} — run /l-init first and choose Notion there; it tells you when to run this": {ko: "{root}에 lantern.yaml이 없습니다 — 먼저 /l-init을 실행해 Notion을 고르세요. 이 명령을 실행할 때를 알려 줍니다"}
 
 # learn/knowledge/obsidian.py
 "Knowledge store folder doesn't exist: {root}": {ko: "지식 저장소 폴더가 없습니다: {root}"}

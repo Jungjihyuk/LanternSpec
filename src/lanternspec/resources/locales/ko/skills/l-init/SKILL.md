@@ -79,15 +79,7 @@ lantern template show "<<file.tech_criteria>>"
 - (2번이 team이면) 팀원 이름 — 후보를 만들 수 없으니 평범한 메시지로: "함께하는 사람 이름을 쉼표로 적어 주세요"
 - (4번이 external이면) "API 명세 문서도 만들까요?" — 예면 `--extra api`
 
-**Notion을 골랐으면** — 아래 "지식 저장소를 골랐으면"의 질문(경로 · 쓰기 방식 · 폴더 분류 · 닫을 폴더)은 하지 않는다. Notion은 폴더가 없고, 필요한 것은 명령이 직접 묻는다.
-- 먼저 말한다: **토큰은 이 대화에 붙이지 마세요.** 통합 만들기 · 권한 · 토큰 · 페이지 연결을 안내하는 명령이 있고, 토큰은 그 명령이 키체인(macOS)에 직접 받는다.
-- 사용자에게 **터미널에서 직접** 실행하게 한다 (토큰을 묻는 명령이라 AI가 대신 실행할 수 없다. Claude Code 입력창의 `!`로 되는지는 확인되지 않았으니 별도 터미널을 권한다):
-  ```bash
-  lantern knowledge setup notion
-  ```
-- 끝났다고 하면 명령이 마지막에 출력한 `--knowledge <ID> --knowledge-type notion --knowledge-write <방식>`을 2단계 `profile write`에 그대로 쓴다.
-- 지금 하지 않겠다고 하거나 막히면 **지식 저장소 없음**으로 계속한다 (나중에 같은 명령으로 연결할 수 있다고 알린다).
-- 토큰 · 키체인을 AI가 읽거나 다루지 않는다.
+**Notion을 골랐으면** — 아래 "지식 저장소를 골랐으면"의 질문(경로 · 쓰기 방식 · 폴더 분류 · 닫을 폴더)은 하지 않는다. Notion은 폴더가 없고, 필요한 것은 명령이 직접 묻는다. **연결은 여기서 하지 않고** 2단계에서 `lantern.yaml`을 만든 뒤에 한다 ("Notion 연결"). 이미 연결했다고 해도 마찬가지다 — 어느 페이지 · 데이터베이스에 쓸지는 프로젝트마다 `lantern.yaml`에 저장한다.
 
 **지식 저장소를 골랐으면** (5번이 Obsidian · 폴더일 때만, 하나씩)
 - **어디에 있나요?** — 먼저 후보를 찾는다: Obsidian이면 `.obsidian` 폴더가 있는 곳(`find ~ -maxdepth 4 -name .obsidian -type d`), Markdown 폴더면 문서 폴더 근처. 찾은 경로가 2개 이상이면 선택지로 내고(최대 3개), 하나면 평범한 메시지로 "이 경로가 맞나요?"라고 묻고, 못 찾으면 평범한 메시지로 "노트 폴더의 경로를 알려 주세요"라고 묻는다.
@@ -133,7 +125,7 @@ lantern work flow --team solo|team --origin greenfield|brownfield
 ```bash
 lantern profile write --name "<이름>" --origin greenfield|brownfield --team solo|team [--members "지혁,민수"] \
   --clients web,mobile --server none|external|custom [--extra api] \
-  [--knowledge "<지식 저장소 경로>" --knowledge-type obsidian|folder|notion --knowledge-write direct|propose_only [--areas-from "2. Study"]] \
+  [--knowledge "<지식 저장소 경로>" --knowledge-type obsidian|folder --knowledge-write direct|propose_only [--areas-from "2. Study"]] \
   --design claude-design|figma|canva|none --remote shared|local --base main --pr none|deploy|work [--deploy main] [--branch "feature/{id}-{slug}"] \
   --kind script|cli|library|service|data --external yes|no [--languages python,typescript] --comment-language ko|en --lifespan short|long
 lantern profile set "knowledge.deny=[4. Work]"   # 닫을 폴더를 골랐을 때만 (열 폴더를 골랐으면 knowledge.allow=[…])
@@ -142,6 +134,18 @@ lantern principles show             # 고른 설계 원칙 · 코드 컨벤션
 lantern scaffold init --plan        # 만들 폴더 · 문서 목록 (아직 아무것도 안 만듦)
 ```
 `principles show` 결과를 한두 줄로 알려 준다 (예: "CLI 도구 · 바깥 연결 → 단일 책임 · 확장 지점은 지킴, Python은 ruff · pyright").
+
+**Notion 연결** (5번이 Notion일 때만) — `profile write`는 `--knowledge` 없이 실행하고, `lantern.yaml`이 생긴 뒤 `lantern scaffold init` 전에 한다. 그래야 설정이 바로 저장되고, 문서와 스킬이 처음부터 Notion에 맞게 만들어진다.
+- 먼저 말한다: **토큰은 이 대화에 붙이지 마세요.** 통합 만들기 · 권한 · 토큰 · 페이지나 데이터베이스 고르기를 안내하는 명령이 있고, 토큰은 그 명령이 키체인(macOS)에 직접 받는다. 전에 토큰을 넣었으면 그대로 쓸 수 있다.
+- 사용자에게 **이 프로젝트 폴더의 터미널에서 직접** 실행하게 하고 기다린다 (토큰을 묻는 명령이라 AI가 대신 실행할 수 없다. Claude Code 입력창의 `!`로 되는지는 확인되지 않았으니 별도 터미널을 권한다):
+  ```bash
+  cd "<이 프로젝트의 절대 경로>"
+  lantern knowledge setup notion
+  ```
+- 했다고 하면 **말이 아니라 파일로 확인한다:** `lantern profile show`에 `knowledge:`의 `type: notion`이 있어야 저장된 것이다. 없으면 저장되지 않았다고 알리고, 다른 폴더에서 실행했거나 중간에 멈췄는지 함께 본 뒤 다시 실행할지 · 나중에 할지 묻는다.
+- 나중에 하겠다고 하거나 막히면 **지식 저장소 없음**으로 계속한다 (나중에 같은 명령으로 연결할 수 있다고 알린다).
+- 저장됐으면 `lantern scaffold init --plan`을 다시 본다 (부채 문서가 더해진다).
+- 토큰 · 키체인을 AI가 읽거나 다루지 않는다.
 
 **영역 (폴더마다 자기 규칙):** 영역은 저장소 안의 하위 프로젝트다 — 언어와 검사 명령이 따로인 폴더.
 `lantern parts`가 패키지 설정 파일(`pyproject.toml` · `package.json` 등)을 따로 가진 하위 폴더(예: `backend` · `frontend/apps/web`)를 후보로 보여 준다.
@@ -240,4 +244,5 @@ lantern close l-init
 6. 문서 저장 방식(shared ↔ local)은 여기서 바꾸지 않는다 → `lantern docs-mode local|shared`.
    브랜치 방식을 바꾸려면 위 표의 값을 `lantern profile set git.base=dev git.pr=deploy git.deploy=main`처럼 고치고(이름 규칙은 `git.branch`), `lantern upgrade`. 진행 중인 작업은 지금 브랜치를 그대로 쓴다.
 7. `idea.capture` 같은 스킬 동작 값이나 프로젝트 종류(`project.kind` · `project.external` · `project.languages`)가 바뀌었으면 `lantern upgrade` (스킬 · AGENTS.md의 개발 원칙 · 개발 원칙 문서를 다시 만든다).
-8. 공통 마무리 `lantern close l-init`.
+8. 지식 저장소로 Notion을 더하려면 2단계의 "Notion 연결"대로 하고, 저장을 확인한 뒤 `lantern scaffold init` · `lantern upgrade`.
+9. 공통 마무리 `lantern close l-init`.

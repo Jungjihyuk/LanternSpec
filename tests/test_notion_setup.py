@@ -333,15 +333,11 @@ def test_something_that_is_not_a_page_address_is_asked_for_again(repo):
     assert _run(project, io, FakeKeychain()) == 0
 
 
-def test_without_a_lantern_yaml_it_prints_the_values_for_init_instead_of_creating_one(repo):
-    project = Project.load(repo.root)  # no `lantern.yaml` yet: /l-init has not run
-    assert not project.profile.exists
+def test_the_end_says_what_to_do_with_the_saved_settings(repo):
     io = ScriptedIo(["1", "", PAGE_URL])
-
-    assert _run(project, io, FakeKeychain()) == 0
-
-    assert not (repo.root / "lantern.yaml").exists()
-    assert f"--knowledge {PAGE} --knowledge-type notion --knowledge-write propose_only" in io.out
+    assert _run(_project(repo), io, FakeKeychain()) == 0
+    end = io.out[io.out.index("lantern.yaml") :]
+    assert "/l-init" in end and "lantern scaffold init" in end and "lantern upgrade" in end
 
 
 def test_off_a_mac_it_checks_the_environment_variable_instead_of_the_keychain(repo):
@@ -392,6 +388,32 @@ def test_the_command_refuses_to_run_without_a_terminal_and_says_where_to_run_it(
 
     assert code != 0 and "터미널" in out
     assert "lantern knowledge setup notion" in out
+
+
+def test_before_init_the_command_stops_at_once_and_says_to_do_init_first(repo, monkeypatch):
+    """With no lantern.yaml there is nowhere to save: making one would look like /l-init had run, and it would then skip its questions."""
+    asked: list[str] = []
+    monkeypatch.setattr("lanternspec.learn.knowledge.notion_setup.run", lambda *a, **k: asked.append("run"))
+
+    code, out = repo("knowledge", "setup", "notion", ok=False)
+
+    assert code != 0 and "/l-init" in out and str(repo.root) in out  # where it looked, in case it is the wrong folder
+    assert "터미널" not in out and not asked  # even an AI tool is told the order first, not to pass the command on
+    assert not (repo.root / "lantern.yaml").exists() and not (repo.root / ".lantern").exists()
+
+
+@pytest.mark.parametrize("language", ["ko", "en"])
+def test_init_connects_notion_after_lantern_yaml_is_made_and_before_the_documents(language):
+    from lanternspec.tools.skills import load_sources
+
+    body = next(s for s in load_sources(language) if s.name == "l-init").body
+    made, connect, checked = (
+        body.index("lantern profile write"),
+        body.index("lantern knowledge setup notion"),
+        body.index("lantern profile show"),
+    )
+    assert made < connect < checked < body.index("\n## 3. ")  # the file is there, then Notion, a look at the file, the documents
+    assert "--knowledge <ID>" not in body  # nothing to copy by hand
 
 
 def test_only_notion_has_a_setup(repo):
@@ -476,7 +498,7 @@ def test_init_sends_notion_to_the_setup_command_and_never_asks_the_ai_to_handle_
     for language in ("ko", "en"):
         init = next(s for s in load_sources(language) if s.name == "l-init")
         assert "lantern knowledge setup notion" in init.body, language
-        assert "--knowledge-type obsidian|folder|notion" in init.body, language
+        assert "--knowledge-type obsidian|folder " in init.body, language  # Notion's settings are saved by the command, not typed here
         assert "Notion" in init.body.split("5.", 1)[1].splitlines()[0], language  # it is a choice of question 5
 
 
@@ -726,10 +748,10 @@ def test_a_variable_left_over_is_not_called_a_stored_token_and_a_new_one_is_aske
         return FakeNotion(token)
 
     io, kc = ScriptedIo(["1", "", "", PAGE_URL]), FakeKeychain(typed=["new"])  # Enter = don't use the variable; Enter = copied; page
-    assert _run(project, io, kc, env={"NOTION_TOKEN": "old"}, notion_fake=notion_for) == 0
+    assert _run(project, io, kc, env={"NOTION_TOKEN": "left-over"}, notion_fake=notion_for) == 0
     assert checked == ["new"] and kc.stored == ["NOTION_TOKEN"]
-    assert "이미" not in io.out and "환경 변수 NOTION_TOKEN에만" in io.out and "old" not in "\n".join(io.said)
+    assert "이미" not in io.out and "환경 변수 NOTION_TOKEN에만" in io.out and "left-over" not in "\n".join(io.said)
 
     chosen = ScriptedIo(["1", "y", PAGE_URL])  # on purpose (a locked Keychain, for one): the variable is used
-    assert _run(project, chosen, FakeKeychain(), env={"NOTION_TOKEN": "old"}, notion_fake=notion_for) == 0
-    assert checked[-1] == "old"
+    assert _run(project, chosen, FakeKeychain(), env={"NOTION_TOKEN": "left-over"}, notion_fake=notion_for) == 0
+    assert checked[-1] == "left-over"
