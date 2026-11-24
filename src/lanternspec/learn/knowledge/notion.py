@@ -3,10 +3,13 @@
 lantern.yaml:
     knowledge:
       type: notion
-      path: <parent page id>      # where approved notes are created
+      path: <page or database id> # where approved notes are created (a page under it, or a row of it)
       token_env: NOTION_TOKEN     # (optional) env var holding the integration token
 
 The integration only sees pages shared with it; we never edit existing pages.
+
+Not here:
+    - which properties a row has and how their values are written → learn/knowledge/notion_database.py
 """
 
 from __future__ import annotations
@@ -22,8 +25,10 @@ from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Any
 
+from ...core import frontmatter
 from ...core.messages import msg
-from . import Adapter, Hit, KnowledgeError, keychain
+from . import Adapter, Hit, KnowledgeError, Property, keychain, notion_database
+from .notion_database import _fold, _rich
 
 API = "https://api.notion.com/v1"
 VERSION = "2022-06-28"
@@ -137,10 +142,6 @@ def _title(page: dict[str, Any]) -> str:
         if isinstance(prop, dict) and prop.get("type") == "title":
             return _plain(prop.get("title") or []).strip()  # Notion titles often end in a space; "FastAPI " is "FastAPI"
     return ""
-
-
-def _rich(text: str) -> list[dict[str, Any]]:
-    return [{"type": "text", "text": {"content": text[i : i + 2000]}} for i in range(0, max(len(text), 1), 2000)] if text else []
 
 
 def markdown_to_blocks(md: str) -> list[dict[str, Any]]:
@@ -289,10 +290,6 @@ def properties_text(page: dict[str, Any]) -> str:
     return "---\n" + "\n".join(lines) + "\n---\n" if lines else ""
 
 
-def _fold(text: str) -> str:
-    return unicodedata.normalize("NFC", text).casefold().strip()
-
-
 def listed(page: dict[str, Any]) -> dict[str, Any]:
     """Keep what a search needs of a page the search API listed: its title, address, edit date and the values of its properties.
 
@@ -375,7 +372,7 @@ class NotionAdapter(Adapter):
     """A knowledge store in Notion, reached with an integration token.
 
     Attributes:
-        parent: The page new notes are created under (ID without dashes).
+        parent: The page or database new notes are created in (ID without dashes).
         token: The integration token.
 
     Example:
@@ -391,7 +388,7 @@ class NotionAdapter(Adapter):
         """Set up the adapter.
 
         Args:
-            parent_id: The page new notes are created under.
+            parent_id: The page or database new notes are created in.
             token: The integration token.
             opener: Replaces urllib.request.urlopen (tests pass a fake).
             state_dir: Where the list of the pages is kept between runs; None keeps it only for this run.
@@ -406,6 +403,7 @@ class NotionAdapter(Adapter):
         self._open = opener or urllib.request.urlopen
         self.state_dir = state_dir
         self._memo: tuple[float, list[dict[str, Any]]] | None = None  # when the list was fetched, and the list
+        self._place: tuple[dict[str, Any] | None] | None = None  # the parent's database (None in it: a page), once asked
 
     def _call(self, method: str, path: str, body: dict[str, Any] | None = None) -> dict[str, Any]:
         req = urllib.request.Request(
@@ -499,24 +497,39 @@ class NotionAdapter(Adapter):
             return False
         return True
 
-    def is_database(self, ref: str) -> bool:
-        """Tell whether an address or ID is a database (new notes can only be made under a page).
+    def database(self, ref: str) -> dict[str, Any] | None:
+        """Get the database an address or ID points to.
 
         Args:
             ref: The address or ID.
 
         Returns:
-            True when Notion gives a database of that ID; False when it doesn't (a page, not shared, or no such thing).
+            The database, as Notion describes it; None when it is a page, or is not shared with the integration.
+
+        Raises:
+            KnowledgeError: The call failed for another reason, or the database has several data sources.
 
         Example:
-            >>> NotionAdapter(parent, token).is_database(database_link)  # doctest: +SKIP
-            True
+            >>> notion_database.title_property(NotionAdapter(parent, token).database(link))  # doctest: +SKIP
+            '제목'
         """
         try:
-            self._call("GET", f"/databases/{page_id(ref)}")
-        except KnowledgeError:
-            return False
-        return True
+            found = self._call("GET", f"/databases/{page_id(ref)}")
+        except NotionError as e:
+            if "data source" in str(e):
+                raise KnowledgeError(
+                    msg("This Notion database has several data sources, which is not supported: use a database with one, or a page")
+                ) from e
+            if e.status == 404 or (e.status == 400 and "is a page" in str(e)):
+                return None
+            raise
+        return found if found.get("object") == "database" else None
+
+    def _parent_database(self) -> dict[str, Any] | None:
+        """The database new notes become rows of; None when they become pages under a page."""
+        if self._place is None:
+            self._place = (self.database(self.parent),)
+        return self._place[0]
 
     def _list(self, force: bool = False) -> tuple[list[dict[str, Any]], bool]:
         """The listed pages and whether they were fetched just now (within `FRESH_SECONDS`)."""
@@ -630,40 +643,117 @@ class NotionAdapter(Adapter):
             lines += self._read_blocks(block.get("id", ""), depth + 1, budget)
         return lines
 
-    def write(self, rel_path: str, content: str) -> str:
-        r"""Implement Adapter.write by creating a page under the parent page.
-
-        Args:
-            rel_path: The note's name (its last path part, without `.md`, becomes the title).
-            content: The note's Markdown.
+    def properties(self) -> list[Property]:
+        """Implement Adapter.properties: the columns of the database that values can be given for.
 
         Returns:
-            The new page's URL (or ID).
+            The properties; empty when new notes go under a page.
 
         Raises:
             KnowledgeError: The API call failed.
 
         Example:
+            >>> NotionAdapter(database_id, token).properties()[0].name  # doctest: +SKIP
+            '분류'
+        """
+        db = self._parent_database()
+        return notion_database.fillable(db) if db else []
+
+    def check_properties(self, values: dict[str, Any]) -> None:
+        """Implement Adapter.check_properties against the database's own properties and choices.
+
+        Args:
+            values: Property name → value.
+
+        Raises:
+            KnowledgeError: New notes go under a page, or the database doesn't have a name or value given.
+
+        Example:
+            >>> NotionAdapter(database_id, token).check_properties({"분류": "개발"})  # doctest: +SKIP
+        """
+        db = self._parent_database() if values else None
+        if db:
+            notion_database.row_values(db, values)
+        else:
+            super().check_properties(values)
+
+    def write(self, rel_path: str, content: str, properties: dict[str, Any] | None = None) -> str:
+        r"""Implement Adapter.write by creating a page under the parent page, or a row of the parent database.
+
+        Args:
+            rel_path: The note's name (its last path part, without `.md`, becomes the title).
+            content: The note's Markdown.
+            properties: Values for the row's properties (only for a database).
+
+        Returns:
+            The new page's URL (or ID).
+
+        Raises:
+            KnowledgeError: A note with that title is already there, a property can't be filled, or the API call failed.
+
+        Example:
             >>> NotionAdapter(parent, token).write("JWT.md", "# JWT\n")  # doctest: +SKIP
             'https://www.notion.so/JWT-…'
         """
-        title = re.sub(r"\.md$", "", rel_path.rsplit("/", 1)[-1])
+        title = unicodedata.normalize("NFC", re.sub(r"\.md$", "", rel_path.rsplit("/", 1)[-1])).strip()
+        db = self._parent_database()
+        self.check_properties(properties or {})
+        existing = self._same_title(title, db)
+        if existing:
+            raise KnowledgeError(
+                msg(
+                    "A note titled '{title}' is already there: {url} (not changed). "
+                    'To make another, give another title: lantern knowledge write "<draft>" --target "<new title>.md"',
+                    title=title,
+                    url=existing,
+                )
+            )
+        if db:
+            parent = {"database_id": self.parent}
+            values = {
+                notion_database.title_property(db): {"title": _rich(title)},
+                **notion_database.row_values(db, properties or {}),
+            }
+            content = frontmatter.parse(content).body  # a row's properties say what the frontmatter would
+        else:
+            parent = {"page_id": self.parent}
+            values = {"title": {"title": _rich(title)}}
         blocks = markdown_to_blocks(content)
-        page = self._call(
-            "POST",
-            "/pages",
-            {"parent": {"page_id": self.parent}, "properties": {"title": {"title": _rich(title)}}, "children": blocks[:100]},
-        )
-        for i in range(100, len(blocks), 100):  # Notion takes 100 blocks per request
-            self._call("PATCH", f"/blocks/{page['id']}/children", {"children": blocks[i : i + 100]})
-        return str(page.get("url") or page.get("id"))
+        page = self._call("POST", "/pages", {"parent": parent, "properties": values, "children": blocks[:100]})
+        where = str(page.get("url") or page.get("id"))
+        try:
+            for i in range(100, len(blocks), 100):  # Notion takes 100 blocks per request
+                self._call("PATCH", f"/blocks/{page['id']}/children", {"children": blocks[i : i + 100]})
+        except NotionError as e:
+            raise NotionError(
+                msg("The note was made but only part of its text is there: {url} ({error})", url=where, error=e), e.status
+            ) from e
+        return where
+
+    def _same_title(self, title: str, db: dict[str, Any] | None) -> str | None:
+        """The address of a note with this title in the place new notes go; None when there is none. Asked anew each time."""
+        if db:
+            where = {"property": notion_database.title_property(db), "title": {"equals": title}}  # Notion ignores case and end spaces
+            rows = self._call("POST", f"/databases/{self.parent}/query", {"filter": where, "page_size": 1}).get("results") or []
+            return str(rows[0].get("url") or rows[0].get("id")) if rows else None
+        cursor = None
+        for _ in range(MAX_LIST_REQUESTS):
+            q = f"/blocks/{self.parent}/children?page_size=100" + (f"&start_cursor={cursor}" if cursor else "")
+            res = self._call("GET", q)
+            for block in res.get("results") or []:
+                if block.get("type") == "child_page" and _fold(block["child_page"].get("title") or "") == _fold(title):
+                    return "https://www.notion.so/" + str(block.get("id", "")).replace("-", "")
+            if not res.get("has_more"):
+                return None
+            cursor = res.get("next_cursor")
+        return None
 
 
 def from_config(k: dict[str, Any], state_dir: Path | None = None) -> NotionAdapter:
     """Create the adapter from the `knowledge` block of lantern.yaml.
 
     Args:
-        k: The knowledge settings (path = parent page ID, token_env = token variable).
+        k: The knowledge settings (path = ID of the parent page or database, token_env = token variable).
         state_dir: Where the list of the pages is kept between runs (the project's state folder).
 
     Returns:

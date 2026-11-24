@@ -5,7 +5,7 @@ Responsibilities:
     - guide making the integration and connecting pages (Notion's web pages cannot be driven from here)
     - get the token into the macOS Keychain without ever receiving it (the Keychain tool asks for it on the person's terminal);
       off a Mac, check the environment variable
-    - check that Notion accepts the token, show how many pages the integration sees, and check the page new notes go under
+    - check that Notion accepts the token, show how many pages the integration sees, and check the page or database new notes go in
     - write the `knowledge` block of lantern.yaml, or print the values for /l-init when there is no lantern.yaml yet
 
 Not here:
@@ -31,7 +31,7 @@ from ...core.messages import msg
 from ...core.project import Project
 from ...core.state import ensure_state_dir
 from ...core.textwidth import cut
-from . import KnowledgeError, keychain
+from . import KnowledgeError, keychain, notion_database
 from .notion import NotionAdapter, notion_token, page_id, token_sources
 
 INTEGRATIONS_URL = "https://app.notion.com/developers/connections"  # where integrations are made (from Notion's docs)
@@ -104,7 +104,7 @@ def _write_mode(io: Io) -> str:
     _step(io, 1, msg("How notes are written"))
     io.say(msg("How should new notes reach Notion?"))
     io.say(msg("  1) draft files only; you move them in yourself (a safe start)"))
-    io.say(msg("  2) create a new page in Notion right after you approve (existing pages are never changed)"))
+    io.say(msg("  2) create a new page or row in Notion right after you approve (what exists is never changed)"))
     while True:
         answer = io.ask(msg("▶ Choose 1 or 2 [1]: ")).strip() or "1"
         if answer in WRITE_MODES:
@@ -157,32 +157,47 @@ def _get_token(io: Io, store: Any, env_name: str, env: Mapping[str, str], replac
     return store.read(env_name)  # the one just typed, not an older variable that would be looked at first
 
 
-def _parent_page(io: Io, notion: Any, mode: str) -> str | None:
+def _parent(io: Io, notion: Any, mode: str) -> str | None:
+    """Ask for the page or database new notes go in; None when the person stops."""
     _step(io, 4, msg("Where new notes go"))
-    io.say(msg("Pick one page where new notes will be made."))
+    io.say(msg("Pick one page or database where new notes will be made."))
     if mode == "direct":
-        io.say(msg("  · Each note you approve becomes a new page under it."))
-        io.say(msg("  · Existing pages are never changed."))
+        io.say(msg("  · A page: each note you approve becomes a new page under it."))
+        io.say(msg("  · A database: each note you approve becomes a new row of it."))
+        io.say(msg("  · Existing pages and rows are never changed."))
     else:
         io.say(msg("  · It isn't used while you only write drafts, but you'll"))
         io.say(msg("    need it when you switch to writing, so decide now."))
-    io.say(msg("  · Any page the integration can see will do (it must be connected)."))
-    io.say(msg("  · It must be a page, not a database."))
-    io.say(msg("  · How: open the page in Notion → Share → Copy link → paste it here."))
+    io.say(msg("  · Anything the integration can see will do (it must be connected)."))
+    io.say(msg("  · How: open it in Notion → Share → Copy link → paste it here."))
     while True:
-        ref = io.ask(msg("▶ Page link: ")).strip()
+        ref = io.ask(msg("▶ Page or database link: ")).strip()
         pid = page_id(ref)
         if not ref or not _ID.fullmatch(pid):
             io.say(msg("That doesn't look like a page link (it ends with 32 letters and digits)."))
             continue
         if notion.can_see(pid):
             return pid
-        if notion.is_database(pid):
-            io.say(msg("That link is a database. Give the link of an ordinary page."))
+        try:
+            database = notion.database(pid)
+        except KnowledgeError as e:
+            io.say(f"✖ {cut(str(e), 100)}")
             continue
-        io.say(msg("✖ The integration can't see that page. Open it → ••• → Add connections → pick your integration."))
+        if database:
+            _tell_database(io, database)
+            return pid
+        io.say(msg("✖ The integration can't see it. Open it → ••• → Add connections → pick your integration."))
         if not _yes(io.ask(msg("▶ Try again? [Y/n]: "))):
             return None
+
+
+def _tell_database(io: Io, database: dict[str, Any]) -> None:
+    """Say which database it is, that notes become rows, and which properties can be filled."""
+    title = "".join(str(r.get("plain_text") or "") for r in database.get("title") or []).strip() or msg("(untitled)")
+    names = ", ".join(p.name for p in notion_database.fillable(database))
+    io.say(msg("✔ Database “{title}”: each note becomes a new row.", title=cut(title, TITLE_CELLS)))
+    if names:
+        io.say(msg("   Properties that can be filled: {names}", names=cut(names, TITLE_CELLS)))
 
 
 def _differs(store: Any, env_name: str, env: Mapping[str, str]) -> bool:
@@ -322,7 +337,7 @@ def run(
         notion = _check_token(io, token, store, env_name, environment, maker, state)
         if notion is None:
             return 1
-        parent = _parent_page(io, notion, mode)
+        parent = _parent(io, notion, mode)
         if parent is None:
             return 1
         io.say("")

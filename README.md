@@ -245,7 +245,7 @@ Anything you don't understand yet is kept as a debt card, and every time you ask
 | Knowledge base (`knowledge.type`) | How | Writing |
 |---|---|---|
 | `obsidian` · `folder` | reads Markdown files directly | creates notes after approval (drafts only with `propose_only`) |
-| `notion` | Fetches the list of pages and searches titles and properties; reads blocks inside blocks | New page after approval (drafts only with `propose_only`). Connect with `lantern knowledge setup notion` |
+| `notion` | Fetches the list of pages and searches titles and properties; reads blocks inside blocks | New page or database row after approval (drafts only with `propose_only`). Connect with `lantern knowledge setup notion` |
 
 Every knowledge base supports the same four actions: search · read · propose · write. The CLI (`lantern knowledge …`) and the MCP server (`lantern mcp`) use the same functions.
 
@@ -297,7 +297,7 @@ documents  scaffold init [--plan] | work | doc | idea | adr | meeting | custom �
 checks     check [--changed] [--epic W-012] · check-pr · lint [--ci] · check-dbml · dbml render|from-sql|diff
 work       task next [--all]|start|done|ac|list|estimate · task add [--parallel] [--spike] · pack · screen import|compare
            work branch|start|list|overlap|finish|archive|stage|flow · design approve · unit-log add · idea find|status
-learning   knowledge search|read|propose|write|areas · debt find|new|ask|resolve|promote|practice|known|status|list · mcp
+learning   knowledge search|read|propose|write|areas|properties · debt find|new|ask|resolve|promote|practice|known|status|list · mcp
 reports    report [--views] [--summary] · status · resume [--session] [--more] · scan [--tests] [--ci] · sync adopt · eval · obsidian plugins
 templates  template list|show|lint|level|bump|outdated|diff|usage|new|migrate · legacy adopt [--apply]|todos · migrate openspec [--apply]
 references ref list|check|index|read · tag|exclude|rules · terms|term|glossary|candidate · domain|describe|attach · convert [--apply]|preview

@@ -609,7 +609,7 @@ def render(data: dict[str, Any]) -> str:
         lines += [
             msg("knowledge:                  # the learning track. Delete this block if there is none"),
             msg("  type: {s}            # obsidian | folder (any Markdown folder) | notion", s=s(k["type"])),
-            msg("  path: {s}   # Notion: the page new notes are made under (the 32 characters at the end of its address)", s=s(k["path"]))
+            msg("  path: {s}   # Notion: the page or database new notes are made in (the 32 characters of its address)", s=s(k["path"]))
             if k["type"] == "notion"
             else f"  path: {s(k['path'])}",
         ]

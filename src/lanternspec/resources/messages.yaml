@@ -363,11 +363,9 @@
 "That doesn't look like a page link (it ends with 32 letters and digits).": {ko: "페이지 링크가 아닌 것 같습니다 (끝에 영문자와 숫자 32자리가 있어야 합니다)."}
 "✔ Saved the knowledge settings in lantern.yaml (notion · {write}).": {ko: "✔ lantern.yaml에 지식 저장소 설정을 저장했습니다 (notion · {write})."}
 "✖ The Keychain tool did not save the token. Nothing was changed.": {ko: "✖ 키체인에 토큰을 저장하지 못했습니다. 바뀐 것은 없습니다."}
-"✖ The integration can't see that page. Open it → ••• → Add connections → pick your integration.": {ko: "✖ 통합이 그 페이지를 볼 수 없습니다. 페이지를 열어 ••• → Add connections(연결 추가) → 만든 통합을 고르세요."}
 "ℹ lantern.yaml isn't there yet. /l-init makes it with: --knowledge {page} --knowledge-type notion --knowledge-write {write}": {ko: "ℹ 아직 lantern.yaml이 없습니다. /l-init이 이 값으로 만듭니다: --knowledge {page} --knowledge-type notion --knowledge-write {write}"}
 "✔ Searching “{title}” works: {count} page(s) found.": {ko: "✔ “{title}” 검색이 됩니다: 페이지 {count}개를 찾았습니다."}
 "Stopped. lantern.yaml was not changed.": {ko: "멈췄습니다. lantern.yaml은 바뀌지 않았습니다."}
-"Knowledge connector: search · read · propose · write · areas · setup notion": {ko: "지식 연결기: search · read · propose · write · areas · setup notion"}
 "setup: don't open Notion's integrations page in the browser": {ko: "setup: Notion의 통합 페이지를 브라우저로 열지 않음"}
 "Only Notion has a setup: lantern knowledge setup notion": {ko: "설정을 돕는 것은 Notion뿐입니다: lantern knowledge setup notion"}
 "This asks for a token, so run it yourself in a terminal: lantern knowledge setup notion (the AI must not see the token, so don't paste it into a chat)": {ko: "토큰을 묻는 명령이라 사용자가 터미널에서 직접 실행해야 합니다: lantern knowledge setup notion (AI가 토큰을 보면 안 되니 대화에 붙이지 마세요)"}
@@ -387,8 +385,6 @@
 "   Pages the integration can see: {count}": {ko: "   통합이 볼 수 있는 페이지: {count}개"}
 "   This is only a check: you don't have to connect anything more to go on.": {ko: "   이건 확인일 뿐입니다. 더 연결하지 않아도 그대로 진행됩니다."}
 "  1) draft files only; you move them in yourself (a safe start)": {ko: "  1) 초안 파일만 만들고, 옮기는 건 직접 합니다 (안전한 시작)"}
-"  · Any page the integration can see will do (it must be connected).": {ko: "  · 통합에 연결된 페이지면 아무거나 괜찮습니다."}
-"  · How: open the page in Notion → Share → Copy link → paste it here.": {ko: "  · 방법: Notion에서 그 페이지를 열고 → 공유 → 링크 복사 → 여기에 붙여 넣기"}
 "  · It isn't used while you only write drafts, but you'll": {ko: "  · 초안만 쓰는 지금은 쓰이지 않지만, 나중에 '바로 쓰기'로"}
 "  ① Address: {url}": {ko: "  ① 주소: {url}"}
 "  ② \"Configuration\" tab → capabilities": {ko: "  ② \"Configuration\"(구성) 탭 → 기능(capabilities)"}
@@ -398,7 +394,6 @@
 "Copy the token, then press Enter.": {ko: "토큰을 복사한 뒤 Enter를 누르세요."}
 "How notes are written": {ko: "노트를 어떻게 쓸까요"}
 "Make an integration in Notion": {ko: "Notion에서 통합 만들기"}
-"Pick one page where new notes will be made.": {ko: "새 노트를 만들 페이지를 하나 정합니다."}
 "Token": {ko: "토큰 넣고 확인하기"}
 "Update content · Insert content · comments · user information · agent features": {ko: "콘텐츠 업데이트 · 콘텐츠 삽입 · 댓글 · 사용자 정보 · 에이전트 기능"}
 "Update content · comments · user information · agent features": {ko: "콘텐츠 업데이트 · 댓글 · 사용자 정보 · 에이전트 기능"}
@@ -407,7 +402,6 @@
 "[{n}/{total}] {title}": {ko: "[{n}/{total}] {title}"}
 "▶ Choose 1 or 2 [1]: ": {ko: "▶ 1 또는 2를 고르세요 [1]: "}
 "▶ Enter a different token now? [Y/n]: ": {ko: "▶ 다른 토큰을 지금 넣을까요? [Y/n]: "}
-"▶ Page link: ": {ko: "▶ 페이지 링크: "}
 "▶ Press Enter when you have copied it: ": {ko: "▶ 복사했으면 Enter: "}
 "▶ Try again? [Y/n]: ": {ko: "▶ 다시 해 볼까요? [Y/n]: "}
 "▶ Use it? [Y/n] (Y = keep it, n = enter a new one): ": {ko: "▶ 그대로 쓸까요? [Y/n] (Y = 그대로 사용, n = 새로 입력): "}
@@ -440,11 +434,6 @@
 "The environment variable {env} and the Keychain hold different tokens — the Keychain is used first": {ko: "환경 변수 {env}와 키체인의 토큰이 다릅니다 — 키체인이 먼저 쓰입니다"}
 
 # learn/knowledge/notion_setup.py (steps)
-"  · Each note you approve becomes a new page under it.": {ko: "  · 승인한 노트마다 이 페이지 아래에 새 페이지가 만들어집니다."}
-"  · Existing pages are never changed.": {ko: "  · 기존 페이지는 고치지 않습니다."}
-"  · It must be a page, not a database.": {ko: "  · 데이터베이스가 아니라 일반 페이지여야 합니다."}
-"That link is a database. Give the link of an ordinary page.": {ko: "그 링크는 데이터베이스입니다. 일반 페이지의 링크를 주세요."}
-"  2) create a new page in Notion right after you approve (existing pages are never changed)": {ko: "  2) 승인하면 바로 Notion에 새 페이지를 만듭니다 (기존 페이지는 고치지 않음)"}
 
 # learn/knowledge/notion_setup.py (steps)
 "The token works, but no page shows up yet.": {ko: "토큰은 맞지만 통합이 볼 수 있는 페이지가 아직 없습니다."}
@@ -453,6 +442,34 @@
 "   Checking again… ({i}/{n})": {ko: "   다시 확인하는 중… ({i}/{n})"}
 "▶ Keep waiting (Enter), go on without it (s), or stop (q): ": {ko: "▶ 더 기다리기(Enter) · 기다리지 않고 계속(s) · 중단(q): "}
 "ℹ Skipping the list check: the page you give next is checked directly.": {ko: "ℹ 목록 확인은 건너뜁니다. 다음에 줄 페이지는 직접 확인합니다."}
+
+# learn/knowledge/notion_setup.py (steps)
+"   Properties that can be filled: {names}": {ko: "   채울 수 있는 속성: {names}"}
+"  2) create a new page or row in Notion right after you approve (what exists is never changed)": {ko: "  2) 승인하면 바로 Notion에 새 페이지나 행을 만듭니다 (기존 것은 고치지 않음)"}
+"  path: {s}   # Notion: the page or database new notes are made in (the 32 characters of its address)": {ko: "  path: {s}   # Notion: 새 노트를 만들 페이지나 데이터베이스 (주소의 32자리)"}
+"  · A database: each note you approve becomes a new row of it.": {ko: "  · 데이터베이스: 승인한 노트마다 새 행이 만들어집니다."}
+"  · A page: each note you approve becomes a new page under it.": {ko: "  · 페이지: 승인한 노트마다 그 아래에 새 페이지가 만들어집니다."}
+"  · Anything the integration can see will do (it must be connected).": {ko: "  · 통합에 연결된 것이면 아무거나 괜찮습니다."}
+"  · Existing pages and rows are never changed.": {ko: "  · 기존 페이지와 행은 고치지 않습니다."}
+"  · How: open it in Notion → Share → Copy link → paste it here.": {ko: "  · 방법: Notion에서 열고 → 공유 → 링크 복사 → 여기에 붙여 넣기"}
+"A note titled '{title}' is already there: {url} (not changed). To make another, give another title: lantern knowledge write \"<draft>\" --target \"<new title>.md\"": {ko: "'{title}' 제목의 노트가 이미 있습니다: {url} (고치지 않았습니다). 따로 만들려면 다른 제목을 주세요: lantern knowledge write \"<초안>\" --target \"<새 제목>.md\""}
+"Knowledge connector: search · read · propose · write · areas · properties · setup notion": {ko: "지식 연결기: search · read · propose · write · areas · properties · setup notion"}
+"No property '{name}' to fill (there are: {names})": {ko: "채울 수 있는 속성 '{name}'이(가) 없습니다 (있는 것: {names})"}
+"Notes in this store have no properties to fill": {ko: "이 저장소의 노트에는 채울 속성이 없습니다"}
+"Pick one page or database where new notes will be made.": {ko: "새 노트를 만들 페이지나 데이터베이스를 하나 정합니다."}
+"Property {name} ({kind}) can't be '{value}'": {ko: "속성 {name}({kind})에는 '{value}'을(를) 넣을 수 없습니다"}
+"Property {name} has no choice '{value}' (choices: {options})": {ko: "속성 {name}에 '{value}' 선택지가 없습니다 (있는 것: {options})"}
+"Property {name} is the note's title: it is filled from the note's name": {ko: "속성 {name}은(는) 노트 제목입니다 — 노트 이름으로 채워집니다"}
+"The draft's `properties` must be written as name: value lines": {ko: "초안의 `properties`는 이름: 값 줄로 적어야 합니다"}
+"The note was made but only part of its text is there: {url} ({error})": {ko: "노트는 만들었지만 글이 일부만 들어갔습니다: {url} ({error})"}
+"This Notion database has several data sources, which is not supported: use a database with one, or a page": {ko: "데이터 소스가 여러 개인 Notion 데이터베이스는 지원하지 않습니다 — 하나인 데이터베이스나 페이지를 쓰세요"}
+"Write it as --property \"name=value\": {pair}": {ko: "--property \"이름=값\"으로 적으세요: {pair}"}
+"propose · write: where the note goes (for Notion, its last part is the title)": {ko: "propose · write: 노트를 둘 위치 (Notion은 마지막 부분이 제목)"}
+"propose: a value for a property of the note": {ko: "propose: 노트의 속성에 넣을 값"}
+"▶ Page or database link: ": {ko: "▶ 페이지나 데이터베이스 링크: "}
+"✔ Database “{title}”: each note becomes a new row.": {ko: "✔ 데이터베이스 “{title}”: 노트마다 새 행을 만듭니다."}
+"✖ The integration can't see it. Open it → ••• → Add connections → pick your integration.": {ko: "✖ 통합이 볼 수 없습니다. 열어서 ••• → Add connections(연결 추가) → 만든 통합을 고르세요."}
+"Which properties can a new note be given values for? → names · kinds · choices (empty when the store has none)": {ko: "새 노트에 어떤 속성 값을 줄 수 있나? → 이름 · 종류 · 선택지 (없는 저장소면 빈 목록)"}
 
 # learn/knowledge/obsidian.py
 "Knowledge store folder doesn't exist: {root}": {ko: "지식 저장소 폴더가 없습니다: {root}"}
@@ -1367,7 +1384,6 @@
 "  unused_sections: {s}   # protected sections not used (lantern sections off)": {ko: "  unused_sections: {s}   # 쓰지 않는 보호 칸 (lantern sections off)"}
 "knowledge:                  # the learning track. Delete this block if there is none": {ko: "knowledge:                  # 배우는 선로. 없으면 이 블록을 지운다"}
 "  type: {s}            # obsidian | folder (any Markdown folder) | notion": {ko: "  type: {s}            # obsidian | folder(아무 Markdown 폴더) | notion"}
-"  path: {s}   # Notion: the page new notes are made under (the 32 characters at the end of its address)": {ko: "  path: {s}   # Notion: 새 노트를 만들 부모 페이지 (주소 끝의 32자리)"}
 "  # token_env: NOTION_TOKEN   # (Notion) the environment variable that holds the integration token; the token itself never goes in this file": {ko: "  # token_env: NOTION_TOKEN   # (Notion) 통합 토큰을 담은 환경 변수. 토큰 값은 이 파일에 적지 않는다"}
 "  write: {s}            # direct (write right after approval) | propose_only (draft files only)": {ko: "  write: {s}            # direct(승인 후 바로 씀) | propose_only(초안 파일만)"}
 "  allow: {s}    # (optional) only these folders are open; without it, everything not in deny": {ko: "  allow: {s}    # (선택) 이 폴더만 엽니다. 없으면 deny를 뺀 전부"}

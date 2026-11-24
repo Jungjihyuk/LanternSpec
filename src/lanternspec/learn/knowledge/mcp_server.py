@@ -47,9 +47,15 @@ TOOLS = [  # descriptions in English; msg() translates them
                 "content": {"type": "string"},
                 "area": {"type": "string"},
                 "target": {"type": "string"},
+                "properties": {"type": "object"},
             },
             "required": ["title"],
         },
+    },
+    {
+        "name": "properties",
+        "description": "Which properties can a new note be given values for? → names · kinds · choices (empty when the store has none)",
+        "inputSchema": {"type": "object", "properties": {}},
     },
     {
         "name": "write",
@@ -66,7 +72,7 @@ def call(project: Project, name: str, args: dict[str, Any]) -> Any:
 
     Args:
         project: The project.
-        name: "search", "read", "propose" or "write".
+        name: "search", "read", "propose", "properties" or "write".
         args: The tool's arguments, as in TOOLS.
 
     Returns:
@@ -87,8 +93,15 @@ def call(project: Project, name: str, args: dict[str, Any]) -> Any:
         return {"path": args["path"], "content": adapter_for(project).read(str(args["path"]))}
     if name == "propose":
         return drafts.propose(
-            project, str(args["title"]), args.get("content"), area=str(args.get("area") or ""), target=str(args.get("target") or "")
+            project,
+            str(args["title"]),
+            args.get("content"),
+            area=str(args.get("area") or ""),
+            target=str(args.get("target") or ""),
+            properties=dict(args.get("properties") or {}),
         )
+    if name == "properties":
+        return [p.to_dict() for p in adapter_for(project).properties()]
     if name == "write":
         draft = project.root / str(args["draft"])
         if not draft.exists():

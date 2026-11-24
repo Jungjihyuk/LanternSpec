@@ -12,7 +12,7 @@ from .common import Add, CliError, _p
 
 
 def cmd_knowledge(a: argparse.Namespace) -> int:
-    """`lantern knowledge search|read|propose|write|areas|setup` — talk to the knowledge store, or connect Notion."""
+    """`lantern knowledge search|read|propose|write|areas|properties|setup` — talk to the knowledge store, or connect Notion."""
     from ..learn.knowledge import adapter_for, drafts
 
     project = _p()
@@ -44,7 +44,13 @@ def cmd_knowledge(a: argparse.Namespace) -> int:
             content = Path(a.file).read_text(encoding="utf-8")
         elif a.stdin:
             content = sys.stdin.read()
-        res = drafts.propose(project, a.arg, content, area=a.area or "", target=a.target or "")
+        properties = {}
+        for pair in a.property or []:
+            name, eq, value = pair.partition("=")
+            if not eq or not name.strip():
+                raise CliError(msg('Write it as --property "name=value": {pair}', pair=pair))
+            properties[name.strip()] = value.strip()
+        res = drafts.propose(project, a.arg, content, area=a.area or "", target=a.target or "", properties=properties)
         print(msg("✔ Draft {draft} (awaiting approval) → suggested place in the store: {target}", draft=res["draft"], target=res["target"]))
         if res["write_mode"] == "propose_only":
             print(msg("ℹ propose_only — once approved, the user moves it into the store"))
@@ -55,6 +61,15 @@ def cmd_knowledge(a: argparse.Namespace) -> int:
             draft = next((c for c in (project.root / a.arg, project.docs / a.arg) if c.exists()), project.root / a.arg)
         res = drafts.write_draft(project, draft, a.target)
         print(msg("✔ Wrote to the knowledge store: {path}", path=res["path"]))
+        return 0
+    if a.action == "properties":
+        found = adapter_for(project).properties()
+        if a.json:
+            print(json.dumps([p.to_dict() for p in found], ensure_ascii=False, indent=2))
+        elif not found:
+            print(msg("Notes in this store have no properties to fill"))
+        for prop in [] if a.json else found:
+            print(f"· {prop.name} ({prop.kind})" + (f": {', '.join(prop.options)}" if prop.options else ""))
         return 0
     if a.action == "setup":
         if a.arg != "notion":
@@ -180,8 +195,8 @@ def cmd_mcp(a: argparse.Namespace) -> int:
 
 def register(add: Add) -> None:
     """Register the learning-line commands."""
-    p = add("knowledge", cmd_knowledge, msg("Knowledge connector: search · read · propose · write · areas · setup notion"))
-    p.add_argument("action", choices=["search", "read", "propose", "write", "areas", "setup"])
+    p = add("knowledge", cmd_knowledge, msg("Knowledge connector: search · read · propose · write · areas · properties · setup notion"))
+    p.add_argument("action", choices=["search", "read", "propose", "write", "areas", "properties", "setup"])
     p.add_argument("arg", nargs="?")
     p.add_argument("--alias", action="append")
     p.add_argument("--limit", type=int, default=5)
@@ -189,7 +204,8 @@ def register(add: Add) -> None:
     p.add_argument("--file")
     p.add_argument("--stdin", action="store_true")
     p.add_argument("--area")
-    p.add_argument("--target")
+    p.add_argument("--target", help=msg("propose · write: where the note goes (for Notion, its last part is the title)"))
+    p.add_argument("--property", action="append", metavar="NAME=VALUE", help=msg("propose: a value for a property of the note"))
     p.add_argument("--no-open", action="store_true", help=msg("setup: don't open Notion's integrations page in the browser"))
     p = add("debt", cmd_debt, msg("Debt ledger: find · new · ask · resolve · promote · practice · known · status · list"))
     p.add_argument("action", choices=["find", "new", "ask", "resolve", "promote", "practice", "known", "status", "list"])

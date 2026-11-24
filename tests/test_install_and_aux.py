@@ -475,7 +475,7 @@ def test_mcp_server_and_install_registration(repo, vault):
     )
     out = [json.loads(l) for l in r.stdout.splitlines()]
     assert [o["id"] for o in out] == [1, 2, 3, 4, 5]
-    assert {t["name"] for t in out[1]["result"]["tools"]} == {"search", "read", "propose", "write"}
+    assert {t["name"] for t in out[1]["result"]["tools"]} == {"search", "read", "propose", "properties", "write"}
     assert '"title": "JWT"' in out[2]["result"]["content"][0]["text"]
     assert (docs(repo) / "📒 부채/노트 초안/CRDT.md").exists()
     assert out[4]["error"]["code"] == -32601

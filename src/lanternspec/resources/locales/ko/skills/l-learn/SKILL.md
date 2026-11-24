@@ -46,8 +46,12 @@ argument-hint: "<기술 용어> [용어 …]"
      ```bash
      lantern knowledge propose "<용어>" --area <주제>
      ```
-     만들어진 초안(`<<folder.note_drafts>>/…`)의 빈칸을 채워 보여 주고 승인을 묻는다.
+<!-- lantern:if knowledge.type=notion -->
+     - **속성:** 먼저 `lantern knowledge properties`로 채울 수 있는 속성을 본다. 있으면(데이터베이스) 비슷한 노트를 `lantern knowledge read`로 읽어 평소 어떻게 채우는지 보고, 확실한 값만 `--property "이름=값"`으로 함께 넘긴다 (선택지 여러 개는 쉼표로). 모르는 속성은 비워 둔다. 없는 선택지는 새로 만들지 않는다 — 필요하면 사용자가 Notion에서 직접 추가한다. 없으면(일반 페이지) 그냥 넘어간다.
+<!-- lantern:endif -->
+     만들어진 초안(`<<folder.note_drafts>>/…`)의 빈칸을 채워 속성 값(있으면)과 함께 보여 주고 승인을 묻는다.
      - 지금 저장소 쓰기 방식: `<<knowledge.write>>` — `direct`면 승인 후 `lantern knowledge write "<초안 경로>"`, `propose_only`면 초안 경로만 알려 주고 넣는 것은 사용자가 한다.
+     - 같은 제목의 노트가 이미 있다고 거절되면: 그 노트의 위치를 보여 주고, 그 노트를 카드에 연결할지 · 다른 제목으로 만들지 묻는다. 다른 제목은 사용자가 정한 것으로 `lantern knowledge write "<초안 경로>" --target "<새 제목>.md"`. 묻지 않고 제목을 바꿔 쓰지 않는다.
      - 노트가 생기면 카드에 연결: `lantern meta set "<카드>" note="<노트 위치>"`
 
 ## "이해했어" — 지금 설정: learn.verify = <<learn.verify>>

@@ -29,7 +29,14 @@ DRAFT_SKELETON = """# {title}
 """  # English; msg() translates it
 
 
-def propose(project: Project, title: str, content: str | None = None, area: str = "", target: str = "") -> dict:
+def propose(
+    project: Project,
+    title: str,
+    content: str | None = None,
+    area: str = "",
+    target: str = "",
+    properties: dict[str, Any] | None = None,
+) -> dict:
     """Create a learning-note draft waiting for approval (in our own folder, not the store).
 
     Args:
@@ -38,12 +45,13 @@ def propose(project: Project, title: str, content: str | None = None, area: str 
         content: The note's text; a skeleton with headings when empty.
         area: Topic, kept as a tag.
         target: Where the note should go in the store; under `knowledge.areas_from` when empty.
+        properties: Values for the note's properties, kept in the draft so they are approved with it.
 
     Returns:
         draft (path), status, target and write_mode (`knowledge.write`).
 
     Raises:
-        KnowledgeError: A draft with that title already exists.
+        KnowledgeError: A draft with that title already exists, or the store doesn't have a property or value given.
 
     Example:
         >>> propose(project, "JWT")["draft"]  # doctest: +SKIP
@@ -53,11 +61,13 @@ def propose(project: Project, title: str, content: str | None = None, area: str 
     dest = folder / f"{safe_name(title)}.md"
     if dest.exists():
         raise KnowledgeError(msg("A draft already exists: {rel}", rel=project.rel(dest)))
+    if properties:
+        adapter_for(project).check_properties(properties)
     k = project.profile.knowledge or {}
     if not target:
         base = str(k.get("areas_from") or "").strip("/")
         target = f"{base}/{safe_name(title)}.md" if base else f"{safe_name(title)}.md"
-    meta = {
+    meta: dict[str, Any] = {
         "id": f"NOTE-{safe_name(title)}",
         "type": "note-draft",
         "status": project.enums.value("note_draft_status", "pending"),
@@ -66,6 +76,8 @@ def propose(project: Project, title: str, content: str | None = None, area: str 
         "area": area,
         "target": target,
     }
+    if properties:
+        meta["properties"] = properties
     body = content if content and content.strip() else msg(DRAFT_SKELETON, title=safe_name(title))
     write(dest, frontmatter.render(meta, "\n" + body.lstrip("\n")))
     return {
@@ -89,7 +101,7 @@ def write_draft(project: Project, draft: Path, target: str | None = None) -> dic
 
     Raises:
         KnowledgeError: No store is set up, the store is propose_only, the draft is missing,
-            it still has blanks, or the store refused the write.
+            it still has blanks, its properties can't be read, or the store refused the write.
 
     Example:
         >>> write_draft(project, project.folder("note_drafts") / "JWT.md")["path"]  # doctest: +SKIP
@@ -110,7 +122,10 @@ def write_draft(project: Project, draft: Path, target: str | None = None) -> dic
     note_meta: dict[str, Any] = {"created": today()}
     if doc.meta.get("area"):
         note_meta["tags"] = [str(doc.meta["area"])]
-    written = adapter.write(rel, frontmatter.render(note_meta, doc.body))
+    properties = doc.meta.get("properties") or {}
+    if not isinstance(properties, dict):
+        raise KnowledgeError(msg("The draft's `properties` must be written as name: value lines"))
+    written = adapter.write(rel, frontmatter.render(note_meta, doc.body), properties)
     write(
         draft, frontmatter.set_fields(read(draft), {"status": project.enums.value("note_draft_status", "applied"), "written_to": written})
     )

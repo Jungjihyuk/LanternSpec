@@ -239,8 +239,21 @@ The content of each rule is in its rules document template (`src/lanternspec/res
   - **Searching through the official Notion MCP.** It has no way to narrow what it reaches, and its results don't fit this contract (`lantern knowledge`) as they are.
 - **Source:** `src/lanternspec/learn/knowledge/notion.py` (`listed` · `match` · `NotionAdapter.search`)
 
+### Notion is only added to, and a database gets a row that fits its properties (`learn/knowledge/notion_database.py`)
+- **Decided:** when `knowledge.path` is a page a new note becomes a page under it, and when it is a database a new row. Which one it is isn't a setting: Notion is asked. The values of a row's properties are written in the draft's `properties` and approved with the note, and are checked against the database's properties and choices both when the draft is made and when it is written. A note with the same title in that place is refused, and is made again only under another title the person decides.
+- **Why:**
+  - For someone who keeps notes in a database, notes piling up under a page are of no use. A row with empty properties also drops out of filters and views.
+  - Never changing an existing page limits the reach, so that the AI can't change what it shouldn't. A new page can simply be deleted, but a change is hard to take back.
+  - Sending Notion a choice that isn't there adds the choice to the database. That goes against the promise not to change another store's structure, so it is refused first.
+  - Whether a title is taken is asked when writing, not looked up in a list that may be ten minutes old. Case and surrounding spaces don't make another title.
+- **Limits:** only the titles in the place new notes go (right under the page, or in that database) are looked at. Formula, relation, people and file properties are not filled, database templates are not applied, and a database with several data sources is refused.
+- **Turned down:**
+  - **Adding (2) to the title by itself.** Duplicates would pile up quietly next to the note that is there.
+  - **Default values in `lantern.yaml`.** The values differ from note to note, and there would be one more place to change with the properties.
+- **Source:** `src/lanternspec/learn/knowledge/notion_database.py` (properties), `src/lanternspec/learn/knowledge/notion.py` (`NotionAdapter.write`)
+
 ### One command guides the Notion connection, and the Keychain takes the token itself (`lantern knowledge setup notion`)
-- **Decided:** one command that the person runs in a terminal guides these steps: ask how notes are written · guide making the integration (it opens the integrations page in the browser) · tell which permissions to turn on · take the token · check that Notion accepts it and how many pages the integration sees · check the page new notes are made under · save `lantern.yaml`. When there is no `lantern.yaml` yet (in the middle of `/l-init`) it makes no file and prints the values `/l-init` will use. It saves only after every step has worked, so stopping part way leaves `lantern.yaml` as it was.
+- **Decided:** one command that the person runs in a terminal guides these steps: ask how notes are written · guide making the integration (it opens the integrations page in the browser) · tell which permissions to turn on · take the token · check that Notion accepts it and how many pages the integration sees · check the page or database new notes are made in · save `lantern.yaml`. When there is no `lantern.yaml` yet (in the middle of `/l-init`) it makes no file and prints the values `/l-init` will use. It saves only after every step has worked, so stopping part way leaves `lantern.yaml` as it was.
 - **lantern never receives the token:** on macOS it runs `security add-generic-password -U … -w` (with `-w` last and no value) attached to the terminal, and the Keychain tool asks for the input itself. The token never becomes a command argument, nor enters lantern's memory or a log. The adapter looks in the Keychain (service = the name of the token's environment variable, account = the user) and then the environment variable, so people who put the item in with `security` and people who only used a variable (nothing in the Keychain) both keep working.
 - **Why:**
   - A token that enters a conversation with the AI stays in its record. A command that asks for a token has to be run by the person, and refuses to run without a terminal.

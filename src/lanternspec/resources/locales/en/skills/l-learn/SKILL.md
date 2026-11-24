@@ -46,8 +46,12 @@ Input: `$ARGUMENTS` — one term or a list. They may be candidates handed over b
      ```bash
      lantern knowledge propose "<term>" --area <topic>
      ```
-     Fill the blanks of the created draft (`<<folder.note_drafts>>/…`), show it and ask for approval.
+<!-- lantern:if knowledge.type=notion -->
+     - **Properties:** first see which can be filled with `lantern knowledge properties`. If there are any (a database), read a similar note with `lantern knowledge read` to see how they are usually filled, and pass only the values you are sure of with `--property "name=value"` (several choices with commas). Leave the others empty. Don't make up a choice that isn't there — if one is needed the user adds it in Notion. If there are none (an ordinary page), go on.
+<!-- lantern:endif -->
+     Fill the blanks of the created draft (`<<folder.note_drafts>>/…`), show it with its property values (if any) and ask for approval.
      - Current store write mode: `<<knowledge.write>>` — with `direct`, after approval `lantern knowledge write "<draft path>"`; with `propose_only`, only give the draft path and the user adds it themselves.
+     - If it is refused because a note with the same title is already there: show where that note is, and ask whether to link it to the card or make one with another title. Use the title the user decides: `lantern knowledge write "<draft path>" --target "<new title>.md"`. Don't change the title without asking.
      - Once there is a note, link it to the card: `lantern meta set "<card>" note="<note location>"`
 
 ## "I understand it now" — current setting: learn.verify = <<learn.verify>>

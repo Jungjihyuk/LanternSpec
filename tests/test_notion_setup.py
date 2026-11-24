@@ -210,8 +210,14 @@ class FakeNotion:
     def can_see(self, ref: str) -> bool:
         return notion.page_id(ref) in self.visible
 
-    def is_database(self, ref: str) -> bool:
-        return notion.page_id(ref) in self.databases
+    def database(self, ref: str) -> dict[str, Any] | None:
+        if notion.page_id(ref) not in self.databases:
+            return None
+        options = {"options": [{"name": "개발"}]}
+        return {
+            "title": [{"plain_text": "노트"}],
+            "properties": {"제목": {"type": "title", "title": {}}, "분류": {"type": "select", "select": options}},
+        }
 
     def search(self, query: str, aliases: list[str] | None = None, limit: int = 5) -> list[Hit]:
         return [Hit(title=query, path="https://www.notion.so/x", summary="", updated="2026-11-24", score=100)]
@@ -686,42 +692,26 @@ def test_the_first_question_says_that_writing_makes_a_new_page_and_changes_nothi
     assert "새 페이지" in option and "고치지 않음" in option
 
 
-def test_a_database_link_is_told_apart_from_a_page_the_integration_cannot_see(repo):
-    io = ScriptedIo(["2", "", f"https://www.notion.so/me/{DATABASE}?v=cdedad0643b74c9ebd555614f569e790", PAGE_URL])
+def test_a_database_link_is_taken_and_the_person_is_told_that_notes_become_rows(repo):
+    io = ScriptedIo(["2", "", f"https://www.notion.so/me/{DATABASE}?v=cdedad0643b74c9ebd555614f569e790"])
 
     def notion_for(token: str, state: Any) -> FakeNotion:
         return FakeNotion(token, visible={PAGE}, databases={DATABASE})
 
     assert _run(_project(repo), io, FakeKeychain(), notion_fake=notion_for) == 0
 
-    assert "데이터베이스입니다" in "\n".join(io.said)
-    assert not [p for p in io.prompts if "다시 해 볼까요" in p]  # no "try again?": the answer is simply to give a page link
-    assert Project.load(repo.root).profile.knowledge["path"] == PAGE
+    step = _last_step(io)
+    assert "데이터베이스" in step and "노트" in step and "새 행" in step and "분류" in step  # which one, what happens, what can be filled
+    assert "일반 페이지여야" not in step
+    assert Project.load(repo.root).profile.knowledge["path"] == DATABASE
 
 
-def test_the_real_adapter_can_tell_a_database_from_a_page():
-    import io as _io
-    import json as _json
-    import urllib.error
+def test_a_database_that_cannot_be_used_asks_for_another_link(repo):
+    io = ScriptedIo(["2", "", f"https://www.notion.so/{DATABASE}", PAGE_URL])
 
-    from lanternspec.learn.knowledge.notion import NotionAdapter
+    class Several(FakeNotion):
+        def database(self, ref: str) -> dict[str, Any] | None:
+            raise KnowledgeError("데이터 소스가 여러 개입니다")
 
-    def opener(req: Any) -> Any:
-        if f"/databases/{DATABASE}" not in req.full_url:
-            raise urllib.error.HTTPError(req.full_url, 404, "nf", {}, _io.BytesIO(b"{}"))  # type: ignore[arg-type]
-
-        class Resp:
-            def read(self_inner) -> bytes:
-                return _json.dumps({"object": "database"}).encode()
-
-            def __enter__(self_inner) -> "Resp":
-                return self_inner
-
-            def __exit__(self_inner, *a: Any) -> bool:
-                return False
-
-        return Resp()
-
-    adapter = NotionAdapter("p", "t", opener=opener)
-    assert adapter.is_database(f"https://www.notion.so/me/{DATABASE}?v=abc") is True
-    assert adapter.is_database(PAGE) is False
+    assert _run(_project(repo), io, FakeKeychain(), notion_fake=lambda token, state: Several(token)) == 0
+    assert "데이터 소스가 여러 개" in _last_step(io) and Project.load(repo.root).profile.knowledge["path"] == PAGE

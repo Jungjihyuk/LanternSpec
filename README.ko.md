@@ -243,7 +243,7 @@ AI가 쓴 기술 중 모르는 것은 내 지식 저장소의 노트와 비교�
 | 저장소 (`knowledge.type`) | 어떻게 | 쓰기 |
 |---|---|---|
 | `obsidian` · `folder` | Markdown 파일을 직접 읽음 | 승인 후 노트 생성 (`propose_only`면 초안만) |
-| `notion` | Notion의 페이지 목록을 받아 제목과 속성에서 찾고, 읽기는 블록 안까지 | 승인 후 새 페이지 생성 (`propose_only`면 초안만). 연결은 `lantern knowledge setup notion` |
+| `notion` | Notion의 페이지 목록을 받아 제목과 속성에서 찾고, 읽기는 블록 안까지 | 승인 후 새 페이지나 데이터베이스의 새 행 생성 (`propose_only`면 초안만). 연결은 `lantern knowledge setup notion` |
 
 어느 저장소든 찾기 · 읽기 · 제안 · 쓰기 네 가지로 다룬다. CLI(`lantern knowledge …`)와 MCP 서버(`lantern mcp`)가 같은 기능을 쓴다.
 
@@ -295,7 +295,7 @@ Claude Design은 Claude Code에서 AI가 Design 캔버스에 와이어프레임�
 검사     check [--changed] [--epic W-012] · check-pr · lint [--ci] · check-dbml · dbml render|from-sql|diff
 일       task next [--all]|start|done|ac|list|estimate · task add [--parallel] [--spike] · pack · screen import|compare
          work branch|start|list|overlap|finish|archive|stage|flow · design approve · unit-log add · idea find|status
-배움     knowledge search|read|propose|write|areas · debt find|new|ask|resolve|promote|practice|known|status|list · mcp
+배움     knowledge search|read|propose|write|areas|properties · debt find|new|ask|resolve|promote|practice|known|status|list · mcp
 보고     report [--views] [--summary] · status · resume [--session] [--more] · scan [--tests] [--ci] · sync adopt · eval · obsidian plugins
 양식     template list|show|lint|level|bump|outdated|diff|usage|new|migrate · legacy adopt [--apply]|todos · migrate openspec [--apply]
 참고     ref list|check|index|read · tag|exclude|rules · terms|term|glossary|candidate · domain|describe|attach · convert [--apply]|preview

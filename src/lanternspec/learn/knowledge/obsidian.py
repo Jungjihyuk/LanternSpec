@@ -13,6 +13,7 @@ import os
 import re
 from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
 
 from ...core import frontmatter
 from ...core.messages import msg
@@ -212,23 +213,25 @@ class ObsidianAdapter(Adapter):
             raise KnowledgeError(msg("Note not found: {path}", path=path))
         return p.read_text(encoding="utf-8")
 
-    def write(self, rel_path: str, content: str) -> str:
+    def write(self, rel_path: str, content: str, properties: dict[str, Any] | None = None) -> str:
         r"""Implement Adapter.write by creating a new file inside the store.
 
         Args:
             rel_path: Where to create it, relative to the store root.
             content: The note's text.
+            properties: Must be empty: these notes have no properties to fill.
 
         Returns:
             The created file, relative to the store root.
 
         Raises:
-            KnowledgeError: The path is outside the store or in a closed folder, or a file is already there.
+            KnowledgeError: The path is outside the store or in a closed folder, a file is already there, or properties were given.
 
         Example:
             >>> ObsidianAdapter(vault).write("개발/JWT.md", "# JWT\n")  # doctest: +SKIP
             '개발/JWT.md'
         """
+        self.check_properties(properties or {})
         p = (self.root / rel_path).resolve()
         if self.root not in p.parents:
             raise KnowledgeError(msg("Can't write outside the store"))
