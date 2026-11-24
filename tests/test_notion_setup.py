@@ -14,6 +14,7 @@ from conftest import init_project
 from lanternspec.core import profile as pm
 from lanternspec.core.project import Project
 from lanternspec.learn.knowledge import Hit, KnowledgeError, keychain, notion, notion_setup
+from lanternspec.learn.knowledge.notion import NotionError
 
 TOKEN = "secret-token-value"
 PAGE = "124791d2c4e380b086defba8b13fd766"
@@ -190,7 +191,7 @@ class FakeNotion:
 
     def overview(self, newest: int = 5) -> tuple[int, list[str]]:
         if self.token in self.rejects:
-            raise KnowledgeError("Notion API error 401: unauthorized")
+            raise NotionError("Notion API error 401: unauthorized", 401)
         n = self.counts.pop(0) if len(self.counts) > 1 else self.counts[0]
         return n, ["모니터링", "FastAPI", "회고"][:n]
 
@@ -509,3 +510,99 @@ def test_the_token_warning_is_marked_so_it_stands_out(repo):
         assert all(line.startswith("⚠ ") for line in warning), warning
         assert "대화에는" in warning[1]
         assert all(paint(line) != line for line in warning)  # on a terminal the whole line is colored
+
+
+# --------------------------------------------------------------------------- an old environment variable next to a new keychain token
+
+
+def test_both_places_are_told_apart():
+    kc = FakeKeychain(token="in-keychain")
+    assert notion.token_sources("NOTION_TOKEN", kc, {"NOTION_TOKEN": "in-env"}) == ("in-env", "in-keychain")
+    assert notion.token_sources("NOTION_TOKEN", kc, {}) == (None, "in-keychain")
+    assert notion.token_sources("NOTION_TOKEN", FakeKeychain(), {"NOTION_TOKEN": " "}) == (None, None)
+
+
+def test_a_token_just_typed_is_the_one_checked_even_when_an_old_variable_is_set(repo):
+    project = _project(repo)
+    checked: list[str] = []
+
+    def notion_for(token: str, state: Any) -> FakeNotion:
+        checked.append(token)
+        return FakeNotion(token, rejects=frozenset({"old"}))
+
+    io, kc = ScriptedIo(["1", "n", "", PAGE_URL]), FakeKeychain(token="old", typed=["new"])
+
+    code = _run(project, io, kc, env={"NOTION_TOKEN": "old"}, notion_fake=notion_for)
+
+    assert code == 0 and checked == ["new"]  # the variable "old" would have been rejected: it is not what the person just typed
+    assert "unset NOTION_TOKEN" in io.out and "~/.zshrc" in io.out  # and the person is told the old one still wins in this terminal
+    assert [line for line in io.said if "NOTION_TOKEN" in line and line.startswith("⚠")]
+
+
+def test_no_warning_when_the_variable_and_the_keychain_agree_or_only_one_exists(repo):
+    project = _project(repo)
+    same = ScriptedIo(["1", "y", PAGE_URL])
+    _run(project, same, FakeKeychain(token=TOKEN), env={"NOTION_TOKEN": TOKEN})
+    only_keychain = ScriptedIo(["1", "y", PAGE_URL])
+    _run(project, only_keychain, FakeKeychain(token=TOKEN), env={})
+
+    assert "unset" not in same.out and "unset" not in only_keychain.out
+
+
+def test_a_rejection_is_explained_in_plain_words_and_names_a_stale_variable(repo):
+    project = _project(repo)
+    io = ScriptedIo(["1", "y", "n"])  # "use the token that is there?" yes, then "enter a different one?" no
+    kc = FakeKeychain(token="new")
+
+    code = _run(
+        project, io, kc, env={"NOTION_TOKEN": "old"}, notion_fake=lambda token, state: FakeNotion(token, rejects=frozenset({"old"}))
+    )
+
+    out = "\n".join(io.said)
+    assert code == 1
+    assert "401" in out and "unauthorized" not in out and "{" not in out  # the status, not Notion's raw JSON
+    assert "통째로" in out  # a hint about pasting the whole token
+    assert "환경 변수 NOTION_TOKEN" in out and "키체인" in out  # the variable differs from the keychain, and the variable wins
+
+
+def test_an_error_that_is_not_a_rejected_token_is_shown_without_the_token_advice(repo):
+    project = _project(repo)
+
+    class Down(FakeNotion):
+        def overview(self, newest: int = 5) -> tuple[int, list[str]]:
+            raise NotionError("Notion API error 500: server error", 500)
+
+    io = ScriptedIo(["1", "", "n"])
+    assert _run(project, io, FakeKeychain(), notion_fake=lambda token, state: Down(token)) == 1
+    assert "500" in "\n".join(io.said) and "통째로" not in "\n".join(io.said)
+
+
+def test_doctor_warns_when_the_variable_and_the_keychain_hold_different_tokens(repo, monkeypatch):
+    init_project(repo)
+    data = pm.load(repo.root).data
+    data["knowledge"] = {"type": "notion", "path": PAGE, "write": "propose_only"}
+    pm.save(repo.root, data)
+    monkeypatch.setenv("NOTION_TOKEN", "old")
+    monkeypatch.setattr(notion.keychain, "read", lambda service: "new")
+    monkeypatch.setattr(notion.keychain, "available", lambda: True)
+
+    _, out = repo("doctor", ok=False)
+
+    assert "다릅니다" in out and "NOTION_TOKEN" in out
+    monkeypatch.setattr(notion.keychain, "read", lambda service: "old")
+    _, same = repo("doctor", ok=False)
+    assert "다릅니다" not in same
+
+
+def test_the_adapter_error_carries_the_http_status():
+    import io as _io
+    import urllib.error
+
+    from lanternspec.learn.knowledge.notion import NotionAdapter
+
+    def reject(req: Any) -> Any:
+        raise urllib.error.HTTPError(req.full_url, 401, "no", {}, _io.BytesIO(b'{"code":"unauthorized"}'))  # type: ignore[arg-type]
+
+    with pytest.raises(NotionError) as caught:
+        NotionAdapter("p", "t", opener=reject).overview()
+    assert caught.value.status == 401 and isinstance(caught.value, KnowledgeError)

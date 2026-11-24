@@ -45,6 +45,50 @@ def _plain(rich: list[dict[str, Any]]) -> str:
 _PAGE_ID = re.compile(r"([0-9a-fA-F]{8}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{12})(?:[?#].*)?$")
 
 
+class NotionError(KnowledgeError):
+    """A call to Notion failed.
+
+    Attributes:
+        status: The HTTP status code Notion answered with; 0 when it could not be reached.
+
+    Example:
+        >>> NotionError("Notion API 오류 401", 401).status
+        401
+    """
+
+    def __init__(self, message: str, status: int = 0) -> None:
+        """Keep the message and the HTTP status.
+
+        Args:
+            message: What went wrong, for a person.
+            status: The HTTP status code; 0 when Notion could not be reached.
+        """
+        super().__init__(message)
+        self.status = status
+
+
+def token_sources(
+    env_name: str = "NOTION_TOKEN", store: Any = keychain, env: Mapping[str, str] | None = None
+) -> tuple[str | None, str | None]:
+    """Give the token of the environment variable and the token of the Keychain apart, each None when there is none.
+
+    Args:
+        env_name: The name of the environment variable, which is also the Keychain service name.
+        store: Where the Keychain is read (the keychain module; tests pass a fake).
+        env: The environment; the process's own when None.
+
+    Returns:
+        The variable's token and the Keychain's token. `notion_token` uses the first one that exists, so when both exist
+        and differ the variable wins.
+
+    Example:
+        >>> token_sources("X", env={"X": "abc"}, store=type("K", (), {"read": staticmethod(lambda s: None)}))
+        ('abc', None)
+    """
+    value = (os.environ if env is None else env).get(env_name, "").strip()
+    return value or None, store.read(env_name)
+
+
 def notion_token(env_name: str = "NOTION_TOKEN", store: Any = keychain, env: Mapping[str, str] | None = None) -> str | None:
     """Find the integration token: the environment variable first, then (on a Mac) the Keychain item of the same name.
 
@@ -375,11 +419,11 @@ class NotionAdapter(Adapter):
                     tries += 1
                     time.sleep(_retry_wait(e))
                     continue
-                raise KnowledgeError(
-                    msg("Notion API error {code}: {value}", code=e.code, value=e.read().decode("utf-8", "replace")[:200])
+                raise NotionError(
+                    msg("Notion API error {code}: {value}", code=e.code, value=e.read().decode("utf-8", "replace")[:200]), e.code
                 ) from e
             except urllib.error.URLError as e:  # pragma: no cover
-                raise KnowledgeError(msg("Couldn't connect to Notion: {reason}", reason=e.reason)) from e
+                raise NotionError(msg("Couldn't connect to Notion: {reason}", reason=e.reason)) from e
 
     def search(self, query: str, aliases: list[str] | None = None, limit: int = 5) -> list[Hit]:
         """Implement Adapter.search over the titles and property values of all the pages, from a list fetched whole.

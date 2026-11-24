@@ -82,7 +82,7 @@ def run(project: Project) -> list[tuple[str, str]]:
         from pathlib import Path
 
         if k["type"] == "notion":
-            from ..learn.knowledge.notion import notion_token
+            from ..learn.knowledge.notion import notion_token, token_sources
 
             env = str(k.get("token_env") or "NOTION_TOKEN")
             out.append(
@@ -90,6 +90,14 @@ def run(project: Project) -> list[tuple[str, str]]:
                 if notion_token(env)
                 else (WARN, msg("No Notion token — run `lantern knowledge setup notion` (or set the environment variable {env})", env=env))
             )
+            from_env, from_keychain = token_sources(env)
+            if from_env and from_keychain and from_env != from_keychain:
+                out.append(
+                    (
+                        WARN,
+                        msg("The environment variable {env} and the Keychain hold different tokens — the variable is used first", env=env),
+                    )
+                )
         else:
             path = Path(str(k["path"])).expanduser()
             out.append(

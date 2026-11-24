@@ -254,6 +254,8 @@ LanternSpec을 고치려는 분을 위한 문서입니다. 흐름 · 폴더 · �
   - **환경 변수만 쓰기.** 터미널이 아닌 곳에서 연 AI 도구는 그 환경 변수를 받지 못할 수 있고, 쉘 설정 파일을 고치게 해야 합니다.
   - **AI가 `/l-init` 안에서 토큰 입력을 중계하기.** 대화 기록에 남습니다.
   - **OAuth.** 공개 통합은 client secret이 필요해 오픈소스에 둘 수 없고, 로그인용 서버를 운영해야 합니다.
+  - **키체인을 환경 변수보다 먼저 읽기.** 환경 변수를 일부러 정해 둔 사람(프로젝트마다 다른 토큰 등)의 값이 옛 키체인 항목에 가려집니다. 대신 둘이 다르면 알려 줍니다.
+- **실제로 겪은 것:** 새 토큰을 키체인에 넣은 뒤에도 마법사가 `~/.zshrc`의 `export` 줄이 터미널을 열 때 넣어 둔 옛 환경 변수로 검증해 401이 났습니다. 그래서 방금 입력한 토큰은 환경 변수가 아니라 키체인에서 읽어 검증하고, 두 값이 다르면 이유와 `unset` 방법을 알려 주며, 401은 Notion의 응답(JSON) 대신 짧은 설명으로 보여 줍니다.
 - **원본:** `src/lanternspec/learn/knowledge/notion_setup.py`(안내 순서), `src/lanternspec/learn/knowledge/keychain.py`(키체인), `src/lanternspec/learn/knowledge/notion.py`(`notion_token`)
 
 ### 지식 저장소의 닫힌 폴더 (`knowledge.allow` · `knowledge.deny` · `lantern guard`)

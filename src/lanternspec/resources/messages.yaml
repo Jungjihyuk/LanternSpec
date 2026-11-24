@@ -367,7 +367,6 @@
 "ℹ lantern.yaml isn't there yet. /l-init makes it with: --knowledge {page} --knowledge-type notion --knowledge-write {write}": {ko: "ℹ 아직 lantern.yaml이 없습니다. /l-init이 이 값으로 만듭니다: --knowledge {page} --knowledge-type notion --knowledge-write {write}"}
 "✔ Searching “{title}” works: {count} page(s) found.": {ko: "✔ “{title}” 검색이 됩니다: 페이지 {count}개를 찾았습니다."}
 "Stopped. lantern.yaml was not changed.": {ko: "멈췄습니다. lantern.yaml은 바뀌지 않았습니다."}
-"✖ Notion did not accept the token ({error}).": {ko: "✖ Notion이 토큰을 받아들이지 않았습니다 ({error})."}
 "Knowledge connector: search · read · propose · write · areas · setup notion": {ko: "지식 연결기: search · read · propose · write · areas · setup notion"}
 "setup: don't open Notion's integrations page in the browser": {ko: "setup: Notion의 통합 페이지를 브라우저로 열지 않음"}
 "Only Notion has a setup: lantern knowledge setup notion": {ko: "설정을 돕는 것은 Notion뿐입니다: lantern knowledge setup notion"}
@@ -421,7 +420,7 @@
 "Notion setup — about 5 minutes.": {ko: "Notion 연결 — 5분쯤 걸립니다."}
 
 # learn/knowledge/notion_setup.py (steps)
-"     → click \"New integration\"": {ko: "     → \"New integration\"(새 연결) 클릭"}
+"     → click \"New integration\"": {ko: "     → \"신규 연결(New integration)\" 클릭"}
 "     → give it a name (e.g. LanternSpec) and pick your workspace": {ko: "     → 이름 입력 (예: LanternSpec), 워크스페이스 선택"}
 "The next prompt is the Keychain's.": {ko: "다음에 나오는 입력창은 키체인의 것입니다."}
 "Paste the token there and press Enter (nothing is shown).": {ko: "토큰을 붙여 넣고 Enter를 누르세요 (화면에는 보이지 않습니다)."}
@@ -430,6 +429,20 @@
 "⚠ The token goes only into the Keychain prompt.": {ko: "⚠ 토큰은 키체인 입력창에만 넣습니다."}
 "⚠ The token goes in the environment variable {env}.": {ko: "⚠ 토큰은 환경 변수 {env}에 넣습니다."}
 "⚠ Never paste it into a chat.": {ko: "⚠ 대화에는 절대 붙이지 마세요."}
+
+# learn/knowledge/notion_setup.py (steps)
+"✖ Notion did not accept the token ({status}).": {ko: "✖ Notion이 토큰을 받아들이지 않았습니다 ({status})."}
+"  · Check that the whole token was pasted.": {ko: "  · 토큰을 통째로 붙여 넣었는지 확인하세요."}
+"  · A token of an integration you deleted or remade no longer works.": {ko: "  · 지웠거나 다시 만든 통합의 옛 토큰은 쓸 수 없습니다."}
+"  · The environment variable {env} holds a different token from the Keychain's, and it is used first.": {ko: "  · 환경 변수 {env}의 토큰이 키체인과 다르고, 그것이 먼저 쓰입니다."}
+"✖ Notion answered with an error ({status}).": {ko: "✖ Notion이 오류로 답했습니다 ({status})."}
+"✖ Couldn't reach Notion: {error}": {ko: "✖ Notion에 연결하지 못했습니다: {error}"}
+"⚠ The environment variable {env} in this terminal holds a different token than the Keychain.": {ko: "⚠ 이 터미널의 환경 변수 {env}는 키체인과 다른 토큰입니다."}
+"⚠ lantern uses the variable first, so here it would still use the old one.": {ko: "⚠ lantern은 환경 변수를 먼저 쓰므로, 여기서는 옛 토큰이 쓰입니다."}
+"  Fix: run `unset {env}` now.": {ko: "  해결: 지금 `unset {env}`를 실행하세요."}
+"  Delete the export line from ~/.zshrc too (the Keychain is enough).": {ko: "  ~/.zshrc의 export 줄도 지우세요 (키체인만으로 충분합니다)."}
+"⚠ In this terminal run `unset {env}` before using lantern.": {ko: "⚠ 이 터미널에서는 lantern을 쓰기 전에 `unset {env}`를 실행하세요."}
+"The environment variable {env} and the Keychain hold different tokens — the variable is used first": {ko: "환경 변수 {env}와 키체인의 토큰이 다릅니다 — 환경 변수가 먼저 쓰입니다"}
 
 # learn/knowledge/obsidian.py
 "Knowledge store folder doesn't exist: {root}": {ko: "지식 저장소 폴더가 없습니다: {root}"}

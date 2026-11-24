@@ -254,6 +254,8 @@ The content of each rule is in its rules document template (`src/lanternspec/res
   - **Environment variable only.** An AI tool opened from somewhere other than a terminal may not get it, and the person has to edit a shell settings file.
   - **The AI relaying the token in `/l-init`.** It stays in the conversation record.
   - **OAuth.** A public integration needs a client secret, which can't be in open source, and a server for the login.
+  - **Reading the Keychain before the environment variable.** The value of someone who set the variable on purpose (a different token per project) would be hidden by an old Keychain item. Instead, it tells them when the two differ.
+- **What actually happened:** after a new token was put in the Keychain, the wizard checked the old value that the `export` line in `~/.zshrc` had put in the environment variable when the terminal opened, and got a 401. So the token just typed is read from the Keychain, not the variable, for the check; when the two differ it says why and how to `unset`; and a 401 is shown as a short explanation instead of Notion's raw JSON answer.
 - **Source:** `src/lanternspec/learn/knowledge/notion_setup.py` (the steps), `src/lanternspec/learn/knowledge/keychain.py` (the Keychain), `src/lanternspec/learn/knowledge/notion.py` (`notion_token`)
 
 ### Closed folders of the knowledge store (`knowledge.allow` · `knowledge.deny` · `lantern guard`)

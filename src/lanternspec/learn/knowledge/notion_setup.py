@@ -31,7 +31,7 @@ from ...core.project import Project
 from ...core.state import ensure_state_dir
 from ...core.textwidth import cut
 from . import KnowledgeError, keychain
-from .notion import NotionAdapter, notion_token, page_id
+from .notion import NotionAdapter, notion_token, page_id, token_sources
 
 INTEGRATIONS_URL = "https://app.notion.com/developers/connections"  # where integrations are made (from Notion's docs)
 WRITE_MODES = {"1": "propose_only", "2": "direct"}
@@ -143,7 +143,7 @@ def _get_token(io: Io, store: Any, env_name: str, env: Mapping[str, str], replac
     if not store.store(env_name):
         io.say(msg("✖ The Keychain tool did not save the token. Nothing was changed."))
         return None
-    return notion_token(env_name, store, env)
+    return store.read(env_name)  # the one just typed, not an older variable that would be looked at first
 
 
 def _parent_page(io: Io, notion: Any) -> str | None:
@@ -166,24 +166,47 @@ def _parent_page(io: Io, notion: Any) -> str | None:
             return None
 
 
-def _check_token(io: Io, store: Any, env_name: str, env: Mapping[str, str], make_adapter: Callable[..., Any], state: Path | None) -> Any:
+def _stale(store: Any, env_name: str, env: Mapping[str, str]) -> bool:
+    """Whether the environment variable and the Keychain hold different tokens (lantern looks at the variable first)."""
+    from_env, from_keychain = token_sources(env_name, store, env)
+    return bool(from_env and from_keychain and from_env != from_keychain)
+
+
+def _explain_rejection(io: Io, error: KnowledgeError, store: Any, env_name: str, env: Mapping[str, str]) -> None:
+    """Say in plain words why Notion refused, without its raw answer."""
+    status = int(getattr(error, "status", 0))
+    if status == 401:
+        io.say(msg("✖ Notion did not accept the token ({status}).", status=status))
+        io.say(msg("  · Check that the whole token was pasted."))
+        io.say(msg("  · A token of an integration you deleted or remade no longer works."))
+        if _stale(store, env_name, env):
+            io.say(
+                msg("  · The environment variable {env} holds a different token from the Keychain's, and it is used first.", env=env_name)
+            )
+    elif status:
+        io.say(msg("✖ Notion answered with an error ({status}).", status=status))
+    else:
+        io.say(msg("✖ Couldn't reach Notion: {error}", error=cut(str(error), 100)))
+
+
+def _check_token(
+    io: Io, token: str, store: Any, env_name: str, env: Mapping[str, str], make_adapter: Callable[..., Any], state: Path | None
+) -> Any:
     """Return the Notion connection once it accepts the token and sees a page; None when the person stops."""
-    token = notion_token(env_name, store, env)
-    if not token:
-        return None
     notion = make_adapter(token, state)
     replaced = False
     while True:
         try:
             count, titles = notion.overview(SHOWN_TITLES)
         except KnowledgeError as e:
-            io.say(msg("✖ Notion did not accept the token ({error}).", error=str(e)))
+            _explain_rejection(io, e, store, env_name, env)
             if replaced or not store.available() or not _yes(io.ask(msg("▶ Enter a different token now? [Y/n]: "))):
                 return None
-            token, replaced = _get_token(io, store, env_name, env, replace=True), True
-            if not token:
+            retyped = _get_token(io, store, env_name, env, replace=True)
+            if not retyped:
                 return None
-            notion = make_adapter(token, state)
+            replaced = True
+            notion = make_adapter(retyped, state)
             continue
         if count == 0:
             io.say(msg("The token works, but the integration can't see any page yet."))
@@ -199,6 +222,12 @@ def _check_token(io: Io, store: Any, env_name: str, env: Mapping[str, str], make
             io.say(f"     · {cut(title, TITLE_CELLS)}")
         io.say(msg("   More than you meant? Connect fewer pages in Notion (••• → Add connections)."))
         io.say(msg("   This is only a check: you don't have to connect anything more to go on."))
+        if _stale(store, env_name, env):
+            io.say("")
+            io.say(msg("⚠ The environment variable {env} in this terminal holds a different token than the Keychain.", env=env_name))
+            io.say(msg("⚠ lantern uses the variable first, so here it would still use the old one."))
+            io.say(msg("  Fix: run `unset {env}` now.", env=env_name))
+            io.say(msg("  Delete the export line from ~/.zshrc too (the Keychain is enough)."))
         return notion
 
 
@@ -247,10 +276,11 @@ def run(
         if open_browser:
             io.open_url(INTEGRATIONS_URL)
         _step(io, 3, msg("Token"))
-        if _get_token(io, store, env_name, environment) is None:
+        token = _get_token(io, store, env_name, environment)
+        if token is None:
             return 1
         state = ensure_state_dir(project) if project.profile.exists else None
-        notion = _check_token(io, store, env_name, environment, maker, state)
+        notion = _check_token(io, token, store, env_name, environment, maker, state)
         if notion is None:
             return 1
         parent = _parent_page(io, notion)
@@ -262,6 +292,8 @@ def run(
         if titles:
             hits = notion.search(titles[0])
             io.say(msg("✔ Searching “{title}” works: {count} page(s) found.", title=titles[0], count=len(hits)))
+        if _stale(store, env_name, environment):
+            io.say(msg("⚠ In this terminal run `unset {env}` before using lantern.", env=env_name))
         return 0
     except (KeyboardInterrupt, EOFError):
         io.say("")
