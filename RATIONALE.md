@@ -117,6 +117,7 @@ The content of a rule (its tables and numbers) is written once, in the rules doc
 - **Decided:** the rules a project follows (development principles · tech selection criteria · repository file rules · task breakdown rules …) live as documents in the rules folder, and skills read and follow them.
 - **Why:** a rule kept only inside a skill's text is hard for people to find and impossible for a team to change. As a document, a rule the team changed is followed by the AI too.
 - **Turned down:** writing the rules into skills. Skills are regenerated on `lantern upgrade`, and the team's edits would be lost.
+- **Criteria for opening features (CLI · REST API · MCP):** how a feature you make is opened is a technology choice too, so it is in the tech selection criteria. `/l-init` doesn't ask it; `/l-adr` uses it as a basis. MCP isn't conditioned only on "no shell": AI tools with a shell use design apps and company databases over MCP. Whether to attach someone else's MCP to an AI tool is how the harness is made up, not the product's technology, so the component card covers it.
 
 ### The design system is a document in the rules folder (`Rules/Design System.md`)
 - **Decided:** the colors · type · spacing · corners · shared parts every screen follows are written in `3. Current State/Rules/Design System.md`. Only projects with screens get it, and `/l-design` reads it before making screen mockups. Its sections come in the order of the standard `DESIGN.md` (Google Labs) — overview · colors · typography · layout · elevation · shapes · components · do's and don'ts.

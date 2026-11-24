@@ -6,8 +6,8 @@ created: ${today}
 updated: ${today}
 links: []
 template: Tech Selection Criteria
-template_version: 1.0.0
-based_on: 1.0.0
+template_version: 1.1.0
+based_on: 1.1.0
 ---
 # 📘 Tech Selection Criteria
 
@@ -30,6 +30,7 @@ based_on: 1.0.0
 | Mobile | Platform coverage, Store policy, OS updates | Native APIs, Background execution, Offline support, Accessibility | Battery use, Memory limits, UI responsiveness, App size |
 | Server | None | Authentication · Authorization, Real-time, API style, Background jobs | Server scalability |
 | DB | Backup · Recovery | Data consistency, Data model | Query patterns, Data scaling, Schema changes |
+| Opening features | Calling environment | Separated permissions | Where the feature lives, Reuse, Use by people, Context cost, Operating burden |
 | Infrastructure | None | Data location | Infrastructure cost, Deployment strategy, Operating model, Autoscaling, Monitoring · Logs, Disaster recovery |
 
 Existing services (Supabase, Firebase and so on) are judged by the common criteria plus data model, data consistency, infrastructure cost and data location.
@@ -108,6 +109,19 @@ Existing services (Supabase, Firebase and so on) are judged by the common criter
 | Schema changes | Can the schema change safely while the service runs? |
 | Backup · Recovery | Can it recover to a chosen point in time? |
 
+### Opening features
+`/l-init` doesn't ask about this. When you open a feature to people, other programs or AI tools, choose among a CLI, a REST API and MCP from this table.
+
+| Area | What to check |
+|---|---|
+| Calling environment | Which can the caller do: run commands, send HTTP requests or connect over MCP? |
+| Where the feature lives | Is it on the same computer, or inside another running app or another server? |
+| Separated permissions | Must passwords and permissions be kept, and use be logged, outside the caller? |
+| Reuse | Is it used in a few known places, or by many programs or AI tools you've never met? |
+| Use by people | Do people use it directly too? |
+| Context cost | When an AI uses it, how much context do the tool descriptions and results take? |
+| Operating burden | How much work are installing, registering, authentication and versioning? |
+
 ### Infrastructure
 `/l-init` doesn't ask about this. Decide from this table before deploying.
 
@@ -166,6 +180,24 @@ When building the server yourself, also ask about the development environment: "
 
 Record the choice in the technology ADR too. With Docker, the compose file follows the format in the repository file rules.
 
+### Opening features
+`/l-init` doesn't ask about this. Ask in order when a feature is to be called from somewhere else.
+
+"Who calls it?" (Basis: Calling environment, Where the feature lives, Use by people)
+- A person or script on the same computer → CLI
+- Another program or another computer → REST API
+- An AI tool → the next question
+
+"Can the AI tool use it safely through a CLI or REST API?" (Basis: Calling environment, Separated permissions, Reuse, Context cost)
+- Yes (recommended) → use the CLI or REST API there is, and tell how in a skill or document. If there is none yet, make a CLI for the same computer and a REST API for another.
+- No → MCP, if the reason is any of these. If it is none of them, the same as "Yes".
+  - The feature lives in a running app or someone else's service, which opens it over MCP (e.g. a design tool)
+  - The AI must not get the password, and a separate server must manage permissions and logs (e.g. a company database)
+  - It is offered the same way to many AI tools you've never met
+  - The AI tool that calls it can't run commands or send HTTP requests (e.g. a chat app)
+
+The three can be used together. An MCP server may call a REST API inside, or a CLI and MCP may call the same functions. Whether there is a shell is one of the conditions for MCP, not a required one.
+
 ## Technology comparison
 Status is one of Recommended, Conditional or Not recommended. Change the status of a technology no longer suggested instead of deleting its row.
 
@@ -190,6 +222,9 @@ Status is one of Recommended, Conditional or Not recommended. Change the status 
 | SQLite | DB, local storage | SQL | Conditional | Runs inside the app from one file with no separate server | Weak for concurrent writes and multiple servers; device sync is up to you | Single-user tools, small services, local storage on desktop · mobile, encrypting stored data |
 | Supabase | Existing service | PostgreSQL | Recommended | DB, authentication, storage and real-time together, uses SQL, self-hostable | Code can become tied to platform features | Pricing, data location, access rule design |
 | Firebase | Existing service | Firestore (document NoSQL) | Conditional | Real-time sync and offline support, easy mobile integration | Weak for complex relations and aggregation, tied to Google services | Cost by reads and writes |
+| CLI | Opening features | Any language · Terminal | Recommended | Easy to make, used by people and AI alike, easy to chain with other commands | Only on the same computer where commands can run, with the caller's own permissions | Output for an AI to read (`--json`), confirming commands that are hard to undo |
+| REST API | Opening features | Any language · HTTP | Recommended | Called from any language and computer, with HTTP's authentication, caching and monitoring as they are | A server to keep running; an AI needs to be told how to use it | Authentication, versioning, API documents (OpenAPI) |
+| MCP | Opening features | Any language · stdio or HTTP (JSON-RPC 2.0) | Conditional | Tells AI tools the list of tools and their inputs in the same way, so many AI tools can reuse it | Registered in each AI tool; tool descriptions may take context; connecting alone doesn't make results better | A server on the same computer runs with the AI tool's permissions and doesn't keep secrets from it. Start read-only; check permissions on the server and get a person's approval for writes. Check how often it is really called |
 
 ## Technology details
 Bump the last digit of the template version when only these details are refreshed, and the middle digit when recommendations change: a technology added, a status changed or the tree changed.
@@ -215,6 +250,9 @@ Bump the last digit of the template version when only these details are refreshe
 | SQLite | 3.54.1 | No published schedule | Public Domain | 2026-11-06 | [Copyright](https://www.sqlite.org/copyright.html) |
 | Supabase | JS client 2.119.0 | Not applicable to a hosted service | Apache-2.0 (self-hosted) | 2026-11-06 | [Repository](https://github.com/supabase/supabase) |
 | Firebase | JS SDK 13.2.0 | Not applicable to a hosted service | SDK under Apache-2.0, service under Google's terms | 2026-11-06 | [Firestore documentation](https://firebase.google.com/docs/firestore) |
+| CLI | No standard | Not applicable | Not applicable | 2026-11-24 | No set standard |
+| REST API | No standard (a design style) | Not applicable | Not applicable | 2026-11-24 | [HTTP (RFC 9110)](https://www.rfc-editor.org/rfc/rfc9110) |
+| MCP | 2026-07-28 | No published schedule (a feature stays at least 12 months after deprecation, 90 days for an expedited removal) | Moving to Apache-2.0 (partly MIT) | 2026-11-24 | [Specification](https://modelcontextprotocol.io/specification/latest), [Versioning](https://modelcontextprotocol.io/specification/versioning), [Security](https://modelcontextprotocol.io/specification/latest/basic/security_best_practices) |
 
 ## Store requirements
 Mobile apps check these before release, whatever the technology.
@@ -236,3 +274,4 @@ Mobile apps check these before release, whatever the technology.
 | Version | Date | What changed |
 |---|---|---|
 | 1.0.0 | 2026-11-06 | Base template |
+| 1.1.0 | 2026-11-24 | Added criteria for opening features (CLI · REST API · MCP) |
