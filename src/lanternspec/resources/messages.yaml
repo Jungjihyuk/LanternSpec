@@ -390,7 +390,6 @@
 "  ② \"Configuration\" tab → capabilities": {ko: "  ② \"Configuration\"(구성) 탭 → 기능(capabilities)"}
 "  ③ On the same tab, show the token and copy it": {ko: "  ③ 같은 탭에서 토큰을 표시해 복사"}
 "  ④ Open a page (or database) whose notes you want searched,": {ko: "  ④ 검색할 노트가 있는 페이지(또는 데이터베이스)를 열고,"}
-"A token for {env} is already stored.": {ko: "{env} 토큰이 이미 저장되어 있습니다."}
 "Copy the token, then press Enter.": {ko: "토큰을 복사한 뒤 Enter를 누르세요."}
 "How notes are written": {ko: "노트를 어떻게 쓸까요"}
 "Make an integration in Notion": {ko: "Notion에서 통합 만들기"}
@@ -470,6 +469,12 @@
 "✔ Database “{title}”: each note becomes a new row.": {ko: "✔ 데이터베이스 “{title}”: 노트마다 새 행을 만듭니다."}
 "✖ The integration can't see it. Open it → ••• → Add connections → pick your integration.": {ko: "✖ 통합이 볼 수 없습니다. 열어서 ••• → Add connections(연결 추가) → 만든 통합을 고르세요."}
 "Which properties can a new note be given values for? → names · kinds · choices (empty when the store has none)": {ko: "새 노트에 어떤 속성 값을 줄 수 있나? → 이름 · 종류 · 선택지 (없는 저장소면 빈 목록)"}
+
+# learn/knowledge/notion_setup.py (steps)
+"A token for {env} is already in the Keychain.": {ko: "{env} 토큰이 키체인에 이미 있습니다."}
+"The Keychain has no token. Only the environment variable {env} does.": {ko: "키체인에는 토큰이 없고, 환경 변수 {env}에만 있습니다."}
+"It may be an old value left in this terminal, even after its line was deleted.": {ko: "export 줄을 지웠어도 이 터미널에 남은 옛 값일 수 있습니다."}
+"▶ Use the variable's token? [y/N] (N = put a new one in the Keychain): ": {ko: "▶ 환경 변수의 토큰을 쓸까요? [y/N] (N = 키체인에 새로 입력): "}
 
 # learn/knowledge/obsidian.py
 "Knowledge store folder doesn't exist: {root}": {ko: "지식 저장소 폴더가 없습니다: {root}"}

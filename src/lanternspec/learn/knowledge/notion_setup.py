@@ -32,7 +32,7 @@ from ...core.project import Project
 from ...core.state import ensure_state_dir
 from ...core.textwidth import cut
 from . import KnowledgeError, keychain, notion_database
-from .notion import NotionAdapter, notion_token, page_id, token_sources
+from .notion import NotionAdapter, page_id, token_sources
 
 INTEGRATIONS_URL = "https://app.notion.com/developers/connections"  # where integrations are made (from Notion's docs)
 WRITE_MODES = {"1": "propose_only", "2": "direct"}
@@ -135,11 +135,16 @@ def _guide(io: Io, mode: str) -> None:
 
 def _get_token(io: Io, store: Any, env_name: str, env: Mapping[str, str], replace: bool = False) -> str | None:
     """Make sure a token exists and return it; None when it can't be had (a message says why)."""
-    found = notion_token(env_name, store, env)
-    if found and not replace:
-        io.say(msg("A token for {env} is already stored.", env=env_name))
+    from_env, from_keychain = token_sources(env_name, store, env)
+    if from_keychain and not replace:
+        io.say(msg("A token for {env} is already in the Keychain.", env=env_name))
         if _yes(io.ask(msg("▶ Use it? [Y/n] (Y = keep it, n = enter a new one): "))):
-            return found
+            return from_keychain
+    elif from_env and not replace and store.available():  # a variable can outlive what it came from: enter a new one by default
+        io.say(msg("The Keychain has no token. Only the environment variable {env} does.", env=env_name))
+        io.say(msg("It may be an old value left in this terminal, even after its line was deleted."))
+        if io.ask(msg("▶ Use the variable's token? [y/N] (N = put a new one in the Keychain): ")).strip().lower() in ("y", "yes", "예"):
+            return from_env
     if not store.available():
         if env.get(env_name, "").strip() and not replace:
             return env[env_name].strip()

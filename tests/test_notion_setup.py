@@ -715,3 +715,21 @@ def test_a_database_that_cannot_be_used_asks_for_another_link(repo):
 
     assert _run(_project(repo), io, FakeKeychain(), notion_fake=lambda token, state: Several(token)) == 0
     assert "데이터 소스가 여러 개" in _last_step(io) and Project.load(repo.root).profile.knowledge["path"] == PAGE
+
+
+def test_a_variable_left_over_is_not_called_a_stored_token_and_a_new_one_is_asked_for(repo):
+    project = _project(repo)
+    checked: list[str] = []
+
+    def notion_for(token: str, state: Any) -> FakeNotion:
+        checked.append(token)
+        return FakeNotion(token)
+
+    io, kc = ScriptedIo(["1", "", "", PAGE_URL]), FakeKeychain(typed=["new"])  # Enter = don't use the variable; Enter = copied; page
+    assert _run(project, io, kc, env={"NOTION_TOKEN": "old"}, notion_fake=notion_for) == 0
+    assert checked == ["new"] and kc.stored == ["NOTION_TOKEN"]
+    assert "이미" not in io.out and "환경 변수 NOTION_TOKEN에만" in io.out and "old" not in "\n".join(io.said)
+
+    chosen = ScriptedIo(["1", "y", PAGE_URL])  # on purpose (a locked Keychain, for one): the variable is used
+    assert _run(project, chosen, FakeKeychain(), env={"NOTION_TOKEN": "old"}, notion_fake=notion_for) == 0
+    assert checked[-1] == "old"
