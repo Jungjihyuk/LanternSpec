@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import os
 import re
+import time
 import webbrowser
 from collections.abc import Callable, Mapping
 from pathlib import Path
@@ -53,6 +54,10 @@ class Io(Protocol):
         """Open an address in the browser."""
         ...
 
+    def sleep(self, seconds: float) -> None:
+        """Wait."""
+        ...
+
 
 class TerminalIo:
     """The real terminal and browser.
@@ -74,12 +79,18 @@ class TerminalIo:
         """Open an address in the browser."""
         return webbrowser.open(url)
 
+    def sleep(self, seconds: float) -> None:
+        """Wait."""
+        time.sleep(seconds)
+
 
 def _yes(answer: str) -> bool:
     return answer.strip().lower() not in ("n", "no", "아니", "아니요")
 
 
 STEPS = 4
+WAIT_SECONDS = 5  # the pause before looking again for a page that was just connected
+WAIT_TRIES = 6  # how many times it looks again before asking the person what to do
 SHOWN_TITLES = 3  # how many recently edited pages are named after the check
 TITLE_CELLS = 40  # a title wider than this many terminal columns is cut, so the line stays short
 
@@ -193,6 +204,30 @@ def _explain_rejection(io: Io, error: KnowledgeError) -> None:
         io.say(msg("✖ Couldn't reach Notion: {error}", error=cut(str(error), 100)))
 
 
+def _wait_for_a_page(io: Io, notion: Any) -> tuple[str, int, list[str]]:
+    """Look again, with pauses, until the integration shows a page (a page just connected can take a while to be listed).
+
+    Returns:
+        ("found", page count, titles) once there is a page; ("skip", 0, []) when the person goes on without waiting;
+        ("stop", 0, []) when the person stops.
+    """
+    io.say(msg("The token works, but no page shows up yet."))
+    io.say(msg("A page you just connected can take a while to show up."))
+    io.say(msg('   Not connected yet? Open a page → ••• → "Add connections" → pick your integration.'))
+    while True:
+        for i in range(1, WAIT_TRIES + 1):
+            io.sleep(WAIT_SECONDS)
+            io.say(msg("   Checking again… ({i}/{n})", i=i, n=WAIT_TRIES))
+            count, titles = notion.overview(SHOWN_TITLES)
+            if count:
+                return "found", count, titles
+        answer = io.ask(msg("▶ Keep waiting (Enter), go on without it (s), or stop (q): ")).strip().lower()
+        if answer == "q":
+            return "stop", 0, []
+        if answer == "s":
+            return "skip", 0, []
+
+
 def _check_token(
     io: Io, token: str, store: Any, env_name: str, env: Mapping[str, str], make_adapter: Callable[..., Any], state: Path | None
 ) -> Any:
@@ -213,11 +248,12 @@ def _check_token(
             notion = make_adapter(retyped, state)
             continue
         if count == 0:
-            io.say(msg("The token works, but the integration can't see any page yet."))
-            io.say(msg('   Open a page → ••• → "Add connections" → pick your integration.'))
-            if io.ask(msg("▶ Press Enter once connected (q to stop): ")).strip().lower() == "q":
+            outcome, count, titles = _wait_for_a_page(io, notion)
+            if outcome == "stop":
                 return None
-            continue
+            if outcome == "skip":  # the person goes on without the list: the page given next is checked on its own
+                io.say(msg("ℹ Skipping the list check: the page you give next is checked directly."))
+                return notion
         io.say("")
         io.say(msg("✔ Notion accepted the token."))
         io.say(msg("   Pages the integration can see: {count}", count=count))

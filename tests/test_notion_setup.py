@@ -158,6 +158,7 @@ class ScriptedIo:
         self.prompts: list[str] = []
         self.said: list[str] = []
         self.opened: list[str] = []
+        self.waits: list[float] = []
 
     def ask(self, prompt: str) -> str:
         self.prompts.append(prompt)
@@ -174,6 +175,9 @@ class ScriptedIo:
     def open_url(self, url: str) -> bool:
         self.opened.append(url)
         return True
+
+    def sleep(self, seconds: float) -> None:
+        self.waits.append(seconds)
 
     @property
     def out(self) -> str:
@@ -279,12 +283,32 @@ def test_a_token_that_stays_rejected_stops_without_touching_the_settings(repo):
     assert Project.load(repo.root).profile.knowledge is None
 
 
-def test_an_integration_that_sees_no_page_is_told_how_to_connect_one_and_asked_again(repo):
-    project = _project(repo)
-    io = ScriptedIo(["1", "", "", PAGE_URL])  # the third answer is "Enter" after connecting a page
+def test_an_integration_that_sees_no_page_yet_is_checked_again_by_itself_until_one_shows_up(repo):
+    io = ScriptedIo(["1", "", PAGE_URL])  # no "press Enter" in between: nobody has to type while waiting
 
-    assert _run(project, io, FakeKeychain(), notion_fake=lambda token, state: FakeNotion(token, counts=[0, 3])) == 0
-    assert "Add connections" in io.out or "연결 추가" in io.out
+    code = _run(_project(repo), io, FakeKeychain(), notion_fake=lambda token, state: FakeNotion(token, counts=[0, 0, 0, 3]))
+
+    out = "\n".join(io.said)
+    assert code == 0 and io.waits == [notion_setup.WAIT_SECONDS] * 3  # it looked again three times, with a pause each
+    assert "시간이 걸릴 수 있습니다" in out and "Add connections" in out  # a late page is explained, and so is connecting one
+    assert "다시 확인하는 중… (3/" in out and "통합이 볼 수 있는 페이지: 3개" in out
+
+
+def test_after_waiting_a_while_the_person_can_keep_waiting_go_on_or_stop(repo):
+    never = lambda token, state: FakeNotion(token, counts=[0])  # noqa: E731
+    tries = notion_setup.WAIT_TRIES
+
+    more = ScriptedIo(["1", "", "", "s", PAGE_URL])  # Enter = keep waiting (another round), then s = go on
+    assert _run(_project(repo), more, FakeKeychain(), notion_fake=never) == 0
+    assert len(more.waits) == tries * 2
+
+    skipped = ScriptedIo(["1", "", "s", PAGE_URL])
+    assert _run(_project(repo), skipped, FakeKeychain(), notion_fake=never) == 0
+    assert "직접 확인합니다" in "\n".join(skipped.said)  # the page given next is checked on its own, which does not wait for the list
+    assert Project.load(repo.root).profile.knowledge["path"] == PAGE
+
+    stopped = ScriptedIo(["1", "", "q"])
+    assert _run(_project(repo), stopped, FakeKeychain(), notion_fake=never) == 1
 
 
 def test_a_parent_page_the_integration_cannot_see_is_explained_and_can_be_corrected(repo):

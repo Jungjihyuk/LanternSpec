@@ -384,7 +384,6 @@
 "    need it when you switch to writing, so decide now.": {ko: "    바꿀 때 필요해서 지금 정해 둡니다."}
 "   More than you meant? Connect fewer pages in Notion (••• → Add connections).": {ko: "   의도보다 많으면 Notion에서 연결을 줄이세요 (••• → Add connections)."}
 "   Most recently edited:": {ko: "   최근에 수정한 페이지:"}
-"   Open a page → ••• → \"Add connections\" → pick your integration.": {ko: "   페이지를 열어 ••• → \"Add connections\"(연결 추가) → 만든 통합을 고르세요."}
 "   Pages the integration can see: {count}": {ko: "   통합이 볼 수 있는 페이지: {count}개"}
 "   This is only a check: you don't have to connect anything more to go on.": {ko: "   이건 확인일 뿐입니다. 더 연결하지 않아도 그대로 진행됩니다."}
 "  1) draft files only; you move them in yourself (a safe start)": {ko: "  1) 초안 파일만 만들고, 옮기는 건 직접 합니다 (안전한 시작)"}
@@ -400,7 +399,6 @@
 "How notes are written": {ko: "노트를 어떻게 쓸까요"}
 "Make an integration in Notion": {ko: "Notion에서 통합 만들기"}
 "Pick one page where new notes will be made.": {ko: "새 노트를 만들 페이지를 하나 정합니다."}
-"The token works, but the integration can't see any page yet.": {ko: "토큰은 맞지만 통합이 볼 수 있는 페이지가 아직 없습니다."}
 "Token": {ko: "토큰 넣고 확인하기"}
 "Update content · Insert content · comments · user information · agent features": {ko: "콘텐츠 업데이트 · 콘텐츠 삽입 · 댓글 · 사용자 정보 · 에이전트 기능"}
 "Update content · comments · user information · agent features": {ko: "콘텐츠 업데이트 · 댓글 · 사용자 정보 · 에이전트 기능"}
@@ -410,7 +408,6 @@
 "▶ Choose 1 or 2 [1]: ": {ko: "▶ 1 또는 2를 고르세요 [1]: "}
 "▶ Enter a different token now? [Y/n]: ": {ko: "▶ 다른 토큰을 지금 넣을까요? [Y/n]: "}
 "▶ Page link: ": {ko: "▶ 페이지 링크: "}
-"▶ Press Enter once connected (q to stop): ": {ko: "▶ 연결했으면 Enter (그만하려면 q): "}
 "▶ Press Enter when you have copied it: ": {ko: "▶ 복사했으면 Enter: "}
 "▶ Try again? [Y/n]: ": {ko: "▶ 다시 해 볼까요? [Y/n]: "}
 "▶ Use it? [Y/n] (Y = keep it, n = enter a new one): ": {ko: "▶ 그대로 쓸까요? [Y/n] (Y = 그대로 사용, n = 새로 입력): "}
@@ -448,6 +445,14 @@
 "  · It must be a page, not a database.": {ko: "  · 데이터베이스가 아니라 일반 페이지여야 합니다."}
 "That link is a database. Give the link of an ordinary page.": {ko: "그 링크는 데이터베이스입니다. 일반 페이지의 링크를 주세요."}
 "  2) create a new page in Notion right after you approve (existing pages are never changed)": {ko: "  2) 승인하면 바로 Notion에 새 페이지를 만듭니다 (기존 페이지는 고치지 않음)"}
+
+# learn/knowledge/notion_setup.py (steps)
+"The token works, but no page shows up yet.": {ko: "토큰은 맞지만 통합이 볼 수 있는 페이지가 아직 없습니다."}
+"A page you just connected can take a while to show up.": {ko: "방금 연결한 페이지는 목록에 나타나기까지 시간이 걸릴 수 있습니다."}
+"   Not connected yet? Open a page → ••• → \"Add connections\" → pick your integration.": {ko: "   아직 연결 전이라면: 페이지 열기 → ••• → \"Add connections\" → 내 통합 선택"}
+"   Checking again… ({i}/{n})": {ko: "   다시 확인하는 중… ({i}/{n})"}
+"▶ Keep waiting (Enter), go on without it (s), or stop (q): ": {ko: "▶ 더 기다리기(Enter) · 기다리지 않고 계속(s) · 중단(q): "}
+"ℹ Skipping the list check: the page you give next is checked directly.": {ko: "ℹ 목록 확인은 건너뜁니다. 다음에 줄 페이지는 직접 확인합니다."}
 
 # learn/knowledge/obsidian.py
 "Knowledge store folder doesn't exist: {root}": {ko: "지식 저장소 폴더가 없습니다: {root}"}
