@@ -10,6 +10,7 @@ Not here:
 
 from __future__ import annotations
 
+import datetime as _dt
 import json
 import re
 from collections import Counter, defaultdict
@@ -22,7 +23,7 @@ from ..core.links import Resolver, iter_links
 from ..core.messages import msg
 from ..core.project import Project, git_out, nfc, read
 from ..core.sections import outside_guides
-from ..core.taskfile import parse_criteria, parse_tasks, size_role
+from ..core.taskfile import Task, parse_criteria, parse_tasks, size_role
 
 COMMON_FIELDS = ["id", "type", "status", "created", "updated", "links", "template", "template_version"]
 LEVEL_ICON = {"error": "✖", "warn": "⚠", "info": "ℹ"}
@@ -671,6 +672,34 @@ def check_file(project: Project, path: Path, text: str, ctx: _Ctx) -> list[Findi
     return out
 
 
+CLOCK_SLACK = _dt.timedelta(minutes=5)
+
+
+def _time_problems(project: Project, t: Task) -> list[str]:
+    """What can't be true of a task's times. `lantern task start · done` stamp them, so such a time was written by hand."""
+    start, finish = (_task_time(t, role) for role in ("start", "finish"))
+    out = []
+    if start and finish:
+        by_day = len(t.started.strip()) < 16 or len(t.finished.strip()) < 16  # a date alone has no time of day to compare
+        if finish.date() < start.date() if by_day else finish < start:
+            out.append(msg("{id}: it finished before it started ({start} → {finish})", id=t.id, start=t.started, finish=t.finished))
+    # times are local: a member further east may be up to a day ahead
+    latest = _dt.datetime.now() + (_dt.timedelta(days=1) if project.profile.team else CLOCK_SLACK)
+    for role, at in (("start", start), ("finish", finish)):
+        if at and at > latest:
+            out.append(msg("{id}: [{attr}] is in the future ({at})", id=t.id, attr=project.names.attr(role), at=f"{at:%Y-%m-%d %H:%M}"))
+    return out
+
+
+def _task_time(t: Task, role: str) -> _dt.datetime | None:
+    for fmt in ("%Y-%m-%d %H:%M", "%Y-%m-%d"):
+        try:
+            return _dt.datetime.strptime((t.started if role == "start" else t.finished).strip(), fmt)
+        except ValueError:
+            continue
+    return None
+
+
 def _check_tasks(project: Project, path: Path, text: str, rel: str) -> list[Finding]:
     out: list[Finding] = []
     tasks = parse_tasks(text, project.names)
@@ -702,6 +731,7 @@ def _check_tasks(project: Project, path: Path, text: str, rel: str) -> list[Find
                     line,
                 )
             )
+        out += [Finding("warn", rel, "task-time", problem, line) for problem in _time_problems(project, t)]
         for dep in t.deps:
             if dep not in known:
                 out.append(

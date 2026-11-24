@@ -182,8 +182,15 @@ def _edit_task(project: Project, task_id: str, edit: Callable[[str, Task], str])
 
 def _with_names(project: Project, line: str, t: Task, by: list[str] | None) -> str:
     """Add names to the task line's `[한 사람:: …]`, keeping the ones already there."""
-    names = [*t.list_attr("worked_by"), *(n.strip() for n in by or [] if n.strip())]
+    names = [*t.workers, *(n.strip() for n in by or [] if n.strip())]
     return set_attr(line, "worked_by", ", ".join(dict.fromkeys(names)), project.names) if names else line
+
+
+def _log_time(project: Project, t: Task, event: str) -> None:
+    """Keep the second in the run log: the document's times are minutes."""
+    from ..tools.runlog import task_time
+
+    task_time(project, t.id, t.work_id, event)
 
 
 def start(project: Project, task_id: str, by: list[str] | None = None) -> Task:
@@ -212,7 +219,10 @@ def start(project: Project, task_id: str, by: list[str] | None = None) -> Task:
         line = line if t.started else set_attr(line, "start", now_minute(), project.names)
         return _with_names(project, line, t, by)
 
-    t, tf, _ = _edit_task(project, task_id, edit)
+    first: list[bool] = []  # whether this start is the one that counts
+    t, tf, _ = _edit_task(project, task_id, lambda line, t: (first.append(not t.started), edit(line, t))[1])
+    if first[0]:
+        _log_time(project, t, "start")
     for role in ("plan", "tasks", "record"):
         _bump_stage(project, project.doc_path(tf.parent, role), "build")
     return t
@@ -265,6 +275,7 @@ def done(project: Project, task_id: str, by: list[str] | None = None) -> DoneRes
         return set_attr(line, "finish", now_minute(), project.names)
 
     t, tf, tasks = _edit_task(project, task_id, edit)
+    _log_time(project, t, "done")
     checkpoints = []
     for ac in t.criteria:
         linked = [x for x in tasks if ac in x.criteria]

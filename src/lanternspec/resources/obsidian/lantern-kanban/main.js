@@ -186,7 +186,7 @@ class Board extends MarkdownRenderChild {
       row.addEventListener("click", () => this.open(work));
       make(row, "lk-id", work.id);
       make(row, "lk-row-title", work.name).title = work.name;
-      const time = make(row, "lk-time", work.worked ? duration(work.worked, labels) : "");
+      const time = make(row, "lk-time", work.under_minute ? labels.under_minute : work.worked ? duration(work.worked, labels) : "");
       // time worked, as a short bar against the longest in the list
       if (work.worked) make(time, "lk-time-bar").style.width = `${Math.max(4, (work.worked / longest) * 48)}px`;
     }

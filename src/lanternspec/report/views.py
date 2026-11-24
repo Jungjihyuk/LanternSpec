@@ -91,25 +91,25 @@ def _who(task: Task) -> dict:
     """Who did a task, for the charts: the names on its line and whether they are people, AI models or both."""
     from ..tools import who_did
 
-    names = task.list_attr("worked_by")
+    names = task.workers
     return {"by": names, "who": who_did(names)} if names else {}
 
 
-def _worked_minutes(tasks: list[Task]) -> int:
-    """Add up the time finished tasks ran, from their start and finish times."""
-    total = 0.0
-    for t in tasks:
-        start, end = _parse_dt(t.started), _parse_dt(t.finished)
-        if t.done and start and end and end > start:
-            total += (end - start).total_seconds() / 60
-    return round(total)
+def _worked(tasks: list[Task], log: dict) -> dict:
+    """The time finished tasks ran, added up, in minutes; under a minute is said apart from not known."""
+    from .evaluate import task_seconds
+
+    known = [s for t in tasks if (s := task_seconds(t, log)) is not None]
+    return {"worked": round(sum(known) / 60), **({"under_minute": True} if known and sum(known) < 60 else {})}
 
 
 def _kanban_board(project: Project) -> str:
     """Write every work as the code block the Lantern Kanban plugin draws."""
+    from .evaluate import load_runs, task_log
     from .status import open_unknowns
 
     enums, names = project.enums, project.names
+    log = task_log(load_runs(project))
     open_marks = dict(open_unknowns(project))
     person = f"- {names.marker('person_check')}:"
     works = []
@@ -130,7 +130,7 @@ def _kanban_board(project: Project) -> str:
                 "unknown": sum(n for d, n in open_marks.items() if d.startswith(project.docs_rel(w) + "/")),
                 "person": sum(line.startswith(person) for line in read(record).split("\n")) if record.exists() else 0,
                 "finished": (finished or frontmatter.as_str(plan_meta.get("updated")))[:10],
-                "worked": _worked_minutes(tasks),
+                **_worked(tasks, log),
                 "tasks": [
                     {
                         "id": t.id.split("-")[-1],
@@ -185,6 +185,7 @@ def _kanban_board(project: Project) -> str:
         "read_only": msg("Read only — /l-build checks tasks off as it leaves tests and evidence"),
         "who_ai": msg("AI"),
         "by": names.attr("worked_by"),
+        "under_minute": msg("under 1 min"),
         "minutes": msg("{{n}} min"),
         "hours": msg("{{n}} h"),
         "days": msg("{{n}} d"),
@@ -249,12 +250,14 @@ def _plain_title(title: str) -> str:
     return re.sub(r"[\s—·,-]+$", "", re.sub(r"\[\[[^\]]*\]\]", "", title)).strip()
 
 
-def _work_bars(project: Project, w: Path) -> list[dict]:
-    """Date each task of a work by its actual times, else the dates a person planned.
+def _work_bars(project: Project, w: Path, log: dict) -> list[dict]:
+    """Date each task of a work by its actual times, as recorded, else the dates a person planned.
 
     A task with neither has no date: it is left off the time axis ("unscheduled") with its size,
     rather than given a guessed length, since a size is how much work it is, not when it happens.
     """
+    from .evaluate import task_seconds
+
     bars = []
     for t in _work_tasks(project, w):
         start, end = _parse_dt(t.started), _parse_dt(t.finished)
@@ -265,12 +268,14 @@ def _work_bars(project: Project, w: Path) -> list[dict]:
             "state": "done" if t.done else "doing" if t.started else "todo",
             "size": t.size,
         }
-        if by := t.list_attr("worked_by"):
+        if by := t.workers:
             bar["by"] = by
         if start:
             # a task in progress runs until now
-            end = (end if end > start else start + _dt.timedelta(minutes=30)) if end else max(_dt.datetime.now(), start)
+            end = end or max(_dt.datetime.now(), start)
             bar |= {"basis": "actual", "start": f"{start:%Y-%m-%d %H:%M}", "end": f"{end:%Y-%m-%d %H:%M}"}
+            if (seconds := task_seconds(t, log)) is not None:
+                bar["seconds"] = seconds
         elif planned_s:
             # as written: a date alone is a day to do it in, a date with a time is that time
             raw_s, raw_e = t.attrs["start_plan"].strip(), t.attrs.get("due_plan", "").strip()
@@ -313,9 +318,10 @@ def _stage_times(runs: list[dict], work_id: str) -> list[dict]:
 
 def _timeline_rows(project: Project) -> list[dict]:
     """Collect every work (archived ones too) with its dated tasks, the time its stages took and the day its idea appeared."""
-    from .evaluate import load_runs
+    from .evaluate import load_runs, task_log
 
     runs = load_runs(project)
+    log = task_log(runs)
     rows = []
     for w in project.work_dirs(include_archive=True):
         plan_meta = _meta(project.doc_path(w, "plan"))
@@ -323,7 +329,7 @@ def _timeline_rows(project: Project) -> list[dict]:
             "id": work_id_of(w),
             "name": work_name_of(w),
             "file": project.docs_rel(project.doc_path(w, "tasks")),
-            "tasks": _work_bars(project, w),
+            "tasks": _work_bars(project, w, log),
         }
         if stages := _stage_times(runs, work_id_of(w)):
             row["stages"] = stages
@@ -363,6 +369,7 @@ def _timeline_plugin_block(project: Project, rows: list[dict]) -> str:
         "legend_todo": msg("Not started · planned"),
         "column": msg("One column = {{size}}"),
         "hour": msg("{{hour}}h"),
+        "under_minute": msg("under 1 min"),
         "minutes": msg("{{n}} min"),
         "hours": msg("{{n}} h"),
         "days": msg("{{n}} d"),
@@ -407,6 +414,8 @@ def _timeline_mermaid(rows: list[dict]) -> str:
             if len(end) == 10:  # a planned date alone is the whole day
                 end = f"{_dt.date.fromisoformat(end) + _dt.timedelta(days=1)} 00:00"
             start = start if len(start) > 10 else f"{start} 00:00"
+            if t["basis"] == "actual" and end <= start:  # Mermaid draws nothing without a width: the least it can show
+                end = f"{_dt.datetime.strptime(start, '%Y-%m-%d %H:%M') + _dt.timedelta(minutes=1):%Y-%m-%d %H:%M}"
             lines.append(f"  {_gantt_name(t['id'] + ' ' + t['title'])} :{tag}{tid}, {start}, {end}")
         if "created" in row:
             lines.append(

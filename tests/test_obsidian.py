@@ -102,7 +102,7 @@ def test_the_timeline_plugin_comes_with_obsidian_plugins_and_reports_then_use_it
     text = report.read_text(encoding="utf-8")  # no plugins in this vault: Mermaid, as anywhere else
     assert not plugin.exists() and "```mermaid" in text and "lantern-timeline" not in text
     assert "`lantern report`를 실행한 때의 상태다" in text
-    assert "T01 설계 :done, w001t01, 2026-10-29 10:00, 2026-10-29 10:30" in text and "[[" not in text.split("```mermaid")[1]
+    assert "T01 설계 :done, w001t01, 2026-10-29 10:00, 2026-10-29 10:01" in text and "[[" not in text.split("```mermaid")[1]
 
     dataview = repo.root / "docs/.obsidian/plugins/dataview"  # upgrade brings it to a vault that already uses plugins
     dataview.mkdir(parents=True)
@@ -125,7 +125,8 @@ def test_the_timeline_plugin_comes_with_obsidian_plugins_and_reports_then_use_it
         "id": "T01",
         "title": "설계",
         "start": "2026-10-29 10:00",
-        "end": "2026-10-29 10:30",
+        "end": "2026-10-29 10:00",
+        "seconds": 0,
         "state": "done",
         "basis": "actual",
         "size": "S",

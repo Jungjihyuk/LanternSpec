@@ -43,7 +43,8 @@ def get(name: str) -> Tool:
 def who_did(names: list[str]) -> str:
     """Tell who did a task from the names on its line: models of the AI tools, people, or both.
 
-    A name that begins the way one of the tools' models do (claude-… · gpt-… · gemini-…) is an AI; any other is a person.
+    A name that begins the way one of the tools' models do (claude-… · gpt-… · gemini-…) is an AI, written with spaces
+    too ("Gemini 4 Neon"); any other is a person.
 
     Args:
         names: The names written in `[한 사람:: …]`.
@@ -56,7 +57,7 @@ def who_did(names: list[str]) -> str:
         ('ai', 'both', 'human', '')
     """
     prefixes = tuple(p for tool in REGISTRY.values() for p in tool.model_prefixes)
-    ai = [n for n in names if n.lower().startswith(prefixes)]
+    ai = [n for n in names if "-".join(n.lower().split()).startswith(prefixes)]
     if not names:
         return ""
     if not ai:

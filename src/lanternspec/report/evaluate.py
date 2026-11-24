@@ -19,7 +19,7 @@ from typing import Any
 
 from ..core.messages import msg
 from ..core.project import Project, read
-from ..core.taskfile import parse_tasks, size_role
+from ..core.taskfile import Task, parse_tasks, size_role
 from . import components
 
 CONFIG_KEYS = [
@@ -96,8 +96,67 @@ def _minutes(rec: dict[str, Any]) -> float | None:
     return None
 
 
+def task_log(runs: list[dict[str, Any]]) -> dict[str, dict[str, list[_dt.datetime]]]:
+    """Gather the seconds tasks started and finished at.
+
+    Args:
+        runs: The run log.
+
+    Returns:
+        Task ID → "start" and "done" → local times, in the order they were written.
+
+    Example:
+        >>> runs = [{"kind": "task", "event": "start", "task": "W-001-T01", "at": "2026-11-24T17:07:01"}]
+        >>> task_log(runs)["W-001-T01"]["start"][0].second
+        1
+    """
+    out: dict[str, dict[str, list[_dt.datetime]]] = {}
+    for r in runs:
+        if r.get("kind") != "task":
+            continue
+        try:
+            at = _dt.datetime.fromisoformat(str(r.get("at"))).replace(tzinfo=None)
+        except ValueError:
+            continue
+        out.setdefault(str(r.get("task")), {"start": [], "done": []}).setdefault(str(r.get("event")), []).append(at)
+    return out
+
+
+def task_seconds(task: Task, log: dict[str, dict[str, list[_dt.datetime]]]) -> int | None:
+    """How long a finished task took: to the second when the run log agrees with the document, else by the document's minutes.
+
+    Args:
+        task: The task, as its line says.
+        log: What `task_log` gathered.
+
+    Returns:
+        Seconds, 0 when only known to be within a minute; None when it can't be known: not finished, a date without a
+        time, a finish before its start, or a task that was finished without ever being started.
+
+    Example:
+        >>> from lanternspec.core.names import load
+        >>> from lanternspec.core.taskfile import parse_tasks
+        >>> line = "- [x] W-001-T01 하나 [시작:: 2026-11-24 17:07] [완료:: 2026-11-24 17:07]"
+        >>> task = parse_tasks(line, load("ko"))[0]
+        >>> at = _dt.datetime(2026, 11, 24, 17, 7)
+        >>> task_seconds(task, {}), task_seconds(task, {"W-001-T01": {"start": [at], "done": [at.replace(second=42)]}})
+        (0, 42)
+    """
+    a, b = _dt_of(task.started), _dt_of(task.finished)
+    if not task.done or not a or not b or b < a or len(task.started.strip()) < 16 or len(task.finished.strip()) < 16:
+        return None
+    events = log.get(task.id, {})
+    starts = [t for t in events.get("start", []) if t.replace(second=0, microsecond=0) == a]
+    dones = [t for t in events.get("done", []) if t.replace(second=0, microsecond=0) == b]
+    if starts and dones and dones[-1] >= starts[0]:
+        return int((dones[-1] - starts[0]).total_seconds())
+    if dones and not events.get("start"):  # only `done` was run: it stamped both times
+        return None if a == b else int((b - a).total_seconds())
+    return int((b - a).total_seconds())
+
+
 def task_durations(project: Project) -> dict[str, list[float]]:
-    """Measure actual hours per size from `[시작:: …]` → `[완료:: …]` of finished tasks.
+    """Measure actual hours per size of finished tasks (see `task_seconds`).
 
     Also used by `lantern task estimate`.
 
@@ -113,15 +172,16 @@ def task_durations(project: Project) -> dict[str, list[float]]:
         [1.5, 2.0]
     """
     out: dict[str, list[float]] = defaultdict(list)
+    log = task_log(load_runs(project))
     for w in project.work_dirs(include_archive=True):
         tf = project.doc_path(w, "tasks")
         if not tf.exists():
             continue
         for t in parse_tasks(read(tf), project.names):
-            a, b = _dt_of(t.started), _dt_of(t.finished)
-            if t.done and a and b and b > a:
+            seconds = task_seconds(t, log)
+            if seconds is not None:
                 role = size_role(project.enums, t.size)
-                out[project.enums.value("size", role) if role else t.size or "?"].append((b - a).total_seconds() / 3600)
+                out[project.enums.value("size", role) if role else t.size or "?"].append(seconds / 3600)
     return out
 
 

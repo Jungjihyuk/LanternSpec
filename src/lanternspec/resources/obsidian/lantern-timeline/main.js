@@ -74,6 +74,14 @@ const span = (task) => {
   const end = task.state === "doing" && task.basis === "actual" ? Math.min(minuteOf(task.end), Math.max(nowMinute(), from + 1)) : minuteOf(task.end);
   return [from, Math.max(end, from + 1)];
 };
+// A task's times as they were written, without the minute a bar needs to be seen.
+const recorded = (task) => (task.basis === "actual" && task.state === "done" ? [minuteOf(task.start), minuteOf(task.end)] : span(task));
+// How long a finished task took, in minutes: to the second when the report knows it. null when it can't be known.
+const took = (task) => {
+  if (task.seconds !== undefined) return task.seconds / 60;
+  const [from, to] = recorded(task);
+  return to > from ? to - from : null; // a report written by an older version has no seconds
+};
 // A task with neither actual times nor planned dates has no place on the axis.
 const dated = (task) => task.basis !== "unscheduled";
 const datedTasks = (works) => works.flatMap((work) => work.tasks.filter(dated));
@@ -332,6 +340,9 @@ function duration(minutes, labels) {
       : [unit("minutes", mins, "{n} min")];
   return parts.filter(Boolean).join(" ");
 }
+
+// A measured length: less than a minute is said as such rather than rounded to a number.
+const lasted = (minutes, labels) => (minutes < 1 ? labels.under_minute || "<1 min" : duration(Math.round(minutes), labels));
 
 function drawHeader(body, scale, today, labels) {
   const months = make(body, "lt-row lt-months");
@@ -594,21 +605,24 @@ class Timeline extends MarkdownRenderChild {
     const placed = work.tasks.filter(dated);
     this.trayCell(row, work.tasks.length - placed.length, work);
     // the stages one after another: those the run log timed, then the build from its tasks
-    const stages = timedStages(work).map((stage) => ({ role: stage.role, drawn: stageDrawn(stage, scale), lines: this.stageLines(stage.role, ...stageSpan(stage), stage) }));
+    const stages = timedStages(work).map((stage) => ({ role: stage.role, drawn: stageDrawn(stage, scale), lines: this.stageLines(stage.role, minuteOf(stage.start), minuteOf(stage.end), stage) }));
     let total = null; // a finished work's total, beside its build bar
     if (placed.length) {
       const spans = placed.map((task) => drawnSpan(task, scale));
       const whole = [Math.min(...spans.map((s) => s[0])), Math.max(...spans.map((s) => s[1]))];
-      const times = placed.map(span);
+      const times = placed.map(recorded);
       const record = (work.stages || []).find((s) => s.role === "build");
       const lines = this.stageLines("build", Math.min(...times.map((s) => s[0])), Math.max(...times.map((s) => s[1])), record);
       // a finished work shows how long its tasks took, added up, and how long it took from first start to last end
       const finished = labels.worked && work.tasks.every((task) => task.state === "done" && task.basis === "actual");
       if (finished) {
-        const worked = times.reduce((sum, [from, to]) => sum + to - from, 0);
+        const known = placed.map(took).filter((minutes) => minutes !== null);
+        const worked = known.reduce((sum, minutes) => sum + minutes, 0);
         const taken = Math.max(...times.map((s) => s[1])) - Math.min(...times.map((s) => s[0]));
-        total = { text: duration(worked, labels), title: `${labels.worked} ${duration(worked, labels)} · ${labels.elapsed} ${duration(taken, labels)}` };
-        lines.push(total.title);
+        if (known.length) {
+          total = { text: lasted(worked, labels), title: `${labels.worked} ${lasted(worked, labels)} · ${labels.elapsed} ${lasted(taken, labels)}` };
+          lines.push(total.title);
+        }
       }
       stages.push({ role: "build", drawn: whole, lines, open: work.tasks.some((task) => task.state !== "done") });
     }
@@ -686,8 +700,7 @@ class Timeline extends MarkdownRenderChild {
     const labels = this.data.labels;
     const lines = [labels[`stage_${role}`] || role, `${stamp(from)} → ${stamp(to)}`];
     if (record && record.worked) {
-      const minutes = Math.max(1, Math.round(record.worked / 60));
-      lines.push([`${labels.ai_worked || ""} ${duration(minutes, labels)}`.trim(), ...(record.by || [])].join(" · "));
+      lines.push([`${labels.ai_worked || ""} ${lasted(record.worked / 60, labels)}`.trim(), ...(record.by || [])].join(" · "));
     }
     return lines;
   }
@@ -697,7 +710,10 @@ class Timeline extends MarkdownRenderChild {
   caption(task) {
     const labels = this.data.labels;
     const [from, to] = span(task);
-    if (task.state === "done" && task.basis === "actual") return `${task.id} · ${duration(to - from, labels)}`;
+    if (task.state === "done" && task.basis === "actual") {
+      const minutes = took(task);
+      return minutes === null ? task.id : `${task.id} · ${lasted(minutes, labels)}`;
+    }
     if (task.basis === "planned" && (task.dragged || hasTime(task.start))) return `${task.id} · ${duration(to - from, labels)}`;
     if (task.basis === "planned" && task.size) return `${task.id} · ${task.size}`;
     return task.id;

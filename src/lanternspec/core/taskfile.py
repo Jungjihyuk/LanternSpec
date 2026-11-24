@@ -108,6 +108,11 @@ class Task:
         return [x.strip() for x in re.split(r"[,\s]+", self.attrs.get(key, "")) if x.strip()]
 
     @property
+    def workers(self) -> list[str]:
+        """Who did the task (`[한 사람:: …]`), split on commas only: a name may hold spaces."""
+        return [x.strip() for x in self.attrs.get("worked_by", "").split(",") if x.strip()]
+
+    @property
     def deps(self) -> list[str]:
         """Task IDs that must finish first, with short forms (`T01`) expanded to full IDs."""
         out = []

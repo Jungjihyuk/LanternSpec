@@ -8,6 +8,7 @@ Writers, one format, one line per `kind`:
 * `lantern close <skill>`, `skill`: tools without agent hooks still leave one line per skill run
 * agent hooks, `skill_time`: per skill run — from the `/l-…` prompt that started it to its `lantern close`, with the time
   the AI worked (the turns added up; the waits for the person between turns are left out) · tool calls · tokens
+* `lantern task start · done`, `task`: the second a task started or finished (the document keeps minutes)
 * the build loop, `loop`: where a loop starts (`event: start`, the settings and the base commit it runs with) and where
   each round ends (`event: end`); `attempt`: one line per try at one acceptance criterion. `lantern loop` writes them
   from what it measured — the agent never states a result itself
@@ -335,6 +336,27 @@ def subagent_stop(
     }
     if tokens:
         record["tokens"] = tokens
+    append(project, record)
+    return record
+
+
+def task_time(project: Project, task: str, work: str, event: str) -> dict[str, Any]:
+    """Write the second a task started or finished, from the computer's clock.
+
+    Args:
+        project: The project.
+        task: The task, e.g. "W-012-T02".
+        work: Its work.
+        event: "start" or "done".
+
+    Returns:
+        The record.
+
+    Example:
+        >>> task_time(project, "W-012-T02", "W-012", "start")["kind"]  # doctest: +SKIP
+        'task'
+    """
+    record = {"kind": "task", "source": "cli", "event": event, "task": task, "work": work, "at": now_iso()}
     append(project, record)
     return record
 

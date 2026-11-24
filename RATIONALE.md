@@ -212,6 +212,9 @@ The content of each rule is in its rules document template (`src/lanternspec/res
   - Coloring task bars by who did them (person · person + AI · AI). It covered the done and in-progress colors, so there seemed to be three statuses.
   - Coloring finished tasks green like the kanban. On the timeline, which stage a task belongs to matters more, so tasks keep the build's color and a solid fill or stripes tell done from in progress.
   - Drawing stages on top of each other on a day chart. Planning, design and splitting into tasks done on one day hid under each other and under the build bar.
+- **Only recorded times are shown:** `lantern task start · done` stamp times from the computer's clock. The document keeps minutes and the run log (`task` lines of `.lantern/runs.jsonl`) keeps seconds, which are used when the two agree. When the document was changed by hand or there is no run log, the document's times are used. Less than a minute is said as "under 1 min", and a task with only a date, or finished without being started, has no length shown.
+  - At first a task that ended in the minute it began was drawn as ending 30 minutes later. A value meant to make the bar visible looked like a real time, and a task that took less than a minute seemed to end at a time still to come. How narrow a bar may be is for the drawing side (the plugin) to decide.
+  - `lantern check` reports a time in the future or a finish before its start, which only a hand-written value can be. In a team up to a day is let pass, for time zones.
 - **Source:** `src/lanternspec/resources/obsidian/lantern-timeline/main.js`; stage times from `tools/runlog.py` (skill time); data from `report/views.py`
 
 ### Kanban

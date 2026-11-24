@@ -1646,6 +1646,9 @@
 "Not started · planned": {ko: "시작 전 · 예정일"}
 "One column = {{size}}": {ko: "한 칸 = {{size}}"}
 "{{hour}}h": {ko: "{{hour}}시"}
+"under 1 min": {ko: "1분 미만"}
+"{id}: it finished before it started ({start} → {finish})": {ko: "{id}: 완료가 시작보다 빠릅니다 ({start} → {finish})"}
+"{id}: [{attr}] is in the future ({at})": {ko: "{id}: [{attr}]가 미래입니다 ({at})"}
 "{{n}} min": {ko: "{{n}}분"}
 "{{n}} h": {ko: "{{n}}시간"}
 "{{n}} d": {ko: "{{n}}일"}
