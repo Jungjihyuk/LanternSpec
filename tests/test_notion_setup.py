@@ -231,7 +231,10 @@ def test_the_permissions_to_turn_on_depend_on_whether_notes_are_written(repo):
     _run(project, read_only, FakeKeychain())
     _run(project, writing, FakeKeychain())
 
-    assert "삽입" not in read_only.out and "삽입" in writing.out
+    assert "켤 것: 콘텐츠 읽기\n" in "\n".join(read_only.said) + "\n" and "켤 것: 콘텐츠 읽기 · 콘텐츠 삽입" not in read_only.out
+    assert "켤 것: 콘텐츠 읽기 · 콘텐츠 삽입" in writing.out
+    assert "끌 것: 콘텐츠 업데이트 · 콘텐츠 삽입" in read_only.out  # insert is turned off when notes are not written
+    assert "끌 것: 콘텐츠 업데이트 · 댓글" in writing.out and "끌 것: 콘텐츠 업데이트 · 콘텐츠 삽입" not in writing.out
     assert Project.load(repo.root).profile.knowledge["write"] == "direct"
 
 
@@ -433,3 +436,62 @@ def test_init_sends_notion_to_the_setup_command_and_never_asks_the_ai_to_handle_
         assert "lantern knowledge setup notion" in init.body, language
         assert "--knowledge-type obsidian|folder|notion" in init.body, language
         assert "Notion" in init.body.split("5.", 1)[1].splitlines()[0], language  # it is a choice of question 5
+
+
+# --------------------------------------------------------------------------- how it reads on a terminal
+
+
+def _whole_run(repo, answers: list[str]) -> ScriptedIo:
+    io = ScriptedIo(answers)
+    _run(_project(repo), io, FakeKeychain(token=None))
+    return io
+
+
+def test_the_steps_are_numbered_in_order_and_every_prompt_is_marked(repo):
+    io = _whole_run(repo, ["1", "", PAGE_URL])
+    said = [line for line in io.said if line.startswith("[")]
+
+    assert [line.split("]")[0] for line in said] == ["[1/4", "[2/4", "[3/4", "[4/4"]
+    assert all(prompt.startswith("▶ ") for prompt in io.prompts)  # what to type is always on a line that begins with ▶
+
+
+def test_the_page_count_is_said_to_be_only_a_check_and_the_page_question_says_what_to_do(repo):
+    io = _whole_run(repo, ["1", "", PAGE_URL])
+    text = "\n".join(io.said)
+
+    assert "확인일 뿐" in text and "더 연결하지 않아도" in text  # nothing more has to be connected to go on
+    before, after = text.split("[4/4]")
+    assert "확인일 뿐" in before and "링크 복사" in after  # how to get the link is told under its own step heading
+    assert "지금 정해 둡니다" in after or "정해 둡니다" in after  # and why it is asked while writing drafts only
+
+
+def test_the_stored_token_question_says_what_yes_and_no_mean(repo):
+    io = ScriptedIo(["1", "y", PAGE_URL])
+    _run(_project(repo), io, FakeKeychain(token=TOKEN))
+    prompt = next(p for p in io.prompts if "[Y/n]" in p)
+
+    assert "Y =" in prompt and "n =" in prompt
+
+
+def test_no_line_is_wider_than_a_terminal_can_show_without_breaking(repo):
+    from lanternspec.core.textwidth import cells
+
+    io = _whole_run(repo, ["2", "", PAGE_URL])
+    for line in io.said:
+        if "http" in line or "export " in line or "--knowledge" in line:
+            continue  # an address and a command are not broken up
+        assert cells(line) <= 78, (cells(line), line)
+
+
+def test_long_page_titles_are_cut_and_each_is_on_its_own_line(repo):
+    long_title = "아주 긴 제목의 페이지입니다 " * 5
+
+    class LongTitles(FakeNotion):
+        def overview(self, newest: int = 5) -> tuple[int, list[str]]:
+            return 445, [long_title, "짧은 제목", "FastAPI"][:newest]
+
+    io = ScriptedIo(["1", "", PAGE_URL])
+    _run(_project(repo), io, FakeKeychain(), notion_fake=lambda token, state: LongTitles(token))
+
+    bullets = [line for line in io.said if line.startswith("     · ")]
+    assert len(bullets) == 3 and bullets[0].endswith("…") and bullets[2].endswith("FastAPI")

@@ -12,27 +12,12 @@ Not here:
 from __future__ import annotations
 
 import re
-import unicodedata
 from typing import TextIO
+
+from ..core.textwidth import cells
 
 _RULE = re.compile(r"^\|(\s*:?-{3,}:?\s*\|)+$")  # the line under a table's header: |---|---|
 _NUMBER = re.compile(r"^(\d[\d.,]*%?|—)$")  # a cell that is a number (or the dash for "none"), so its column is right-aligned
-
-
-def cells(text: str) -> int:
-    r"""Count the columns a text takes in a terminal.
-
-    Args:
-        text: One line of text without ANSI colors.
-
-    Returns:
-        Two for each wide letter (Korean, Chinese, Japanese, full-width forms), none for a combining mark, one otherwise.
-
-    Example:
-        >>> cells("abc"), cells("한글"), cells("e\u0301")
-        (3, 4, 1)
-    """
-    return sum(0 if unicodedata.combining(c) else 2 if unicodedata.east_asian_width(c) in "WF" else 1 for c in text)
 
 
 def _split(line: str) -> list[str]:

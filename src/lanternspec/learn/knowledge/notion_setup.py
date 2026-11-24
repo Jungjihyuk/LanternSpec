@@ -29,6 +29,7 @@ from ...core import profile as pm
 from ...core.messages import msg
 from ...core.project import Project
 from ...core.state import ensure_state_dir
+from ...core.textwidth import cut
 from . import KnowledgeError, keychain
 from .notion import NotionAdapter, notion_token, page_id
 
@@ -78,52 +79,67 @@ def _yes(answer: str) -> bool:
     return answer.strip().lower() not in ("n", "no", "아니", "아니요")
 
 
+STEPS = 4
+SHOWN_TITLES = 3  # how many recently edited pages are named after the check
+TITLE_CELLS = 40  # a title wider than this many terminal columns is cut, so the line stays short
+
+
+def _step(io: Io, n: int, title: str) -> None:
+    io.say("")
+    io.say(msg("[{n}/{total}] {title}", n=n, total=STEPS, title=title))
+
+
 def _write_mode(io: Io) -> str:
+    _step(io, 1, msg("How notes are written"))
     io.say(msg("How should new notes reach Notion?"))
-    io.say(msg("  1) draft files only, and you move them in yourself (a safe start)"))
-    io.say(msg("  2) written to Notion right after you approve them"))
+    io.say(msg("  1) draft files only; you move them in yourself (a safe start)"))
+    io.say(msg("  2) write to Notion right after you approve"))
     while True:
-        answer = io.ask(msg("Choose 1 or 2 [1]: ")).strip() or "1"
+        answer = io.ask(msg("▶ Choose 1 or 2 [1]: ")).strip() or "1"
         if answer in WRITE_MODES:
             return WRITE_MODES[answer]
 
 
 def _guide(io: Io, mode: str) -> None:
-    caps = msg("Read content · Insert content") if mode == "direct" else msg("Read content")
-    io.say("")
-    io.say(msg("Do this in Notion (it opens in your browser):"))
-    io.say(
-        msg(
-            "  1. {url} → New integration. Name it (for example LanternSpec) and pick your workspace (you must be its owner).",
-            url=INTEGRATIONS_URL,
-        )
+    on = msg("Read content · Insert content") if mode == "direct" else msg("Read content")
+    off = (
+        msg("Update content · comments · user information · agent features")
+        if mode == "direct"
+        else msg("Update content · Insert content · comments · user information · agent features")
     )
-    io.say(
-        msg(
-            "  2. Configuration tab → capabilities: turn on only {caps}. "
-            "Turn off the rest (update content · comments · user information · agent).",
-            caps=caps,
-        )
-    )
-    io.say(msg("  3. On the same tab, show the token and copy it."))
-    io.say(msg("  4. Open the page or database whose notes should be searched → ••• → Add connections → pick your integration."))
-    io.say(msg("     Only what you connect, and what is under it, can be seen. Connect as little as you need."))
-    io.say("")
+    _step(io, 2, msg("Make an integration in Notion"))
+    io.say(msg("Your browser opens. Do these in order:"))
+    io.say(msg("  ① Address: {url}", url=INTEGRATIONS_URL))
+    io.say(msg('     → click "New integration"'))
+    io.say(msg("     → give it a name (e.g. LanternSpec) and pick your workspace"))
+    io.say(msg("        (you must be the workspace's owner)"))
+    io.say(msg('  ② "Configuration" tab → capabilities'))
+    io.say(msg("     turn ON:  {on}", on=on))
+    io.say(msg("     turn OFF: {off}", off=off))
+    io.say(msg("  ③ On the same tab, show the token and copy it"))
+    io.say(msg("  ④ Open a page (or database) whose notes you want searched,"))
+    io.say(msg('     then ••• → "Add connections" → pick your integration'))
+    io.say(msg("     (only what you connect, and what is under it, can be read: connect only what you need)"))
 
 
 def _get_token(io: Io, store: Any, env_name: str, env: Mapping[str, str], replace: bool = False) -> str | None:
     """Make sure a token exists and return it; None when it can't be had (a message says why)."""
     found = notion_token(env_name, store, env)
     if found and not replace:
-        if _yes(io.ask(msg("A token for {env} is already there. Use it? [Y/n]: ", env=env_name))):
+        io.say(msg("A token for {env} is already stored.", env=env_name))
+        if _yes(io.ask(msg("▶ Use it? [Y/n] (Y = keep it, n = enter a new one): "))):
             return found
     if not store.available():
         if env.get(env_name, "").strip() and not replace:
             return env[env_name].strip()
-        io.say(msg("✖ No token found. Add it to your shell settings, open a new terminal and run this again:"))
+        io.say(msg("✖ No token found."))
+        io.say(msg("Add this line to your shell settings, open a new terminal and run this again:"))
         io.say(f"    export {env_name}=<the token>")
         return None
-    io.ask(msg("Press Enter when you have copied the token. The next prompt is the Keychain's: paste the token there (nothing is shown): "))
+    io.say(msg("Copy the token, then press Enter."))
+    io.say(msg("The next prompt is the Keychain's."))
+    io.say(msg("Paste the token there and press Enter (nothing is shown)."))
+    io.ask(msg("▶ Press Enter when you have copied it: "))
     if not store.store(env_name):
         io.say(msg("✖ The Keychain tool did not save the token. Nothing was changed."))
         return None
@@ -131,9 +147,14 @@ def _get_token(io: Io, store: Any, env_name: str, env: Mapping[str, str], replac
 
 
 def _parent_page(io: Io, notion: Any) -> str | None:
-    io.say(msg("Where should new notes be made? In Notion open that page, copy its link and paste it here (a link is not a secret)."))
+    _step(io, 4, msg("Where new notes go"))
+    io.say(msg("Pick one page where new notes will be made."))
+    io.say(msg("  · It isn't used while you only write drafts, but you'll"))
+    io.say(msg("    need it when you switch to writing, so decide now."))
+    io.say(msg("  · Any page the integration can see will do (it must be connected)."))
+    io.say(msg("  · How: open the page in Notion → Share → Copy link → paste it here."))
     while True:
-        ref = io.ask(msg("Page link: ")).strip()
+        ref = io.ask(msg("▶ Page link: ")).strip()
         pid = page_id(ref)
         if not ref or not _ID.fullmatch(pid):
             io.say(msg("That doesn't look like a page link (it ends with 32 letters and digits)."))
@@ -141,7 +162,7 @@ def _parent_page(io: Io, notion: Any) -> str | None:
         if notion.can_see(pid):
             return pid
         io.say(msg("✖ The integration can't see that page. Open it → ••• → Add connections → pick your integration."))
-        if not _yes(io.ask(msg("Try again? [Y/n]: "))):
+        if not _yes(io.ask(msg("▶ Try again? [Y/n]: "))):
             return None
 
 
@@ -154,10 +175,10 @@ def _check_token(io: Io, store: Any, env_name: str, env: Mapping[str, str], make
     replaced = False
     while True:
         try:
-            count, titles = notion.overview()
+            count, titles = notion.overview(SHOWN_TITLES)
         except KnowledgeError as e:
             io.say(msg("✖ Notion did not accept the token ({error}).", error=str(e)))
-            if replaced or not store.available() or not _yes(io.ask(msg("Enter a different token now? [Y/n]: "))):
+            if replaced or not store.available() or not _yes(io.ask(msg("▶ Enter a different token now? [Y/n]: "))):
                 return None
             token, replaced = _get_token(io, store, env_name, env, replace=True), True
             if not token:
@@ -165,23 +186,19 @@ def _check_token(io: Io, store: Any, env_name: str, env: Mapping[str, str], make
             notion = make_adapter(token, state)
             continue
         if count == 0:
-            io.say(
-                msg(
-                    "The token works, but the integration can't see any page yet. "
-                    "Open a page → ••• → Add connections → pick your integration."
-                )
-            )
-            if io.ask(msg("Press Enter after connecting a page (q to stop): ")).strip().lower() == "q":
+            io.say(msg("The token works, but the integration can't see any page yet."))
+            io.say(msg('   Open a page → ••• → "Add connections" → pick your integration.'))
+            if io.ask(msg("▶ Press Enter once connected (q to stop): ")).strip().lower() == "q":
                 return None
             continue
-        io.say(
-            msg(
-                "✔ Notion accepts the token. The integration can see {count} page(s); the newest: {titles}",
-                count=count,
-                titles=" · ".join(titles),
-            )
-        )
-        io.say(msg("  If that is more than you meant, connect fewer pages (••• → Add connections): what is connected is what can be read."))
+        io.say("")
+        io.say(msg("✔ Notion accepted the token."))
+        io.say(msg("   Pages the integration can see: {count}", count=count))
+        io.say(msg("   Most recently edited:"))
+        for title in titles:
+            io.say(f"     · {cut(title, TITLE_CELLS)}")
+        io.say(msg("   More than you meant? Connect fewer pages in Notion (••• → Add connections)."))
+        io.say(msg("   This is only a check: you don't have to connect anything more to go on."))
         return notion
 
 
@@ -218,18 +235,18 @@ def run(
     existing = project.profile.knowledge or {}
     env_name = str(existing.get("token_env") or "NOTION_TOKEN")
     try:
+        io.say(msg("Notion setup — about 5 minutes."))
         io.say(
-            msg("Notion setup — about 5 minutes. The token goes into the Keychain prompt, never into a chat.")
+            msg("The token goes only into the Keychain prompt.")
             if store.available()
-            else msg(
-                "Notion setup — about 5 minutes. On this computer the token goes in the environment variable {env}, never into a chat.",
-                env=env_name,
-            )
+            else msg("The token goes in the environment variable {env}.", env=env_name)
         )
+        io.say(msg("Never paste it into a chat."))
         mode = _write_mode(io)
         _guide(io, mode)
         if open_browser:
             io.open_url(INTEGRATIONS_URL)
+        _step(io, 3, msg("Token"))
         if _get_token(io, store, env_name, environment) is None:
             return 1
         state = ensure_state_dir(project) if project.profile.exists else None
@@ -239,8 +256,9 @@ def run(
         parent = _parent_page(io, notion)
         if parent is None:
             return 1
+        io.say("")
         _save(io, project, parent, mode)
-        titles = notion.overview()[1]
+        titles = notion.overview(1)[1]
         if titles:
             hits = notion.search(titles[0])
             io.say(msg("✔ Searching “{title}” works: {count} page(s) found.", title=titles[0], count=len(hits)))
