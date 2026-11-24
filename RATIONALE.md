@@ -252,6 +252,19 @@ The content of each rule is in its rules document template (`src/lanternspec/res
   - **Default values in `lantern.yaml`.** The values differ from note to note, and there would be one more place to change with the properties.
 - **Source:** `src/lanternspec/learn/knowledge/notion_database.py` (properties), `src/lanternspec/learn/knowledge/notion.py` (`NotionAdapter.write`)
 
+### The store takes care of a note's form — in Notion it is written as blocks (`learn/knowledge/notion_markdown.py`)
+- **Decided:** a draft is one Markdown text (with Obsidian's callouts and wikilinks), and each store's adapter writes it in its own form. Obsidian and folders store it as it is; Notion gets blocks and looks. Only the Notion adapter calls the conversion, so what is stored in Obsidian is not affected by it.
+- **Why:**
+  - At first only headings, lists and quotes were converted, so in a real note `**bold**`, `` `code` ``, `[!abstract]` and numbers showed as text and code had lost its language.
+  - Having drafts written in a different form for each store would let the AI get the form wrong, and they would look broken where drafts are read (Obsidian). Code converts the same way every time.
+  - What the API doesn't take (more than two levels of nesting, more than 100 items, long text) is moved right after or divided, never dropped.
+  - The code languages and limits were checked by asking with a parent page that does not exist (404 when the form is right, 400 when it is not, and nothing is made). An emoji counts as two characters.
+- **Limits:** wikilinks, links inside the vault and attached images become text. A folded callout is written open, and a numbered list that starts in the middle keeps its numbers as text (Notion counts from 1 again). From the fourth level on, list items stand at the third.
+- **Turned down:**
+  - **A Markdown library.** It doesn't know Obsidian's callouts, wikilinks and highlights, and the standard doesn't see `**bold(x)**` as bold before a Korean particle. It would also be one more runtime dependency.
+  - **Having the skill write drafts for the store.** Easy to get wrong, for the reasons above.
+- **Source:** `src/lanternspec/learn/knowledge/notion_markdown.py`
+
 ### One command guides the Notion connection, and the Keychain takes the token itself (`lantern knowledge setup notion`)
 - **Decided:** one command that the person runs in a terminal guides these steps: ask how notes are written · guide making the integration (it opens the integrations page in the browser) · tell which permissions to turn on · take the token · check that Notion accepts it and how many pages the integration sees · check the page or database new notes are made in · save `lantern.yaml`. When there is no `lantern.yaml` it stops before asking for the token and has `/l-init` done first. `/l-init` points to this command once `lantern.yaml` is made and before the documents and skills are, and checks `lantern.yaml` instead of taking "it's done" for an answer. It saves only after every step has worked, so stopping part way leaves `lantern.yaml` as it was.
 - **lantern never receives the token:** on macOS it runs `security add-generic-password -U … -w` (with `-w` last and no value) attached to the terminal, and the Keychain tool asks for the input itself. The token never becomes a command argument, nor enters lantern's memory or a log. The adapter looks in the Keychain (service = the name of the token's environment variable, account = the user) and then the environment variable, so people who put the item in with `security` and people who only used a variable (nothing in the Keychain) both keep working.

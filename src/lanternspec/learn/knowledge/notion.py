@@ -10,6 +10,7 @@ The integration only sees pages shared with it; we never edit existing pages.
 
 Not here:
     - which properties a row has and how their values are written → learn/knowledge/notion_database.py
+    - how a note's Markdown becomes Notion's blocks → learn/knowledge/notion_markdown.py
 """
 
 from __future__ import annotations
@@ -27,7 +28,7 @@ from typing import Any
 
 from ...core import frontmatter
 from ...core.messages import msg
-from . import Adapter, Hit, KnowledgeError, Property, keychain, notion_database
+from . import Adapter, Hit, KnowledgeError, Property, keychain, notion_database, notion_markdown
 from .notion_database import _fold, _rich
 
 API = "https://api.notion.com/v1"
@@ -144,50 +145,6 @@ def _title(page: dict[str, Any]) -> str:
     return ""
 
 
-def markdown_to_blocks(md: str) -> list[dict[str, Any]]:
-    r"""Turn Markdown into Notion blocks: headings (1–3), bullets, quotes, code fences and paragraphs.
-
-    Args:
-        md: Markdown text.
-
-    Returns:
-        Notion block objects, one per non-empty line (one per code fence).
-
-    Example:
-        >>> [b["type"] for b in markdown_to_blocks("# 제목\n- 하나\n> 인용\n본문")]
-        ['heading_1', 'bulleted_list_item', 'quote', 'paragraph']
-    """
-    blocks: list[dict[str, Any]] = []
-    fence: list[str] | None = None
-    for line in md.split("\n"):
-        if line.strip().startswith("```"):
-            if fence is None:
-                fence = []
-            else:
-                blocks.append({"object": "block", "type": "code", "code": {"rich_text": _rich("\n".join(fence)), "language": "plain text"}})
-                fence = None
-            continue
-        if fence is not None:
-            fence.append(line)
-            continue
-        s = line.strip()
-        if not s:
-            continue
-        m = re.match(r"^(#{1,3})\s+(.*)$", s)
-        if m:
-            kind = f"heading_{len(m.group(1))}"
-            blocks.append({"object": "block", "type": kind, kind: {"rich_text": _rich(m.group(2))}})
-        elif re.match(r"^[-*]\s+", s):
-            blocks.append(
-                {"object": "block", "type": "bulleted_list_item", "bulleted_list_item": {"rich_text": _rich(re.sub(r"^[-*]\s+", "", s))}}
-            )
-        elif s.startswith(">"):
-            blocks.append({"object": "block", "type": "quote", "quote": {"rich_text": _rich(s.lstrip("> "))}})
-        else:
-            blocks.append({"object": "block", "type": "paragraph", "paragraph": {"rich_text": _rich(s)}})
-    return blocks
-
-
 def block_text(block: dict[str, Any]) -> str:
     """Turn one Notion block back into a Markdown line.
 
@@ -199,7 +156,7 @@ def block_text(block: dict[str, Any]) -> str:
         table row its cells; blocks that hold no text give an empty string.
 
     Example:
-        >>> block_text(markdown_to_blocks("## 소제목")[0])
+        >>> block_text({"type": "heading_2", "heading_2": {"rich_text": [{"plain_text": "소제목"}]}})
         '## 소제목'
         >>> block_text({"type": "bookmark", "bookmark": {"url": "https://a.b"}})
         '[북마크] https://a.b'
@@ -682,7 +639,7 @@ class NotionAdapter(Adapter):
 
         Args:
             rel_path: The note's name (its last path part, without `.md`, becomes the title).
-            content: The note's Markdown.
+            content: The note's Markdown; it is written in Notion's own blocks, without its frontmatter.
             properties: Values for the row's properties (only for a database).
 
         Returns:
@@ -714,16 +671,17 @@ class NotionAdapter(Adapter):
                 notion_database.title_property(db): {"title": _rich(title)},
                 **notion_database.row_values(db, properties or {}),
             }
-            content = frontmatter.parse(content).body  # a row's properties say what the frontmatter would
         else:
             parent = {"page_id": self.parent}
             values = {"title": {"title": _rich(title)}}
-        blocks = markdown_to_blocks(content)
-        page = self._call("POST", "/pages", {"parent": parent, "properties": values, "children": blocks[:100]})
+        # frontmatter is Obsidian's; here the page's title and properties say it
+        blocks = notion_markdown.without_title(notion_markdown.markdown_to_blocks(frontmatter.parse(content).body), title)
+        first, *rest = notion_markdown.requests(blocks)
+        page = self._call("POST", "/pages", {"parent": parent, "properties": values, "children": first})
         where = str(page.get("url") or page.get("id"))
         try:
-            for i in range(100, len(blocks), 100):  # Notion takes 100 blocks per request
-                self._call("PATCH", f"/blocks/{page['id']}/children", {"children": blocks[i : i + 100]})
+            for group in rest:
+                self._call("PATCH", f"/blocks/{page['id']}/children", {"children": group})
         except NotionError as e:
             raise NotionError(
                 msg("The note was made but only part of its text is there: {url} ({error})", url=where, error=e), e.status

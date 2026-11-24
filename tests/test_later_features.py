@@ -112,7 +112,8 @@ class FakeNotion:
 
 def test_notion_adapter_contract():
     from lanternspec.learn.knowledge import KnowledgeError
-    from lanternspec.learn.knowledge.notion import NotionAdapter, markdown_to_blocks
+    from lanternspec.learn.knowledge.notion import NotionAdapter
+    from lanternspec.learn.knowledge.notion_markdown import markdown_to_blocks
 
     with pytest.raises(KnowledgeError):
         NotionAdapter("parent", None)
@@ -121,7 +122,7 @@ def test_notion_adapter_contract():
     hits = n.search("JWT")
     assert hits[0].title == "JWT" and hits[0].path == "https://notion.so/p1"  # where the page is, which a debt card keeps
     assert n.read("p1") == "## 개요\n서명된 토큰"
-    url = n.write("2. Study/CRDT.md", "# CRDT\n- 충돌 없는 복제\n" + "\n".join(f"줄 {i}" for i in range(120)))
+    url = n.write("2. Study/CRDT.md", "# CRDT\n- 충돌 없는 복제\n" + "\n\n".join(f"줄 {i}" for i in range(120)))
     assert url == "https://notion.so/new"
     create = next(c for c in fake.calls if c[1].endswith("/pages"))
     assert create[2]["parent"] == {"page_id": "abcdef"} and len(create[2]["children"]) == 100

@@ -104,11 +104,12 @@ def test_a_note_becomes_a_page_under_a_page_and_a_row_of_a_database():
     assert row.made()[0]["properties"]["제목"]["title"][0]["text"]["content"] == "JWT"  # the title column has its own name
 
 
-def test_a_row_body_has_no_frontmatter_lines():
+@pytest.mark.parametrize("parent", [PAGE, DATABASE])
+def test_the_body_has_no_frontmatter_and_does_not_repeat_the_title(parent):
     fake = FakeNotion()
-    _adapter(DATABASE, fake).write("JWT.md", "---\ncreated: 2026-11-24\n---\n\n# JWT\n본문\n")
+    _adapter(parent, fake).write("JWT.md", "---\ncreated: 2026-11-24\n---\n\n# JWT\n본문\n")
 
-    assert [b["type"] for b in fake.made()[0]["children"]] == ["heading_1", "paragraph"]
+    assert [b["type"] for b in fake.made()[0]["children"]] == ["paragraph"]
 
 
 def test_a_failure_that_is_not_about_the_kind_is_not_taken_for_a_page():
@@ -146,7 +147,7 @@ def test_a_note_with_the_same_title_is_not_made_again_and_another_title_is(paren
 @pytest.mark.parametrize("parent", [PAGE, DATABASE])
 def test_writing_only_ever_adds(parent):
     fake = FakeNotion(titles=("다른 노트",))
-    _adapter(parent, fake).write("JWT.md", "\n".join(f"줄 {i}" for i in range(150)))
+    _adapter(parent, fake).write("JWT.md", "\n\n".join(f"줄 {i}" for i in range(150)))
 
     changed = [(m, p) for m, p, _ in fake.calls if m not in ("GET",) and not p.endswith("/query")]
     assert changed == [("POST", "/pages"), ("PATCH", "/blocks/new/children")]  # the new page, and the rest of its own text
@@ -156,7 +157,7 @@ def test_a_page_whose_text_was_cut_short_is_named():
     fake = FakeNotion(fail={"PATCH /blocks/new/children": (500, "boom")})
 
     with pytest.raises(KnowledgeError, match="https://notion.so/new"):
-        _adapter(PAGE, fake).write("JWT.md", "\n".join(f"줄 {i}" for i in range(150)))
+        _adapter(PAGE, fake).write("JWT.md", "\n\n".join(f"줄 {i}" for i in range(150)))
 
 
 # --------------------------------------------------------------------------- the properties of a row
