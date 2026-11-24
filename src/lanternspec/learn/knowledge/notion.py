@@ -499,6 +499,25 @@ class NotionAdapter(Adapter):
             return False
         return True
 
+    def is_database(self, ref: str) -> bool:
+        """Tell whether an address or ID is a database (new notes can only be made under a page).
+
+        Args:
+            ref: The address or ID.
+
+        Returns:
+            True when Notion gives a database of that ID; False when it doesn't (a page, not shared, or no such thing).
+
+        Example:
+            >>> NotionAdapter(parent, token).is_database(database_link)  # doctest: +SKIP
+            True
+        """
+        try:
+            self._call("GET", f"/databases/{page_id(ref)}")
+        except KnowledgeError:
+            return False
+        return True
+
     def _list(self, force: bool = False) -> tuple[list[dict[str, Any]], bool]:
         """The listed pages and whether they were fetched just now (within `FRESH_SECONDS`)."""
         now = time.time()

@@ -388,7 +388,6 @@
 "   Pages the integration can see: {count}": {ko: "   통합이 볼 수 있는 페이지: {count}개"}
 "   This is only a check: you don't have to connect anything more to go on.": {ko: "   이건 확인일 뿐입니다. 더 연결하지 않아도 그대로 진행됩니다."}
 "  1) draft files only; you move them in yourself (a safe start)": {ko: "  1) 초안 파일만 만들고, 옮기는 건 직접 합니다 (안전한 시작)"}
-"  2) write to Notion right after you approve": {ko: "  2) 승인하면 바로 Notion에 씁니다"}
 "  · Any page the integration can see will do (it must be connected).": {ko: "  · 통합에 연결된 페이지면 아무거나 괜찮습니다."}
 "  · How: open the page in Notion → Share → Copy link → paste it here.": {ko: "  · 방법: Notion에서 그 페이지를 열고 → 공유 → 링크 복사 → 여기에 붙여 넣기"}
 "  · It isn't used while you only write drafts, but you'll": {ko: "  · 초안만 쓰는 지금은 쓰이지 않지만, 나중에 '바로 쓰기'로"}
@@ -442,6 +441,13 @@
 "  lantern uses the Keychain's first, so that variable is ignored.": {ko: "  lantern은 키체인을 먼저 쓰므로 그 환경 변수는 무시됩니다."}
 "  Its `export` line in your shell settings can be deleted.": {ko: "  쉘 설정 파일의 그 `export` 줄은 지워도 됩니다."}
 "The environment variable {env} and the Keychain hold different tokens — the Keychain is used first": {ko: "환경 변수 {env}와 키체인의 토큰이 다릅니다 — 키체인이 먼저 쓰입니다"}
+
+# learn/knowledge/notion_setup.py (steps)
+"  · Each note you approve becomes a new page under it.": {ko: "  · 승인한 노트마다 이 페이지 아래에 새 페이지가 만들어집니다."}
+"  · Existing pages are never changed.": {ko: "  · 기존 페이지는 고치지 않습니다."}
+"  · It must be a page, not a database.": {ko: "  · 데이터베이스가 아니라 일반 페이지여야 합니다."}
+"That link is a database. Give the link of an ordinary page.": {ko: "그 링크는 데이터베이스입니다. 일반 페이지의 링크를 주세요."}
+"  2) create a new page in Notion right after you approve (existing pages are never changed)": {ko: "  2) 승인하면 바로 Notion에 새 페이지를 만듭니다 (기존 페이지는 고치지 않음)"}
 
 # learn/knowledge/obsidian.py
 "Knowledge store folder doesn't exist: {root}": {ko: "지식 저장소 폴더가 없습니다: {root}"}

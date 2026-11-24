@@ -184,8 +184,14 @@ class FakeNotion:
     """What the wizard needs of a Notion connection."""
 
     def __init__(
-        self, token: str, counts: list[int] | None = None, rejects: frozenset[str] = frozenset(), visible: set[str] | None = None
+        self,
+        token: str,
+        counts: list[int] | None = None,
+        rejects: frozenset[str] = frozenset(),
+        visible: set[str] | None = None,
+        databases: set[str] | None = None,
     ) -> None:
+        self.databases = databases or set()
         self.token = token
         self.counts = counts if counts is not None else [3]
         self.rejects = rejects
@@ -199,6 +205,9 @@ class FakeNotion:
 
     def can_see(self, ref: str) -> bool:
         return notion.page_id(ref) in self.visible
+
+    def is_database(self, ref: str) -> bool:
+        return notion.page_id(ref) in self.databases
 
     def search(self, query: str, aliases: list[str] | None = None, limit: int = 5) -> list[Hit]:
         return [Hit(title=query, path="https://www.notion.so/x", summary="", updated="2026-11-24", score=100)]
@@ -624,3 +633,71 @@ def test_the_adapter_error_carries_the_http_status():
     with pytest.raises(NotionError) as caught:
         NotionAdapter("p", "t", opener=reject).overview()
     assert caught.value.status == 401 and isinstance(caught.value, KnowledgeError)
+
+
+# --------------------------------------------------------------------------- what the last step says depends on how notes are written
+
+DATABASE = "b914fca558014ec5883b3fa0f6b3d33b"
+
+
+def _last_step(io: ScriptedIo) -> str:
+    return "\n".join(io.said).split("[4/4]", 1)[1]
+
+
+def test_the_page_step_talks_about_writing_when_notes_are_written_and_about_drafts_when_they_are_not(repo):
+    writing, drafts = ScriptedIo(["2", "", PAGE_URL]), ScriptedIo(["1", "", PAGE_URL])
+    _run(_project(repo), writing, FakeKeychain())
+    _run(_project(repo), drafts, FakeKeychain())
+
+    assert "초안만 쓰는 지금" not in _last_step(writing)  # chosen "write right after I approve": drafts are not the case
+    assert "새 페이지가 만들어집니다" in _last_step(writing) and "고치지 않습니다" in _last_step(writing)
+    assert "초안만 쓰는 지금" in _last_step(drafts) and "새 페이지가 만들어집니다" not in _last_step(drafts)
+
+
+def test_the_first_question_says_that_writing_makes_a_new_page_and_changes_nothing_that_exists(repo):
+    io = ScriptedIo(["2", "", PAGE_URL])
+    _run(_project(repo), io, FakeKeychain())
+    option = next(line for line in io.said if line.startswith("  2)"))
+
+    assert "새 페이지" in option and "고치지 않음" in option
+
+
+def test_a_database_link_is_told_apart_from_a_page_the_integration_cannot_see(repo):
+    io = ScriptedIo(["2", "", f"https://www.notion.so/me/{DATABASE}?v=cdedad0643b74c9ebd555614f569e790", PAGE_URL])
+
+    def notion_for(token: str, state: Any) -> FakeNotion:
+        return FakeNotion(token, visible={PAGE}, databases={DATABASE})
+
+    assert _run(_project(repo), io, FakeKeychain(), notion_fake=notion_for) == 0
+
+    assert "데이터베이스입니다" in "\n".join(io.said)
+    assert not [p for p in io.prompts if "다시 해 볼까요" in p]  # no "try again?": the answer is simply to give a page link
+    assert Project.load(repo.root).profile.knowledge["path"] == PAGE
+
+
+def test_the_real_adapter_can_tell_a_database_from_a_page():
+    import io as _io
+    import json as _json
+    import urllib.error
+
+    from lanternspec.learn.knowledge.notion import NotionAdapter
+
+    def opener(req: Any) -> Any:
+        if f"/databases/{DATABASE}" not in req.full_url:
+            raise urllib.error.HTTPError(req.full_url, 404, "nf", {}, _io.BytesIO(b"{}"))  # type: ignore[arg-type]
+
+        class Resp:
+            def read(self_inner) -> bytes:
+                return _json.dumps({"object": "database"}).encode()
+
+            def __enter__(self_inner) -> "Resp":
+                return self_inner
+
+            def __exit__(self_inner, *a: Any) -> bool:
+                return False
+
+        return Resp()
+
+    adapter = NotionAdapter("p", "t", opener=opener)
+    assert adapter.is_database(f"https://www.notion.so/me/{DATABASE}?v=abc") is True
+    assert adapter.is_database(PAGE) is False

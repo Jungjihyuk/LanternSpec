@@ -93,7 +93,7 @@ def _write_mode(io: Io) -> str:
     _step(io, 1, msg("How notes are written"))
     io.say(msg("How should new notes reach Notion?"))
     io.say(msg("  1) draft files only; you move them in yourself (a safe start)"))
-    io.say(msg("  2) write to Notion right after you approve"))
+    io.say(msg("  2) create a new page in Notion right after you approve (existing pages are never changed)"))
     while True:
         answer = io.ask(msg("▶ Choose 1 or 2 [1]: ")).strip() or "1"
         if answer in WRITE_MODES:
@@ -146,12 +146,17 @@ def _get_token(io: Io, store: Any, env_name: str, env: Mapping[str, str], replac
     return store.read(env_name)  # the one just typed, not an older variable that would be looked at first
 
 
-def _parent_page(io: Io, notion: Any) -> str | None:
+def _parent_page(io: Io, notion: Any, mode: str) -> str | None:
     _step(io, 4, msg("Where new notes go"))
     io.say(msg("Pick one page where new notes will be made."))
-    io.say(msg("  · It isn't used while you only write drafts, but you'll"))
-    io.say(msg("    need it when you switch to writing, so decide now."))
+    if mode == "direct":
+        io.say(msg("  · Each note you approve becomes a new page under it."))
+        io.say(msg("  · Existing pages are never changed."))
+    else:
+        io.say(msg("  · It isn't used while you only write drafts, but you'll"))
+        io.say(msg("    need it when you switch to writing, so decide now."))
     io.say(msg("  · Any page the integration can see will do (it must be connected)."))
+    io.say(msg("  · It must be a page, not a database."))
     io.say(msg("  · How: open the page in Notion → Share → Copy link → paste it here."))
     while True:
         ref = io.ask(msg("▶ Page link: ")).strip()
@@ -161,6 +166,9 @@ def _parent_page(io: Io, notion: Any) -> str | None:
             continue
         if notion.can_see(pid):
             return pid
+        if notion.is_database(pid):
+            io.say(msg("That link is a database. Give the link of an ordinary page."))
+            continue
         io.say(msg("✖ The integration can't see that page. Open it → ••• → Add connections → pick your integration."))
         if not _yes(io.ask(msg("▶ Try again? [Y/n]: "))):
             return None
@@ -278,7 +286,7 @@ def run(
         notion = _check_token(io, token, store, env_name, environment, maker, state)
         if notion is None:
             return 1
-        parent = _parent_page(io, notion)
+        parent = _parent_page(io, notion, mode)
         if parent is None:
             return 1
         io.say("")
