@@ -95,7 +95,7 @@ def run(project: Project) -> list[tuple[str, str]]:
                 out.append(
                     (
                         WARN,
-                        msg("The environment variable {env} and the Keychain hold different tokens — the variable is used first", env=env),
+                        msg("The environment variable {env} and the Keychain hold different tokens — the Keychain is used first", env=env),
                     )
                 )
         else:

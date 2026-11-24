@@ -78,8 +78,8 @@ def token_sources(
         env: The environment; the process's own when None.
 
     Returns:
-        The variable's token and the Keychain's token. `notion_token` uses the first one that exists, so when both exist
-        and differ the variable wins.
+        The variable's token and the Keychain's token. `notion_token` uses the Keychain's when it has one, so when both
+        exist and differ the variable is ignored.
 
     Example:
         >>> token_sources("X", env={"X": "abc"}, store=type("K", (), {"read": staticmethod(lambda s: None)}))
@@ -90,7 +90,10 @@ def token_sources(
 
 
 def notion_token(env_name: str = "NOTION_TOKEN", store: Any = keychain, env: Mapping[str, str] | None = None) -> str | None:
-    """Find the integration token: the environment variable first, then (on a Mac) the Keychain item of the same name.
+    """Find the integration token: the Keychain item first (on a Mac), then the environment variable of the same name.
+
+    The Keychain comes first because it is what `lantern knowledge setup notion` keeps up to date. A variable left in a shell
+    file from an earlier setup holds the value of when the terminal was opened and would otherwise hide a newer token.
 
     Args:
         env_name: The name of the environment variable, which is also the Keychain service name (`knowledge.token_env`).
@@ -104,8 +107,10 @@ def notion_token(env_name: str = "NOTION_TOKEN", store: Any = keychain, env: Map
         >>> notion_token("X", env={"X": "abc"})
         'abc'
     """
-    value = (os.environ if env is None else env).get(env_name, "").strip()
-    return value or store.read(env_name)
+    stored = store.read(env_name)
+    if stored:
+        return stored
+    return (os.environ if env is None else env).get(env_name, "").strip() or None
 
 
 def page_id(ref: str) -> str:

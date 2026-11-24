@@ -127,12 +127,12 @@ class FakeKeychain:
         return True
 
 
-def test_the_environment_variable_comes_before_the_keychain():
+def test_the_keychain_comes_before_the_environment_variable():
     kc = FakeKeychain(token="from-keychain")
-    assert notion.notion_token("NOTION_TOKEN", kc, {"NOTION_TOKEN": "from-env"}) == "from-env"
-    assert notion.notion_token("NOTION_TOKEN", kc, {}) == "from-keychain"
+    assert notion.notion_token("NOTION_TOKEN", kc, {"NOTION_TOKEN": "from-env"}) == "from-keychain"  # an old variable can't hide it
+    assert notion.notion_token("NOTION_TOKEN", FakeKeychain(), {"NOTION_TOKEN": "from-env"}) == "from-env"  # off a Mac, or nothing stored
     assert notion.notion_token("NOTION_TOKEN", FakeKeychain(), {}) is None
-    assert notion.notion_token("NOTION_TOKEN", kc, {"NOTION_TOKEN": "  "}) == "from-keychain"  # a blank variable counts as none
+    assert notion.notion_token("NOTION_TOKEN", FakeKeychain(), {"NOTION_TOKEN": "  "}) is None  # a blank variable counts as none
 
 
 def test_the_adapter_made_from_the_settings_finds_the_token_in_the_keychain(monkeypatch):
@@ -141,6 +141,8 @@ def test_the_adapter_made_from_the_settings_finds_the_token_in_the_keychain(monk
     monkeypatch.setattr(notion.keychain, "available", lambda: True)
 
     assert notion.from_config({"path": "abc"}).token == "kc-token"
+    monkeypatch.setenv("NOTION_TOKEN", "old-variable")
+    assert notion.from_config({"path": "abc"}).token == "kc-token"  # a variable left in a shell file does not hide the new token
     with pytest.raises(KnowledgeError):
         notion.from_config({"path": "abc", "token_env": "ANOTHER_NAME"})  # the keychain item is named by token_env
 
@@ -522,7 +524,7 @@ def test_both_places_are_told_apart():
     assert notion.token_sources("NOTION_TOKEN", FakeKeychain(), {"NOTION_TOKEN": " "}) == (None, None)
 
 
-def test_a_token_just_typed_is_the_one_checked_even_when_an_old_variable_is_set(repo):
+def test_an_old_variable_does_not_get_in_the_way_of_a_new_keychain_token(repo):
     project = _project(repo)
     checked: list[str] = []
 
@@ -534,35 +536,51 @@ def test_a_token_just_typed_is_the_one_checked_even_when_an_old_variable_is_set(
 
     code = _run(project, io, kc, env={"NOTION_TOKEN": "old"}, notion_fake=notion_for)
 
-    assert code == 0 and checked == ["new"]  # the variable "old" would have been rejected: it is not what the person just typed
-    assert "unset NOTION_TOKEN" in io.out and "~/.zshrc" in io.out  # and the person is told the old one still wins in this terminal
-    assert [line for line in io.said if "NOTION_TOKEN" in line and line.startswith("⚠")]
+    assert code == 0 and checked == ["new"]  # what was just typed is checked, and the variable "old" would have been rejected
+    assert "무시" in io.out and "export" in io.out  # the person is told the variable is ignored and its line can go
+    assert "unset" not in io.out and not [line for line in io.said if line.startswith("⚠") and "NOTION_TOKEN" in line]
 
 
-def test_no_warning_when_the_variable_and_the_keychain_agree_or_only_one_exists(repo):
+def test_keeping_the_stored_token_also_ignores_an_old_variable(repo):
+    project = _project(repo)
+    checked: list[str] = []
+
+    def notion_for(token: str, state: Any) -> FakeNotion:
+        checked.append(token)
+        return FakeNotion(token, rejects=frozenset({"old"}))
+
+    io = ScriptedIo(["1", "y", PAGE_URL])
+    assert _run(project, io, FakeKeychain(token="new"), env={"NOTION_TOKEN": "old"}, notion_fake=notion_for) == 0
+    assert checked == ["new"]
+
+
+def test_no_note_about_the_variable_when_it_agrees_with_the_keychain_or_is_not_set(repo):
     project = _project(repo)
     same = ScriptedIo(["1", "y", PAGE_URL])
     _run(project, same, FakeKeychain(token=TOKEN), env={"NOTION_TOKEN": TOKEN})
     only_keychain = ScriptedIo(["1", "y", PAGE_URL])
     _run(project, only_keychain, FakeKeychain(token=TOKEN), env={})
 
-    assert "unset" not in same.out and "unset" not in only_keychain.out
+    assert "무시" not in same.out and "무시" not in only_keychain.out
 
 
-def test_a_rejection_is_explained_in_plain_words_and_names_a_stale_variable(repo):
+def test_a_rejection_is_explained_in_plain_words(repo):
     project = _project(repo)
     io = ScriptedIo(["1", "y", "n"])  # "use the token that is there?" yes, then "enter a different one?" no
-    kc = FakeKeychain(token="new")
 
     code = _run(
-        project, io, kc, env={"NOTION_TOKEN": "old"}, notion_fake=lambda token, state: FakeNotion(token, rejects=frozenset({"old"}))
+        project,
+        io,
+        FakeKeychain(token="bad"),
+        env={"NOTION_TOKEN": "other"},
+        notion_fake=lambda token, state: FakeNotion(token, rejects=frozenset({"bad"})),
     )
 
     out = "\n".join(io.said)
     assert code == 1
     assert "401" in out and "unauthorized" not in out and "{" not in out  # the status, not Notion's raw JSON
     assert "통째로" in out  # a hint about pasting the whole token
-    assert "환경 변수 NOTION_TOKEN" in out and "키체인" in out  # the variable differs from the keychain, and the variable wins
+    assert "먼저 쓰입니다" not in out  # the variable is not what was checked, so it is not blamed
 
 
 def test_an_error_that_is_not_a_rejected_token_is_shown_without_the_token_advice(repo):
@@ -588,7 +606,7 @@ def test_doctor_warns_when_the_variable_and_the_keychain_hold_different_tokens(r
 
     _, out = repo("doctor", ok=False)
 
-    assert "다릅니다" in out and "NOTION_TOKEN" in out
+    assert "다릅니다" in out and "NOTION_TOKEN" in out and "키체인이 먼저" in out
     monkeypatch.setattr(notion.keychain, "read", lambda service: "old")
     _, same = repo("doctor", ok=False)
     assert "다릅니다" not in same
