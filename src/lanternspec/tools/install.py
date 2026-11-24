@@ -30,7 +30,7 @@ from ..report import obsidian, principles_doc, sections_doc
 from ..work.scaffold import base_template_names, base_template_text, project_template_path, template_version
 from . import parts as parts_mod
 from . import resolve as resolve_tools
-from . import rules, skills
+from . import retired, rules, skills
 from .base import Tool
 
 CI_PATH = ".github/workflows/lanternspec.yml"
@@ -320,20 +320,18 @@ def install(
     project: Project,
     tools: list[str] | None = None,
     force: bool = False,
-    mcp: bool | None = None,
     ci: bool | None = None,
     language: str | None = None,
 ) -> InstallReport:
     """Install or refresh everything for the chosen tools.
 
     Files someone edited are skipped unless force; files no longer generated are removed when unedited.
-    Choices not given (tools, MCP, CI) are kept from the last install.
+    Choices not given (tools, CI) are kept from the last install.
 
     Args:
         project: The project.
         tools: Tool names; the last install's (or Claude Code) when None.
         force: Overwrite files someone edited.
-        mcp: Register the knowledge MCP server; the last choice when None.
         ci: Write the CI workflow; the last choice when None.
         language: Language of the skills and rules before lantern.yaml exists (`lantern install --language en`);
             remembered until /l-init writes it into lantern.yaml. Once lantern.yaml exists, its language is used.
@@ -352,7 +350,6 @@ def install(
     language = _language(project, st, language)
     names = tools or st.get("tools") or ["claude"]
     chosen = resolve_tools(names)
-    mcp = bool(st.get("mcp")) if mcp is None else mcp
     ci = bool(st.get("ci")) if ci is None else ci
     report = InstallReport()
     files = generated_files(project, chosen, ci)
@@ -402,10 +399,11 @@ def install(
     page = sections_doc.write_page(project)  # protected sections follow renames and the project's choices
     if page:
         report.written.append(project.rel(page))  # Obsidian choices follow enums.yaml changes too
-    for tool in chosen:  # each tool merges its own settings (rules hookup · hooks · MCP)
-        report.merged += tool.install_config(project, mcp)
+    for tool in chosen:  # each tool merges its own settings (rules hookup · hooks)
+        report.merged += tool.install_config(project)
+    report.warnings += [f"ℹ {line}" for line in retired.clean(project)]
     st["language"] = language
-    st["mcp"] = mcp
+    st.pop("mcp", None)  # a choice earlier versions remembered
     st["ci"] = ci
     st["tools"] = names
     st["version"] = __version__

@@ -274,7 +274,7 @@ The content of each rule is in its rules document template (`src/lanternspec/res
 - **lantern never receives the token:** on macOS it runs `security add-generic-password -U … -w` (with `-w` last and no value) attached to the terminal, and the Keychain tool asks for the input itself. The token never becomes a command argument, nor enters lantern's memory or a log. The adapter looks in the Keychain (service = the name of the token's environment variable, account = the user) and then the environment variable, so people who put the item in with `security` and people who only used a variable (nothing in the Keychain) both keep working.
 - **Why:**
   - A token that enters a conversation with the AI stays in its record. A command that asks for a token has to be run by the person, and refuses to run without a terminal.
-  - With the Keychain, an AI tool opened from somewhere other than a terminal, a hook and `lantern mcp` read the same token without an environment variable line.
+  - With the Keychain, an AI tool opened from somewhere other than a terminal and a hook read the same token without an environment variable line.
   - The permissions are guided to the minimum for how notes are written (read content for drafts only, read and insert for writing). Update content, comments, user information and agent features, which the adapter doesn't use, are turned off.
   - At the end it shows how many pages the integration can see and the titles edited most recently. The pages connected to the integration set what can be read, so this lets the person see at once whether it is wider than meant.
   - The token is checked with the search API, a call that is known to work with this permission (no user information).
@@ -306,7 +306,6 @@ The content of each rule is in its rules document template (`src/lanternspec/res
 - **Turned down:**
   - **Leaving it to the AI tool's permission settings and its own sandbox.** Claude Code's sandbox holds only the commands it runs; its file tools are stopped by separate permission rules. Every tool has its own format, and some can only be set on a settings screen.
   - **Using it together with the AI tool's own sandbox.** macOS can't put a sandbox inside another, so on macOS the tool's own sandbox has to be off during a guarded run (Linux can nest them). For a tool whose sandbox is on by default, like Codex, lantern turns it off when starting it.
-  - **Letting lantern's MCP server change the AI tool's settings.** If a tool the AI calls can change security settings, that is the hole.
 - **Source:** `src/lanternspec/learn/knowledge/access.py` (which folders are open), `src/lanternspec/tools/guard.py` (the guarded run)
 
 ### Components are kept as names in the session line, and only MCP tool calls are counted (`components`)

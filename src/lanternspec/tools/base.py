@@ -2,7 +2,7 @@
 
 A tool adapter answers three questions only, each in that tool's own format:
   1. skills  — where a skill goes and what its frontmatter looks like
-  2. config  — which settings files carry our rules, hooks and MCP server
+  2. config  — which settings files carry our rules and hooks
   3. hooks   — how its hook payload reads (parse_hook) and how an answer is written back (respond)
 
 What a hook *does* lives in agent_hooks.py and never looks at a tool's format.
@@ -28,8 +28,6 @@ if TYPE_CHECKING:
     from .skills import SkillSource
 
 HOOK_COMMAND = "if command -v lantern >/dev/null 2>&1; then lantern hook {event}{agent}; fi"
-MCP_NAME = "lantern-knowledge"
-MCP_SERVER = {"command": "lantern", "args": ["mcp"]}
 
 
 @dataclass
@@ -389,19 +387,18 @@ class Tool:
         """
         return rel.startswith(self.skill_root + "/")
 
-    # ---- project config (rules · hooks · MCP); returns what was merged, for the install report
-    def install_config(self, project: Project, mcp: bool) -> list[str]:
-        """Merge our rules, hooks and MCP server into the tool's settings files, keeping the user's own entries.
+    # ---- project config (rules · hooks); returns what was merged, for the install report
+    def install_config(self, project: Project) -> list[str]:
+        """Merge our rules and hooks into the tool's settings files, keeping the user's own entries.
 
         Args:
             project: The project.
-            mcp: Also register the knowledge MCP server.
 
         Returns:
             What was merged, for the install report; nothing by default.
 
         Example:
-            >>> get("claude").install_config(project, mcp=False)  # doctest: +SKIP
+            >>> get("claude").install_config(project)  # doctest: +SKIP
             ['.claude/settings.json (hooks)']
         """
         return []

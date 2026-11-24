@@ -10,7 +10,7 @@ import pytest
 from conftest import docs, init_project
 from lanternspec.core import frontmatter
 from lanternspec.core import profile as pm
-from lanternspec.learn.knowledge import Adapter, KnowledgeError, mcp_server
+from lanternspec.learn.knowledge import Adapter, KnowledgeError
 from lanternspec.learn.knowledge.notion import NotionAdapter, NotionError
 
 PAGE = "124791d2c4e380b086defba8b13fd766"
@@ -296,17 +296,6 @@ def test_a_store_without_properties_says_so(repo):
     pm.save(repo.root, data)
     _, out = repo("knowledge", "properties")
     assert "속성" in out
-
-
-def test_the_mcp_server_offers_the_properties_too(notion_project):
-    from lanternspec.core.project import Project
-
-    repo, _ = notion_project
-    project = Project.load(repo.root)
-    assert {"name": "분류", "kind": "select", "options": ["개발", "개인"]} in mcp_server.call(project, "properties", {})
-    mcp_server.call(project, "propose", {"title": "JWT", "properties": {"분류": "개발"}})
-    with pytest.raises(KnowledgeError):
-        mcp_server.call(project, "propose", {"title": "CRDT", "properties": {"분류": "없는 값"}})
 
 
 @pytest.mark.parametrize("language", ["ko", "en"])

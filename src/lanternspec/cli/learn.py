@@ -1,4 +1,4 @@
-"""Learning-line commands: knowledge (knowledge connector) · debt (debt ledger) · mcp."""
+"""Learning-line commands: knowledge (knowledge connector) · debt (debt ledger)."""
 
 from __future__ import annotations
 
@@ -193,13 +193,6 @@ def cmd_debt(a: argparse.Namespace) -> int:
     return 1
 
 
-def cmd_mcp(a: argparse.Namespace) -> int:
-    """`lantern mcp` — serve the knowledge contract as an MCP server over stdio."""
-    from ..learn.knowledge.mcp_server import serve
-
-    return serve(_p())
-
-
 def register(add: Add) -> None:
     """Register the learning-line commands."""
     p = add("knowledge", cmd_knowledge, msg("Knowledge connector: search · read · propose · write · areas · properties · setup notion"))
@@ -225,4 +218,3 @@ def register(add: Add) -> None:
     p.add_argument("--session")
     p.add_argument("--context")
     p.add_argument("--kind", help=msg("new: understanding (default) | tech"))
-    add("mcp", cmd_mcp, msg("Knowledge connector MCP server (stdio)"))

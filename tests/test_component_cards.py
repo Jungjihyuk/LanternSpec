@@ -95,14 +95,14 @@ def test_a_component_that_already_has_a_card_is_not_asked_about(repo):
     assert notice(project, {"mcp": ["obsidian", "qmd"]}) == ""
 
 
-def test_only_mcp_servers_and_plugins_are_asked_about_and_not_lanterns_own(repo):
+def test_only_mcp_servers_and_plugins_are_asked_about(repo):
     project = _project(repo)
     notice(project, {"mcp": ["obsidian"]})
 
-    text = notice(project, {"mcp": ["obsidian", "lantern-knowledge"], "plugin": ["memo@market"], "skill": ["new-skill"], "hook": ["Stop"]})
+    text = notice(project, {"mcp": ["obsidian"], "plugin": ["memo@market"], "skill": ["new-skill"], "hook": ["Stop"]})
 
     assert "memo@market" in text and "--kind plugin" in text
-    assert "lantern-knowledge" not in text and "new-skill" not in text and "Stop" not in text
+    assert "new-skill" not in text and "Stop" not in text
 
 
 def test_no_components_and_a_broken_state_file_give_no_note_and_no_error(repo):

@@ -184,11 +184,11 @@ To run several works at once, check them with `/l-parallel`, run `/l-build` in e
 
 ## Supported AI tools
 
-| Tool | Skills | Rules | Agent hooks | MCP (`--mcp`) |
-|---|---|---|---|---|
-| Claude Code | `.claude/skills` | `AGENTS.md` (an existing `CLAUDE.md` gets `@AGENTS.md`) | `.claude/settings.json` | `.mcp.json` |
-| Codex | `.agents/skills` (`$l-…`) | `AGENTS.md` | `.codex/hooks.json` | `.codex/config.toml` |
-| Antigravity CLI (`agy`) | `.agents/skills` | `AGENTS.md` | `.agents/hooks.json` (no save-before-compaction — there is no compaction hook) | `.agents/plugins/lanternspec/` |
+| Tool | Skills | Rules | Agent hooks |
+|---|---|---|---|
+| Claude Code | `.claude/skills` | `AGENTS.md` (an existing `CLAUDE.md` gets `@AGENTS.md`) | `.claude/settings.json` |
+| Codex | `.agents/skills` (`$l-…`) | `AGENTS.md` | `.codex/hooks.json` |
+| Antigravity CLI (`agy`) | `.agents/skills` | `AGENTS.md` | `.agents/hooks.json` (no save-before-compaction — there is no compaction hook) |
 
 - **Rules live in `AGENTS.md`.** LanternSpec manages only the `<!-- lanternspec:start -->` block inside it and leaves everything outside the block alone. When a file goes past what the installed tools read in full, `lantern doctor` tells you.
 - **Codex and Antigravity share the skills folder.** When you use both, skill bodies say `/l-build`, and `AGENTS.md` tells Codex to use `$` instead.
@@ -247,7 +247,7 @@ Anything you don't understand yet is kept as a debt card, and every time you ask
 | `obsidian` · `folder` | reads Markdown files directly | creates notes after approval (drafts only with `propose_only`) |
 | `notion` | Fetches the list of pages and searches titles and properties; reads blocks inside blocks | New page or database row after approval (drafts only with `propose_only`). Connect with `lantern knowledge setup notion` |
 
-Every knowledge base supports the same four actions: search · read · propose · write. The CLI (`lantern knowledge …`) and the MCP server (`lantern mcp`) use the same functions.
+Every knowledge base supports the same four actions: search · read · propose · write (`lantern knowledge …`).
 
 Folders of the knowledge base the AI must not open go in `knowledge.deny` in `lantern.yaml` (or list the only open ones in `knowledge.allow`). lantern neither searches nor reads closed folders. To also stop the AI tool from opening them directly, start it with `lantern guard -- claude`: the tool runs inside the operating system's sandbox (macOS, and Linux with bubblewrap; works with `claude` · `codex` · `agy`; on macOS the tool's own sandbox has to be off, and lantern turns Codex's off itself).
 
@@ -291,13 +291,13 @@ Import mockups with `lantern screen import`; `lantern screen compare` finds wher
 ## CLI at a glance
 
 ```text
-setup      install [--language] [--tools] [--mcp] [--ci|--no-ci] [--pr-template] [--commit-template] · upgrade [--apply] · doctor · build-mode suggest · guard -- <tool>
+setup      install [--language] [--tools] [--ci|--no-ci] [--pr-template] [--commit-template] · upgrade [--apply] · doctor · build-mode suggest · guard -- <tool>
 profile    profile show|docs|write|set · principles show|detect · parts [add|ignore] · enums list|rename · sections list|rename|off|on
 documents  scaffold init [--plan] | work | doc | idea | adr | meeting | custom · new-id · map · meta get|set
 checks     check [--changed] [--epic W-012] · check-pr · lint [--ci] · check-dbml · dbml render|from-sql|diff
 work       task next [--all]|start|done|ac|list|estimate · task add [--parallel] [--spike] · pack · screen import|compare
            work branch|start|list|overlap|finish|archive|stage|flow · design approve · unit-log add · idea find|status
-learning   knowledge search|read|propose|write|areas|properties · debt find|new|ask|resolve|promote|practice|known|status|list · mcp
+learning   knowledge search|read|propose|write|areas|properties · debt find|new|ask|resolve|promote|practice|known|status|list
 reports    report [--views] [--summary] · status · resume [--session] [--more] · scan [--tests] [--ci] · sync adopt · eval · obsidian plugins
 templates  template list|show|lint|level|bump|outdated|diff|usage|new|migrate · legacy adopt [--apply]|todos · migrate openspec [--apply]
 references ref list|check|index|read · tag|exclude|rules · terms|term|glossary|candidate · domain|describe|attach · convert [--apply]|preview

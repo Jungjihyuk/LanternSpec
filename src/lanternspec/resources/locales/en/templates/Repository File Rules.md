@@ -6,8 +6,8 @@ created: ${today}
 updated: ${today}
 links: []
 template: Repository File Rules
-template_version: 1.1.0
-based_on: 1.1.0
+template_version: 1.1.1
+based_on: 1.1.1
 ---
 # 📘 Repository File Rules
 
@@ -224,7 +224,6 @@ Files an AI tool reads by itself when it starts working. Rules are written in on
 | `Log.md` | LanternSpec | Per work: where things stand and the evidence |
 | `DESIGN.md` | Not created | If there is one, it is the reference for the design system. If not, `Rules/Design System.md` holds it, with sections in the same order |
 | `MEMORY.md` | Not handled | It is memory on one person's computer, so repository rules leave it out |
-| `.mcp.json` | `lantern install --mcp` | The connection to the knowledge store |
 <!-- lantern:if origin=brownfield -->
 
 ### Before LanternSpec
@@ -252,3 +251,4 @@ Files an AI tool reads by itself when it starts working. Rules are written in on
 |---|---|---|
 | 1.0.0 | 2026-11-09 | Base template |
 | 1.1.0 | 2026-11-17 | Added the AI Context Files section (standard · LanternSpec · before and after for an existing project) |
+| 1.1.1 | 2026-11-25 | Took a file LanternSpec no longer makes out of the LanternSpec table |

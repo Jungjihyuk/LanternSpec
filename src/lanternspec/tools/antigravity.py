@@ -7,7 +7,6 @@ Checked against agy 1.4.7 (its built-in agy-customizations guide and a live run)
   (conversationId · lastUserInput · toolCall{name,args} · invocationNum · terminationReason)
 - PostToolUse can't talk back (it must print `{}`), so document-check results wait for PostInvocation
 - no compaction hook → saving progress before compaction is not available here
-- MCP has no project file; a workspace plugin (`.agents/plugins/<name>/mcp_config.json`) carries it
 """
 
 from __future__ import annotations
@@ -19,11 +18,10 @@ from pathlib import Path
 from typing import Any
 
 from ..core.messages import msg
-from ..core.project import Project, write
-from .base import MCP_NAME, MCP_SERVER, HookInput, HookReply, HookResult, Tool, Turn, hook_state_dir, jsonl_records, merge_json_file
+from ..core.project import Project
+from .base import HookInput, HookReply, HookResult, Tool, Turn, hook_state_dir, jsonl_records, merge_json_file
 
 HOOK_NAME = "lanternspec"
-PLUGIN_DIR = ".agents/plugins/lanternspec"
 USER_REQUEST = re.compile(r"</?USER_REQUEST>")  # agy wraps what the user wrote in these tags
 PATH_ARGS = ("Path", "TargetFile", "AbsolutePath", "FilePath", "path", "file_path")
 
@@ -106,20 +104,17 @@ class Antigravity(Tool):
             "Stop": [handler("stop", 10)],
         }
 
-    def install_config(self, project: Project, mcp: bool) -> list[str]:
-        """Implement Tool.install_config for Antigravity.
-
-        Our hooks are one named key in `.agents/hooks.json`; the MCP server (when asked) goes into a workspace plugin.
+    def install_config(self, project: Project) -> list[str]:
+        """Implement Tool.install_config for Antigravity: our hooks are one named key in `.agents/hooks.json`.
 
         Args:
             project: The project.
-            mcp: Also register the knowledge MCP server.
 
         Returns:
             What was merged.
 
         Example:
-            >>> Antigravity().install_config(project, mcp=False)  # doctest: +SKIP
+            >>> Antigravity().install_config(project)  # doctest: +SKIP
             ['.agents/hooks.json (에이전트 hook — 압축 hook이 없어 압축 전 저장은 빠짐)']
         """
 
@@ -129,13 +124,6 @@ class Antigravity(Tool):
 
         merge_json_file(project.root / ".agents" / "hooks.json", merge)
         merged = [msg(".agents/hooks.json — agent hooks, except saving before compaction (Antigravity has no hook for it)")]
-        if mcp:
-            write(project.root / PLUGIN_DIR / "plugin.json", json.dumps({"name": "lanternspec"}, indent=2) + "\n")
-            merge_json_file(
-                project.root / PLUGIN_DIR / "mcp_config.json",
-                lambda d: {**d, "mcpServers": {**d.get("mcpServers", {}), MCP_NAME: dict(MCP_SERVER)}},
-            )
-            merged.append(f"{PLUGIN_DIR}/ — MCP {MCP_NAME}")
         return merged
 
     # ---- hooks

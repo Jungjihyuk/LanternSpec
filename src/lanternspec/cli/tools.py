@@ -25,7 +25,6 @@ def cmd_install(a: argparse.Namespace) -> int:
         project,
         _csv(a.tools) or None,
         force=a.force,
-        mcp=True if a.mcp else None,
         ci=True if a.ci else False if a.no_ci else None,
         language=a.language,
     )
@@ -178,7 +177,6 @@ def register(add: Add) -> None:
     p = add("install", cmd_install, msg("Install skills · rules · agent hooks into the AI tool folders (before /l-init)"))
     p.add_argument("--tools", help=msg("claude,codex,antigravity (default claude)"))
     p.add_argument("--force", action="store_true", help=msg("Overwrite files the user edited too"))
-    p.add_argument("--mcp", action="store_true", help=msg("Also register the knowledge connector MCP server (lantern mcp)"))
     p.add_argument("--language", choices=languages(), help=msg("Language of skills · rules · documents (first install only, default ko)"))
     p.add_argument("--pr-template", action="store_true", help=msg("Also add a PR template for GitHub (kept if one exists)"))
     p.add_argument("--commit-template", action="store_true", help=msg("Also add a commit message template and set it for this clone"))

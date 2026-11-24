@@ -8,8 +8,8 @@
 
 A store whose notes have properties to fill (a Notion database) also answers `properties`: which ones, with their choices.
 
-The contract (names · inputs · outputs) is fixed; skills reach it through `lantern knowledge …`
-CLI commands, and `lantern mcp` serves the same functions as an MCP server.
+The contract (names · inputs · outputs) is fixed; skills reach it through the `lantern knowledge …`
+CLI commands.
 We never change the other store's structure: counts and status live in our ledger.
 
 Not here:

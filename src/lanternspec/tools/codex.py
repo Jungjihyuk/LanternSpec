@@ -1,4 +1,4 @@
-"""Codex — `.agents/skills` (called `$l-…`), hooks in `.codex/hooks.json`, permissions and MCP in `.codex/config.toml`.
+"""Codex — `.agents/skills` (called `$l-…`), hooks in `.codex/hooks.json`, permissions in `.codex/config.toml`.
 
 Hook payloads and answers follow Claude Code's schema (checked against codex 0.164), so the
 protocol comes from claude.ClaudeHooks; only what differs is written here.
@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any
 
 from ..core.messages import msg
 from ..core.project import Project, git_out, read, write
-from .base import MCP_NAME, HookInput, HookReply, Tool, Turn, as_count, jsonl_records, merge_json_file, replace_hook_entries
+from .base import HookInput, HookReply, Tool, Turn, as_count, jsonl_records, merge_json_file, replace_hook_entries
 from .claude import ClaudeHooks, hook_specific_output
 
 if TYPE_CHECKING:
@@ -356,26 +356,23 @@ class Codex(ClaudeHooks, Tool):
             ]
         return []
 
-    def install_config(self, project: Project, mcp: bool) -> list[str]:
-        """Implement Tool.install_config: hooks into `.codex/hooks.json`; permissions and (when asked) MCP into `.codex/config.toml`.
+    def install_config(self, project: Project) -> list[str]:
+        """Implement Tool.install_config: hooks into `.codex/hooks.json`; permissions into `.codex/config.toml`.
 
         Args:
             project: The project.
-            mcp: Also register the knowledge MCP server.
 
         Returns:
             What was merged.
 
         Example:
-            >>> Codex().install_config(project, mcp=False)[0]  # doctest: +SKIP
+            >>> Codex().install_config(project)[0]  # doctest: +SKIP
             '.codex/hooks.json (에이전트 hook — Codex가 처음 실행할 때 신뢰 여부를 묻는다)'
         """
         merge_json_file(project.root / ".codex" / "hooks.json", lambda d: replace_hook_entries(d, self.hooks()))
         merged = [msg(".codex/hooks.json — agent hooks. Codex asks whether to trust them on first run")]
         path = project.root / ".codex" / "config.toml"
         text = add_permissions_toml(read(path) if path.exists() else "")
-        if mcp:
-            text = add_mcp_server_toml(text)
         write(path, text)
         merged.append(
             msg(
@@ -383,31 +380,7 @@ class Codex(ClaudeHooks, Tool):
                 "Codex uses them only after you trust this project when it first asks"
             )
         )
-        if mcp:
-            merged.append(f".codex/config.toml — MCP {MCP_NAME}")
         return merged
-
-
-def add_mcp_server_toml(existing_text: str) -> str:
-    """Add our MCP server to `.codex/config.toml` text, unless it is already there.
-
-    Args:
-        existing_text: The current file text ("" when missing).
-
-    Returns:
-        The new text.
-
-    Example:
-        >>> print(add_mcp_server_toml(""), end="")
-        [mcp_servers.lantern-knowledge]
-        command = "lantern"
-        args = ["mcp"]
-    """
-    header = f"[mcp_servers.{MCP_NAME}]"
-    if header in existing_text:
-        return existing_text
-    block = f'{header}\ncommand = "lantern"\nargs = ["mcp"]\n'
-    return (existing_text.rstrip() + "\n\n" if existing_text.strip() else "") + block
 
 
 def add_permissions_toml(existing_text: str) -> str:

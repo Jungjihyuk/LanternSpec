@@ -19,7 +19,6 @@ from ..core import frontmatter
 from ..core.messages import msg
 from ..core.project import Project, read
 from ..core.state import ensure_state_dir
-from .base import MCP_NAME
 
 ASKED_KINDS = ("mcp", "plugin")  # skills and hook events come and go with the person's own setup; a card for each would be noise
 SEEN_FILE = "components-seen.json"
@@ -71,7 +70,7 @@ def notice(project: Project, components: dict[str, list[str]]) -> str:
         >>> notice(project, {"mcp": ["qmd"]})  # doctest: +SKIP
         ''
     """
-    now = {f"{kind}:{name}" for kind in ASKED_KINDS for name in components.get(kind, []) if name != MCP_NAME}
+    now = {f"{kind}:{name}" for kind in ASKED_KINDS for name in components.get(kind, [])}
     seen = _load(project)
     if seen is None:
         _save(project, now)

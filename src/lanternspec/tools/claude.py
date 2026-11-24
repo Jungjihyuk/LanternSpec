@@ -1,6 +1,6 @@
-"""Claude Code — `.claude/skills`, AGENTS.md read natively (an existing CLAUDE.md gets `@AGENTS.md`), hooks · MCP.
+"""Claude Code — `.claude/skills`, AGENTS.md read natively (an existing CLAUDE.md gets `@AGENTS.md`), hooks.
 
-Hooks go into `.claude/settings.json`, the MCP server into `.mcp.json`.
+Hooks go into `.claude/settings.json`.
 
 Not here:
     - what a hook does → tools/agent_hooks.py
@@ -17,8 +17,6 @@ from ..core.messages import msg
 from ..core.project import Project, read, write
 from .base import (
     HOOK_COMMAND,
-    MCP_NAME,
-    MCP_SERVER,
     HookInput,
     HookReply,
     HookResult,
@@ -388,24 +386,22 @@ class ClaudeCode(ClaudeHooks, Tool):
                 return ("mcp", name)
         return None
 
-    def install_config(self, project: Project, mcp: bool) -> list[str]:
+    def install_config(self, project: Project) -> list[str]:
         """Implement Tool.install_config for Claude Code.
 
         Claude Code reads AGENTS.md on its own, so no CLAUDE.md is created. CLAUDE.md files that hold
         nothing but the import of AGENTS.md are deleted, since while one exists Claude reads only CLAUDE.md
         files and so misses the folders' AGENTS.md (kept when a CLAUDE.local.md needs them). Any other
-        CLAUDE.md is kept, with the import at its top. Hooks go into `.claude/settings.json`, the MCP
-        server (when asked) into `.mcp.json`.
+        CLAUDE.md is kept, with the import at its top. Hooks go into `.claude/settings.json`.
 
         Args:
             project: The project.
-            mcp: Also register the knowledge MCP server.
 
         Returns:
             What was merged.
 
         Example:
-            >>> ClaudeCode().install_config(project, mcp=False)  # doctest: +SKIP
+            >>> ClaudeCode().install_config(project)  # doctest: +SKIP
             ['.claude/settings.json (에이전트 hook)']
         """
         merged = []
@@ -422,9 +418,6 @@ class ClaudeCode(ClaudeHooks, Tool):
                 merged.append(f"{rel} — {line}")
         merge_json_file(project.root / ".claude" / "settings.json", lambda d: replace_hook_entries(d, self.hooks()))
         merged.append(msg(".claude/settings.json — agent hooks"))
-        if mcp:
-            merge_json_file(project.root / ".mcp.json", add_mcp_server)
-            merged.append(f".mcp.json — MCP {MCP_NAME}")
         return merged
 
     def read_transcript(self, path: Path) -> list[Turn] | None:
@@ -591,23 +584,6 @@ def hook_specific_output(event: str, text: str) -> str:
         '{"hookSpecificOutput": {"hookEventName": "UserPromptSubmit", "additionalContext": "안내"}}'
     """
     return json.dumps({"hookSpecificOutput": {"hookEventName": event, "additionalContext": text}}, ensure_ascii=False)
-
-
-def add_mcp_server(data: dict[str, Any]) -> dict[str, Any]:
-    """Add our MCP server to `.mcp.json` data.
-
-    Args:
-        data: The current data, changed in place.
-
-    Returns:
-        The data.
-
-    Example:
-        >>> add_mcp_server({})
-        {'mcpServers': {'lantern-knowledge': {'command': 'lantern', 'args': ['mcp']}}}
-    """
-    data.setdefault("mcpServers", {})[MCP_NAME] = dict(MCP_SERVER)
-    return data
 
 
 def model_from_transcript(path: str) -> str:

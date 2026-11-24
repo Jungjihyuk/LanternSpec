@@ -456,39 +456,6 @@ def test_h8_without_a_record_writes_a_session_doc(repo):
     assert code == 0, out
 
 
-def test_mcp_server_and_install_registration(repo, vault):
-    init_project(repo, vault=vault)
-    msgs = [
-        {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}},
-        {"jsonrpc": "2.0", "method": "notifications/initialized"},
-        {"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
-        {"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "search", "arguments": {"query": "JWT"}}},
-        {"jsonrpc": "2.0", "id": 4, "method": "tools/call", "params": {"name": "propose", "arguments": {"title": "CRDT"}}},
-        {"jsonrpc": "2.0", "id": 5, "method": "nope"},
-    ]
-    r = subprocess.run(
-        [sys.executable, "-m", "lanternspec", "mcp"],
-        cwd=str(repo.root),
-        input="\n".join(json.dumps(m) for m in msgs) + "\n",
-        capture_output=True,
-        text=True,
-    )
-    out = [json.loads(l) for l in r.stdout.splitlines()]
-    assert [o["id"] for o in out] == [1, 2, 3, 4, 5]
-    assert {t["name"] for t in out[1]["result"]["tools"]} == {"search", "read", "propose", "properties", "write"}
-    assert '"title": "JWT"' in out[2]["result"]["content"][0]["text"]
-    assert (docs(repo) / "📒 부채/노트 초안/CRDT.md").exists()
-    assert out[4]["error"]["code"] == -32601
-    repo("install", "--tools", "claude,codex,antigravity", "--mcp")
-    assert json.loads((repo.root / ".mcp.json").read_text())["mcpServers"]["lantern-knowledge"]["args"] == ["mcp"]
-    assert "[mcp_servers.lantern-knowledge]" in (repo.root / ".codex/config.toml").read_text()
-    plugin = repo.root / ".agents/plugins/lanternspec"
-    assert json.loads((plugin / "plugin.json").read_text())["name"] == "lanternspec"
-    assert json.loads((plugin / "mcp_config.json").read_text())["mcpServers"]["lantern-knowledge"]["args"] == ["mcp"]
-    repo("upgrade")  # keeps the MCP choice
-    assert (repo.root / ".codex/config.toml").read_text().count("[mcp_servers.lantern-knowledge]") == 1
-
-
 def test_install_explains_next_steps_and_other_ai_tools(repo, monkeypatch):
     found = {"claude": "/bin/claude", "codex": "/bin/codex"}  # pretend only Claude Code and Codex are on this computer
     monkeypatch.setattr("lanternspec.cli.tools.shutil.which", found.get)

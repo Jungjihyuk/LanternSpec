@@ -182,11 +182,11 @@ git:
 
 ## 지원 AI 도구
 
-| 도구 | 스킬 | 규칙 | 에이전트 hook | MCP (`--mcp`) |
-|---|---|---|---|---|
-| Claude Code | `.claude/skills` | `AGENTS.md` (`CLAUDE.md`가 있으면 `@AGENTS.md`를 넣음) | `.claude/settings.json` | `.mcp.json` |
-| Codex | `.agents/skills` (`$l-…`) | `AGENTS.md` | `.codex/hooks.json` | `.codex/config.toml` |
-| Antigravity CLI (`agy`) | `.agents/skills` | `AGENTS.md` | `.agents/hooks.json` (압축 전 저장 제외 — 압축 hook이 없음) | `.agents/plugins/lanternspec/` |
+| 도구 | 스킬 | 규칙 | 에이전트 hook |
+|---|---|---|---|
+| Claude Code | `.claude/skills` | `AGENTS.md` (`CLAUDE.md`가 있으면 `@AGENTS.md`를 넣음) | `.claude/settings.json` |
+| Codex | `.agents/skills` (`$l-…`) | `AGENTS.md` | `.codex/hooks.json` |
+| Antigravity CLI (`agy`) | `.agents/skills` | `AGENTS.md` | `.agents/hooks.json` (압축 전 저장 제외 — 압축 hook이 없음) |
 
 - **규칙은 `AGENTS.md`에 쓴다.** LanternSpec은 그 안의 `<!-- lanternspec:start -->` 블록만 관리하고, 블록 밖은 건드리지 않는다. 설치한 도구가 끝까지 읽는 길이 한도를 넘으면 `lantern doctor`가 알려 준다.
 - **Codex와 Antigravity는 스킬 폴더를 같이 쓴다.** 둘을 함께 쓰면 스킬 본문은 `/l-build`로 쓰이고, `AGENTS.md`가 Codex에게 `$`로 부르라고 알려 준다.
@@ -245,7 +245,7 @@ AI가 쓴 기술 중 모르는 것은 내 지식 저장소의 노트와 비교�
 | `obsidian` · `folder` | Markdown 파일을 직접 읽음 | 승인 후 노트 생성 (`propose_only`면 초안만) |
 | `notion` | Notion의 페이지 목록을 받아 제목과 속성에서 찾고, 읽기는 블록 안까지 | 승인 후 새 페이지나 데이터베이스의 새 행 생성 (`propose_only`면 초안만). 연결은 `lantern knowledge setup notion` |
 
-어느 저장소든 찾기 · 읽기 · 제안 · 쓰기 네 가지로 다룬다. CLI(`lantern knowledge …`)와 MCP 서버(`lantern mcp`)가 같은 기능을 쓴다.
+어느 저장소든 찾기 · 읽기 · 제안 · 쓰기 네 가지로 다룬다 (`lantern knowledge …`).
 
 저장소에서 AI가 열면 안 되는 폴더는 `lantern.yaml`의 `knowledge.deny`에 적는다 (반대로 `knowledge.allow`에 적으면 그 폴더만 열린다). lantern은 닫힌 폴더를 찾지도 읽지도 않는다. AI 도구가 직접 여는 것까지 막으려면 `lantern guard -- claude`로 켠다 — 운영체제 샌드박스 안에서 도구를 시작한다 (macOS와, bubblewrap이 있는 Linux. `claude` · `codex` · `agy` 모두 된다. macOS에서는 도구 자체의 샌드박스를 꺼야 하고, Codex의 것은 lantern이 끄고 켠다).
 
@@ -289,13 +289,13 @@ Claude Design은 Claude Code에서 AI가 Design 캔버스에 와이어프레임�
 ## CLI 한눈에
 
 ```text
-설치     install [--language] [--tools] [--mcp] [--ci|--no-ci] [--pr-template] [--commit-template] · upgrade [--apply] · doctor · build-mode suggest · guard -- <도구>
+설치     install [--language] [--tools] [--ci|--no-ci] [--pr-template] [--commit-template] · upgrade [--apply] · doctor · build-mode suggest · guard -- <도구>
 프로필   profile show|docs|write|set · principles show|detect · parts [add|ignore] · enums list|rename · sections list|rename|off|on
 문서     scaffold init [--plan] | work | doc | idea | adr | meeting | custom · new-id · map · meta get|set
 검사     check [--changed] [--epic W-012] · check-pr · lint [--ci] · check-dbml · dbml render|from-sql|diff
 일       task next [--all]|start|done|ac|list|estimate · task add [--parallel] [--spike] · pack · screen import|compare
          work branch|start|list|overlap|finish|archive|stage|flow · design approve · unit-log add · idea find|status
-배움     knowledge search|read|propose|write|areas|properties · debt find|new|ask|resolve|promote|practice|known|status|list · mcp
+배움     knowledge search|read|propose|write|areas|properties · debt find|new|ask|resolve|promote|practice|known|status|list
 보고     report [--views] [--summary] · status · resume [--session] [--more] · scan [--tests] [--ci] · sync adopt · eval · obsidian plugins
 양식     template list|show|lint|level|bump|outdated|diff|usage|new|migrate · legacy adopt [--apply]|todos · migrate openspec [--apply]
 참고     ref list|check|index|read · tag|exclude|rules · terms|term|glossary|candidate · domain|describe|attach · convert [--apply]|preview
