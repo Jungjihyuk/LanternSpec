@@ -146,8 +146,8 @@ lantern이 읽고 쓰는 칸(보호 칸, 예: 기록의 "지금 상황")도 이�
 
 ### Obsidian으로 보기
 `docs/` 폴더를 Obsidian에서 볼트로 열면 바로 읽기 좋게 설정이 들어 있다 (`docs/.obsidian/`).
-`lantern obsidian plugins`로 플러그인을 넣으면 보고서의 타임라인을 막대로 보여 주는 Lantern Timeline도 함께 들어간다. 일한 구간은 자세한 칸(5분 ~ 1시간)으로, 할 일이 없던 시간은 접어서 보여 주고, 끝난 할 일 옆에 걸린 시간을 적는다. 날짜가 없는 할 일은 오른쪽 "날짜 미정" 칸에 크기와 함께 놓이고, 끌어서 날짜 위에 놓으면 예정일이 된다. 예정일이 있는 시작 전 할 일은 막대를 끌어 옮기거나 양 끝을 끌어 기간을 바꿀 수 있고, `[시작 예정::]` · `[마감 예정::]`에 저장된다.
-Lantern Kanban도 함께 들어가 작업을 단계(기획 · 설계 · 할 일 · 구현 · 완료) 열에 카드로 보여 주고, 카드를 누르면 그 작업의 할 일이 창으로 열린다 (읽기 전용). 원하지 않는 보기는 Obsidian 설정에서 끄면 되고, 그러면 보고서는 플러그인 없이 그린다.
+`lantern obsidian plugins`로 플러그인을 넣으면 보고서의 타임라인을 막대로 보여 주는 Lantern Timeline도 함께 들어간다. 일한 구간은 자세한 칸(5분 ~ 1시간)으로, 할 일이 없던 시간은 접어서 보여 주고, 끝난 할 일 옆에 걸린 시간을 적는다. 작업 줄에는 기획 · 설계 · 할 일 · 구현이 언제였는지 단계별 막대로 보여 준다. 날짜가 없는 할 일은 오른쪽 "날짜 미정" 칸에 크기와 함께 놓이고, 끌어서 날짜 위에 놓으면 예정일이 된다. 예정일이 있는 시작 전 할 일은 막대를 끌어 옮기거나 양 끝을 끌어 기간을 바꿀 수 있고, `[시작 예정::]` · `[마감 예정::]`에 저장된다.
+Lantern Kanban도 함께 들어가 작업을 단계(기획 · 설계 · 할 일 · 구현 · 완료) 열에 카드로 보여 주고, 카드에는 진행 중인 할 일을 누가 하는지 보이고, 누르면 그 작업의 할 일이 창으로 열린다 (읽기 전용). 원하지 않는 보기는 Obsidian 설정에서 끄면 되고, 그러면 보고서는 플러그인 없이 그린다.
 할 일 목록(`할 일.md`)은 표처럼 보인다 — 이름은 왼쪽에, 크기 · 먼저 · 기준은 오른쪽 열에. 파일은 할 일 한 줄 그대로다.
 
 - **폴더 색 · 폴더와 파일 아이콘 · callout · 인용문 모양** — 문서 단계마다 폴더 색이 다르고, 폴더와 파일 앞에 아이콘이 붙고, callout과 인용문이 깔끔하게 보인다. 어떤 테마 위에서도 동작한다.
@@ -238,7 +238,7 @@ AI가 쓴 기술 중 모르는 것은 내 지식 저장소의 노트와 비교�
 - 🟡 노트가 있는데 다시 물은 것 → 복습할 내용을 알려 준다
 - 🔴 노트가 없는 것 → 학습 노트 초안을 제안한다
 
-아직 이해하지 못한 것은 부채 카드로 남겨 두고, 다시 물을 때마다 횟수를 센다.
+아직 이해하지 못한 것은 부채 카드로 남겨 두고, 다시 물을 때마다 횟수를 센다. 카드는 사람이 물었거나 남기기로 고른 것만 되고, AI가 구현하다 막힌 것은 `lantern retro note`로 AI 회고에 남긴다.
 
 | 저장소 (`knowledge.type`) | 어떻게 | 쓰기 |
 |---|---|---|
@@ -279,7 +279,8 @@ AI가 쓴 기술 중 모르는 것은 내 지식 저장소의 노트와 비교�
 - **작업 동시 진행:** 서로 다른 작업을 worktree로 나눠 동시에 진행할 만한지 (`/l-parallel`로 점검)
 
 ### 평가
-`lantern eval`이 실행 기록으로 스킬 · 모델 · 설정마다 비용(시간 · 도구 호출)과 결과(마무리 때 양식 오류)를 비교한다.
+`lantern eval`이 실행 기록으로 스킬 · 모델 · 설정마다 비용(시간 · 도구 호출)과 결과(마무리 때 양식 오류)를 비교한다. Claude Code에서는 MCP 서버 · 플러그인의 호출 · 실패 수도 보여 준다.
+왜 더했고 무엇을 기대하는지는 구성 카드(`lantern scaffold component`)에 남긴다.
 
 ### 디자인 도구
 Claude Design은 Claude Code에서 AI가 Design 캔버스에 와이어프레임을 직접 그리고, Figma · Canva는 각 도구의 MCP로 쓴다.
@@ -291,12 +292,12 @@ Claude Design은 Claude Code에서 AI가 Design 캔버스에 와이어프레임�
 ```text
 설치     install [--language] [--tools] [--ci|--no-ci] [--pr-template] [--commit-template] · upgrade [--apply] · doctor · build-mode suggest · guard -- <도구>
 프로필   profile show|docs|write|set · principles show|detect · parts [add|ignore] · enums list|rename · sections list|rename|off|on
-문서     scaffold init [--plan] | work | doc | idea | adr | meeting | custom · new-id · map · meta get|set
+문서     scaffold init [--plan] | work | doc | idea | adr | component | meeting | custom · new-id · map · meta get|set
 검사     check [--changed] [--epic W-012] · check-pr · lint [--ci] · check-dbml · dbml render|from-sql|diff
 일       task next [--all]|start|done|ac|list|estimate · task add [--parallel] [--spike] · pack · screen import|compare
          work branch|start|list|overlap|finish|archive|stage|flow · design approve · unit-log add · idea find|status
-배움     knowledge search|read|propose|write|areas|properties · debt find|new|ask|resolve|promote|practice|known|status|list
-보고     report [--views] [--summary] · status · resume [--session] [--more] · scan [--tests] [--ci] · sync adopt · eval · obsidian plugins
+배움     knowledge search|read|propose|write|areas|properties|setup · debt find|new|ask|resolve|promote|practice|known|status|list
+보고     report [--views] [--summary] · status · resume [--session] [--more] · scan [--tests] [--ci] · sync adopt · eval · retro add|note|judge|confirm|review · obsidian plugins
 양식     template list|show|lint|level|bump|outdated|diff|usage|new|migrate · legacy adopt [--apply]|todos · migrate openspec [--apply]
 참고     ref list|check|index|read · tag|exclude|rules · terms|term|glossary|candidate · domain|describe|attach · convert [--apply]|preview
 git      hooks install|uninstall|status · docs-mode local|shared

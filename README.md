@@ -148,8 +148,8 @@ Sections lantern reads and writes (protected sections, such as "Now" in a log) m
 
 ### Viewing the docs in Obsidian
 Open the `docs/` folder as a vault in Obsidian and it is already set up for reading (`docs/.obsidian/`).
-`lantern obsidian plugins` also adds Lantern Timeline, which shows the report's timeline as bars: stretches with work in fine columns (5 minutes to an hour), time with no task folded away, and how long each finished task took beside it. Tasks without a date wait with their size in a "no date yet" column on the right; drag one onto a day to plan it. Drag a planned task that has not started to move it, or drag its ends to change its length; the dates are saved in its planned and due attributes.
-Lantern Kanban comes along too: works as cards in stage columns (plan · design · tasks · build · done), each opening its tasks in a window when clicked (read only). Turn off a view you don't want in Obsidian's settings, and reports draw without it.
+`lantern obsidian plugins` also adds Lantern Timeline, which shows the report's timeline as bars: stretches with work in fine columns (5 minutes to an hour), time with no task folded away, and how long each finished task took beside it. A work's row shows when planning, design, splitting into tasks and the build happened, one bar per stage. Tasks without a date wait with their size in a "no date yet" column on the right; drag one onto a day to plan it. Drag a planned task that has not started to move it, or drag its ends to change its length; the dates are saved in its planned and due attributes.
+Lantern Kanban comes along too: works as cards in stage columns (plan · design · tasks · build · done), each showing who is on its tasks in progress and opening its tasks in a window when clicked (read only). Turn off a view you don't want in Obsidian's settings, and reports draw without it.
 The task list (`Tasks.md`) reads like a table: names on the left, size · after · criteria in columns on the right. The file keeps one line per task.
 
 - **Folder colors, folder and file icons, callouts and quotes** — each document stage has its own folder color, folders and files get icons, and callouts and quotes look clean. Works on top of any theme.
@@ -240,7 +240,7 @@ When the AI uses a technology you don't know, LanternSpec compares it with the n
 - 🟡 you have a note but asked again → tells you what to review
 - 🔴 no note yet → suggests a draft study note
 
-Anything you don't understand yet is kept as a debt card, and every time you ask about it again the count goes up.
+Anything you don't understand yet is kept as a debt card, and every time you ask about it again the count goes up. Only what a person asked or chose to keep becomes a card; what the AI got stuck on while building goes to the AI retro with `lantern retro note`.
 
 | Knowledge base (`knowledge.type`) | How | Writing |
 |---|---|---|
@@ -281,7 +281,8 @@ Picks design principles and code conventions from a table, based on the project 
 - **Parallel works:** whether to run different works at once in worktrees (checked with `/l-parallel`)
 
 ### Evaluation
-`lantern eval` uses the run log to compare cost (time · tool calls) and results (format errors at wrap-up) per skill, model and setting.
+`lantern eval` uses the run log to compare cost (time · tool calls) and results (format errors at wrap-up) per skill, model and setting. For Claude Code it also shows the calls and failures of each MCP server and plugin.
+Why one was added and what to expect of it goes on a component card (`lantern scaffold component`).
 
 ### Design tools
 Claude Design: in Claude Code, the AI draws wireframes on a Design canvas itself. Figma and Canva work through each tool's MCP.
@@ -293,12 +294,12 @@ Import mockups with `lantern screen import`; `lantern screen compare` finds wher
 ```text
 setup      install [--language] [--tools] [--ci|--no-ci] [--pr-template] [--commit-template] · upgrade [--apply] · doctor · build-mode suggest · guard -- <tool>
 profile    profile show|docs|write|set · principles show|detect · parts [add|ignore] · enums list|rename · sections list|rename|off|on
-documents  scaffold init [--plan] | work | doc | idea | adr | meeting | custom · new-id · map · meta get|set
+documents  scaffold init [--plan] | work | doc | idea | adr | component | meeting | custom · new-id · map · meta get|set
 checks     check [--changed] [--epic W-012] · check-pr · lint [--ci] · check-dbml · dbml render|from-sql|diff
 work       task next [--all]|start|done|ac|list|estimate · task add [--parallel] [--spike] · pack · screen import|compare
            work branch|start|list|overlap|finish|archive|stage|flow · design approve · unit-log add · idea find|status
-learning   knowledge search|read|propose|write|areas|properties · debt find|new|ask|resolve|promote|practice|known|status|list
-reports    report [--views] [--summary] · status · resume [--session] [--more] · scan [--tests] [--ci] · sync adopt · eval · obsidian plugins
+learning   knowledge search|read|propose|write|areas|properties|setup · debt find|new|ask|resolve|promote|practice|known|status|list
+reports    report [--views] [--summary] · status · resume [--session] [--more] · scan [--tests] [--ci] · sync adopt · eval · retro add|note|judge|confirm|review · obsidian plugins
 templates  template list|show|lint|level|bump|outdated|diff|usage|new|migrate · legacy adopt [--apply]|todos · migrate openspec [--apply]
 references ref list|check|index|read · tag|exclude|rules · terms|term|glossary|candidate · domain|describe|attach · convert [--apply]|preview
 git        hooks install|uninstall|status · docs-mode local|shared

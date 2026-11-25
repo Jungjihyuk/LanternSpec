@@ -7,12 +7,40 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+**How to move:** `lantern mcp` and `lantern install --mcp` are gone. Take `--mcp` out of your scripts and reach the knowledge base with `lantern knowledge …`. `lantern upgrade` takes the registered `lantern-knowledge` out of the AI tools' settings; an entry you edited stays and is named, so take it out by hand. If a script of yours calls `lantern debt new` · `ask`, add `--by "<person>"`.
+
+Upgrade: `uv tool upgrade lanternspec` → `lantern upgrade` in each project (refreshes the skills, templates, agent hooks and Obsidian plugins, and adds the missing lists to `enums.yaml`)
+
 ### Added
+- **Connecting Notion — `lantern knowledge setup notion`** — run in your own terminal, it guides you through making the integration, its permissions, the token and the place for notes, checks each step and saves them in `lantern.yaml`. On macOS the Keychain asks for the token itself. `/l-init` offers Notion as a knowledge base too
+- **Notes as rows of a Notion database** — when `knowledge.path` is a database, a note becomes a new row. `lantern knowledge properties` lists what can be filled and `propose --property "name=value"` passes the values. A property or choice that isn't there is refused
+- **Component cards — `lantern scaffold component "<name>" --kind mcp|plugin|skill|hook`** — why it was added, what to expect and what to measure. When a new MCP server or plugin shows up in Claude Code, the AI asks once whether to leave a card
+- **MCP calls in `lantern eval`** — for Claude Code, the sessions, calls and failures of each MCP server and plugin, and what was added or dropped between sessions
+- **Skill run times** — the run log keeps how long each skill ran, from its start to `lantern close`, and how long the AI worked
+- **`lantern task start --by`** — who is on a task is kept from its start, and the kanban shows the AIs at work now
+- **How to open a feature (CLI · REST API · MCP) in the tech selection criteria** — how to choose a way to open a feature to people, other programs and AI tools
 - **`lantern retro note` — what the AI got stuck on goes to the AI retro** — one line for what the AI got stuck on while building, even with the automatic loop off (`lantern retro note W-005-T02 --stuck "…" --solved "…"`). The weakness, remedy and hypothesis can come along, and a person confirms with `lantern retro review`. `/l-build` writes it whenever it gets stuck
 - **`asked_by` on a debt card** — who asked is kept
 
 ### Changed
-- **Debt is only what a person asked or chose to keep** — `lantern debt new` · `ask` take who asked with `--by`; the name of an AI model is refused, with a pointer to `lantern retro note`. A person running it at a terminal needs no `--by`. If a script of yours calls it, add `--by "<person>"`
+- **`lantern mcp` and `install --mcp` are gone** — the knowledge base is reached only with `lantern knowledge …`
+- **Searching Notion** — property values are searched as well as titles, and the result says which property matched and gives the page's address. The list of pages is reused for 10 minutes
+- **Writing notes to Notion** — callouts, bold, code languages, tables, checkboxes, formulas and more become Notion's own blocks. A title already there is refused
+- **The Notion token is looked for in the Keychain first** — then in the environment variable
+- **The timeline draws a bar for each stage** — a work's row shows when planning, design, splitting into tasks and the build happened
+- **Colors of the kanban and the timeline** — easier to tell apart; the timeline says who did a task on hover instead of by color
+- **Task times to the second** — under a minute is said as "under 1 min", and quick tasks count when sizes are measured
+- **`lantern check` looks at times** — it reports a finish before its start and a time more than a day in the future
+- **`lantern eval` prints aligned tables on a terminal** — a file or a pipe still gets Markdown
+- **The table of what kind of project it is, in the project definition** — `lantern scaffold init` and `upgrade` rewrite it from `lantern.yaml`
+- **Debt is only what a person asked or chose to keep** — `lantern debt new` · `ask` take who asked with `--by`; the name of an AI (a model's, or a tool's such as `claude` · `Codex` · `AI`; each name of a comma list) is refused, with a pointer to `lantern retro note`. A person running it at a terminal needs no `--by`. If a script of yours calls it, add `--by "<person>"`
+
+### Fixed
+- **A task that ended in the minute it began is no longer drawn as 30 minutes long**
+- **A model name written with spaces is no longer counted as a person** — such as `Gemini 4 Neon`; a tool's name alone, such as `claude`, is an AI too
+- **Notion pages are read all the way in** — text under toggles, lists and headings, links, tables and a row's properties; a rate limit is waited out and tried again
+- **A Notion title that ends in a space is found as an exact match**
+- **The lists an older project's `enums.yaml` lacks are added** — in a project made with 0.3.3 or earlier, the automatic loop's retro judgment was refused
 
 ## [0.4.0] - 2026-11-18
 

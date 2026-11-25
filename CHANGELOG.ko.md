@@ -7,12 +7,40 @@
 
 ## [Unreleased]
 
+**옮기는 법:** `lantern mcp`와 `lantern install --mcp`가 없어졌다. 스크립트에서 `--mcp`를 빼고, 지식 저장소는 `lantern knowledge …`로 부른다. `lantern upgrade`가 AI 도구 설정에 등록했던 `lantern-knowledge`를 빼며, 직접 고친 등록은 남기고 알려 주니 손으로 뺀다. 스크립트에서 `lantern debt new` · `ask`를 부르면 `--by "<사람>"`을 붙인다.
+
+업그레이드: `uv tool upgrade lanternspec` → 프로젝트마다 `lantern upgrade` (스킬 · 양식 · 에이전트 hook · Obsidian 플러그인을 갱신하고 `enums.yaml`에 빠진 목록을 더한다)
+
 ### 추가
+- **Notion 연결 — `lantern knowledge setup notion`** — 터미널에서 직접 실행하면 통합 만들기 · 권한 · 토큰 · 노트를 둘 곳을 단계마다 안내하고 확인한 뒤 `lantern.yaml`에 저장한다. macOS에서는 토큰을 키체인이 직접 받는다. `/l-init`의 지식 저장소 선택지에도 Notion이 생겼다
+- **Notion 데이터베이스에 노트 쓰기** — `knowledge.path`가 데이터베이스면 노트가 새 행이 된다. `lantern knowledge properties`로 채울 속성을 보고 `propose --property "이름=값"`으로 넘긴다. 없는 속성 · 선택지는 거절한다
+- **구성 카드 — `lantern scaffold component "<이름>" --kind mcp|plugin|skill|hook`** — 왜 더했고 무엇을 기대하고 무엇을 잴지 남긴다. Claude Code에서 새 MCP 서버 · 플러그인이 보이면 AI가 카드를 남길지 한 번 묻는다
+- **`lantern eval`의 MCP 호출** — Claude Code에서 MCP 서버 · 플러그인마다 쓴 세션 · 호출 · 실패 수와 세션 사이에 더하고 뺀 것을 보여 준다
+- **스킬 실행 시간** — 스킬마다 시작부터 `lantern close`까지와 AI가 일한 시간을 실행 기록에 남긴다
+- **`lantern task start --by`** — 시작할 때부터 누가 하는지 남기고, 칸반이 지금 일하는 AI를 보여 준다
+- **기술 선택 기준에 기능 공개(CLI · REST API · MCP)** — 만든 기능을 사람 · 다른 프로그램 · AI 도구에 어떻게 열지 고르는 기준
 - **`lantern retro note` — AI가 막힌 것을 AI 회고에 적는다** — 자율 반복이 꺼져 있어도 구현하다 AI가 막힌 것을 한 줄 남긴다 (`lantern retro note W-005-T02 --stuck "…" --solved "…"`). 약점 · 보완 · 가설을 함께 줄 수 있고, 확인은 사람이 `lantern retro review`로 한다. `/l-build`가 막힐 때마다 적는다
 - **부채 카드의 `asked_by`** — 누가 물었는지 남는다
 
 ### 바뀜
-- **부채는 사람이 물었거나 고른 것만** — `lantern debt new` · `ask`는 물은 사람을 `--by`로 받고, AI 모델 이름은 거절한 뒤 `lantern retro note`를 알려 준다. 터미널에서 사람이 직접 돌릴 때는 `--by`가 없어도 된다. 스크립트에서 부르고 있으면 `--by "<사람>"`을 붙인다
+- **`lantern mcp` · `install --mcp`를 없앴다** — 지식 저장소는 `lantern knowledge …`로만 쓴다
+- **Notion 검색** — 제목뿐 아니라 속성 값에서도 찾고, 어느 속성이 맞았는지와 페이지 주소를 보여 준다. 페이지 목록은 10분 동안 다시 쓴다
+- **Notion에 노트 쓰기** — 콜아웃 · 굵게 · 코드 언어 · 표 · 체크박스 · 수식 등이 Notion의 블록이 된다. 같은 제목의 노트가 있으면 거절한다
+- **Notion 토큰은 키체인을 먼저 찾는다** — 없으면 환경 변수를 쓴다
+- **타임라인이 단계별 막대를 그린다** — 작업 줄에 기획 · 설계 · 할 일 · 구현이 언제였는지 나뉘어 보인다
+- **칸반 · 타임라인의 색** — 색이 서로 잘 구분되고, 타임라인은 누가 했는지를 색 대신 마우스를 올렸을 때 보여 준다
+- **할 일 시간을 초까지 잰다** — 1분이 안 되면 "1분 미만"으로 적고, 짧은 할 일도 크기 측정에 넣는다
+- **`lantern check`가 시각을 본다** — 완료가 시작보다 빠르거나 하루 넘게 미래인 시각을 알린다
+- **`lantern eval`을 터미널에서 맞춘 표로 보여 준다** — 파일이나 파이프로는 전처럼 Markdown이다
+- **`프로젝트 정의서`의 프로젝트 성격 표** — `lantern scaffold init` · `upgrade`가 `lantern.yaml`의 지금 값으로 다시 쓴다
+- **부채는 사람이 물었거나 고른 것만** — `lantern debt new` · `ask`는 물은 사람을 `--by`로 받고, AI 이름(모델 이름과 `claude` · `Codex` · `AI` 같은 도구 이름, 쉼표로 적으면 하나씩)은 거절한 뒤 `lantern retro note`를 알려 준다. 터미널에서 사람이 직접 돌릴 때는 `--by`가 없어도 된다. 스크립트에서 부르고 있으면 `--by "<사람>"`을 붙인다
+
+### 고침
+- **같은 분에 끝난 할 일을 30분 걸린 것으로 그리지 않는다**
+- **띄어 쓴 모델 이름을 사람으로 세지 않는다** — `Gemini 4 Neon`처럼 쓴 이름과 `claude`처럼 도구 이름만 쓴 것도 AI로 본다
+- **Notion 페이지를 안쪽까지 읽는다** — 토글 · 목록 · 제목 아래의 글, 링크, 표, 행의 속성까지 읽고, 요청 한도에 걸리면 기다렸다 다시 시도한다
+- **빈칸으로 끝나는 Notion 제목을 정확히 찾는다**
+- **예전 프로젝트의 `enums.yaml`에 빠진 목록을 더한다** — 0.3.3이나 그 전에 만든 프로젝트에서 자율 반복의 회고 판단이 거절되던 것을 고친다
 
 ## [0.4.0] - 2026-11-18
 
