@@ -469,6 +469,8 @@
 
 # learn/knowledge/notion_setup.py (steps)
 "   During /l-init: go back to the conversation and say it is saved.": {ko: "   /l-init 중이면: 대화로 돌아가 저장됐다고 알려 주세요."}
+"ℹ The settings are saved. Only the search check was stopped.": {ko: "ℹ 설정은 저장됐습니다. 검색 확인만 멈췄습니다."}
+"ℹ The settings are saved, but the search couldn't be checked: {error}": {ko: "ℹ 설정은 저장됐지만 검색을 확인하지 못했습니다: {error}"}
 "   After /l-init: run `lantern scaffold init` and `lantern upgrade`.": {ko: "   /l-init 뒤라면: `lantern scaffold init`과 `lantern upgrade`를 실행하세요."}
 "No lantern.yaml in {root} — run /l-init first and choose Notion there; it tells you when to run this": {ko: "{root}에 lantern.yaml이 없습니다 — 먼저 /l-init을 실행해 Notion을 고르세요. 이 명령을 실행할 때를 알려 줍니다"}
 

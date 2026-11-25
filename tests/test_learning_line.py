@@ -95,9 +95,12 @@ def test_debt_is_only_what_a_person_asked(repo, vault):
     init_project(repo, vault=vault)
     _, out = repo("debt", "new", "JWT", "--area", "backend", ok=False)
     assert "--by" in out  # an AI runs without a terminal: it has to name the person
-    for ai in ("claude-opus-5-5", "GPT 5.1 codex", "gemini-3-pro"):
+    for ai in ("claude-opus-5-5", "GPT 5.1 codex", "gemini-3-pro", "claude", "Codex", "Antigravity CLI", "AI", "지혁, claude-opus-5-5"):
         _, out = repo("debt", "new", "JWT", "--area", "backend", "--by", ai, ok=False)
         assert "lantern retro note" in out
+    for nobody in (" ", ","):
+        _, out = repo("debt", "new", "JWT", "--area", "backend", "--by", nobody, ok=False)
+        assert "--by" in out
     assert not list((docs(repo) / "📒 부채/카드").glob("D-*"))
     repo("debt", "new", "JWT", "--area", "backend", "--by", "지혁", "--session", "s1")
     assert card_meta(repo, "D-001")["asked_by"] == "지혁"

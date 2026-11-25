@@ -672,7 +672,7 @@ def check_file(project: Project, path: Path, text: str, ctx: _Ctx) -> list[Findi
     return out
 
 
-CLOCK_SLACK = _dt.timedelta(minutes=5)
+FUTURE_SLACK = _dt.timedelta(days=1)  # times are local: one written further east may be up to a day ahead of where it is checked (CI)
 
 
 def _time_problems(project: Project, t: Task) -> list[str]:
@@ -683,8 +683,7 @@ def _time_problems(project: Project, t: Task) -> list[str]:
         by_day = len(t.started.strip()) < 16 or len(t.finished.strip()) < 16  # a date alone has no time of day to compare
         if finish.date() < start.date() if by_day else finish < start:
             out.append(msg("{id}: it finished before it started ({start} → {finish})", id=t.id, start=t.started, finish=t.finished))
-    # times are local: a member further east may be up to a day ahead
-    latest = _dt.datetime.now() + (_dt.timedelta(days=1) if project.profile.team else CLOCK_SLACK)
+    latest = _dt.datetime.now() + FUTURE_SLACK
     for role, at in (("start", start), ("finish", finish)):
         if at and at > latest:
             out.append(msg("{id}: [{attr}] is in the future ({at})", id=t.id, attr=project.names.attr(role), at=f"{at:%Y-%m-%d %H:%M}"))

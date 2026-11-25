@@ -44,7 +44,7 @@ def who_did(names: list[str]) -> str:
     """Tell who did a task from the names on its line: models of the AI tools, people, or both.
 
     A name that begins the way one of the tools' models do (claude-… · gpt-… · gemini-…) is an AI, written with spaces
-    too ("Gemini 4 Neon"); any other is a person.
+    too ("Gemini 4 Neon"), and so is the name of a tool or of its models alone ("claude" · "Codex" · "AI"); any other is a person.
 
     Args:
         names: The names written in `[한 사람:: …]`.
@@ -57,12 +57,18 @@ def who_did(names: list[str]) -> str:
         ('ai', 'both', 'human', '')
     """
     prefixes = tuple(p for tool in REGISTRY.values() for p in tool.model_prefixes)
-    ai = [n for n in names if "-".join(n.lower().split()).startswith(prefixes)]
+    alone = {"ai", *(p.rstrip("-") for p in prefixes), *(_dashed(n) for tool in REGISTRY.values() for n in (tool.name, tool.label))}
+    ai = [n for n in names if _dashed(n).startswith(prefixes) or _dashed(n) in alone]
     if not names:
         return ""
     if not ai:
         return "human"
     return "ai" if len(ai) == len(names) else "both"
+
+
+def _dashed(name: str) -> str:
+    """A name the way models are written: lowercase, with dashes for spaces."""
+    return "-".join(name.lower().split())
 
 
 def resolve(names: list[str]) -> list[Tool]:

@@ -346,15 +346,26 @@ def run(
             return 1
         io.say("")
         _save(io, project, parent, mode)
-        titles = notion.overview(1)[1]
-        if titles:
-            hits = notion.search(titles[0])
-            io.say(msg("✔ Searching “{title}” works: {count} page(s) found.", title=titles[0], count=len(hits)))
-        return 0
     except (KeyboardInterrupt, EOFError):
         io.say("")
         io.say(msg("Stopped. lantern.yaml was not changed."))
         return 1
+    _try_search(io, notion)
+    return 0
+
+
+def _try_search(io: Io, notion: Any) -> None:
+    """Show that searching works. The settings are saved by now, so whatever stops this is not a failed setup."""
+    try:
+        titles = notion.overview(1)[1]
+        if titles:
+            hits = notion.search(titles[0])
+            io.say(msg("✔ Searching “{title}” works: {count} page(s) found.", title=titles[0], count=len(hits)))
+    except KeyboardInterrupt:
+        io.say("")
+        io.say(msg("ℹ The settings are saved. Only the search check was stopped."))
+    except KnowledgeError as e:
+        io.say(msg("ℹ The settings are saved, but the search couldn't be checked: {error}", error=cut(str(e), 100)))
 
 
 def _save(io: Io, project: Project, parent: str, mode: str) -> None:

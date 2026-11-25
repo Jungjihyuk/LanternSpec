@@ -158,7 +158,8 @@ def task_seconds(task: Task, log: dict[str, dict[str, list[_dt.datetime]]]) -> i
 def task_durations(project: Project) -> dict[str, list[float]]:
     """Measure actual hours per size of finished tasks (see `task_seconds`).
 
-    Also used by `lantern task estimate`.
+    Also used by `lantern task estimate`. A length of 0 is left out: it only says "within the minute", and without a run log
+    (which isn't shared) a task that was finished without being started looks the same.
 
     Args:
         project: The project.
@@ -179,7 +180,7 @@ def task_durations(project: Project) -> dict[str, list[float]]:
             continue
         for t in parse_tasks(read(tf), project.names):
             seconds = task_seconds(t, log)
-            if seconds is not None:
+            if seconds:
                 role = size_role(project.enums, t.size)
                 out[project.enums.value("size", role) if role else t.size or "?"].append(seconds / 3600)
     return out

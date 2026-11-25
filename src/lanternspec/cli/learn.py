@@ -107,14 +107,15 @@ def cmd_knowledge(a: argparse.Namespace) -> int:
 
 def _asker(a: argparse.Namespace) -> str:
     """Who asked. An AI runs commands without a terminal, so there it has to name the person (a person at a terminal doesn't)."""
-    if not a.by and not sys.stdin.isatty():
+    by = (a.by or "").strip(" ,")
+    if not by and not sys.stdin.isatty():
         raise CliError(
             msg(
                 'Say who asked with --by "<person>" — the ledger keeps what a person asked or chose to keep; '
                 "what the AI got stuck on goes to lantern retro note"
             )
         )
-    return a.by or ""
+    return by
 
 
 def cmd_debt(a: argparse.Namespace) -> int:

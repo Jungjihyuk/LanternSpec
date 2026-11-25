@@ -285,10 +285,10 @@ def refuse_ai(by: str) -> None:
     """Refuse an AI as the one who asked: the ledger keeps what people don't know, and what the AI got stuck on goes to the AI retro.
 
     Args:
-        by: Who asked ("지혁" · "claude-opus-5-5"); "" when not known.
+        by: Who asked ("지혁" · "claude-opus-5-5"), several separated by commas; "" when not known.
 
     Raises:
-        ValueError: `by` is the name of an AI tool's model.
+        ValueError: One of the names is an AI's.
 
     Example:
         >>> refuse_ai("지혁")
@@ -299,14 +299,15 @@ def refuse_ai(by: str) -> None:
     """
     from ..tools import who_did
 
-    if who_did([by] if by else []) == "ai":
-        raise ValueError(
-            msg(
-                "Debt is what a person doesn't know, and {by} is an AI — "
-                'write what it got stuck on in the AI retro: lantern retro note W-012-T03 --stuck "…" --solved "…"',
-                by=by,
+    for name in (n.strip() for n in by.split(",")):
+        if name and who_did([name]) == "ai":
+            raise ValueError(
+                msg(
+                    "Debt is what a person doesn't know, and {by} is an AI — "
+                    'write what it got stuck on in the AI retro: lantern retro note W-012-T03 --stuck "…" --solved "…"',
+                    by=name,
+                )
             )
-        )
 
 
 def new_card(

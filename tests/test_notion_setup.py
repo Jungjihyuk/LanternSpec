@@ -327,6 +327,19 @@ def test_a_parent_page_the_integration_cannot_see_is_explained_and_can_be_correc
     assert "Add connections" in io.out or "연결 추가" in io.out
 
 
+@pytest.mark.parametrize("stop", [KeyboardInterrupt(), NotionError("Notion API error 500", 500)])
+def test_stopping_after_the_settings_are_saved_says_they_are_saved(repo, stop):
+    class StopsAtTheSearch(FakeNotion):
+        def search(self, query: str, aliases: list[str] | None = None, limit: int = 5) -> list[Hit]:
+            raise stop
+
+    io = ScriptedIo(["1", "", PAGE_URL])
+    code = _run(_project(repo), io, FakeKeychain(), notion_fake=lambda token, state: StopsAtTheSearch(token))
+
+    assert code == 0 and Project.load(repo.root).profile.knowledge["path"] == PAGE
+    assert "설정은 저장됐" in io.said[-1] and "바뀌지 않았습니다" not in io.out
+
+
 def test_something_that_is_not_a_page_address_is_asked_for_again(repo):
     project = _project(repo)
     io = ScriptedIo(["1", "", "아무 말", PAGE_URL])

@@ -109,6 +109,12 @@ def test_quick_tasks_count_when_sizes_are_measured(repo):
     assert task_durations(project)["1h"] == [0.01, 1.0]
 
 
+def test_a_length_that_was_never_measured_is_no_size(repo):
+    """Without a run log (it isn't shared) a task only finished looks like one that took no time at all."""
+    project = _project(repo, SAME_MINUTE, "- [x] W-001-T02 둘 [크기:: 1h] [시작:: 2026-11-24 10:00] [완료:: 2026-11-24 11:00]")
+    assert task_durations(project)["1h"] == [1.0]
+
+
 @pytest.mark.skipif(shutil.which("node") is None, reason="node draws nothing here, it only runs the plugin's own functions")
 def test_the_timeline_plugin_says_under_a_minute():
     code = dict(resources.iter_files("obsidian/lantern-timeline"))["main.js"].read_text(encoding="utf-8")
@@ -159,7 +165,7 @@ def _time_findings(repo) -> list[str]:
 
 
 def test_check_finds_times_that_cannot_be(repo):
-    future = (dt.datetime.now() + dt.timedelta(hours=2)).strftime("%Y-%m-%d %H:%M")
+    future = (dt.datetime.now() + dt.timedelta(days=2)).strftime("%Y-%m-%d %H:%M")
     _project(
         repo,
         "- [x] W-001-T01 하나 [크기:: 1h] [시작:: 2020-11-24 18:00] [완료:: 2020-11-24 17:00]",
@@ -171,8 +177,10 @@ def test_check_finds_times_that_cannot_be(repo):
     assert "W-001-T01" in text and "W-001-T02" in text and "W-001-T03" not in text and "W-001-T04" not in text
 
 
-def test_a_team_member_in_another_time_zone_is_not_in_the_future(repo):
-    later = (dt.datetime.now() + dt.timedelta(hours=2)).strftime("%Y-%m-%d %H:%M")
+@pytest.mark.parametrize("team", [False, True])
+def test_a_time_written_in_another_time_zone_is_not_in_the_future(repo, team):
+    later = (dt.datetime.now() + dt.timedelta(hours=9)).strftime("%Y-%m-%d %H:%M")  # e.g. written in Seoul, checked by CI in UTC
     _project(repo, f"- [x] W-001-T01 하나 [크기:: 1h] [담당:: 지혁] [시작:: 2020-11-24 17:00] [완료:: {later}]")
-    repo("profile", "set", "project.team=team", "project.members=[지혁, 민수]")
+    if team:
+        repo("profile", "set", "project.team=team", "project.members=[지혁, 민수]")
     assert not _time_findings(repo)
