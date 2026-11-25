@@ -144,15 +144,16 @@ def meta_get(project: Project, target: str, key: str | None = None) -> Any:
 
 
 def add_missing_roles(project: Project) -> list[str]:
-    """Add to the project's enums.yaml the values a newer version's code needs (`lantern upgrade`).
+    """Add to the project's enums.yaml the values, lists and document types a newer version's code needs (`lantern upgrade`).
 
+    A missing list is added when the code finds all of its values by role; a list of names alone is the person's to leave out.
     A name the project already uses for something else is left alone; `lantern doctor` keeps reporting the role.
 
     Args:
         project: The project.
 
     Returns:
-        One message per value added.
+        One message per value or list added.
 
     Example:
         >>> add_missing_roles(project)  # doctest: +SKIP
@@ -175,6 +176,15 @@ def add_missing_roles(project: Project) -> list[str]:
                 continue
             text = enums_mod.add_value_in_text(text, enum, name, base[enum].icon(name), role)
             out.append(msg("✔ enums.yaml {enum}: {label}", enum=enum, label=base[enum].labelled(name)))
+    types = current.get("doc_type")
+    for name in base.values("doc_type") if types else []:
+        if types and name not in types.values:  # the code writes these names into documents, so check has to know them
+            text = enums_mod.add_value_in_text(text, "doc_type", name, base["doc_type"].icon(name), "")
+            out.append(msg("✔ enums.yaml {enum}: {label}", enum="doc_type", label=base["doc_type"].labelled(name)))
+    for enum, shipped in base.enums.items():
+        if current.get(enum) is None and set(shipped.roles.values()) == set(shipped.values):
+            text = enums_mod.add_list_in_text(text, enums_mod.base_text(project.profile.language), enum)
+            out.append(msg("✔ enums.yaml {enum}: {label}", enum=enum, label=shipped.label))
     if out:
         write(path, text)
         project.reload_enums()

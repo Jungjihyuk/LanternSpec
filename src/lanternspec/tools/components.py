@@ -57,7 +57,7 @@ def notice(project: Project, components: dict[str, list[str]]) -> str:
 
     The first conversation only takes stock: what is already there is not asked about. After that each new one is
     named once (the conversation after it hears nothing, whether or not a card was made). Only MCP servers and
-    plugins are named, and not the knowledge server lantern itself registers.
+    plugins are named.
 
     Args:
         project: The project.
@@ -78,7 +78,6 @@ def notice(project: Project, components: dict[str, list[str]]) -> str:
     new = sorted(now - seen)
     if not new:
         return ""
-    _save(project, seen | now)
     carded = _carded(project)
     lines: list[str] = []
     for entry in new:
@@ -86,6 +85,7 @@ def notice(project: Project, components: dict[str, list[str]]) -> str:
         if name in carded:
             continue
         lines.append(_line(project, kind, name))
+    _save(project, seen | now)  # last: one that could not be worded is told the next time
     return "\n".join(lines)
 
 

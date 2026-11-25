@@ -379,7 +379,7 @@ class Enums:
 
 def _base(language: str = "ko") -> Enums:
     """Read the default enums.yaml of a language bundled with the package."""
-    return Enums(yaml.safe_load(resources.read_text(f"locales/{language}/templates/_meta/enums.yaml")) or {})
+    return Enums(yaml.safe_load(base_text(language)) or {})
 
 
 def load(enums_file: Path | None = None, language: str = "ko") -> Enums:
@@ -450,7 +450,7 @@ def add_value_in_text(text: str, enum: str, name: str, icon: str, role: str) -> 
         enum: List name.
         name: The new value's name.
         icon: Its icon.
-        role: Its role.
+        role: Its role; "" for a value that needs none.
 
     Returns:
         The enums.yaml text with the value added.
@@ -475,8 +475,52 @@ def add_value_in_text(text: str, enum: str, name: str, icon: str, role: str) -> 
         raise LookupError(msg("enums.yaml has no '{enum}'", enum=enum))
     body = block.group(1)
     kept = body.rstrip()
-    line = f"\n    {_yaml_key(name)}: {{icon: {icon}, role: {role}}}"
+    line = f"\n    {_yaml_key(name)}: " + (f"{{icon: {icon}, role: {role}}}" if role else icon)
     return text[: block.start(1)] + kept + line + body[len(kept) :] + text[block.end(1) :]
+
+
+def base_text(language: str = "ko") -> str:
+    """Read the text of the default enums.yaml of a language bundled with the package.
+
+    Args:
+        language: The language.
+
+    Returns:
+        The whole text.
+
+    Example:
+        >>> "work_status:" in base_text()
+        True
+    """
+    return resources.read_text(f"locales/{language}/templates/_meta/enums.yaml")
+
+
+def add_list_in_text(text: str, base: str, enum: str) -> str:
+    r"""Add a whole list at the end of the text of enums.yaml, as the default text has it.
+
+    Args:
+        text: The whole text of enums.yaml.
+        base: The whole text of the default enums.yaml.
+        enum: List name.
+
+    Returns:
+        The enums.yaml text with the list added.
+
+    Raises:
+        LookupError: The default has no such list.
+
+    Example:
+        >>> print(add_list_in_text("version: 1\n", "size:\n  values:\n    S: 🟢\n\narea:\n  values:\n    ai: 🤖\n", "size"), end="")
+        version: 1
+        <BLANKLINE>
+        size:
+          values:
+            S: 🟢
+    """
+    block = re.search(r"^" + re.escape(enum) + r":[ \t]*$.*?(?=^\S|\Z)", base, re.M | re.S)
+    if block is None:
+        raise LookupError(msg("enums.yaml has no '{enum}'", enum=enum))
+    return f"{text.rstrip()}\n\n{block.group(0).rstrip()}\n"
 
 
 def _yaml_key(s: str) -> str:
