@@ -7,6 +7,8 @@
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-25
+
 **옮기는 법:** `lantern mcp`와 `lantern install --mcp`가 없어졌다. 스크립트에서 `--mcp`를 빼고, 지식 저장소는 `lantern knowledge …`로 부른다. `lantern upgrade`가 AI 도구 설정에 등록했던 `lantern-knowledge`를 빼며, 직접 고친 등록은 남기고 알려 주니 손으로 뺀다. 스크립트에서 `lantern debt new` · `ask`를 부르면 `--by "<사람>"`을 붙인다.
 
 업그레이드: `uv tool upgrade lanternspec` → 프로젝트마다 `lantern upgrade` (스킬 · 양식 · 에이전트 hook · Obsidian 플러그인을 갱신하고 `enums.yaml`에 빠진 목록을 더한다)
@@ -373,7 +375,8 @@
   Rust · Go)와 규모로 코드 컨벤션을 기준표대로 골라 `AGENTS.md`와 `개발 원칙.md`에 넣는다 (`principles`, `lint`)
 - **작업 방식 · 평가** — 하네스 · 루프 · 그래프 추천(`harness suggest`), 실행 기록으로 스킬 · 모델 · 설정 비교(`eval`)
 
-[Unreleased]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.3.3...v0.4.0
 [0.3.3]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.3.1...v0.3.2

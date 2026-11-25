@@ -7,6 +7,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-25
+
 **How to move:** `lantern mcp` and `lantern install --mcp` are gone. Take `--mcp` out of your scripts and reach the knowledge base with `lantern knowledge …`. `lantern upgrade` takes the registered `lantern-knowledge` out of the AI tools' settings; an entry you edited stays and is named, so take it out by hand. If a script of yours calls `lantern debt new` · `ask`, add `--by "<person>"`.
 
 Upgrade: `uv tool upgrade lanternspec` → `lantern upgrade` in each project (refreshes the skills, templates, agent hooks and Obsidian plugins, and adds the missing lists to `enums.yaml`)
@@ -364,7 +366,8 @@ First release.
 - **Design principles and code conventions** — design principles chosen from a table by project kind · external integrations · size, and code conventions by language (Python · TypeScript · Swift · Rust · Go) and size, written into `AGENTS.md` and `개발 원칙.md` (`principles`, `lint`)
 - **Ways of working and evaluation** — harness · loop · graph recommendation (`harness suggest`); comparing skills · models · settings from the run log (`eval`)
 
-[Unreleased]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.3.3...v0.4.0
 [0.3.3]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/Jungjihyuk/LanternSpec/compare/v0.3.1...v0.3.2
