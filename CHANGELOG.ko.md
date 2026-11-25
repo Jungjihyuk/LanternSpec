@@ -7,6 +7,13 @@
 
 ## [Unreleased]
 
+### 추가
+- **`lantern retro note` — AI가 막힌 것을 AI 회고에 적는다** — 자율 반복이 꺼져 있어도 구현하다 AI가 막힌 것을 한 줄 남긴다 (`lantern retro note W-005-T02 --stuck "…" --solved "…"`). 약점 · 보완 · 가설을 함께 줄 수 있고, 확인은 사람이 `lantern retro review`로 한다. `/l-build`가 막힐 때마다 적는다
+- **부채 카드의 `asked_by`** — 누가 물었는지 남는다
+
+### 바뀜
+- **부채는 사람이 물었거나 고른 것만** — `lantern debt new` · `ask`는 물은 사람을 `--by`로 받고, AI 모델 이름은 거절한 뒤 `lantern retro note`를 알려 준다. 터미널에서 사람이 직접 돌릴 때는 `--by`가 없어도 된다. 스크립트에서 부르고 있으면 `--by "<사람>"`을 붙인다
+
 ## [0.4.0] - 2026-11-18
 
 업그레이드: `uv tool upgrade lanternspec` → 프로젝트마다 `lantern upgrade` (새 스킬 `/l-migrate`를 설치한다). `lantern legacy adopt`를 부르던 스크립트가 있으면 `--apply`를 붙인다

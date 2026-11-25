@@ -130,12 +130,15 @@ The content of a rule (its tables and numbers) is written once, in the rules doc
 - **Decided:**
   - For each acceptance criterion (or check) that did not pass on its first try, one line goes into `4. Operations/AI Retro/YYYY-MM.md`. A criterion that fails several times still gets one line, written once, when the loop **ends** (`loop finish` and the try that hits the limit call it; if the retro fails the loop does not stop).
   - The fact fields (time · work · tries · result · run ID) are computed by code from the run log; the judgment fields (weakness · remedy · hypothesis · suggestion) are filled by the AI with `lantern retro judge`. That command **refuses, as it writes**, a value that is not in the lists of `enums.yaml` (`retro_weakness` · `retro_remedy`), and `lantern check` catches, once more, a value outside the lists, an unknown field or half a judgment in a hand-edited file.
+  - What the AI got stuck on while building is written with `lantern retro note`, loop or not. It shares the file but has its own field (`[stuck:: …]`), and no tries or result, since nothing measured it. The debt ledger takes only what a person asked or chose (`lantern debt --by`); it refuses an AI's name and points to this command.
   - A person confirms once a week. Writing the judgment again clears the confirmation. The summary is rewritten by code whenever a line changes.
 - **Why:** the values of a retro exist to count "does the same weakness pile up", and names that vary can't be counted. Stopping a wrong value at the moment of writing leaves the AI no way to slip, which beats finding it later with a check. Facts the AI would write from memory can be wrong (tries · times · run IDs), so they are read from the run log. A retro is "what happened then", so it goes to the operations record, not the current state.
 - **Rejected alternatives:**
   - **Keeping it in `3. Current State`.** Current state keeps today's facts in one place; a retro only piles up as history.
   - **A table.** The same reason the task list isn't a table: when a column is missing, a value lands in another column with no warning.
   - **The AI writing the whole retro.** It can write facts such as versions, times and tries wrongly, and its diagnosis of a cause shares its own blind spots. So the hypothesis is one line from checked facts, and a person confirms.
+  - **Gathering it from loop records only.** A project with no loop got no line at all, and what blocks outside an acceptance criterion (how a tool or library behaves) had nowhere to go, so it ended up as understanding-debt cards.
+  - **Only a "who got stuck" field on the card.** What a person doesn't know and what the AI got stuck on are paid back differently (study · fixing the harness). Mixed in one ledger, the person's debt looks larger than it is.
   - **One file per work.** The same weakness scatters across files and the repetition stays hidden. A month is a good size for a weekly check.
   - **A line per try.** A line is complete only with the final result and the number of tries. The detail of each try is found by the run ID in the run log.
 

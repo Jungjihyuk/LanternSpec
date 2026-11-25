@@ -281,6 +281,34 @@ def known_add(project: Project, name: str, aliases: list[str] | None = None) -> 
 # --------------------------------------------------------------------------- cards
 
 
+def refuse_ai(by: str) -> None:
+    """Refuse an AI as the one who asked: the ledger keeps what people don't know, and what the AI got stuck on goes to the AI retro.
+
+    Args:
+        by: Who asked ("지혁" · "claude-opus-5-5"); "" when not known.
+
+    Raises:
+        ValueError: `by` is the name of an AI tool's model.
+
+    Example:
+        >>> refuse_ai("지혁")
+        >>> refuse_ai("claude-opus-5-5")  # doctest: +ELLIPSIS
+        Traceback (most recent call last):
+        ...
+        ValueError: ...
+    """
+    from ..tools import who_did
+
+    if who_did([by] if by else []) == "ai":
+        raise ValueError(
+            msg(
+                "Debt is what a person doesn't know, and {by} is an AI — "
+                'write what it got stuck on in the AI retro: lantern retro note W-012-T03 --stuck "…" --solved "…"',
+                by=by,
+            )
+        )
+
+
 def new_card(
     project: Project,
     name: str,
@@ -291,6 +319,7 @@ def new_card(
     session: str = "",
     context: str = "",
     kind: str | None = None,
+    by: str = "",
 ) -> Path:
     """Create a debt card under the next debt ID.
 
@@ -307,18 +336,20 @@ def new_card(
         session: The conversation it came up in (so asks are counted once per conversation).
         context: One line on where it came up.
         kind: The understanding or tech kind; understanding when None.
+        by: Who asked — a person; "" when not known (e.g. a card made for a work built without being understood).
 
     Returns:
         The new card.
 
     Raises:
-        ValueError: The topic or kind is not allowed.
+        ValueError: The topic or kind is not allowed, or `by` is an AI.
         FileExistsError: A card of that kind already has the name.
 
     Example:
         >>> new_card(project, "JWT", area="보안", work="W-012").name  # doctest: +SKIP
         'D-008 JWT.md'
     """
+    refuse_ai(by)
     area = area or default_area(project)
     enums = project.enums
     allowed = [enums.value("debt_kind", "understanding"), enums.value("debt_kind", "tech")]
@@ -351,6 +382,7 @@ def new_card(
             "area": templating.yaml_str(area),
             "aliases": templating.yaml_list(aliases or []),
             "owner": templating.yaml_str(owner),
+            "asked_by": templating.yaml_str(by),
             "note": templating.yaml_str(note or ""),
             "work": templating.yaml_list([work_link] if work_link else []),
             "session": templating.yaml_str(session),
@@ -358,6 +390,8 @@ def new_card(
             "work_text": " · ".join(x for x in [work_link or msg("asked directly"), context] if x),
         },
     )
+    if by:  # a project's own copy of the template may be older than the field
+        write(dest, frontmatter.set_fields(read(dest), {"asked_by": by}))
     return dest
 
 
@@ -429,7 +463,7 @@ class AskResult:
     reopened: bool
 
 
-def ask(project: Project, term: str, work: str | None = None, session: str = "", context: str = "") -> AskResult:
+def ask(project: Project, term: str, work: str | None = None, session: str = "", context: str = "", by: str = "") -> AskResult:
     """Count one more ask of an understanding-debt card: once per conversation; resolved cards reopen.
 
     Args:
@@ -438,17 +472,20 @@ def ask(project: Project, term: str, work: str | None = None, session: str = "",
         work: The work it came up in; linked from the card.
         session: The conversation; a second ask in the same conversation is not counted.
         context: One line on where it came up.
+        by: Who asked — a person; "" when not known.
 
     Returns:
         What happened.
 
     Raises:
+        ValueError: `by` is an AI.
         LookupError: There is no understanding-debt card for the term.
 
     Example:
         >>> ask(project, "JWT", work="W-012", session="s1").ask_count  # doctest: +SKIP
         2
     """
+    refuse_ai(by)
     card = find(project, term, kind="understanding")
     if card is None:
         raise LookupError(msg("No card for '{term}' — create one with lantern debt new", term=term))
@@ -463,6 +500,8 @@ def ask(project: Project, term: str, work: str | None = None, session: str = "",
     updates: dict = {"ask_count": count + 1, "status": new_status, "last_asked": today()}
     if session:
         updates["last_session"] = session
+    if by:
+        updates["asked_by"] = by
     if reopened:
         updates["resolved"] = ""
     links = frontmatter.as_list(meta.get("work"))

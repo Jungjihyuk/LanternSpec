@@ -33,8 +33,8 @@ def test_every_enum_token_in_skills_and_templates_resolves(language):
 def test_icon_change_and_rename_follow_everywhere(repo, vault):
     repo("install")
     init_project(repo, vault=vault)
-    repo("debt", "new", "CRDT", "--area", "data", "--session", "s1")
-    repo("debt", "ask", "CRDT", "--session", "s2")
+    repo("debt", "new", "CRDT", "--by", "지혁", "--area", "data", "--session", "s1")
+    repo("debt", "ask", "CRDT", "--by", "지혁", "--session", "s2")
     card = next((docs(repo) / "📒 부채/카드").glob("D-001*.md"))
     assert frontmatter.parse(card.read_text(encoding="utf-8")).meta["status"] == "되물음"
 
@@ -53,7 +53,7 @@ def test_icon_change_and_rename_follow_everywhere(repo, vault):
     skill = (repo.root / ".claude/skills/l-learn/SKILL.md").read_text(encoding="utf-8")
     assert "💬 다시 물음" in skill and "되물음" not in skill
     assert "다시 물음" in (docs(repo) / "📒 부채/부채 현황.md").read_text(encoding="utf-8")
-    repo("debt", "ask", "CRDT", "--session", "s3")  # the code finds the value by role, not by name
+    repo("debt", "ask", "CRDT", "--by", "지혁", "--session", "s3")  # the code finds the value by role, not by name
     assert frontmatter.parse(card.read_text(encoding="utf-8")).meta["status"] == "다시 물음"
     code, out = repo("check", ok=False)
     assert "enum" not in out and code == 0

@@ -1742,7 +1742,14 @@
 "✖ The whole suite did not pass (try {n} for {ac}) — nothing is judged per criterion without build.test_one": {ko: "✖ 전체 테스트가 통과하지 못했습니다 ({ac}의 {n}번째 시도) — build.test_one이 없으면 수락 기준별로 판정하지 않습니다"}
 "  R (remedy): {items}": {ko: "  R(보완): {items}"}
 "  W (weakness): {items}": {ko: "  W(약점): {items}"}
-"AI retro: add rows of a finished loop · judge · confirm · review": {ko: "AI 회고: 끝난 반복의 줄 더하기 · 판단 · 확인 · 검토"}
+"AI retro: add rows of a finished loop · note what the AI got stuck on · judge · confirm · review": {ko: "AI 회고: 끝난 반복의 줄 더하기 · AI가 막힌 것 적기 · 판단 · 확인 · 검토"}
+"note: what the AI got stuck on, one line": {ko: "note: AI가 무엇에 막혔나, 한 줄"}
+"note: how it got past it, one line": {ko: "note: 어떻게 풀었나, 한 줄"}
+"No such work or task: {target}": {ko: "그런 작업이나 할 일이 없습니다: {target}"}
+"Write what it got stuck on in one line (--stuck)": {ko: "무엇에 막혔는지 한 줄로 적어 주세요 (--stuck)"}
+"Debt is what a person doesn't know, and {by} is an AI — write what it got stuck on in the AI retro: lantern retro note W-012-T03 --stuck \"…\" --solved \"…\"": {ko: "부채는 사람이 모르는 것인데 {by}은(는) AI입니다 — AI가 막힌 것은 AI 회고에 적으세요: lantern retro note W-012-T03 --stuck \"…\" --solved \"…\""}
+"Say who asked with --by \"<person>\" — the ledger keeps what a person asked or chose to keep; what the AI got stuck on goes to lantern retro note": {ko: "누가 물었는지 --by \"<사람>\"으로 알려 주세요 — 장부에는 사람이 물었거나 남기기로 고른 것만 둡니다. AI가 막힌 것은 lantern retro note로 적습니다"}
+"new · ask: the person who asked (an AI is refused)": {ko: "new · ask: 물은 사람 (AI는 거절)"}
 "Judge each: lantern retro judge <run> <key> --weakness W --remedy R --hypothesis \"…\"": {ko: "줄마다 판단하세요: lantern retro judge <실행> <키> --weakness W --remedy R --hypothesis \"…\""}
 "judge needs --weakness, --remedy and --hypothesis": {ko: "judge에는 --weakness, --remedy, --hypothesis가 필요합니다"}
 "judge: the guess, one line": {ko: "judge: 가설 — 추측을 한 줄로"}

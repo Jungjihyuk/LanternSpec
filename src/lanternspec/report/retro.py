@@ -1,4 +1,4 @@
-"""The AI retro: one line for each acceptance criterion (or check) that did not pass on the first try of a loop.
+"""The AI retro: one line for each criterion (or check) that did not pass on the first try of a loop, and for what the AI got stuck on.
 
 The facts of a line (time · work · tries · result · run) are written by code from the run log when a loop ends. The
 judgment (weakness · remedy · hypothesis · suggestion) is filled by the AI through `lantern retro judge`, which only
@@ -6,9 +6,14 @@ accepts the values in enums.yaml, and a person confirms it. The file is one per 
 
     - 09:31 W-012 AC-2 [시도:: 3] [결과:: 통과] [약점:: 명세] [보완:: LanternSpec] [실행:: a1b2c3d4] 가설: … / 제안: … [확인:: ✅]
 
+A stuck line is the AI's own note (`lantern retro note`), in any way of building: nothing measured it, so it has no tries or result.
+
+    - 18:59 W-005 [막힘:: 자동 커밋 연결이 아니면 멈춘다] [할 일:: W-005-T02] [해결:: isolation_level=None] [실행:: n-1a2b3c4d]
+
 Responsibilities:
     - work out the rows of a finished loop from its run-log lines (a pure function)
     - read and write the monthly file: rows under a date heading, and the summary section
+    - write a line for what the AI got stuck on
     - judge · confirm a row, list the unconfirmed rows
     - find the values and fields of a row that the lists and names do not know
 
@@ -20,6 +25,7 @@ Not here:
 from __future__ import annotations
 
 import re
+import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -28,12 +34,13 @@ from ..core import sections
 from ..core.enums import Enums
 from ..core.messages import msg
 from ..core.names import Names
-from ..core.project import Project, read, write
-from ..core.taskfile import ATTR
+from ..core.project import Project, now_iso, read, write
+from ..core.taskfile import ATTR, find_task, parse_tasks
 from ..work.scaffold import create_from_template
 
 ROW = re.compile(r"^- (\d{2}:\d{2}) (W-\d{3,}) (.*)$")
 DAY = re.compile(r"^## (\d{4}-\d{2}-\d{2})\s*$")
+TARGET = re.compile(r"^(W-\d{3,})(-T\d{2,})?$")
 MONTH_FILE = re.compile(r"^\d{4}-\d{2}\.md$")
 CONFIRMED = "✅"
 
@@ -46,11 +53,12 @@ class Row:
         date: The day it is under, "2026-11-20".
         time: "09:31".
         work: "W-012".
-        key: The criterion ("AC-2"), or for a check the name of the check as written (`[검증:: 전체 테스트]`).
+        key: The criterion ("AC-2"), or for a check the name of the check as written (`[검증:: 전체 테스트]`);
+            for a stuck line the name of its field ("막힘").
         is_check: Whether the key is a check rather than a criterion.
-        tries: How many tries (rounds, for a check) it took or were made.
-        result: The result as written ("통과" · "중단").
-        run: The loop run it came from.
+        tries: How many tries (rounds, for a check) it took or were made; 0 for a stuck line.
+        result: The result as written ("통과" · "중단"); "" for a stuck line.
+        run: The loop run it came from; an ID of its own for a stuck line.
         weakness: Judgment: why the first try was blocked; "" until judged.
         remedy: Judgment: where fixing it helps.
         hypothesis: Judgment: the guess, one line.
@@ -58,6 +66,9 @@ class Row:
         confirmed: Whether a person confirmed the judgment.
         other: Fields on the line that this module does not know, kept as written.
         line: The 0-based line in the file; -1 for a row not in a file yet.
+        stuck: What the AI got stuck on; "" when the line is not a stuck line.
+        solved: How it got past it; "" when it did not, or not yet.
+        task: The task it got stuck in ("W-005-T02"); "" when only the work is known.
 
     Example:
         >>> Row("2026-11-20", "09:31", "W-012", "AC-2", False, 3, "통과", "a1b2").confirmed
@@ -79,6 +90,9 @@ class Row:
     confirmed: bool = False
     other: list[str] = field(default_factory=list)
     line: int = -1
+    stuck: str = ""
+    solved: str = ""
+    task: str = ""
 
     @property
     def judged(self) -> bool:
@@ -239,16 +253,20 @@ def parse_row(line: str, date: str, names: Names, line_no: int = -1) -> Row | No
     h = re.search(rf"{hyp}:\s*(.*?)\s*(?:/\s*{sug}:|$)", text)
     s = re.search(rf"{sug}:\s*(.*)$", text)
     is_check = not key and "check" in fields
+    stuck = "" if key or is_check else fields.get("stuck", "")
     tries = fields.get("tries", "")
     return Row(
         date=date,
         time=m.group(1),
         work=m.group(2),
-        key=key or fields.get("check", ""),
+        key=key or fields.get("check", "") or (names.retro_attr("stuck") if stuck else ""),
         is_check=is_check,
         tries=int(tries) if tries.isdigit() else 0,
         result=fields.get("result", ""),
         run=fields.get("run", ""),
+        stuck=stuck,
+        solved=fields.get("solved", "") if stuck else "",
+        task=fields.get("task", "") if stuck else "",
         weakness=fields.get("weakness", ""),
         remedy=fields.get("remedy", ""),
         hypothesis=h.group(1).strip() if h else "",
@@ -275,8 +293,12 @@ def render_row(row: Row, names: Names) -> str:
         '- 09:31 W-012 AC-2 [시도:: 3] [결과:: 통과] [실행:: a1b2]'
     """
     a = names.retro_attr
-    parts = [f"- {row.time} {row.work}", f"[{a('check')}:: {row.key}]" if row.is_check else row.key]
-    parts += [f"[{a('tries')}:: {row.tries}]", f"[{a('result')}:: {row.result}]"]
+    if row.stuck:
+        fields = (("stuck", row.stuck), ("task", row.task), ("solved", row.solved))
+        parts = [f"- {row.time} {row.work}", *(f"[{a(role)}:: {value}]" for role, value in fields if value)]
+    else:
+        parts = [f"- {row.time} {row.work}", f"[{a('check')}:: {row.key}]" if row.is_check else row.key]
+        parts += [f"[{a('tries')}:: {row.tries}]", f"[{a('result')}:: {row.result}]"]
     if row.weakness:
         parts.append(f"[{a('weakness')}:: {row.weakness}]")
     if row.remedy:
@@ -434,23 +456,78 @@ def record(project: Project, work_id: str) -> list[Row]:
     rows = (rows_from_run(lines, project.enums) if lines else []) + rows_from_review(reviewed, work_id, over, project.enums)
     have = {(r.run, r.key) for _, r in all_rows(project)}
     added = [r for r in rows if (r.run, r.key) not in have]
-    touched: set[Path] = set()
     for row in added:
-        path = _file(project, row.date)
-        if not path.exists():
-            month = row.date[:7]
-            create_from_template(project, project.names.doc("retro"), path, {"id": f"RETRO-{month}", "month": month})
-        write(path, _add_line(read(path), row.date, render_row(row, project.names)))
-        touched.add(path)
-    for path in touched:
-        _rewrite_summary(project, path)
+        _append(project, row)
     return added
+
+
+def note(project: Project, target: str, stuck: str, solved: str = "") -> Row:
+    """Write one line for what the AI got stuck on while building, in any way of building (with or without a loop).
+
+    The time, the work and the line's ID are written by code; the two texts are the AI's, so a person confirms the line
+    like any other.
+
+    Args:
+        project: The project.
+        target: The task ("W-005-T02") or the work ("W-005").
+        stuck: What it got stuck on, one line.
+        solved: How it got past it, one line; empty when it did not.
+
+    Returns:
+        The row as saved.
+
+    Raises:
+        ValueError: There is no such work or task, or `stuck` is empty.
+
+    Example:
+        >>> note(project, "W-005-T02", "자동 커밋 연결이 아니면 멈춘다", "isolation_level=None").stuck  # doctest: +SKIP
+        '자동 커밋 연결이 아니면 멈춘다'
+    """
+    m = TARGET.match(target.strip().upper())
+    folder = project.find_work(m.group(1)) if m else None
+    if m is None or folder is None:
+        raise ValueError(msg("No such work or task: {target}", target=target))
+    work, task = m.group(1), m.group(0) if m.group(2) else ""
+    tasks = project.doc_path(folder, "tasks")
+    if task and (not tasks.exists() or find_task(parse_tasks(read(tasks), project.names), task) is None):
+        raise ValueError(msg("No such work or task: {target}", target=target))
+    said = _clean(stuck, project.names)
+    if not said:
+        raise ValueError(msg("Write what it got stuck on in one line (--stuck)"))
+    now = now_iso()
+    row = Row(
+        date=now[:10],
+        time=now[11:16],
+        work=work,
+        key=project.names.retro_attr("stuck"),
+        is_check=False,
+        tries=0,
+        result="",
+        run=f"n-{uuid.uuid4().hex[:8]}",
+        stuck=said,
+        solved=_clean(solved, project.names),
+        task=task,
+    )
+    _append(project, row)
+    return row
+
+
+def _append(project: Project, row: Row) -> Path:
+    """Put a row in the file of its month, making the file when it is new."""
+    path = _file(project, row.date)
+    if not path.exists():
+        month = row.date[:7]
+        create_from_template(project, project.names.doc("retro"), path, {"id": f"RETRO-{month}", "month": month})
+    write(path, _add_line(read(path), row.date, render_row(row, project.names)))
+    _rewrite_summary(project, path)
+    return path
 
 
 def _find(project: Project, run: str, key: str) -> tuple[Path, Row]:
     checks = project.enums["retro_check"]
     for path, row in all_rows(project):
-        if row.run == run and (key == row.key or key.upper() in (row.key, checks.role_of(row.key).upper())):
+        role = "stuck" if row.stuck else checks.role_of(row.key)
+        if row.run == run and (key == row.key or key.upper() in (row.key, role.upper())):
             return path, row
     raise ValueError(msg("No retro row for run {run} · {key}", run=run, key=key))
 
@@ -460,6 +537,28 @@ def _save(project: Project, path: Path, row: Row) -> None:
     lines[row.line] = render_row(row, project.names)
     write(path, "\n".join(lines))
     _rewrite_summary(project, path)
+
+
+def check_judgment(project: Project, weakness: str, remedy: str, hypothesis: str) -> None:
+    """Refuse a judgment whose values are not in the lists, or whose hypothesis is empty.
+
+    Args:
+        project: The project.
+        weakness: A value of `retro_weakness`.
+        remedy: A value of `retro_remedy`.
+        hypothesis: The guess, one line.
+
+    Raises:
+        ValueError: A value is not in its list, or the hypothesis is empty.
+
+    Example:
+        >>> check_judgment(project, "명세", "LanternSpec", "문구가 설계에 없었다")  # doctest: +SKIP
+    """
+    for name, value in (("retro_weakness", weakness), ("retro_remedy", remedy)):
+        if value not in project.enums.values(name):
+            raise ValueError(msg("'{value}' is not one of: {items}", value=value, items=" · ".join(project.enums.values(name))))
+    if not hypothesis.strip():
+        raise ValueError(msg("The hypothesis can't be empty — write the guess in one line"))
 
 
 def judge(project: Project, run: str, key: str, weakness: str, remedy: str, hypothesis: str, suggestion: str = "") -> Row:
@@ -484,11 +583,7 @@ def judge(project: Project, run: str, key: str, weakness: str, remedy: str, hypo
         >>> judge(project, "a1b2", "AC-2", "명세", "LanternSpec", "문구가 설계에 없었다").weakness  # doctest: +SKIP
         '명세'
     """
-    for name, value in (("retro_weakness", weakness), ("retro_remedy", remedy)):
-        if value not in project.enums.values(name):
-            raise ValueError(msg("'{value}' is not one of: {items}", value=value, items=" · ".join(project.enums.values(name))))
-    if not hypothesis.strip():
-        raise ValueError(msg("The hypothesis can't be empty — write the guess in one line"))
+    check_judgment(project, weakness, remedy, hypothesis)
     path, row = _find(project, run, key)
     row.weakness, row.remedy = weakness, remedy
     row.hypothesis, row.suggestion = _clean(hypothesis, project.names), _clean(suggestion, project.names)

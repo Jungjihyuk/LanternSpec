@@ -7,11 +7,12 @@ created: ${today}
 updated: ${today}
 links: ${links}
 template: Debt Card
-template_version: 1.0.2
-based_on: 1.0.2
+template_version: 1.0.3
+based_on: 1.0.3
 area: ${area}
 aliases: ${aliases}
 owner: ${owner}
+asked_by: ${asked_by}
 ask_count: 1
 note: ${note}
 work: ${work}
@@ -52,3 +53,4 @@ resolved: ""
 | 1.0.0 | 2026-10-27 | Base template |
 | 1.0.1 | 2026-11-02 | Clearer writing guides (long ones split into lines, symbols and internal names in words) |
 | 1.0.2 | 2026-11-11 | Notes folded, under titles that say what they are |
+| 1.0.3 | 2026-11-25 | Added who asked (`asked_by`) — debt is only what a person asked or chose |

@@ -33,10 +33,11 @@ argument-hint: "<기술 용어> [용어 …]"
 4. **부채 카드 만들기 · 갱신** (번호 · 횟수는 스크립트가 센다 — 같은 대화에서는 한 번만 센다):
    ```bash
    # 카드가 없으면
-   lantern debt new "<용어>" --area <주제> --alias "<별칭>" [--work W-012] [--note "<노트 위치>"] --session "<<SESSION_ID>>" --context "<어디서 나왔나 한 줄>"
+   lantern debt new "<용어>" --area <주제> --alias "<별칭>" [--work W-012] [--note "<노트 위치>"] --by "<물은 사람>" --session "<<SESSION_ID>>" --context "<어디서 나왔나 한 줄>"
    # 카드가 있으면
-   lantern debt ask <D-NNN> [--work W-012] --session "<<SESSION_ID>>" --context "<맥락>"
+   lantern debt ask <D-NNN> [--work W-012] --by "<물은 사람>" --session "<<SESSION_ID>>" --context "<맥락>"
    ```
+   - **부채는 사람이 물었거나 남기기로 고른 것만이다.** `--by`에는 그 사람의 이름을 쓴다 (AI 모델 이름은 거절된다). 네가 막힌 것은 카드로 만들지 않고 `lantern retro note W-012-T03 --stuck "…" --solved "…"`로 적는다.
    - **주제**는 `enums.yaml`의 `area` 중 하나 (backend · frontend · data · ai · infra · 기타). 카드 하나에 주제 하나. 맞는 게 없으면 `기타`로 두고 새 주제를 제안한다 (사용자가 승인하면 `enums.yaml`에 추가).
    - <<debt_status.resolved.label>>된 카드를 또 물으면 스크립트가 다시 연다 (<<debt_status.resolved.label>> → <<debt_status.asked_again.label>>).
    - 카드의 "<<marker.glance>>"에 이 기술이 무엇이고 왜 쓰는지 한 줄을 채운다.
@@ -65,7 +66,7 @@ argument-hint: "<기술 용어> [용어 …]"
   `lantern debt practice <역량 D-NNN> "<만든 것 · 링크 · 한 줄 소감>"` (<<debt_status.practicing.label>>), 과제를 다 하면 `lantern debt resolve <역량 D-NNN>`.
 
 ## 기술 부채 (코드에 남은 빚)
-일반적인 기술 부채는 기존 도구의 영역이지만, 사용자가 남기자고 하면 같은 장부에 둔다: `lantern debt new "<무엇>" --kind "<<debt_kind.tech>>" --area <주제> [--work W-012]`.
+일반적인 기술 부채는 기존 도구의 영역이지만, 사용자가 남기자고 하면 같은 장부에 둔다: `lantern debt new "<무엇>" --kind "<<debt_kind.tech>>" --area <주제> --by "<남기자고 한 사람>" [--work W-012]`.
 
 ## "이건 알아"
 사용자가 아는 기술이라고 하면 `lantern debt known add "<용어>" --alias "<별칭>"` — 다시 묻지 않는다.
@@ -77,7 +78,7 @@ argument-hint: "<기술 용어> [용어 …]"
 - `ask`: 대화 중 "JWT가 뭐야?" 같은 기술 질문을 알아챌 때마다, 답한 뒤 한 줄로 "📒 부채로 남길까요?"를 묻는다.
 <!-- lantern:endif -->
 <!-- lantern:if learn.detect=auto -->
-- `auto`: 대화 중 기술 질문을 알아채면 — 카드가 **없으면** 만들지 한 줄로 제안하고, 카드가 **있으면** 묻지 않고 `lantern debt ask`로 센다.
+- `auto`: 대화 중 기술 질문을 알아채면 — 카드가 **없으면** 만들지 한 줄로 제안하고, 카드가 **있으면** 묻지 않고 `lantern debt ask <D-NNN> --by "<물은 사람>"`으로 센다.
 <!-- lantern:endif -->
 
 ## 한 번에 보여 줄 후보 수

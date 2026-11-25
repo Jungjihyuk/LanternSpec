@@ -53,6 +53,8 @@ def test_debt_counting_once_per_conversation_and_reopen(repo, vault):
         "debt",
         "new",
         "JWT 갱신",
+        "--by",
+        "지혁",
         "--area",
         "backend",
         "--alias",
@@ -68,25 +70,48 @@ def test_debt_counting_once_per_conversation_and_reopen(repo, vault):
     )
     m = card_meta(repo, "D-001")
     assert m["status"] == "처음" and m["ask_count"] == 1 and m["area"] == "backend"
-    code, out = repo("debt", "new", "jwt", "--area", "backend", ok=False)
+    code, out = repo("debt", "new", "jwt", "--by", "지혁", "--area", "backend", ok=False)
     assert code == 1 and "이미 카드가 있습니다" in out
-    _, out = repo("debt", "ask", "JSON web-token", "--session", "s1")
+    _, out = repo("debt", "ask", "JSON web-token", "--by", "지혁", "--session", "s1")
     assert "이미 셌습니다" in out
-    repo("debt", "ask", "JWT", "--session", "s2", "--work", "W-001")
+    repo("debt", "ask", "JWT", "--by", "지혁", "--session", "s2", "--work", "W-001")
     m = card_meta(repo, "D-001")
     assert m["status"] == "되물음" and m["ask_count"] == 2 and len(m["work"]) == 1
     repo("debt", "resolve", "D-001")
     assert card_meta(repo, "D-001")["status"] == "해결"
-    _, out = repo("debt", "ask", "D-001", "--session", "s3")
+    _, out = repo("debt", "ask", "D-001", "--by", "지혁", "--session", "s3")
     assert "다시 열림" in out
     m = card_meta(repo, "D-001")
     assert m["status"] == "되물음" and m["ask_count"] == 3 and m["resolved"] == ""
-    code, out = repo("debt", "new", "CRDT", "--area", "quantum", ok=False)
+    code, out = repo("debt", "new", "CRDT", "--by", "지혁", "--area", "quantum", ok=False)
     assert code == 1 and "주제" in out
     # status page
     repo("debt", "status")
     status = (docs(repo) / "📒 부채/부채 현황.md").read_text(encoding="utf-8")
     assert "열린 부채 1개" in status and "| 🧠 이해 | 1 |" in status and "D-001 JWT 갱신" in status
+
+
+def test_debt_is_only_what_a_person_asked(repo, vault):
+    init_project(repo, vault=vault)
+    _, out = repo("debt", "new", "JWT", "--area", "backend", ok=False)
+    assert "--by" in out  # an AI runs without a terminal: it has to name the person
+    for ai in ("claude-opus-5-5", "GPT 5.1 codex", "gemini-3-pro"):
+        _, out = repo("debt", "new", "JWT", "--area", "backend", "--by", ai, ok=False)
+        assert "lantern retro note" in out
+    assert not list((docs(repo) / "📒 부채/카드").glob("D-*"))
+    repo("debt", "new", "JWT", "--area", "backend", "--by", "지혁", "--session", "s1")
+    assert card_meta(repo, "D-001")["asked_by"] == "지혁"
+    template = docs(repo) / "0. 템플릿" / "부채 카드.md"  # an older copy of the template, without the field
+    template.write_text("\n".join(x for x in template.read_text(encoding="utf-8").split("\n") if "asked_by" not in x), encoding="utf-8")
+    repo("debt", "new", "CRDT", "--area", "backend", "--by", "지혁")
+    assert card_meta(repo, "D-002")["asked_by"] == "지혁"
+    _, out = repo("debt", "ask", "JWT", "--by", "claude-opus-5-5", "--session", "s2", ok=False)
+    assert "lantern retro note" in out and card_meta(repo, "D-001")["ask_count"] == 1
+    _, out = repo("debt", "ask", "JWT", "--session", "s2", ok=False)
+    assert "--by" in out
+    repo("debt", "ask", "JWT", "--by", "민수", "--session", "s2")
+    m = card_meta(repo, "D-001")
+    assert m["ask_count"] == 2 and m["asked_by"] == "민수"
 
 
 def test_known_tech_is_never_asked_again(repo, vault):

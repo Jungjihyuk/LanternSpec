@@ -33,10 +33,11 @@ Input: `$ARGUMENTS` — one term or a list. They may be candidates handed over b
 4. **Create or update the debt card** (the script does the numbering and counting — an ask counts once per conversation):
    ```bash
    # no card yet
-   lantern debt new "<term>" --area <topic> --alias "<alias>" [--work W-012] [--note "<note location>"] --session "<<SESSION_ID>>" --context "<where it came up, one line>"
+   lantern debt new "<term>" --area <topic> --alias "<alias>" [--work W-012] [--note "<note location>"] --by "<who asked>" --session "<<SESSION_ID>>" --context "<where it came up, one line>"
    # card exists
-   lantern debt ask <D-NNN> [--work W-012] --session "<<SESSION_ID>>" --context "<context>"
+   lantern debt ask <D-NNN> [--work W-012] --by "<who asked>" --session "<<SESSION_ID>>" --context "<context>"
    ```
+   - **Debt is only what a person asked or chose to keep.** `--by` is that person's name (the name of an AI model is refused). What you got stuck on is not a card; write it with `lantern retro note W-012-T03 --stuck "…" --solved "…"`.
    - The **topic** is one of `area` in `enums.yaml` (backend · frontend · data · ai · infra · other). One topic per card. If none fits, use `other` and suggest a new topic (once the user approves, add it to `enums.yaml`).
    - Asking again about a <<debt_status.resolved.label>> card makes the script reopen it (<<debt_status.resolved.label>> → <<debt_status.asked_again.label>>).
    - Fill the card's "<<marker.glance>>" with one line on what the technology is and why it is used.
@@ -65,7 +66,7 @@ Input: `$ARGUMENTS` — one term or a list. They may be candidates handed over b
   `lantern debt practice <competency D-NNN> "<what was built · link · one-line takeaway>"` (<<debt_status.practicing.label>>); when the tasks are done, `lantern debt resolve <competency D-NNN>`.
 
 ## Tech debt (debt left in the code)
-Ordinary tech debt belongs to existing tools, but if the user wants it recorded, keep it in the same ledger: `lantern debt new "<what>" --kind "<<debt_kind.tech>>" --area <topic> [--work W-012]`.
+Ordinary tech debt belongs to existing tools, but if the user wants it recorded, keep it in the same ledger: `lantern debt new "<what>" --kind "<<debt_kind.tech>>" --area <topic> --by "<who asked to keep it>" [--work W-012]`.
 
 ## "I know this one"
 When the user says it's familiar, `lantern debt known add "<term>" --alias "<alias>"` — it won't be asked about again.
@@ -77,7 +78,7 @@ When the user says it's familiar, `lantern debt known add "<term>" --alias "<ali
 - `ask`: whenever you notice a tech question like "what is JWT?", answer it, then ask in one line: "📒 Keep this as debt?"
 <!-- lantern:endif -->
 <!-- lantern:if learn.detect=auto -->
-- `auto`: when you notice a tech question — if there is **no** card, suggest making one in one line; if there **is** one, count it with `lantern debt ask` without asking.
+- `auto`: when you notice a tech question — if there is **no** card, suggest making one in one line; if there **is** one, count it with `lantern debt ask <D-NNN> --by "<who asked>"` without asking.
 <!-- lantern:endif -->
 
 ## Candidates shown at a time

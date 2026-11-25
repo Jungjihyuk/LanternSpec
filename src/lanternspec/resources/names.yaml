@@ -94,6 +94,9 @@ retro_attrs:                # AI 회고 줄의 칸 이름: - 09:31 W-012 AC-2 [�
   run: {ko: "실행", en: "run"}
   check: {ko: "검증", en: "check"}  # AC 자리에 오는 칸: AC가 아닌 검증이 실패한 줄 — [검증:: 전체 테스트]
   confirmed: {ko: "확인", en: "confirmed"}  # 사람이 보고 맞다고 한 줄
+  stuck: {ko: "막힘", en: "stuck"}  # AC 자리에 오는 칸: 구현하다 AI가 막힌 것 — [막힘:: 무엇에 막혔나] (lantern retro note)
+  solved: {ko: "해결", en: "solved"}  # 막힌 것을 어떻게 풀었나
+  task: {ko: "할 일", en: "task"}  # 막힌 할 일 — [할 일:: W-012-T03]
   hypothesis: {ko: "가설", en: "hypothesis"}  # 줄 끝의 "가설: …" (칸 괄호 없이)
   suggestion: {ko: "제안", en: "suggestion"}  # 줄 끝의 "제안: …"
 

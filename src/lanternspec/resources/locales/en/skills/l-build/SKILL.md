@@ -120,6 +120,14 @@ Fill in the one-line summary and why it's good in the new file; write `<<marker.
 - **Report and stop right away, whatever the setting:** tests still fail after 3 fixes · you hit a `<<marker.unknown>>` · checking a screen against its mockup · running a migration against a real database · a big change not in the design · something that must come first · an order a person changed
 - A report is 3 lines: **what was done · why it stopped · what needs choosing**
 
+## 2½. What you got stuck on goes to the AI retro
+When **you** got stuck while building and had to retry or change the approach (how a tool or library behaves, a type error, the environment), write one line once it is solved, even when the loop (`build.loop`) is off. Leave out what worked at once and typos.
+```bash
+lantern retro note W-012-T03 --stuck "what it got stuck on" --solved "how it was solved" --weakness <<retro_weakness.environment>> --remedy <<retro_remedy.tool_link>> --hypothesis "why, one line"
+```
+- The weakness and the remedy accept only the values of their lists. If you are not sure, leave out `--weakness` · `--remedy` · `--hypothesis` and write only what it got stuck on. A person confirms. Commit the changed retro file with that task's documents.
+- **Don't make it a debt card.** Debt (`lantern debt`) is only what **a person** asked or chose to keep. When no person is there, make no debt cards; collect candidates as below.
+
 <!-- lantern:if knowledge -->
 ## 3. New technologies · libraries → /l-learn candidates
 When a new technology comes in while building, collect it as a candidate (leave out ones with notes and known tech, at most <<learn.max_candidates>>). **Don't stop the work**; show them in the final report. Small library choices get one line in the decisions section of `<<file.record>>`; hard-to-reverse choices go to `/l-adr`.

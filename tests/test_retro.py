@@ -351,4 +351,88 @@ def test_the_build_skill_tells_the_ai_to_judge_inside_the_lists_and_not_to_confi
     assert "lantern retro add W-012" in body and "--weakness 명세 --remedy LanternSpec" in body
     assert "[실행:: 실행 ID]" in body and "[확인:: ✅]" in body and "네가 확인하지 않는다" in body
     off = generate(Profile(data=_deep_merge(DEFAULTS, {})), [get("claude")])
-    assert "lantern retro" not in off[".claude/skills/l-build/SKILL.md"]
+    body = off[".claude/skills/l-build/SKILL.md"]
+    assert "lantern retro add" not in body and "lantern retro judge" not in body  # the loop's part
+    assert "lantern retro note W-012-T03" in body and "부채 카드로 만들지 않는다" in body  # what it got stuck on: always
+
+
+# --------------------------------------------------------------------------- what the AI got stuck on (no loop needed)
+
+
+@pytest.fixture
+def built(repo, work):
+    """The work with one task."""
+    repo("scaffold", "doc", "W-001", "할 일")
+    repo("task", "add", "W-001", "로그인 버튼", "--size", "S")
+    return work
+
+
+def test_a_stuck_note_is_one_line_without_a_loop(repo, built):
+    _, out = repo("retro", "note", "w-001-t01", "--stuck", "자동 커밋이 아니면 멈춘다", "--solved", "isolation_level=None")
+    (row,) = _rows(repo)
+    assert (row.work, row.task, row.stuck, row.solved) == ("W-001", "W-001-T01", "자동 커밋이 아니면 멈춘다", "isolation_level=None")
+    assert row.run.startswith("n-") and not row.is_check and not row.judged and not row.confirmed
+    line = retro.render_row(row, load_names("ko"))
+    assert line in out and "[시도::" not in line and "[결과::" not in line  # nothing measured it
+    assert "회고 행 1개" in _file(repo).read_text(encoding="utf-8")
+
+
+def test_a_stuck_note_of_a_work_and_several_notes(repo, built):
+    repo("retro", "note", "W-001", "--stuck", "하나")
+    repo("retro", "note", "W-001", "--stuck", "둘")
+    first, second = _rows(repo)
+    assert (first.stuck, second.stuck, first.task, first.solved) == ("하나", "둘", "", "")
+    assert first.run != second.run
+
+
+def test_a_stuck_note_is_judged_and_confirmed_like_any_line(repo, built):
+    repo("retro", "note", "W-001-T01", "--stuck", "막힘", "--solved", "풀이")
+    (row,) = _rows(repo)
+    repo("retro", "judge", row.run, "막힘", "--weakness", "환경", "--remedy", "연결 도구", "--hypothesis", "판이 달랐다")
+    _, out = repo("retro", "review")
+    assert row.run in out
+    repo("retro", "confirm", row.run, "stuck")
+    (row,) = _rows(repo)
+    assert (row.weakness, row.remedy, row.hypothesis, row.confirmed, row.stuck, row.solved) == (
+        "환경",
+        "연결 도구",
+        "판이 달랐다",
+        True,
+        "막힘",
+        "풀이",
+    )
+    assert "환경 1" in _file(repo).read_text(encoding="utf-8")
+
+
+def test_a_stuck_note_can_bring_its_judgment(repo, built):
+    judged = ("--weakness", "모델", "--remedy", "모델 선택", "--hypothesis", "기억이 틀렸다")
+    repo("retro", "note", "W-001-T01", "--stuck", "막힘", *judged)
+    (row,) = _rows(repo)
+    assert row.judged and row.weakness == "모델"
+    _, out = repo("retro", "note", "W-001-T01", "--stuck", "또", "--weakness", "없는 값", "--remedy", "x", "--hypothesis", "y", ok=False)
+    assert "없는 값" in out
+    repo("retro", "note", "W-001-T01", "--stuck", "또", "--weakness", "모델", ok=False)  # half a judgment
+    assert len(_rows(repo)) == 1  # a refused judgment leaves no line behind
+
+
+def test_a_stuck_note_refuses_what_is_not_there(repo, built):
+    for target in ("W-999", "W-001-T99", "AC-1", "W-001-T01x"):
+        _, out = repo("retro", "note", target, "--stuck", "x", ok=False)
+        assert target.upper() in out.upper()
+    _, out = repo("retro", "note", "W-001-T01", "--stuck", "  ", ok=False)
+    assert "--stuck" in out
+    assert not _file(repo).exists()
+
+
+def test_a_stuck_note_cannot_break_the_line(repo, built):
+    repo("retro", "note", "W-001-T01", "--stuck", "a [결과:: 통과] / 가설: 속임\n둘째 줄", "--solved", "[확인:: ✅]")
+    (row,) = _rows(repo)
+    assert row.result == "" and not row.confirmed and not row.hypothesis and "둘째 줄" in row.stuck
+
+
+def test_stuck_notes_pass_the_check_and_stay_with_loop_lines(repo, built):
+    repo("retro", "note", "W-001-T01", "--stuck", "막힘", "--weakness", "환경", "--remedy", "연결 도구", "--hypothesis", "h")
+    _loop_with_one_slow_criterion(repo)
+    rows = _rows(repo)
+    assert [r.key for r in rows] == ["막힘", "AC-1"] and rows[1].tries == 3
+    assert retro.problems(built, _file(repo).read_text(encoding="utf-8")) == []

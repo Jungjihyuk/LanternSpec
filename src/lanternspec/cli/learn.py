@@ -105,6 +105,18 @@ def cmd_knowledge(a: argparse.Namespace) -> int:
     return 1
 
 
+def _asker(a: argparse.Namespace) -> str:
+    """Who asked. An AI runs commands without a terminal, so there it has to name the person (a person at a terminal doesn't)."""
+    if not a.by and not sys.stdin.isatty():
+        raise CliError(
+            msg(
+                'Say who asked with --by "<person>" — the ledger keeps what a person asked or chose to keep; '
+                "what the AI got stuck on goes to lantern retro note"
+            )
+        )
+    return a.by or ""
+
+
 def cmd_debt(a: argparse.Namespace) -> int:
     """`lantern debt find|new|ask|resolve|promote|practice|known|status|list` — the debt ledger."""
     from ..learn import debt
@@ -131,6 +143,7 @@ def cmd_debt(a: argparse.Namespace) -> int:
             print(msg("No card: '{arg}'", arg=a.arg))
         return 0
     if a.action == "new":
+        by = _asker(a)
         p = debt.new_card(
             project,
             a.arg,
@@ -141,6 +154,7 @@ def cmd_debt(a: argparse.Namespace) -> int:
             session=a.session or "",
             context=a.context or "",
             kind=a.kind,
+            by=by,
         )
         print(f"{project.enums.icon('debt_status', 'new')} {project.rel(p)}")
         return 0
@@ -153,7 +167,7 @@ def cmd_debt(a: argparse.Namespace) -> int:
         print(f"{project.enums.icon('debt_status', 'practicing')} {project.rel(debt.practice(project, a.arg, a.name))}")
         return 0
     if a.action == "ask":
-        r = debt.ask(project, a.arg, work=a.work, session=a.session or "", context=a.context or "")
+        r = debt.ask(project, a.arg, work=a.work, session=a.session or "", context=a.context or "", by=_asker(a))
         if not r.counted:
             print(msg("· Already counted in this conversation ({ask_count})", ask_count=r.ask_count))
         else:
@@ -217,4 +231,5 @@ def register(add: Add) -> None:
     p.add_argument("--note")
     p.add_argument("--session")
     p.add_argument("--context")
+    p.add_argument("--by", help=msg("new · ask: the person who asked (an AI is refused)"))
     p.add_argument("--kind", help=msg("new: understanding (default) | tech"))

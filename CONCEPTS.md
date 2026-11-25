@@ -191,6 +191,7 @@ Everything LanternSpec writes lives in the `docs/` folder.
 - **The fact fields** (time · work · tries · result · run) are written by lantern from the run log. A criterion that passed at once leaves no line; one that passed after several tries leaves one (`[tries:: 3] [result:: Passed]`); one that never did and stopped leaves `[result:: Stopped]`. A check that isn't a criterion (a failed whole suite · an invalid pass) is kept as `[check:: …]`.
 - **The judgment fields** (weakness · remedy · hypothesis · suggestion) are filled by the AI with `lantern retro judge`. The weakness (spec · context · harness · model · verification · environment) and the remedy (LanternSpec · harness settings · model choice · connected tool · planning habit) accept only the values of the lists in `enums.yaml`.
 - **Confirmation** is a person's: once a week, `lantern retro review` shows the unconfirmed lines and `lantern retro confirm` marks the ones that are right. The summary at the top is rewritten by lantern each time a line is added or confirmed.
+- **A stuck line:** what the AI got stuck on while building is one line it writes with `lantern retro note W-005-T02 --stuck "…" --solved "…"`, even with no loop (`[stuck:: …] [task:: …] [solved:: …]`). The time, the work and the line's ID are written by lantern; nothing measured it, so it has no tries or result. The judgment and the confirmation are the same as for any line.
 - A loop judged by the whole suite only (`build.test_one` empty) makes no line per criterion.
 
 ### Review after the build
@@ -232,6 +233,8 @@ Everything LanternSpec writes lives in the `docs/` folder.
 
 ### Debt card
 > A card for one piece of understanding debt. It finds and links related notes in your notes store, and is marked "resolved" once you've studied it.
+
+- Only **what a person asked or chose to keep** becomes a card. `lantern debt new` · `ask` take who asked (`--by`) and refuse the name of an AI model. What the AI got stuck on is a stuck line of the [AI retro](#ai-retro).
 
 ### Known tech
 > The list of technologies you already know well. They're not suggested as understanding debt again.

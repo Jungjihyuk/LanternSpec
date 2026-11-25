@@ -85,7 +85,7 @@ def cmd_eval(a: argparse.Namespace) -> int:
 
 
 def cmd_retro(a: argparse.Namespace) -> int:
-    """`lantern retro add|judge|confirm|review` — the AI retro: rows from finished loops, the AI's judgment, a person's confirmation."""
+    """`lantern retro add|note|judge|confirm|review` — the AI retro: rows of loops, what the AI got stuck on, its judgment, confirmation."""
     from ..report import retro
 
     project = _p()
@@ -99,7 +99,7 @@ def cmd_retro(a: argparse.Namespace) -> int:
             print(f"{row.date} {retro.render_row(row, project.names)}")
         return 0
     if not a.args:
-        raise CliError("lantern retro add W-012 · judge <run> <key> · confirm <run> <key>")
+        raise CliError("lantern retro add W-012 · note W-012-T03 · judge <run> <key> · confirm <run> <key>")
     if a.action == "add":
         added = retro.record(project, a.args[0])
         print(
@@ -115,6 +115,17 @@ def cmd_retro(a: argparse.Namespace) -> int:
             print(msg('Judge each: lantern retro judge <run> <key> --weakness W --remedy R --hypothesis "…"'))
             print(msg("  W (weakness): {items}", items=" | ".join(e.values("retro_weakness"))))
             print(msg("  R (remedy): {items}", items=" | ".join(e.values("retro_remedy"))))
+        return 0
+    if a.action == "note":
+        judged = a.weakness or a.remedy or a.hypothesis
+        if judged:  # checked before the line is written, so a wrong value leaves nothing behind
+            if not (a.weakness and a.remedy and a.hypothesis):
+                raise CliError(msg("judge needs --weakness, --remedy and --hypothesis"))
+            retro.check_judgment(project, a.weakness, a.remedy, a.hypothesis)
+        row = retro.note(project, a.args[0], a.stuck or "", a.solved or "")
+        if judged:
+            row = retro.judge(project, row.run, row.key, a.weakness, a.remedy, a.hypothesis, a.suggestion or "")
+        print("✔ " + retro.render_row(row, project.names))
         return 0
     if len(a.args) < 2:
         raise CliError(f"lantern retro {a.action} <run> <key>")
@@ -220,9 +231,11 @@ def register(add: Add) -> None:
     add("map", cmd_map, msg("Update the MOC"))
     p = add("eval", cmd_eval, msg("Evaluate AI work — which setups helped (run records)"))
     p.add_argument("--json", action="store_true")
-    p = add("retro", cmd_retro, msg("AI retro: add rows of a finished loop · judge · confirm · review"))
-    p.add_argument("action", choices=["add", "judge", "confirm", "review"])
+    p = add("retro", cmd_retro, msg("AI retro: add rows of a finished loop · note what the AI got stuck on · judge · confirm · review"))
+    p.add_argument("action", choices=["add", "note", "judge", "confirm", "review"])
     p.add_argument("args", nargs="*")
+    p.add_argument("--stuck", help=msg("note: what the AI got stuck on, one line"))
+    p.add_argument("--solved", help=msg("note: how it got past it, one line"))
     p.add_argument("--weakness", help=msg("judge: why the first try was blocked (a value of the weakness list)"))
     p.add_argument("--remedy", help=msg("judge: where fixing it helps (a value of the remedy list)"))
     p.add_argument("--hypothesis", help=msg("judge: the guess, one line"))

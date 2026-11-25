@@ -7,6 +7,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+- **`lantern retro note` — what the AI got stuck on goes to the AI retro** — one line for what the AI got stuck on while building, even with the automatic loop off (`lantern retro note W-005-T02 --stuck "…" --solved "…"`). The weakness, remedy and hypothesis can come along, and a person confirms with `lantern retro review`. `/l-build` writes it whenever it gets stuck
+- **`asked_by` on a debt card** — who asked is kept
+
+### Changed
+- **Debt is only what a person asked or chose to keep** — `lantern debt new` · `ask` take who asked with `--by`; the name of an AI model is refused, with a pointer to `lantern retro note`. A person running it at a terminal needs no `--by`. If a script of yours calls it, add `--by "<person>"`
+
 ## [0.4.0] - 2026-11-18
 
 Upgrade: `uv tool upgrade lanternspec` → `lantern upgrade` in each project (installs the new `/l-migrate` skill). If a script of yours calls `lantern legacy adopt`, add `--apply`

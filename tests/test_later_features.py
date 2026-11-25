@@ -43,7 +43,7 @@ def test_h9_learning_question_detection(repo, vault):
     ctx = _ctx(_hook(repo.root, "prompt", {"session_id": "s", "prompt": "Optimistic Lock이 뭐예요?"}))
     assert "카드가 없습니다" in ctx
     assert not _ctx(_hook(repo.root, "prompt", {"session_id": "s", "prompt": "Optimistic Lock이 뭐예요?"}))  # once
-    repo("debt", "new", "JWT", "--area", "backend", "--session", "s0")
+    repo("debt", "new", "JWT", "--by", "지혁", "--area", "backend", "--session", "s0")
     ctx = _ctx(_hook(repo.root, "prompt", {"session_id": "s1", "prompt": "what is JWT?"}))
     assert "물은 횟수를 셌습니다 (2번째" in ctx
     assert not _ctx(_hook(repo.root, "prompt", {"session_id": "s1", "prompt": "JWT가 뭐야"}))  # same conversation
@@ -136,7 +136,7 @@ def test_notion_adapter_contract():
 
 def test_competency_debt_flow(repo, vault):
     init_project(repo, vault=vault)
-    repo("debt", "new", "JWT", "--area", "backend")
+    repo("debt", "new", "JWT", "--by", "지혁", "--area", "backend")
     code, out = repo("debt", "promote", "D-001", ok=False)
     assert code == 1 and "이해가 먼저" in out
     repo("debt", "resolve", "D-001")
@@ -149,7 +149,7 @@ def test_competency_debt_flow(repo, vault):
     repo("debt", "practice", "D-002", "토큰 발급 API를 만들어 봄")
     text = card.read_text(encoding="utf-8")
     assert "토큰 발급 API를 만들어 봄" in text and frontmatter.parse(text).meta["status"] == "연습 중"
-    repo("debt", "new", "레거시 결제 모듈", "--kind", "기술", "--area", "backend")
+    repo("debt", "new", "레거시 결제 모듈", "--by", "지혁", "--kind", "기술", "--area", "backend")
     repo("debt", "status")
     status = (docs(repo) / "📒 부채/부채 현황.md").read_text(encoding="utf-8")
     assert "| 🛠 역량 | 1 |" in status and "| 🧱 기술 | 1 |" in status and "✍️ 연습 중 1" in status
